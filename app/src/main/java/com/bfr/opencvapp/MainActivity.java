@@ -3,8 +3,10 @@ package com.bfr.opencvapp;
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.WindowManager;
+import android.widget.Toast;
 
 import com.bfr.opencvapp.cnn.CNNExtractorService;
 import com.bfr.opencvapp.cnn.impl.CNNExtractorServiceImpl;
@@ -17,6 +19,7 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
+import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.opencv.imgproc.Imgproc;
 
@@ -40,6 +43,43 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     private CNNExtractorService cnnService;
 
+    // Neural net for detection
+    private Net net;
+    private boolean isnetloaded = false;
+
+    //classes
+    private static final String[] classNames = {"background",
+            "aeroplane", "bicycle", "bird", "boat",
+            "bottle", "bus", "car", "cat", "chair",
+            "cow", "diningtable", "dog", "horse",
+            "motorbike", "person", "pottedplant",
+            "sheep", "sofa", "train", "tvmonitor"};
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        setContentView(R.layout.activity_main);
+
+        // initialize implementation of CNNExtractorService
+        this.cnnService = new CNNExtractorServiceImpl();
+        // configure camera listener
+        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.CameraView);
+        mOpenCvCameraView.setVisibility(CameraBridgeViewBase.VISIBLE);
+        mOpenCvCameraView.setCvCameraViewListener(this);
+
+        // Load model
+        // directory where the files are saved
+        String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
+
+        String proto = dir + "/MobileNetSSD_deploy.prototxt";
+        String weights = dir + "/MobileNetSSD_deploy.caffemodel";
+        Toast.makeText(this, dir , Toast.LENGTH_SHORT).show();
+//        net = Dnn.readNetFromCaffe(proto, weights);
+//        net = cnnService.getConvertedNet("", TAG);
+        Log.i(TAG, "Network loaded successfully");
+
+    }
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -68,21 +108,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        setContentView(R.layout.activity_main);
-
-        // initialize implementation of CNNExtractorService
-        this.cnnService = new CNNExtractorServiceImpl();
-        // configure camera listener
-        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.CameraView);
-        mOpenCvCameraView.setVisibility(CameraBridgeViewBase.VISIBLE);
-        mOpenCvCameraView.setCvCameraViewListener(this);
-    }
-
-
-    @Override
     protected List<? extends CameraBridgeViewBase> getCameraViewList() {
         return Collections.singletonList(mOpenCvCameraView);
     }
@@ -94,17 +119,82 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             Log.i(TAG, "Failed to get model file");
             return;
         }
-        opencvNet = cnnService.getConvertedNet(onnxModelPath, TAG);
+//        opencvNet = cnnService.getConvertedNet(onnxModelPath, TAG);
+
     }
 
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+
+        // if not loaded
+        if (!isnetloaded)
+        {
+            // Load model
+            // directory where the files are saved
+            String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
+
+            String proto = dir + "/MobileNetSSD_deploy.prototxt";
+            String weights = dir + "/MobileNetSSD_deploy.caffemodel";
+//            runOnUiThread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    Toast.makeText(this, "coucou" , Toast.LENGTH_SHORT).show();
+//                }
+//            });
+
+            net = Dnn.readNetFromCaffe(proto, weights);
+
+            isnetloaded = true;
+        }
         Mat frame = inputFrame.rgba();
-//        String classesPath = getPath(IMAGENET_CLASSES, this);
-//        String predictedClass = cnnService.getPredictedLabel(frame, opencvNet, classesPath);
-//
-//        // place the predicted label on the image
-//        Imgproc.putText(frame, predictedClass, new Point(200, 100), Imgproc.FONT_HERSHEY_SIMPLEX, 2, new Scalar(255, 121, 0), 3);
+
+        // draw a rectangle
+        Imgproc.rectangle(frame, new Point(10, 10), new Point(60,60), new Scalar(255, 10, 10));
+
+        final int IN_WIDTH = 300;
+        final int IN_HEIGHT = 300;
+        final float WH_RATIO = (float)IN_WIDTH / IN_HEIGHT;
+        final double IN_SCALE_FACTOR = 0.007843;
+        final double MEAN_VAL = 127.5;
+        final double THRESHOLD = 0.75;
+
+
+        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
+        // Forward image through network.
+        Mat blob = Dnn.blobFromImage(frame, IN_SCALE_FACTOR,
+                new org.opencv.core.Size(IN_WIDTH, IN_HEIGHT),
+                new Scalar(MEAN_VAL, MEAN_VAL, MEAN_VAL), /*swapRB*/false, /*crop*/false);
+        net.setInput(blob);
+        Mat detections = net.forward();
+        int cols = frame.cols();
+        int rows = frame.rows();
+        detections = detections.reshape(1, (int)detections.total() / 7);
+        for (int i = 0; i < detections.rows(); ++i) {
+            double confidence = detections.get(i, 2)[0];
+            if (confidence > THRESHOLD) {
+                int classId = (int)detections.get(i, 1)[0];
+                int left   = (int)(detections.get(i, 3)[0] * cols);
+                int top    = (int)(detections.get(i, 4)[0] * rows);
+                int right  = (int)(detections.get(i, 5)[0] * cols);
+                int bottom = (int)(detections.get(i, 6)[0] * rows);
+                // Draw rectangle around detected object.
+                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                        new Scalar(0, 255, 0));
+                String label = classNames[classId] + ": " + confidence;
+                int[] baseLine = new int[1];
+                org.opencv.core.Size labelSize = Imgproc.getTextSize(label, 2, 0.5, 1, baseLine);
+                // Draw background for label.
+                //Imgproc.rectangle(frame, new Point(left, top - labelSize.getHeight()),
+                //        new Point(left + labelSize.getWidth(), top + baseLine[0]),
+                //        new Scalar(255, 255, 255), Imgproc.FILLED);
+                Imgproc.rectangle(frame, new Point(left, top - labelSize.height),
+                        new Point(left + labelSize.width, top + baseLine[0]),
+                        new Scalar(255, 255, 255));
+                // Write class name and confidence.
+                Imgproc.putText(frame, label, new Point(left, top),
+                        2, 0.8, new Scalar(255,0 , 0));
+            }   // end if confidence OK
+        } // next detection
 
         return frame;
     }

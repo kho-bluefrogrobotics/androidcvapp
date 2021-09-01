@@ -1,6 +1,8 @@
 package com.bfr.opencvapp.cnn.impl;
 
+import android.os.Environment;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.bfr.opencvapp.cnn.CNNExtractorService;
 
@@ -107,7 +109,14 @@ public class CNNExtractorServiceImpl implements CNNExtractorService {
     @Override
     public Net getConvertedNet(String clsModelPath, String tag) {
         TAG = tag;
-        Net convertedNet = Dnn.readNetFromONNX(clsModelPath);
+//        Net convertedNet = Dnn.readNetFromONNX(clsModelPath);
+        // directory where the files are saved
+        String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
+
+        String proto = dir + "/MobileNetSSD_deploy.prototxt";
+        String weights = dir + "/MobileNetSSD_deploy.caffemodel";
+//        Toast.makeText(this, dir , Toast.LENGTH_SHORT).show();
+        Net convertedNet = Dnn.readNetFromCaffe(proto, weights);
         Log.i(TAG, "Network was successfully loaded");
         return convertedNet;
     }

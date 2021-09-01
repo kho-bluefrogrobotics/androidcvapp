@@ -11,6 +11,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="visible"
-        opencv:show_fps="false"
+        opencv:show_fps="true"
         opencv:camera_id="1" />
 </FrameLayout>
