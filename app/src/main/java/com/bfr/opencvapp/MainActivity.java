@@ -22,6 +22,8 @@ import org.opencv.core.Scalar;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.tracking.TrackerKCF;
+import org.opencv.video.Tracker;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -123,9 +125,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     }
 
+    private int frame_count = 0;
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
+        Tracker mytracker;
+        mytracker = TrackerKCF.create();
         // if not loaded
         if (!isnetloaded)
         {
@@ -143,58 +148,71 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //            });
 
             net = Dnn.readNetFromCaffe(proto, weights);
+            //net.setPreferableBackend(Dnn.DNN_BACKEND_OPENCV);
+            net.setPreferableTarget(Dnn.DNN_TARGET_OPENCL_FP16);
 
             isnetloaded = true;
         }
         Mat frame = inputFrame.rgba();
 
-        // draw a rectangle
-        Imgproc.rectangle(frame, new Point(10, 10), new Point(60,60), new Scalar(255, 10, 10));
+        frame_count +=1;
 
-        final int IN_WIDTH = 300;
-        final int IN_HEIGHT = 300;
-        final float WH_RATIO = (float)IN_WIDTH / IN_HEIGHT;
-        final double IN_SCALE_FACTOR = 0.007843;
-        final double MEAN_VAL = 127.5;
-        final double THRESHOLD = 0.75;
+        if (frame_count%10 == 0)
+        {
+            // draw a rectangle
+            Imgproc.rectangle(frame, new Point(10, 10), new Point(60,60), new Scalar(255, 10, 10));
+
+            final int IN_WIDTH = 300;
+            final int IN_HEIGHT = 300;
+            final float WH_RATIO = (float)IN_WIDTH / IN_HEIGHT;
+            final double IN_SCALE_FACTOR = 0.007843;
+            final double MEAN_VAL = 127.5;
+            final double THRESHOLD = 0.75;
 
 
-        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
-        // Forward image through network.
-        Mat blob = Dnn.blobFromImage(frame, IN_SCALE_FACTOR,
-                new org.opencv.core.Size(IN_WIDTH, IN_HEIGHT),
-                new Scalar(MEAN_VAL, MEAN_VAL, MEAN_VAL), /*swapRB*/false, /*crop*/false);
-        net.setInput(blob);
-        Mat detections = net.forward();
-        int cols = frame.cols();
-        int rows = frame.rows();
-        detections = detections.reshape(1, (int)detections.total() / 7);
-        for (int i = 0; i < detections.rows(); ++i) {
-            double confidence = detections.get(i, 2)[0];
-            if (confidence > THRESHOLD) {
-                int classId = (int)detections.get(i, 1)[0];
-                int left   = (int)(detections.get(i, 3)[0] * cols);
-                int top    = (int)(detections.get(i, 4)[0] * rows);
-                int right  = (int)(detections.get(i, 5)[0] * cols);
-                int bottom = (int)(detections.get(i, 6)[0] * rows);
-                // Draw rectangle around detected object.
-                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                        new Scalar(0, 255, 0));
-                String label = classNames[classId] + ": " + confidence;
-                int[] baseLine = new int[1];
-                org.opencv.core.Size labelSize = Imgproc.getTextSize(label, 2, 0.5, 1, baseLine);
-                // Draw background for label.
-                //Imgproc.rectangle(frame, new Point(left, top - labelSize.getHeight()),
-                //        new Point(left + labelSize.getWidth(), top + baseLine[0]),
-                //        new Scalar(255, 255, 255), Imgproc.FILLED);
-                Imgproc.rectangle(frame, new Point(left, top - labelSize.height),
-                        new Point(left + labelSize.width, top + baseLine[0]),
-                        new Scalar(255, 255, 255));
-                // Write class name and confidence.
-                Imgproc.putText(frame, label, new Point(left, top),
-                        2, 0.8, new Scalar(255,0 , 0));
-            }   // end if confidence OK
-        } // next detection
+            Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
+            // Forward image through network.
+            Mat blob = Dnn.blobFromImage(frame, IN_SCALE_FACTOR,
+                    new org.opencv.core.Size(IN_WIDTH, IN_HEIGHT),
+                    new Scalar(MEAN_VAL, MEAN_VAL, MEAN_VAL), /*swapRB*/false, /*crop*/false);
+            net.setInput(blob);
+            Mat detections = net.forward();
+            int cols = frame.cols();
+            int rows = frame.rows();
+            detections = detections.reshape(1, (int)detections.total() / 7);
+            for (int i = 0; i < detections.rows(); ++i) {
+                double confidence = detections.get(i, 2)[0];
+                if (confidence > THRESHOLD) {
+                    int classId = (int)detections.get(i, 1)[0];
+                    int left   = (int)(detections.get(i, 3)[0] * cols);
+                    int top    = (int)(detections.get(i, 4)[0] * rows);
+                    int right  = (int)(detections.get(i, 5)[0] * cols);
+                    int bottom = (int)(detections.get(i, 6)[0] * rows);
+                    // Draw rectangle around detected object.
+                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                            new Scalar(0, 255, 0));
+                    String label = classNames[classId] + ": " + confidence;
+                    int[] baseLine = new int[1];
+                    org.opencv.core.Size labelSize = Imgproc.getTextSize(label, 2, 0.5, 1, baseLine);
+                    // Draw background for label.
+                    //Imgproc.rectangle(frame, new Point(left, top - labelSize.getHeight()),
+                    //        new Point(left + labelSize.getWidth(), top + baseLine[0]),
+                    //        new Scalar(255, 255, 255), Imgproc.FILLED);
+                    Imgproc.rectangle(frame, new Point(left, top - labelSize.height),
+                            new Point(left + labelSize.width, top + baseLine[0]),
+                            new Scalar(255, 255, 255));
+                    // Write class name and confidence.
+//                Imgproc.putText(frame, label, new Point(left, top),
+                    Imgproc.putText(frame, String.valueOf(classId), new Point(left, top),
+                            2, 0.8, new Scalar(255,0 , 0));
+                }   // end if confidence OK
+            } // next detection
+
+            // if found person
+            mytracker.init(frame, );
+
+        } // end if modulo 10
+
 
         return frame;
     }
