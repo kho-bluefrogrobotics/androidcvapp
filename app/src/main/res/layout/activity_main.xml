@@ -13,4 +13,10 @@
         android:visibility="visible"
         opencv:show_fps="true"
         opencv:camera_id="1" />
+
+    <Button
+        android:id="@+id/initButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Button" />
 </FrameLayout>
