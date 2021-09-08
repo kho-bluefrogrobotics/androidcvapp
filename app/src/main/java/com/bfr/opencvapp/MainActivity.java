@@ -134,8 +134,10 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         FaceDetectorOptions options =
                 new FaceDetectorOptions.Builder()
                         .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
-                        .setContourMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
-                        .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
+                        .setContourMode(FaceDetectorOptions.CONTOUR_MODE_NONE)
+                        .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
+                        .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
+                        .enableTracking()
                         .build();
         FaceDetector detector = FaceDetection.getClient(options);
         faceDetector = detector;
@@ -187,7 +189,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     }
 
-    int  x1, y1, x2, y2;
+    int  x1, y1, x2, y2, trackId;
+    float smilingProba;
     Mat frame;
     InputImage inputImage;
     Bitmap bitmapImage = null ;
@@ -240,7 +243,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                                 y2 = detectedFace.getBoundingBox().bottom;
                             Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + " Face detected : " + String.valueOf(x1) +
                                     " " + String.valueOf(y1) + " " + String.valueOf(x2) + " " + String.valueOf(y2) );
-
+                            trackId = detectedFace.getTrackingId();
+                            smilingProba = detectedFace.getSmilingProbability();
+                            
                             } // next face
 
                     } // end onSucess
@@ -257,14 +262,10 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         frame_count +=1;
 
         // draw a rectangle around face
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + "Drawing face : " + String.valueOf(x1) +
-                        " " + String.valueOf(y1) + " " + String.valueOf(x2) + " " + String.valueOf(y2) );
-                Imgproc.rectangle(frame, new Point(x1, y1), new Point(x2,y2), new Scalar(255, 10, 10));
-            }
-        });
+        Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + "Drawing face : " + String.valueOf(x1) +
+                " " + String.valueOf(y1) + " " + String.valueOf(x2) + " " + String.valueOf(y2) );
+        Imgproc.rectangle(frame, new Point(x1, y1), new Point(x2,y2), new Scalar(255, 10, 10));
+        Imgproc.putText(frame, String.valueOf(trackId) + "  " + String.valueOf(smilingProba), new Point(x1, y1),2, 0.8, new Scalar(255,0 , 0));
 
 
 //        if (false)
