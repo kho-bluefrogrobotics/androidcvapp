@@ -39,6 +39,8 @@ import org.opencv.video.Tracker;
 import org.opencv.video.TrackerMIL;
 
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.face.Face;
 import com.google.mlkit.vision.face.FaceDetection;
@@ -52,6 +54,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 
 public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -184,6 +187,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     }
 
+    int  x1, y1, x2, y2;
+    Mat frame;
+    InputImage inputImage;
+    Bitmap bitmapImage = null ;
+    Task result;
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
@@ -210,117 +218,143 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             isnetloaded = true;
         }
 
+
         // Caapture Frame from camera
-        Mat frame = inputFrame.rgba();
+        frame = inputFrame.rgba();
+        Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + " Taking picture: ");
         //Detecting Face
-        Bitmap bitmapImage = null ;
+
         //convert to bitmap
         bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(frame, bitmapImage);
         //convert to InputImage
-        InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
-        faceDetector.process(inputImage)
+        inputImage = InputImage.fromBitmap(bitmapImage, 0);
+        result = faceDetector.process(inputImage)
                 .addOnSuccessListener(new OnSuccessListener<List<Face>>() {
                     @Override
                     public void onSuccess(List<Face> faces) {
                         for (Face detectedFace : faces) {
-                                Log.i("MLKit", "Face detected : " + String.valueOf(detectedFace.getBoundingBox().centerX()) );
+                                x1 = detectedFace.getBoundingBox().left;
+                                y1 = detectedFace.getBoundingBox().top;
+                                x2 = detectedFace.getBoundingBox().right;
+                                y2 = detectedFace.getBoundingBox().bottom;
+                            Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + " Face detected : " + String.valueOf(x1) +
+                                    " " + String.valueOf(y1) + " " + String.valueOf(x2) + " " + String.valueOf(y2) );
+
                             } // next face
 
                     } // end onSucess
                 }); // end process image
 
+        try {
+            Tasks.await(result);
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         frame_count +=1;
 
-        if (frame_count%10 == 0)
-        {
-            // draw a rectangle
-            Imgproc.rectangle(frame, new Point(600, 100), new Point(700,200), new Scalar(255, 10, 10));
-
-            final int IN_WIDTH = 300;
-            final int IN_HEIGHT = 300;
-            final float WH_RATIO = (float)IN_WIDTH / IN_HEIGHT;
-            final double IN_SCALE_FACTOR = 0.007843;
-            final double MEAN_VAL = 127.5;
-            final double THRESHOLD = 0.75;
-
-
-            Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
-
-            // atempt to find a person
-            // Forward image through network.
-            Mat blob = Dnn.blobFromImage(frame, IN_SCALE_FACTOR,
-                    new org.opencv.core.Size(IN_WIDTH, IN_HEIGHT),
-                    new Scalar(MEAN_VAL, MEAN_VAL, MEAN_VAL), /*swapRB*/false, /*crop*/false);
-            net.setInput(blob);
-            Mat detections = net.forward();
-            int cols = frame.cols();
-            int rows = frame.rows();
-            detections = detections.reshape(1, (int)detections.total() / 7);
-            for (int i = 0; i < detections.rows(); ++i) {
-                double confidence = detections.get(i, 2)[0];
-                if (confidence > THRESHOLD) {
-                    int classId = (int)detections.get(i, 1)[0];
-                    int left   = (int)(detections.get(i, 3)[0] * cols);
-                    int top    = (int)(detections.get(i, 4)[0] * rows);
-                    int right  = (int)(detections.get(i, 5)[0] * cols);
-                    int bottom = (int)(detections.get(i, 6)[0] * rows);
-                    // Draw rectangle around detected object.
-                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                            new Scalar(0, 255, 0));
-                    String label = classNames[classId] + ": " + confidence;
-                    int[] baseLine = new int[1];
-                    org.opencv.core.Size labelSize = Imgproc.getTextSize(label, 2, 0.5, 1, baseLine);
-                    // Draw background for label.
-                    //Imgproc.rectangle(frame, new Point(left, top - labelSize.getHeight()),
-                    //        new Point(left + labelSize.getWidth(), top + baseLine[0]),
-                    //        new Scalar(255, 255, 255), Imgproc.FILLED);
-                    Imgproc.rectangle(frame, new Point(left, top - labelSize.height),
-                            new Point(left + labelSize.width, top + baseLine[0]),
-                            new Scalar(255, 255, 255));
-                    // Write class name and confidence.
-//                Imgproc.putText(frame, label, new Point(left, top),
-                    Imgproc.putText(frame, String.valueOf(classId), new Point(left, top),
-                            2, 0.8, new Scalar(255,0 , 0));
-                }   // end if confidence OK
-            } // next detection
-
-
-            // if found person
-            if (foundperson)
-            {
-                // if not tracking yet
-                if (!istracking)
-                {
-                    // init
-                    // init tracker on drawn rect
-                    Rect initBB = new Rect(600, 100, 100, 100);
-                    mytracker.init(frame, initBB);
-
-                    foundperson = false;
-                    istracking = true;
-                }
-                else // is tracking
-                {
-
-                }
-
+        // draw a rectangle around face
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + "Drawing face : " + String.valueOf(x1) +
+                        " " + String.valueOf(y1) + " " + String.valueOf(x2) + " " + String.valueOf(y2) );
+                Imgproc.rectangle(frame, new Point(x1, y1), new Point(x2,y2), new Scalar(255, 10, 10));
             }
+        });
 
-        } // end if modulo 10
-        else // rest of the frames
-        {
-            // if is tracking
-            if (istracking)
-            {
-                //Update tracker
-                mytracker.update(frame, tracked);
 
-                // draw a rectangle
-                Imgproc.rectangle(frame, new Point(tracked.x, tracked.y), new Point(tracked.x+tracked.width,tracked.y+tracked.height), new Scalar(0, 0, 255));
-            }
-        }
+//        if (false)
+//        {
+//            // draw a rectangle
+//            Imgproc.rectangle(frame, new Point(600, 100), new Point(700,200), new Scalar(255, 10, 10));
+//
+//            final int IN_WIDTH = 300;
+//            final int IN_HEIGHT = 300;
+//            final float WH_RATIO = (float)IN_WIDTH / IN_HEIGHT;
+//            final double IN_SCALE_FACTOR = 0.007843;
+//            final double MEAN_VAL = 127.5;
+//            final double THRESHOLD = 0.75;
+//
+//
+//            Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
+//
+//            // atempt to find a person
+//            // Forward image through network.
+//            Mat blob = Dnn.blobFromImage(frame, IN_SCALE_FACTOR,
+//                    new org.opencv.core.Size(IN_WIDTH, IN_HEIGHT),
+//                    new Scalar(MEAN_VAL, MEAN_VAL, MEAN_VAL), /*swapRB*/false, /*crop*/false);
+//            net.setInput(blob);
+//            Mat detections = net.forward();
+//            int cols = frame.cols();
+//            int rows = frame.rows();
+//            detections = detections.reshape(1, (int)detections.total() / 7);
+//            for (int i = 0; i < detections.rows(); ++i) {
+//                double confidence = detections.get(i, 2)[0];
+//                if (confidence > THRESHOLD) {
+//                    int classId = (int)detections.get(i, 1)[0];
+//                    int left   = (int)(detections.get(i, 3)[0] * cols);
+//                    int top    = (int)(detections.get(i, 4)[0] * rows);
+//                    int right  = (int)(detections.get(i, 5)[0] * cols);
+//                    int bottom = (int)(detections.get(i, 6)[0] * rows);
+//                    // Draw rectangle around detected object.
+//                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+//                            new Scalar(0, 255, 0));
+//                    String label = classNames[classId] + ": " + confidence;
+//                    int[] baseLine = new int[1];
+//                    org.opencv.core.Size labelSize = Imgproc.getTextSize(label, 2, 0.5, 1, baseLine);
+//                    // Draw background for label.
+//                    //Imgproc.rectangle(frame, new Point(left, top - labelSize.getHeight()),
+//                    //        new Point(left + labelSize.getWidth(), top + baseLine[0]),
+//                    //        new Scalar(255, 255, 255), Imgproc.FILLED);
+//                    Imgproc.rectangle(frame, new Point(left, top - labelSize.height),
+//                            new Point(left + labelSize.width, top + baseLine[0]),
+//                            new Scalar(255, 255, 255));
+//                    // Write class name and confidence.
+////                Imgproc.putText(frame, label, new Point(left, top),
+//                    Imgproc.putText(frame, String.valueOf(classId), new Point(left, top),
+//                            2, 0.8, new Scalar(255,0 , 0));
+//                }   // end if confidence OK
+//            } // next detection
+//
+//
+//            // if found person
+//            if (foundperson)
+//            {
+//                // if not tracking yet
+//                if (!istracking)
+//                {
+//                    // init
+//                    // init tracker on drawn rect
+//                    Rect initBB = new Rect(600, 100, 100, 100);
+//                    mytracker.init(frame, initBB);
+//
+//                    foundperson = false;
+//                    istracking = true;
+//                }
+//                else // is tracking
+//                {
+//
+//                }
+//
+//            }
+//
+//        } // end if modulo 10
+//        else // rest of the frames
+//        {
+//            // if is tracking
+//            if (istracking)
+//            {
+//                //Update tracker
+//                mytracker.update(frame, tracked);
+//
+//                // draw a rectangle
+//                Imgproc.rectangle(frame, new Point(tracked.x, tracked.y), new Point(tracked.x+tracked.width,tracked.y+tracked.height), new Scalar(0, 0, 255));
+//            }
+//        }
 
 
         return frame;
