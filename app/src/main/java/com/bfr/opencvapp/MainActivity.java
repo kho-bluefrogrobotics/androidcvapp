@@ -3,15 +3,8 @@ package com.bfr.opencvapp;
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Matrix;
-import android.graphics.Paint;
-import android.graphics.RectF;
-import android.hardware.camera2.CameraCharacteristics;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -31,12 +24,10 @@ import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
-import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.tracking.TrackerKCF;
 import org.opencv.video.Tracker;
-import org.opencv.video.TrackerMIL;
 
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -46,14 +37,15 @@ import com.google.mlkit.vision.face.Face;
 import com.google.mlkit.vision.face.FaceDetection;
 import com.google.mlkit.vision.face.FaceDetector;
 import com.google.mlkit.vision.face.FaceDetectorOptions;
+import com.google.mlkit.vision.face.FaceLandmark;
 
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 
 
@@ -196,6 +188,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     Bitmap bitmapImage = null ;
     Task result;
 
+    Vector<DetectedFace> foundFaces = new Vector<DetectedFace>();
+
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
         // if not loaded
@@ -214,9 +208,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //                }
 //            });
 
-            net = Dnn.readNetFromCaffe(proto, weights);
+//            net = Dnn.readNetFromCaffe(proto, weights);
             //net.setPreferableBackend(Dnn.DNN_BACKEND_OPENCV);
-            net.setPreferableTarget(Dnn.DNN_TARGET_OPENCL_FP16);
+//            net.setPreferableTarget(Dnn.DNN_TARGET_OPENCL_FP16);
 
             isnetloaded = true;
         }
@@ -236,16 +230,38 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 .addOnSuccessListener(new OnSuccessListener<List<Face>>() {
                     @Override
                     public void onSuccess(List<Face> faces) {
-                        for (Face detectedFace : faces) {
-                                x1 = detectedFace.getBoundingBox().left;
-                                y1 = detectedFace.getBoundingBox().top;
-                                x2 = detectedFace.getBoundingBox().right;
-                                y2 = detectedFace.getBoundingBox().bottom;
-                            Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + " Face detected : " + String.valueOf(x1) +
-                                    " " + String.valueOf(y1) + " " + String.valueOf(x2) + " " + String.valueOf(y2) );
-                            trackId = detectedFace.getTrackingId();
-                            smilingProba = detectedFace.getSmilingProbability();
-                            
+                        Log.i("MLKit", "Found faces : " + String.valueOf(faces.size()) );
+                        // adjusting size
+                        if (foundFaces.size()<faces.size())
+                        {   // add elements
+                            do {
+                                foundFaces.add(new DetectedFace());
+                            } while (foundFaces.size()<faces.size());
+                        } // end if foundface size < i+1
+                        else if (foundFaces.size()>faces.size())
+                        {   // remove elements
+                            do {
+                                foundFaces.remove(0);
+                            } while (foundFaces.size()>faces.size());
+                        } // end if foundface size < i+1
+
+                        // for each detected face
+                        for (int i=0; i < faces.size(); i++) {
+                               // assiging values
+                            foundFaces.get(i).x1 = faces.get(i).getBoundingBox().left;
+                            foundFaces.get(i).y1 = faces.get(i).getBoundingBox().top;
+                            foundFaces.get(i).x2 = faces.get(i).getBoundingBox().right;
+                            foundFaces.get(i).y2 = faces.get(i).getBoundingBox().bottom;
+                            // tracking id
+                            foundFaces.get(i).trackingId = faces.get(i).getTrackingId();
+                            //classifications
+                            foundFaces.get(i).smilingProbability = faces.get(i).getSmilingProbability();
+                        Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + " Face detected : "
+                                + String.valueOf(foundFaces.get(i).x1) +
+                                    " " + String.valueOf(foundFaces.get(i).y1)
+                                + " " + String.valueOf(foundFaces.get(i).x2)
+                                + " " + String.valueOf(foundFaces.get(i).y2) );
+
                             } // next face
 
                     } // end onSucess
@@ -262,10 +278,24 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         frame_count +=1;
 
         // draw a rectangle around face
-        Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + "Drawing face : " + String.valueOf(x1) +
-                " " + String.valueOf(y1) + " " + String.valueOf(x2) + " " + String.valueOf(y2) );
-        Imgproc.rectangle(frame, new Point(x1, y1), new Point(x2,y2), new Scalar(255, 10, 10));
-        Imgproc.putText(frame, String.valueOf(trackId) + "  " + String.valueOf(smilingProba), new Point(x1, y1),2, 0.8, new Scalar(255,0 , 0));
+        Log.i("MLKit", "Found faces : " + String.valueOf(foundFaces.size()) );
+        // for each found face
+        for (int i=0; i<foundFaces.size(); i++)
+        {
+            Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + "Drawing face : "
+                    + String.valueOf(foundFaces.get(i).x1) +
+                    " " + String.valueOf(foundFaces.get(i).y1)
+                    + " " + String.valueOf(foundFaces.get(i).x2)
+                    + " " + String.valueOf(foundFaces.get(i).y2) );
+            Imgproc.rectangle(frame, new Point(foundFaces.get(i).x1, foundFaces.get(i).y1),
+                    new Point(foundFaces.get(i).x2,foundFaces.get(i).y2),
+                    new Scalar(255, 10, 10));
+            Imgproc.putText(frame, String.valueOf(foundFaces.get(i).trackingId) + "  "
+                    + String.valueOf(foundFaces.get(i).smilingProbability),
+                    new Point(foundFaces.get(i).x1, foundFaces.get(i).y1),2, 0.8, new Scalar(255,0 , 0));
+        }
+//        Imgproc.rectangle(frame, new Point(x1, y1), new Point(x2,y2), new Scalar(255, 10, 10));
+//        Imgproc.putText(frame, String.valueOf(trackId) + "  " + String.valueOf(smilingProba), new Point(x1, y1),2, 0.8, new Scalar(255,0 , 0));
 
 
 //        if (false)
