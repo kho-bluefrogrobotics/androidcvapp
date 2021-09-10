@@ -26,11 +26,62 @@
     <RelativeLayout
         android:id="@+id/visage"
         android:visibility="visible"
-        android:alpha="0.5"
+        android:alpha="1.0"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
 
         <include layout="@layout/face" />
+
+        <Switch
+            android:id="@+id/enableNoSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20px"
+            android:layout_marginTop="40px"
+            android:text="Enable No" />
+
+        <EditText
+            android:id="@+id/noTargetTxtView"
+            android:layout_width="110px"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="240px"
+            android:layout_marginTop="30px"
+            android:ems="10"
+            android:inputType="number"
+            android:text="20" />
+
+        <CheckBox
+            android:id="@+id/visibleCheckBox"
+            android:layout_marginStart="1100px"
+            android:layout_marginTop="40px"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hide Face" />
+
+        <Button
+            android:id="@+id/MoveNoButton"
+            android:layout_marginStart="20px"
+            android:layout_marginTop="100px"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Move" />
+
+        <TextView
+            android:id="@+id/noPosTxtView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20px"
+            android:layout_marginTop="200px"
+            android:text="TextView" />
+
+        <CheckBox
+            android:id="@+id/trackingBox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20px"
+            android:layout_marginTop="600px"
+            android:text="TRACKING" />
+
 
     </RelativeLayout>
 

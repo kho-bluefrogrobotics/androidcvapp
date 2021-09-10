@@ -6,10 +6,16 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.RemoteException;
+import android.text.Layout;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.RelativeLayout;
+import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -36,6 +42,7 @@ import org.opencv.video.Tracker;
 import com.bfr.usbservice.BodySensorData;
 import com.bfr.usbservice.HeadSensorData;
 import com.bfr.usbservice.IUsbAidlCbListner;
+import com.bfr.usbservice.IUsbCommadRsp;
 import com.bfr.usbservice.MotorHeadData;
 import com.bfr.usbservice.MotorMotionData;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -51,6 +58,7 @@ import com.google.mlkit.vision.face.FaceLandmark;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -78,11 +86,37 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private Net net;
     private boolean isnetloaded = false;
 
+    // SDK
+    BuddySDK mySDK = new BuddySDK();
+
     // Face detector
     private FaceDetector faceDetector;
 
     //button to start tracking
     private Button initBtn;
+
+    // Face UI
+    private RelativeLayout BuddyFace;
+    private TextView targetTextView;
+    private Switch noSwitch;
+    private Button moveButton;
+    private CheckBox hideFace;
+    TextView noPos;
+    private CheckBox trackingCheckBox;
+
+    // Tracking & robot status
+    private int noPosition;
+    private int trackedFaceX, trackedFaceY;
+    private int noTargetX, noTargetY;
+    private String noStatus = "";
+    private String noMvtStatus = "";
+    int no_speed = 30;
+
+    // gracet
+    private int previous_step ;
+    private int step_num;
+    private long time_in_curr_step = 0;
+    private boolean bypass = false;
 
     //classes
     private static final String[] classNames = {"background",
@@ -98,15 +132,208 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         @Override
         public void run()
         {
-            // do stuff
-        }
-    };
+            // if step changed
+            if( !(step_num == previous_step)) {
+
+                // display current step
+                Log.i("GRAFCET", "current step: " + step_num + "  " + noPosition);
+                // update
+                previous_step = step_num;
+                // start counting time in current step
+                time_in_curr_step = System.currentTimeMillis();
+                bypass = false;
+            } // end if step = same
+            else
+            {
+                // if time > 2s
+                if ((System.currentTimeMillis()-time_in_curr_step > 5000) && step_num >3)
+                {
+                    // activate bypass
+                    bypass = true;
+                }
+            }
+
+            // which grafcet step?
+            switch (step_num) {
+                case 0: // Wait for checkbox
+                    //wait until check box
+                    if (trackingCheckBox.isChecked()) {
+                        // go to next step
+                        step_num = 1;
+                    }
+                    break;
+
+                case 1: // Enable No
+                    try {
+                        mySDK.getUsbInterface().enableNoMove(1, new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String success) throws RemoteException {
+                                Log.i("enable No SUCESS:", success);
+                            }
+                            @Override
+                            public void onFailed(String error) throws RemoteException {
+                                Log.e("enable No FAILED", error);
+                            }
+                        });
+
+                    } //end try enable
+                    catch (RemoteException e) {
+                        e.printStackTrace();
+                    } // end catch
+
+                    // go to next step
+                    step_num = 2;
+                    break;
+
+                case 2: //wait for status No enable
+                    // if yes not disabled
+                    if (!noStatus.toUpperCase().contains("DISABLE")) {
+                        // go to next step
+                        step_num = 3;
+                    }
+                    break;
+
+                case 3: // Move left or right or exit
+                    //
+                    if (!trackingCheckBox.isChecked())
+                    {
+                        // go to next step
+                        step_num = 10;
+                    }
+                    // if face to track too much on the left
+                    if (trackedFaceX < 400)
+                    {
+                        // go to next step
+                        step_num = 20;
+                    }
+                    else if (trackedFaceX > 500)
+                    {
+                        // go to next step
+                        step_num = 30;
+                    }
+
+                    break;
+
+                case 10 : // Disable Motor
+                    try {
+                        mySDK.getUsbInterface().enableNoMove(0, new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String success) throws RemoteException {
+                                Log.i("enable no SUCESS:", success);
+                            }
+                            @Override
+                            public void onFailed(String error) throws RemoteException {
+                                Log.e("enable no FAILED", error);
+                            }
+                        });
+                    } //end try enable Yes
+                    catch (RemoteException e)
+                    {
+                        e.printStackTrace();
+                    } // end catch
+
+                    // go to next step
+                    step_num = 11;
+
+                    break;
+
+                case 11 : // Wait for status Disable
+                    if (noStatus.toUpperCase().contains("DISABLE"))
+                    {   // go to next step
+                        step_num = 0;
+                    }
+                    break;
+
+
+                case 20: // Cmd to Move No to the Left
+                    // reset
+                    noMvtStatus = "NOT_YET";
+                    try {
+                        Log.i(TAG, "Sending Yes command");
+                        // Move No
+                        mySDK.getUsbInterface().buddySayNo(no_speed,noPosition -3,new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
+                            @Override
+                            public void onFailed(String error) throws RemoteException {Log.e("yesmove", error);  }
+                        });
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    // go to next step
+                    step_num = 22;
+                    break;
+
+                case 21 :   //waiting for acknowledge of cmd
+                    if (noMvtStatus.toUpperCase().contains("OK"))
+                    {
+                        // go to next step
+                        step_num = 22;
+                    }
+                    break;
+
+                case 22 : // waiting for End of Movement
+                    if (noMvtStatus.toUpperCase().contains("NO_MOVE_FINISHED") || bypass)
+                    {
+                        // go to next step
+                        step_num = 3;
+                    }
+                    break;
+
+
+                case 30: // Cmd to Move No to the Right
+                    // reset
+                    noMvtStatus = "NOT_YET";
+                    try {
+                        Log.i(TAG, "Sending Yes command");
+                        // Move No
+                        mySDK.getUsbInterface().buddySayNo(no_speed,noPosition +2,new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
+                            @Override
+                            public void onFailed(String error) throws RemoteException {Log.e("yesmove", error);  }
+                        });
+
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    // go to next step
+                    step_num = 32;
+                    break;
+
+
+                case 31 :   //waiting for acknowledge of cmd
+                    if (noMvtStatus.toUpperCase().contains("OK"))
+                    {
+                        // go to next step
+                        step_num = 32;
+                    }
+                    break;
+
+                case 32 : // waiting for End of Movement
+
+                    if (noMvtStatus.toUpperCase().contains("NO_MOVE_FINISHED") || bypass)
+                    {
+                        // go to next step
+                        step_num = 3;
+                    }
+                    break;
+
+                default :
+                        // go to next step
+                        step_num = 0;
+                    break;
+            } //End switch
+
+
+        } // end run
+    }; // end new runnable
 
     //grafcet
     bfr_Grafcet myGrafcet = new bfr_Grafcet(mysequence, "myGrafcet");
 
-    // SDK
-    BuddySDK mySDK = new BuddySDK();
 
     // for Buddy calbacks
     public class BuddyData extends IUsbAidlCbListner.Stub
@@ -119,6 +346,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         @Override
         // called when the datas from the head motor are received
         public void ReceiveMotorHeadData(MotorHeadData msg) throws RemoteException {
+//            Log.i("Move_NO", "No position : " + String.valueOf(msg.noPosition));
+           noPosition = msg.noPosition;
+            noStatus = msg.noMode;
          } // end receiveMotorHead Data
 
         @Override
@@ -150,6 +380,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         // link to UI
         initBtn = findViewById(R.id.initButton);
+        BuddyFace = findViewById(R.id.visage);
+        targetTextView = findViewById(R.id.noTargetTxtView);
+        noSwitch = findViewById(R.id.enableNoSwitch);
+        moveButton = findViewById(R.id.MoveNoButton);
+        hideFace = findViewById(R.id.visibleCheckBox);
+        noPos = findViewById(R.id.noPosTxtView);
+        trackingCheckBox = findViewById(R.id.trackingBox);
 
         // Load model
         // directory where the files are saved
@@ -199,6 +436,95 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         };
         mySDK.initSDK(this, onServiceLaunched);
 
+        // start grafcet
+        myGrafcet.start();
+
+        //callback show face
+        hideFace.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                //if checked
+                if (hideFace.isChecked())
+                {   // set tranparent
+                    BuddyFace.setAlpha(0.4F);
+                }
+                else // unchecked
+                {// set opaque
+                    BuddyFace.setAlpha(1.0F);
+                } // end if checked
+            } // end onchange
+        });// end listener
+
+
+        //calbacks for Enable button
+        noSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                // if checked
+                if (noSwitch.isChecked())
+                {
+                    // enable No
+                    try {
+                        mySDK.getUsbInterface().enableNoMove(1, new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String success) throws RemoteException { }
+                            @Override
+                            public void onFailed(String error) throws RemoteException {}
+                        });
+                    } //end try enable Yes
+                    catch (RemoteException e)
+                    {            e.printStackTrace();
+                    } // end catch
+                }
+                else // unchecked
+                {
+                    //disable no
+                    try {
+                        mySDK.getUsbInterface().enableNoMove(0, new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String success) throws RemoteException { }
+                            @Override
+                            public void onFailed(String error) throws RemoteException {}
+                        });
+
+                    } //end try enable Yes
+                    catch (RemoteException e)
+                    {
+                        e.printStackTrace();
+                    } // end catch
+                } // end if togle
+
+            } // end onChecked
+        }); // end listener
+
+        //calbacks for Move button
+        moveButton.setOnClickListener(v -> {
+            try {
+                int no_speed = 50;
+                Log.i("Move_NO", "Moving No to " + targetTextView.getText() + " at " + String.valueOf(no_speed) + "deg/s");
+                // Make No move
+                mySDK.getUsbInterface().buddySayNo(no_speed, Integer.parseInt(String.valueOf(targetTextView.getText())),new IUsbCommadRsp.Stub() {
+                    @Override
+                    public void onSuccess(String success) throws RemoteException {      Log.i("Move_NO: ", success);              }
+                    @Override
+                    public void onFailed(String error) throws RemoteException {Log.e("Move_NO: ", error);  }
+                });
+            } catch (RemoteException e)
+            {                e.printStackTrace();
+            } // end try catch
+        }); // end listener
+
+        //tracking
+        trackingCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                //reset
+                if (!trackingCheckBox.isChecked())
+                    step_num =0;
+            }
+        });
+
+
     }
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
@@ -216,6 +542,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 break;
             }
         }
+
     };
 
     @Override
@@ -296,7 +623,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 .addOnSuccessListener(new OnSuccessListener<List<Face>>() {
                     @Override
                     public void onSuccess(List<Face> faces) {
-                        Log.i("MLKit", "Found faces : " + String.valueOf(faces.size()) );
+                        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+ " found faces : " + String.valueOf(faces.size()) +" while " +  String.valueOf(foundFaces.size()));
                         // adjusting size
                         if (foundFaces.size()<faces.size())
                         {   // add elements
@@ -310,6 +637,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                                 foundFaces.remove(0);
                             } while (foundFaces.size()>faces.size());
                         } // end if foundface size < i+1
+
+                        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+  " NOW faces : " + String.valueOf(faces.size()) +" while " +  String.valueOf(foundFaces.size()));
 
                         // for each detected face
                         for (int i=0; i < faces.size(); i++) {
@@ -329,6 +658,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                                 + " " + String.valueOf(foundFaces.get(i).y2) );
 
                             } // next face
+                        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+  " Finally faces : " + String.valueOf(faces.size()) +" while " +  String.valueOf(foundFaces.size()));
 
                     } // end onSucess
                 }); // end process image
@@ -342,22 +672,38 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         }
 
         // draw a rectangle around face
-        Log.i("MLKit", "Found faces : " + String.valueOf(foundFaces.size()) );
-        // for each found face
-        for (int i=0; i<foundFaces.size(); i++)
-        {
-            Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + "Drawing face : "
-                    + String.valueOf(foundFaces.get(i).x1) +
-                    " " + String.valueOf(foundFaces.get(i).y1)
-                    + " " + String.valueOf(foundFaces.get(i).x2)
-                    + " " + String.valueOf(foundFaces.get(i).y2) );
-            Imgproc.rectangle(frame, new Point(foundFaces.get(i).x1, foundFaces.get(i).y1),
-                    new Point(foundFaces.get(i).x2,foundFaces.get(i).y2),
-                    new Scalar(255, 10, 10));
-            Imgproc.putText(frame, String.valueOf(foundFaces.get(i).trackingId) + "  "
-                    + String.valueOf(foundFaces.get(i).smilingProbability),
-                    new Point(foundFaces.get(i).x1, foundFaces.get(i).y1),2, 0.8, new Scalar(255,0 , 0));
+        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+ " Found faces : " + String.valueOf(foundFaces.size()) );
+        //
+        try
+        {   // for each found face
+            for (int i=0; i<foundFaces.size(); i++)
+            {
+                Log.i("MLKit", String.valueOf(System.currentTimeMillis())+ " Attemtpting Drawing index=" + String.valueOf(i));
+                Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + "Drawing face : "
+                        + String.valueOf(foundFaces.get(i).x1) +
+                        " " + String.valueOf(foundFaces.get(i).y1)
+                        + " " + String.valueOf(foundFaces.get(i).x2)
+                        + " " + String.valueOf(foundFaces.get(i).y2) );
+                Imgproc.rectangle(frame, new Point(foundFaces.get(i).x1, foundFaces.get(i).y1),
+                        new Point(foundFaces.get(i).x2,foundFaces.get(i).y2),
+                        new Scalar(255, 10, 10));
+                Imgproc.putText(frame, String.valueOf(foundFaces.get(i).trackingId) + "  "
+                                + String.valueOf(foundFaces.get(i).smilingProbability),
+                        new Point(foundFaces.get(i).x1, foundFaces.get(i).y1),2, 0.8, new Scalar(255,0 , 0));
+
+            } // next face
+
+            // assign value to track
+            if(foundFaces.size()>0)
+            {
+                trackedFaceX = (int) (foundFaces.get(0).x1 +  Math.ceil((foundFaces.get(0).x2 - foundFaces.get(0).x1) /2 ));
+                trackedFaceY = (int) (foundFaces.get(0).y1 +  Math.ceil((foundFaces.get(0).y2 - foundFaces.get(0).y1) /2 ));
+            }
+        } // end try
+        catch (Exception e)
+        {            e.printStackTrace();
         }
+
 //        Imgproc.rectangle(frame, new Point(x1, y1), new Point(x2,y2), new Scalar(255, 10, 10));
 //        Imgproc.putText(frame, String.valueOf(trackId) + "  " + String.valueOf(smilingProba), new Point(x1, y1),2, 0.8, new Scalar(255,0 , 0));
 
