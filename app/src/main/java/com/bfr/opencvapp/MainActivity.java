@@ -5,12 +5,16 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.bfr.buddysdk.sdk.Services;
 import com.bfr.opencvapp.cnn.CNNExtractorService;
 import com.bfr.opencvapp.cnn.impl.CNNExtractorServiceImpl;
 
@@ -29,6 +33,11 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.tracking.TrackerKCF;
 import org.opencv.video.Tracker;
 
+import com.bfr.usbservice.BodySensorData;
+import com.bfr.usbservice.HeadSensorData;
+import com.bfr.usbservice.IUsbAidlCbListner;
+import com.bfr.usbservice.MotorHeadData;
+import com.bfr.usbservice.MotorMotionData;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
@@ -43,11 +52,15 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
+import com.bfr.buddysdk.sdk.BuddySDK;
 
 public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -79,12 +92,48 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             "motorbike", "person", "pottedplant",
             "sheep", "sofa", "train", "tvmonitor"};
 
+    // runable for grafcet
+    private Runnable mysequence = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            // do stuff
+        }
+    };
 
-    Tracker mytracker;
-    Rect tracked = new Rect();
-    private int frame_count = 0;
-    private boolean foundperson =false;
-    private boolean istracking = false;
+    //grafcet
+    bfr_Grafcet myGrafcet = new bfr_Grafcet(mysequence, "myGrafcet");
+
+    // SDK
+    BuddySDK mySDK = new BuddySDK();
+
+    // for Buddy calbacks
+    public class BuddyData extends IUsbAidlCbListner.Stub
+    {
+        @Override
+        // called when the datas from the motor are received
+        public void ReceiveMotorMotionData(MotorMotionData msg) throws RemoteException {
+        }
+
+        @Override
+        // called when the datas from the head motor are received
+        public void ReceiveMotorHeadData(MotorHeadData msg) throws RemoteException {
+         } // end receiveMotorHead Data
+
+        @Override
+        // called when the datas from the head sensor motor are received
+        public void ReceiveHeadSensorData(HeadSensorData msg) throws RemoteException {
+        }
+
+        @Override
+        // called when the datas from the body sensor motor are received
+        public void ReceiveBodySensorData(BodySensorData data) throws RemoteException {
+        }
+    }
+
+    // Instantiate class
+    private final BuddyData mydata = new BuddyData();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,7 +167,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             @Override
             public void onClick(View view) {
                 Log.i("Tracking", "Tracking is starting");
-                foundperson = true;
             }
         });
 
@@ -133,6 +181,23 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                         .build();
         FaceDetector detector = FaceDetection.getClient(options);
         faceDetector = detector;
+
+        //  SDK
+        // suscribe to callbacks
+        Consumer<Services> onServiceLaunched = (Services iService) -> {
+            Log.d("OpenCVAPP", "service launched ");
+            try {
+                if (iService == Services.SENSORSMOTORS)
+//                    mySDK.getUsbInterface().registerCb(mydata);
+                    mySDK.getUsbInterface().registerCb(mydata);
+                //start the grafcet
+                myGrafcet.start();
+
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        };
+        mySDK.initSDK(this, onServiceLaunched);
 
     }
 
@@ -177,17 +242,18 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        opencvNet = cnnService.getConvertedNet(onnxModelPath, TAG);
 
         // Tracker init
-        mytracker = TrackerKCF.create();
+//        mytracker = TrackerKCF.create();
 
     }
 
-    int  x1, y1, x2, y2, trackId;
-    float smilingProba;
+    // frame captured by camera
     Mat frame;
+    // conversion to MLKit
     InputImage inputImage;
     Bitmap bitmapImage = null ;
+    // Face detector
     Task result;
-
+    // List of detected faces
     Vector<DetectedFace> foundFaces = new Vector<DetectedFace>();
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
@@ -274,8 +340,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
-        frame_count +=1;
 
         // draw a rectangle around face
         Log.i("MLKit", "Found faces : " + String.valueOf(foundFaces.size()) );
@@ -414,6 +478,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             Log.i(TAG, "Failed to upload a file");
         }
         return "";
-    }
+    } // end getpath
+
+
+
 
 }
