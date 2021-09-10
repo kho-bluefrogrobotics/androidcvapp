@@ -16,7 +16,7 @@ public class bfr_Grafcet
     // initial delay before start
     private final long INITIALDELAY = 0;
     // time period of execution
-    private final long TIME_PERIOD = 20;
+    private final long TIME_PERIOD = 10;
 
     // grafcet step number
     public int step_num = 0 ;

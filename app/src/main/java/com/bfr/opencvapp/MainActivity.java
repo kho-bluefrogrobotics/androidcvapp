@@ -20,6 +20,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.bfr.buddysdk.sdk.Mood;
 import com.bfr.buddysdk.sdk.Services;
 import com.bfr.opencvapp.cnn.CNNExtractorService;
 import com.bfr.opencvapp.cnn.impl.CNNExtractorServiceImpl;
@@ -110,13 +111,20 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private int noTargetX, noTargetY;
     private String noStatus = "";
     private String noMvtStatus = "";
-    int no_speed = 30;
+    private float smilingFaceProba;
+    int no_speed = 10;
 
     // gracet
     private int previous_step ;
     private int step_num;
     private long time_in_curr_step = 0;
     private boolean bypass = false;
+    // context
+    Context mycontext = this;
+    Consumer<Mood> onMoodSet = (Mood iMood) -> {
+        Log.d("FACE MOOD", "mood set to "+iMood);
+        //hasMadeCommand=true;
+    };
 
     //classes
     private static final String[] classNames = {"background",
@@ -132,6 +140,27 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         @Override
         public void run()
         {
+//            // Buddy face
+//            if (smilingFaceProba > 0.7)
+//            {
+//                runOnUiThread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        mySDK.setMood(mycontext,Mood.HAPPY, onMoodSet);
+//                    }
+//                });
+//
+//            }
+//            else
+//            {
+//                runOnUiThread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        mySDK.setMood(mycontext,Mood.GRUMPY, onMoodSet);
+//                    }
+//                });
+//            }
+
             // if step changed
             if( !(step_num == previous_step)) {
 
@@ -201,16 +230,37 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                         step_num = 10;
                     }
                     // if face to track too much on the left
-                    if (trackedFaceX < 400)
+                    if (trackedFaceX < 350)
                     {
                         // go to next step
                         step_num = 20;
                     }
-                    else if (trackedFaceX > 500)
+                    else if (trackedFaceX > 450)
                     {
                         // go to next step
                         step_num = 30;
                     }
+
+//                    // Buddy face
+//            if (smilingFaceProba > 0.7)
+//            {
+//                runOnUiThread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        mySDK.setMood(mycontext,Mood.HAPPY, onMoodSet);
+//                    }
+//                });
+//
+//            }
+//            else
+//            {
+//                runOnUiThread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        mySDK.setMood(mycontext,Mood.GRUMPY, onMoodSet);
+//                    }
+//                });
+//            }
 
                     break;
 
@@ -251,7 +301,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     try {
                         Log.i(TAG, "Sending Yes command");
                         // Move No
-                        mySDK.getUsbInterface().buddySayNo(no_speed,noPosition -3,new IUsbCommadRsp.Stub() {
+                        mySDK.getUsbInterface().buddySayNo(20,0,new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
                             @Override
@@ -273,11 +323,35 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     break;
 
                 case 22 : // waiting for End of Movement
-                    if (noMvtStatus.toUpperCase().contains("NO_MOVE_FINISHED") || bypass)
+//                    if (noMvtStatus.toUpperCase().contains("NO_MOVE_FINISHED") || bypass)
+//                    {
+//                        // go to next step
+//                        step_num = 3;
+//                    }
+                    // if face to track too much on the left
+                    if (trackedFaceX > 350 )
                     {
                         // go to next step
-                        step_num = 3;
+                        step_num = 23;
                     }
+                    break;
+
+                case 23 : // Stop MVT
+                    noMvtStatus = "NOT_YET";
+                    try {
+                        Log.i(TAG, "Sending No command");
+                        // Move No
+                        mySDK.getUsbInterface().buddySayNo(0,0,new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
+                            @Override
+                            public void onFailed(String error) throws RemoteException {Log.e("yesmove", error);  }
+                        });
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    // go to next step
+                    step_num = 3;
                     break;
 
 
@@ -287,7 +361,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     try {
                         Log.i(TAG, "Sending Yes command");
                         // Move No
-                        mySDK.getUsbInterface().buddySayNo(no_speed,noPosition +2,new IUsbCommadRsp.Stub() {
+                        mySDK.getUsbInterface().buddySayNo(no_speed,noPosition+2,new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
                             @Override
@@ -326,7 +400,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                         step_num = 0;
                     break;
             } //End switch
-
 
         } // end run
     }; // end new runnable
@@ -623,7 +696,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 .addOnSuccessListener(new OnSuccessListener<List<Face>>() {
                     @Override
                     public void onSuccess(List<Face> faces) {
-                        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+ " found faces : " + String.valueOf(faces.size()) +" while " +  String.valueOf(foundFaces.size()));
+//                        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+ " found faces : " + String.valueOf(faces.size()) +" while " +  String.valueOf(foundFaces.size()));
                         // adjusting size
                         if (foundFaces.size()<faces.size())
                         {   // add elements
@@ -638,7 +711,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             } while (foundFaces.size()>faces.size());
                         } // end if foundface size < i+1
 
-                        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+  " NOW faces : " + String.valueOf(faces.size()) +" while " +  String.valueOf(foundFaces.size()));
+//                        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+  " NOW faces : " + String.valueOf(faces.size()) +" while " +  String.valueOf(foundFaces.size()));
 
                         // for each detected face
                         for (int i=0; i < faces.size(); i++) {
@@ -651,14 +724,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             foundFaces.get(i).trackingId = faces.get(i).getTrackingId();
                             //classifications
                             foundFaces.get(i).smilingProbability = faces.get(i).getSmilingProbability();
-                        Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + " Face detected : "
-                                + String.valueOf(foundFaces.get(i).x1) +
-                                    " " + String.valueOf(foundFaces.get(i).y1)
-                                + " " + String.valueOf(foundFaces.get(i).x2)
-                                + " " + String.valueOf(foundFaces.get(i).y2) );
+//                        Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + " Face detected : "
+//                                + String.valueOf(foundFaces.get(i).trackingId) + "  "
+//                                + String.valueOf(foundFaces.get(i).x1) +
+//                                    " " + String.valueOf(foundFaces.get(i).y1)
+//                                + " " + String.valueOf(foundFaces.get(i).x2)
+//                                + " " + String.valueOf(foundFaces.get(i).y2) );
 
                             } // next face
-                        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+  " Finally faces : " + String.valueOf(faces.size()) +" while " +  String.valueOf(foundFaces.size()));
+//                        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+  " Finally faces : " + String.valueOf(faces.size()) +" while " +  String.valueOf(foundFaces.size()));
 
                     } // end onSucess
                 }); // end process image
@@ -672,37 +746,45 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         }
 
         // draw a rectangle around face
-        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+ " Found faces : " + String.valueOf(foundFaces.size()) );
+//        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+ " Found faces : " + String.valueOf(foundFaces.size()) );
         //
         try
         {   // for each found face
             for (int i=0; i<foundFaces.size(); i++)
             {
-                Log.i("MLKit", String.valueOf(System.currentTimeMillis())+ " Attemtpting Drawing index=" + String.valueOf(i));
-                Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + "Drawing face : "
-                        + String.valueOf(foundFaces.get(i).x1) +
-                        " " + String.valueOf(foundFaces.get(i).y1)
-                        + " " + String.valueOf(foundFaces.get(i).x2)
-                        + " " + String.valueOf(foundFaces.get(i).y2) );
+//                Log.i("MLKit", String.valueOf(System.currentTimeMillis())+ " Attemtpting Drawing index=" + String.valueOf(i));
+//                Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + "Drawing face : "
+//                        + String.valueOf(foundFaces.get(i).x1) +
+//                        " " + String.valueOf(foundFaces.get(i).y1)
+//                        + " " + String.valueOf(foundFaces.get(i).x2)
+//                        + " " + String.valueOf(foundFaces.get(i).y2) );
                 Imgproc.rectangle(frame, new Point(foundFaces.get(i).x1, foundFaces.get(i).y1),
                         new Point(foundFaces.get(i).x2,foundFaces.get(i).y2),
                         new Scalar(255, 10, 10));
                 Imgproc.putText(frame, String.valueOf(foundFaces.get(i).trackingId) + "  "
                                 + String.valueOf(foundFaces.get(i).smilingProbability),
                         new Point(foundFaces.get(i).x1, foundFaces.get(i).y1),2, 0.8, new Scalar(255,0 , 0));
-
             } // next face
 
-            // assign value to track
+            // assign value to track : first face to track
             if(foundFaces.size()>0)
             {
                 trackedFaceX = (int) (foundFaces.get(0).x1 +  Math.ceil((foundFaces.get(0).x2 - foundFaces.get(0).x1) /2 ));
                 trackedFaceY = (int) (foundFaces.get(0).y1 +  Math.ceil((foundFaces.get(0).y2 - foundFaces.get(0).y1) /2 ));
+                smilingFaceProba = foundFaces.get(0).smilingProbability;
             }
         } // end try
         catch (Exception e)
         {            e.printStackTrace();
         }
+
+        // Draw region limits for tracking
+        Imgproc.rectangle(frame, new Point(340, 5),
+                new Point(460, 600),
+                new Scalar(0, 255, 0));
+
+
+
 
 //        Imgproc.rectangle(frame, new Point(x1, y1), new Point(x2,y2), new Scalar(255, 10, 10));
 //        Imgproc.putText(frame, String.valueOf(trackId) + "  " + String.valueOf(smilingProba), new Point(x1, y1),2, 0.8, new Scalar(255,0 , 0));
