@@ -114,6 +114,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private float smilingFaceProba;
     int no_speed = 10;
 
+    // the tracker
+    Tracker myTracker;
+    // Tracking status
+    Boolean isTracking = false;
+    Boolean trackSuccess = false;
+    // Tracked box
+    Rect trackedBBox = new Rect();
+
+
     // gracet
     private int previous_step ;
     private int step_num;
@@ -483,11 +492,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // Real-time contour detection of multiple faces
         FaceDetectorOptions options =
                 new FaceDetectorOptions.Builder()
-                        .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
+                        .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
                         .setContourMode(FaceDetectorOptions.CONTOUR_MODE_NONE)
                         .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
                         .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
-                        .enableTracking()
+//                        .enableTracking()
                         .build();
         FaceDetector detector = FaceDetection.getClient(options);
         faceDetector = detector;
@@ -642,12 +651,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        opencvNet = cnnService.getConvertedNet(onnxModelPath, TAG);
 
         // Tracker init
-//        mytracker = TrackerKCF.create();
+        myTracker = TrackerKCF.create();
 
     }
 
     // frame captured by camera
     Mat frame;
+    int frameCount=0;
     // conversion to MLKit
     InputImage inputImage;
     Bitmap bitmapImage = null ;
@@ -684,46 +694,50 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         // Caapture Frame from camera
         frame = inputFrame.rgba();
+        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
+        frameCount +=1;
         Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + " Taking picture: ");
         //Detecting Face
 
-        //convert to bitmap
-        bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(frame, bitmapImage);
-        //convert to InputImage
-        inputImage = InputImage.fromBitmap(bitmapImage, 0);
-        result = faceDetector.process(inputImage)
-                .addOnSuccessListener(new OnSuccessListener<List<Face>>() {
-                    @Override
-                    public void onSuccess(List<Face> faces) {
+        if (frameCount%10==0)
+        {
+            //convert to bitmap
+            bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(frame, bitmapImage);
+            //convert to InputImage
+            inputImage = InputImage.fromBitmap(bitmapImage, 0);
+            result = faceDetector.process(inputImage)
+                    .addOnSuccessListener(new OnSuccessListener<List<Face>>() {
+                        @Override
+                        public void onSuccess(List<Face> faces) {
 //                        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+ " found faces : " + String.valueOf(faces.size()) +" while " +  String.valueOf(foundFaces.size()));
-                        // adjusting size
-                        if (foundFaces.size()<faces.size())
-                        {   // add elements
-                            do {
-                                foundFaces.add(new DetectedFace());
-                            } while (foundFaces.size()<faces.size());
-                        } // end if foundface size < i+1
-                        else if (foundFaces.size()>faces.size())
-                        {   // remove elements
-                            do {
-                                foundFaces.remove(0);
-                            } while (foundFaces.size()>faces.size());
-                        } // end if foundface size < i+1
+                            // adjusting size
+                            if (foundFaces.size()<faces.size())
+                            {   // add elements
+                                do {
+                                    foundFaces.add(new DetectedFace());
+                                } while (foundFaces.size()<faces.size());
+                            } // end if foundface size < i+1
+                            else if (foundFaces.size()>faces.size())
+                            {   // remove elements
+                                do {
+                                    foundFaces.remove(0);
+                                } while (foundFaces.size()>faces.size());
+                            } // end if foundface size < i+1
 
 //                        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+  " NOW faces : " + String.valueOf(faces.size()) +" while " +  String.valueOf(foundFaces.size()));
 
-                        // for each detected face
-                        for (int i=0; i < faces.size(); i++) {
-                               // assiging values
-                            foundFaces.get(i).x1 = faces.get(i).getBoundingBox().left;
-                            foundFaces.get(i).y1 = faces.get(i).getBoundingBox().top;
-                            foundFaces.get(i).x2 = faces.get(i).getBoundingBox().right;
-                            foundFaces.get(i).y2 = faces.get(i).getBoundingBox().bottom;
-                            // tracking id
-                            foundFaces.get(i).trackingId = faces.get(i).getTrackingId();
-                            //classifications
-                            foundFaces.get(i).smilingProbability = faces.get(i).getSmilingProbability();
+                            // for each detected face
+                            for (int i=0; i < faces.size(); i++) {
+                                // assiging values
+                                foundFaces.get(i).x1 = faces.get(i).getBoundingBox().left;
+                                foundFaces.get(i).y1 = faces.get(i).getBoundingBox().top;
+                                foundFaces.get(i).x2 = faces.get(i).getBoundingBox().right;
+                                foundFaces.get(i).y2 = faces.get(i).getBoundingBox().bottom;
+                                // tracking id
+//                                foundFaces.get(i).trackingId = faces.get(i).getTrackingId();
+                                //classifications
+                                foundFaces.get(i).smilingProbability = faces.get(i).getSmilingProbability();
 //                        Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + " Face detected : "
 //                                + String.valueOf(foundFaces.get(i).trackingId) + "  "
 //                                + String.valueOf(foundFaces.get(i).x1) +
@@ -734,16 +748,90 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             } // next face
 //                        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+  " Finally faces : " + String.valueOf(faces.size()) +" while " +  String.valueOf(foundFaces.size()));
 
-                    } // end onSucess
-                }); // end process image
+                        } // end onSucess
+                    }); // end process image
 
-        try {
-            Tasks.await(result);
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            try {
+                Tasks.await(result);
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            // If is not tracking yet
+            if (!isTracking)
+            {
+                // if found faces
+                if (foundFaces.size()>0)
+                {
+                    // init tracker on face
+                    Rect initBB = new Rect(foundFaces.get(0).x1, foundFaces.get(0).y1,
+                            foundFaces.get(0).y2- foundFaces.get(0).y1, foundFaces.get(0).x2- foundFaces.get(0).x1);
+                    myTracker.init(frame, initBB);
+
+                    // set status
+                    isTracking = true;
+                } // end if found faces
+
+            }
+            else // Track on closer face
+            {
+                // looking for closer face to last tracked
+                int face_id = 0;
+                for(int i= 0; i< foundFaces.size() ; i++)
+                {
+                    int dist = 1000000000;
+                    // if min dist
+                    if ( (Math.abs(foundFaces.get(i).x1 - trackedBBox.x ) + Math.abs(foundFaces.get(i).y1 - trackedBBox.y) ) < dist)
+                    {
+                        face_id = i;
+                    } // end if closer
+                } // next face
+
+                try {
+                    // init tracker on face
+                    Rect initBB = new Rect(foundFaces.get(face_id).x1, foundFaces.get(face_id).y1,
+                            foundFaces.get(face_id).y2- foundFaces.get(face_id).y1, foundFaces.get(face_id).x2- foundFaces.get(face_id).x1);
+
+                myTracker.init(frame, initBB);
+
+                    // draw rectangle
+                    Imgproc.rectangle(frame, new Point(initBB.x, initBB.y),
+                            new Point(initBB.x+initBB.width,initBB.y+initBB.height),
+                            new Scalar(0, 255,0));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+
+            } // end if istraking
+
+
+
+        } //
+        else // else other frames
+        {
+            //if already trackingv
+            if (isTracking)
+            {
+
+                    // update tracker
+                trackSuccess = myTracker.update(frame, trackedBBox);
+                    if (trackSuccess)
+                    {
+                        // draw rectangle
+                        Imgproc.rectangle(frame, new Point(trackedBBox.x, trackedBBox.y),
+                                new Point(trackedBBox.x+trackedBBox.width,trackedBBox.y+trackedBBox.height),
+                                new Scalar(0, 0,255));
+
+                    } // end if success
+
+
+            } // end if istracking
+
         }
+
 
         // draw a rectangle around face
 //        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+ " Found faces : " + String.valueOf(foundFaces.size()) );
@@ -758,9 +846,10 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //                        " " + String.valueOf(foundFaces.get(i).y1)
 //                        + " " + String.valueOf(foundFaces.get(i).x2)
 //                        + " " + String.valueOf(foundFaces.get(i).y2) );
-                Imgproc.rectangle(frame, new Point(foundFaces.get(i).x1, foundFaces.get(i).y1),
-                        new Point(foundFaces.get(i).x2,foundFaces.get(i).y2),
-                        new Scalar(255, 10, 10));
+
+//                Imgproc.rectangle(frame, new Point(foundFaces.get(i).x1, foundFaces.get(i).y1),
+//                        new Point(foundFaces.get(i).x2,foundFaces.get(i).y2),
+//                        new Scalar(255, 10, 10));
                 Imgproc.putText(frame, String.valueOf(foundFaces.get(i).trackingId) + "  "
                                 + String.valueOf(foundFaces.get(i).smilingProbability),
                         new Point(foundFaces.get(i).x1, foundFaces.get(i).y1),2, 0.8, new Scalar(255,0 , 0));
@@ -782,6 +871,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Imgproc.rectangle(frame, new Point(340, 5),
                 new Point(460, 600),
                 new Scalar(0, 255, 0));
+
+
 
 
 
