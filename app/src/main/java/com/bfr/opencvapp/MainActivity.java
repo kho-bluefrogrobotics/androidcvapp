@@ -181,7 +181,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         frame_count +=1;
 
         // every xxx frame
-        if (frame_count%20 == 0) {
+        if (frame_count%5 == 0) {
             // draw a rectangle
             Imgproc.rectangle(frame, new Point(600, 100), new Point(700, 200), new Scalar(255, 10, 10));
 
@@ -233,10 +233,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     } // next face
 
                     // Init tracker on closest face
-                    Rect bbox = new Rect((int) (detections.get(id_closest, 3)[0] * cols),
-                            (int) (detections.get(id_closest, 4)[0] * rows),
-                            (int) (detections.get(id_closest, 5)[0] * cols),
-                            (int) (detections.get(id_closest, 6)[0] * cols)
+                    // Init tracker on first face
+                    int left = (int) (detections.get(id_closest, 3)[0] * cols);
+                    int top = (int) (detections.get(id_closest, 4)[0] * rows);
+                    int right = (int) (detections.get(id_closest, 5)[0] * cols);
+                    int bottom = (int) (detections.get(id_closest, 6)[0] * rows);
+                    Rect bbox = new Rect((int) left,
+                            top,
+                            right-left,
+                            bottom-top
                     );
                     Log.i("Tracking", "New Init on " +  bbox.x + " " + bbox.y);
                     mytracker.init(frame, bbox);
@@ -246,10 +251,10 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                         double confidence = detections.get(i, 2)[0];
                         if (confidence > THRESHOLD) {
                             int classId = (int) detections.get(i, 1)[0];
-                            int left = (int) (detections.get(i, 3)[0] * cols);
-                            int top = (int) (detections.get(i, 4)[0] * rows);
-                            int right = (int) (detections.get(i, 5)[0] * cols);
-                            int bottom = (int) (detections.get(i, 6)[0] * rows);
+                            left = (int) (detections.get(i, 3)[0] * cols);
+                            top = (int) (detections.get(i, 4)[0] * rows);
+                            right = (int) (detections.get(i, 5)[0] * cols);
+                            bottom = (int) (detections.get(i, 6)[0] * rows);
                             // Draw rectangle around detected object.
                             Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
                                     new Scalar(0, 255, 0));
@@ -265,10 +270,14 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 else // Not tracking yet
                 {
                     // Init tracker on first face
-                    Rect bbox = new Rect((int) (detections.get(0, 3)[0] * cols),
-                            (int) (detections.get(0, 4)[0] * rows),
-                            (int) (detections.get(0, 5)[0] * cols),
-                            (int) (detections.get(0, 6)[0] * cols)
+                    int left = (int) (detections.get(0, 3)[0] * cols);
+                    int top = (int) (detections.get(0, 4)[0] * rows);
+                    int right = (int) (detections.get(0, 5)[0] * cols);
+                    int bottom = (int) (detections.get(0, 6)[0] * rows);
+                    Rect bbox = new Rect((int) left,
+                            top,
+                            right-left,
+                            bottom-top
                     );
                     Log.i("Tracking", "First Init on " +  bbox.x + " " + bbox.y);
                     mytracker.init(frame, bbox);
@@ -284,11 +293,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             if (istracking)
 //            if (false)
             {
+                Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
                 // update the tracker
                 Log.i("Tracking", "channels "+ String.valueOf(frame.channels()) );
                 //Update tracker
-                Rect bbox = new Rect();
-//                mytracker.update(frame, bbox);
+//                Rect bbox = new Rect(600, 100, 100, 100);
+                mytracker.update(frame, tracked);
 
 //                //record
 //                tracked.x = bbox.x;
@@ -296,9 +306,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //                tracked.width = bbox.width;
 //                tracked.height = bbox.height;
 
-                Log.i("Tracking", "Tracker updated " + bbox.x + " " + bbox.y);
+                Log.i("Tracking", "Tracker updated " + tracked.x + " " + tracked.y);
                 // draw a rectangle
-                Imgproc.rectangle(frame, new Point(bbox.x, bbox.y), new Point(bbox.x+bbox.width,bbox.y+bbox.height), new Scalar(0, 0, 255));
+                Imgproc.rectangle(frame, new Point(tracked.x, tracked.y), new Point(tracked.x+10,tracked.y+10), new Scalar(0, 0, 255));
             } // end if is tracking
         } // end rest of the frames
 
