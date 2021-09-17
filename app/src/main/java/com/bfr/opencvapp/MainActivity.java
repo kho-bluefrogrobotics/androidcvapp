@@ -5,7 +5,9 @@ import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.bfr.opencvapp.cnn.CNNExtractorService;
@@ -18,10 +20,14 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.tracking.TrackerKCF;
+import org.opencv.video.Tracker;
+import org.opencv.video.TrackerMIL;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -47,6 +53,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private Net net;
     private boolean isnetloaded = false;
 
+    //button to start tracking
+    private Button initBtn;
+
     //classes
     private static final String[] classNames = {"background",
             "aeroplane", "bicycle", "bird", "boat",
@@ -54,6 +63,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             "cow", "diningtable", "dog", "horse",
             "motorbike", "person", "pottedplant",
             "sheep", "sofa", "train", "tvmonitor"};
+
+
+    Tracker mytracker;
+    Rect tracked = new Rect();
+    private int frame_count = 0;
+    private boolean foundperson =false;
+    private boolean istracking = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +84,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         mOpenCvCameraView.setVisibility(CameraBridgeViewBase.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
 
+        // link to UI
+        initBtn = findViewById(R.id.initButton);
+
         // Load model
         // directory where the files are saved
         String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
@@ -78,6 +97,14 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        net = Dnn.readNetFromCaffe(proto, weights);
 //        net = cnnService.getConvertedNet("", TAG);
         Log.i(TAG, "Network loaded successfully");
+
+        initBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.i("Tracking", "Tracking is starting");
+                foundperson = true;
+            }
+        });
 
     }
 
@@ -121,11 +148,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         }
 //        opencvNet = cnnService.getConvertedNet(onnxModelPath, TAG);
 
+        // Tracker init
+        mytracker = TrackerKCF.create();
+
     }
 
-    Mat blob;
 
+    Mat blob, detections;
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+
 
         // if not loaded
         if (!isnetloaded)
@@ -134,9 +165,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             // directory where the files are saved
             String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
 
-//            String proto = dir + "/MobileNetSSD_deploy.prototxt";
-//            String weights = dir + "/MobileNetSSD_deploy.caffemodel";
-//            net = Dnn.readNetFromCaffe(proto, weights);
             String proto = dir + "/opencv_face_detector.pbtxt";
             String weights = dir + "/opencv_face_detector_uint8.pb";
             net = Dnn.readNetFromTensorflow(weights, proto);
@@ -145,29 +173,28 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         }
         Mat frame = inputFrame.rgba();
 
+//        frame_count +=1;
+
+//        if (frame_count%10 == 0)
+//        {
         // draw a rectangle
-        Imgproc.rectangle(frame, new Point(10, 10), new Point(60,60), new Scalar(255, 10, 10));
+        Imgproc.rectangle(frame, new Point(600, 100), new Point(700,200), new Scalar(255, 10, 10));
 
         final int IN_WIDTH = 300;
         final int IN_HEIGHT = 300;
         final float WH_RATIO = (float)IN_WIDTH / IN_HEIGHT;
         final double IN_SCALE_FACTOR = 0.007843;
         final double MEAN_VAL = 127.5;
-        final double THRESHOLD = 0.5;
+        final double THRESHOLD = 0.75;
 
 
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
-        // Forward image through network.
-//        Mat blob = Dnn.blobFromImage(frame, IN_SCALE_FACTOR,
-//                new org.opencv.core.Size(IN_WIDTH, IN_HEIGHT),
-//                new Scalar(MEAN_VAL, MEAN_VAL, MEAN_VAL), /*swapRB*/false, /*crop*/false);
 
         blob = Dnn.blobFromImage(frame, 1.0,
                 new org.opencv.core.Size(300, 300),
                 new Scalar(104, 117, 123), /*swapRB*/true, /*crop*/false);
-
         net.setInput(blob);
-        Mat detections = net.forward();
+        detections = net.forward();
         int cols = frame.cols();
         int rows = frame.rows();
         detections = detections.reshape(1, (int)detections.total() / 7);
@@ -185,21 +212,56 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 String label = classNames[classId] + ": " + confidence;
                 int[] baseLine = new int[1];
                 org.opencv.core.Size labelSize = Imgproc.getTextSize(label, 2, 0.5, 1, baseLine);
+
+                // set
+//                foundperson = true;
+
                 // Draw background for label.
                 //Imgproc.rectangle(frame, new Point(left, top - labelSize.getHeight()),
                 //        new Point(left + labelSize.getWidth(), top + baseLine[0]),
                 //        new Scalar(255, 255, 255), Imgproc.FILLED);
-                Imgproc.rectangle(frame, new Point(left, top - labelSize.height),
-                        new Point(left + labelSize.width, top + baseLine[0]),
-                        new Scalar(255, 255, 255));
+//                Imgproc.rectangle(frame, new Point(left, top - labelSize.height),
+//                        new Point(left + labelSize.width, top + baseLine[0]),
+//                        new Scalar(255, 255, 255));
                 // Write class name and confidence.
-                Imgproc.putText(frame, label, new Point(left, top),
-                        2, 0.8, new Scalar(255,0 , 0));
+//                Imgproc.putText(frame, label, new Point(left, top),
+//                        2, 0.8, new Scalar(255,0 , 0));
+
             }   // end if confidence OK
+
         } // next detection
 
+
+        // if found person
+        if (foundperson)
+        {
+            // init tracker on drawn rect
+            Rect initBB = new Rect(600, 100, 100, 100);
+            mytracker.init(frame, initBB);
+
+            foundperson = false;
+            istracking = true;
+        }
+
+            if (istracking)
+            {
+                Log.i("Tracking", "channels "+ String.valueOf(frame.channels()) );
+                //Update tracker
+                Rect bbox = new Rect();
+                mytracker.update(frame, bbox);
+
+                // draw a rectangle
+                Imgproc.rectangle(frame, new Point(tracked.x, tracked.y), new Point(tracked.x+tracked.width,tracked.y+tracked.height), new Scalar(0, 0, 255));
+            }
+
+
+//
+
+//        } // end if modulo 10
+
+
         return frame;
-    }
+    } // end function
 
     public void onCameraViewStopped() {
     }

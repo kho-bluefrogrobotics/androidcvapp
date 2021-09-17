@@ -3,21 +3,9 @@ manifest
 ADDED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml:2:1-4:12
 INJECTED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml:2:1-4:12
 INJECTED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml:2:1-4:12
-INJECTED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml:2:1-4:12
-INJECTED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml:2:1-4:12
-INJECTED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml:2:1-4:12
-INJECTED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml:2:1-4:12
 	package
 		ADDED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml:3:7-27
 		INJECTED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml
-		INJECTED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml
-	android:versionName
-		INJECTED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml
-		ADDED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml:2:1-4:12
-		INJECTED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml
-	android:versionCode
-		INJECTED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml
-		ADDED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml:2:1-4:12
 		INJECTED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml
 	xmlns:android
 		ADDED from C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml:2:11-69
