@@ -243,16 +243,17 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             istracking = true;
         }
 
-            if (istracking)
-            {
-                Log.i("Tracking", "channels "+ String.valueOf(frame.channels()) );
-                //Update tracker
-                Rect bbox = new Rect();
-                mytracker.update(frame, bbox);
+        if (istracking)
+        {
+            Log.i("Tracking", "channels "+ String.valueOf(frame.channels()) );
+            //Update tracker
+            Rect bbox = new Rect();
+            mytracker.update(frame, bbox);
+            Log.i("Tracking", "Tracker updated " + bbox.x + " " + bbox.y);
 
-                // draw a rectangle
-                Imgproc.rectangle(frame, new Point(tracked.x, tracked.y), new Point(tracked.x+tracked.width,tracked.y+tracked.height), new Scalar(0, 0, 255));
-            }
+            // draw a rectangle
+            Imgproc.rectangle(frame, new Point(bbox.x, bbox.y), new Point(bbox.x+bbox.width,bbox.y+bbox.height), new Scalar(0, 0, 255));
+        }
 
 
 //
