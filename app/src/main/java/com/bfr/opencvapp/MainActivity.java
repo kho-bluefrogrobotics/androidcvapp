@@ -186,16 +186,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         frame_count +=1;
 
+        final double THRESHOLD = 0.75;
+
         if (frame_count%10 == 0) {
             // draw a rectangle
             Imgproc.rectangle(frame, new Point(600, 100), new Point(700, 200), new Scalar(255, 10, 10));
-
-            final int IN_WIDTH = 300;
-            final int IN_HEIGHT = 300;
-            final float WH_RATIO = (float) IN_WIDTH / IN_HEIGHT;
-            final double IN_SCALE_FACTOR = 0.007843;
-            final double MEAN_VAL = 127.5;
-            final double THRESHOLD = 0.75;
 
 
             blob = Dnn.blobFromImage(frame, 1.0,
@@ -221,7 +216,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     int[] baseLine = new int[1];
                     org.opencv.core.Size labelSize = Imgproc.getTextSize(label, 2, 0.5, 1, baseLine);
 
-                    Log.i("TRACKING", left + " " + right + " "+ top + " " + bottom);
+                    Log.i("TRACKING", "Face found "+ left + " " + right + " "+ top + " " + bottom);
                     // set
                 foundperson = true;
 
@@ -230,6 +225,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 }   // end if confidence OK
 
             } // next detection
+
+
 
         }// end if each xxx frame
 
@@ -248,7 +245,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                         right-left,
                         bottom-top);
                 mytracker.init(frame, initBB);
-
+                Log.i("Tracking", "Tracker Init the first time " + initBB.x + " " + initBB.y);
                 // set status
                 istracking = true;
                 foundperson = false;
@@ -257,14 +254,64 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         }
         else // if tracking
         {
-            //Update tracker
-            Rect bbox = new Rect();
-            mytracker.update(frame, trackedBox);
-//            Log.i("Tracking", "Tracker updated " + bbox.x + " " + bbox.y);
+            // if found person
+            if (foundperson)
+            {
+                // find id of closest face
+                int id_closest=0;
+                int max_dist = 999999;
+                int dist;
+                int cols = frame.cols();
+                int rows = frame.rows();
 
-            // draw a rectangle
+                // for each face
+                for (int i = 0; i < detections.rows(); ++i) {
+                    double confidence = detections.get(i, 2)[0];
+                    if (confidence > THRESHOLD) {
+                        int left = (int) (detections.get(i, 3)[0] * cols);
+                        int top = (int) (detections.get(i, 4)[0] * rows);
+                        int right = (int) (detections.get(i, 5)[0] * cols);
+                        int bottom = (int) (detections.get(i, 6)[0] * rows);
+
+                        // if dist min
+                        dist = Math.abs(left - tracked.x) + Math.abs(top - tracked.y);
+                        if (dist < max_dist) {
+                            // update
+                            max_dist = dist;
+                            id_closest = i;
+                        }
+                    } // end if confidence OK
+                } // next face
+
+                left = (int) (detections.get(id_closest, 3)[0] * cols);
+                top = (int) (detections.get(id_closest, 4)[0] * rows);
+                right = (int) (detections.get(id_closest, 5)[0] * cols);
+                bottom = (int) (detections.get(id_closest, 6)[0] * rows);
+
+                Log.i("Tracking", "Closest face " + id_closest + " " + left);
+
+                // init tracker
+                Rect initBB = new Rect(left,
+                        top,
+                        right-left,
+                        bottom-top);
+                mytracker.init(frame, initBB);
+                // reset
+                foundperson = false;
+
+            }
+            else // no one found or detection not active
+            {
+                //Update tracker
+                Rect bbox = new Rect();
+                mytracker.update(frame, trackedBox);
+                Log.i("Tracking", "Tracker updated " + trackedBox.x + " " + trackedBox.y);
+
+                // draw a rectangle
 //            Imgproc.rectangle(frame, new Point(bbox.x, bbox.y), new Point(bbox.x+bbox.width,bbox.y+bbox.height), new Scalar(0, 0, 255));
-            Imgproc.rectangle(frame, new Point(trackedBox.x, trackedBox.y), new Point(trackedBox.x+trackedBox.width,trackedBox.y+trackedBox.height), new Scalar(0, 0, 255));
+                Imgproc.rectangle(frame, new Point(trackedBox.x, trackedBox.y), new Point(trackedBox.x+trackedBox.width,trackedBox.y+trackedBox.height), new Scalar(0, 0, 255));
+            }
+
         }
 
 
