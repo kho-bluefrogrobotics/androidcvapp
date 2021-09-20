@@ -8,7 +8,6 @@ import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.Toast;
 
 import com.bfr.opencvapp.cnn.CNNExtractorService;
@@ -56,8 +55,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     //button to start tracking
     private Button initBtn;
-    private CheckBox trackingCheckbox;
-
 
     //classes
     private static final String[] classNames = {"background",
@@ -89,8 +86,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         // link to UI
         initBtn = findViewById(R.id.initButton);
-        trackingCheckbox = findViewById(R.id.trackingBox) ;
-
 
         // Load model
         // directory where the files are saved
@@ -178,10 +173,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         }
         Mat frame = inputFrame.rgba();
 
+        // color conversion
+        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
+
+
         frame_count +=1;
 
-        // every xxx frame
-        if (frame_count%5 == 0) {
+        if (frame_count%10 == 0) {
             // draw a rectangle
             Imgproc.rectangle(frame, new Point(600, 100), new Point(700, 200), new Scalar(255, 10, 10));
 
@@ -193,8 +191,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             final double THRESHOLD = 0.75;
 
 
-            Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
-
             blob = Dnn.blobFromImage(frame, 1.0,
                     new org.opencv.core.Size(300, 300),
                     new Scalar(104, 117, 123), /*swapRB*/true, /*crop*/false);
@@ -203,163 +199,61 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             int cols = frame.cols();
             int rows = frame.rows();
             detections = detections.reshape(1, (int) detections.total() / 7);
+            for (int i = 0; i < detections.rows(); ++i) {
+                double confidence = detections.get(i, 2)[0];
+                if (confidence > THRESHOLD) {
+                    int classId = (int) detections.get(i, 1)[0];
+                    int left = (int) (detections.get(i, 3)[0] * cols);
+                    int top = (int) (detections.get(i, 4)[0] * rows);
+                    int right = (int) (detections.get(i, 5)[0] * cols);
+                    int bottom = (int) (detections.get(i, 6)[0] * rows);
+                    // Draw rectangle around detected object.
+                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                            new Scalar(0, 255, 0));
+                    String label = classNames[classId] + ": " + confidence;
+                    int[] baseLine = new int[1];
+                    org.opencv.core.Size labelSize = Imgproc.getTextSize(label, 2, 0.5, 1, baseLine);
 
-            // If found faces
-            if (detections.rows() > 0) {
-                // only if currently tracking something
-                if (istracking) {
-                    // find id of closest face
-                    int id_closest=0;
-                    int max_dist = 999999;
-                    int dist;
-                    // for each face
-                    for (int i = 0; i < detections.rows(); ++i) {
-                        double confidence = detections.get(i, 2)[0];
-                        if (confidence > THRESHOLD) {
-                            int left = (int) (detections.get(i, 3)[0] * cols);
-                            int top = (int) (detections.get(i, 4)[0] * rows);
-                            int right = (int) (detections.get(i, 5)[0] * cols);
-                            int bottom = (int) (detections.get(i, 6)[0] * rows);
-
-                            // if dist min
-                            dist = Math.abs(left - tracked.x) + Math.abs(top - tracked.y);
-                            if (dist < max_dist) {
-                                // update
-                                max_dist = dist;
-                                id_closest = i;
-                            }
-
-                        } // end if confidence OK
-                    } // next face
-
-                    // Init tracker on closest face
-                    // Init tracker on first face
-                    int left = (int) (detections.get(id_closest, 3)[0] * cols);
-                    int top = (int) (detections.get(id_closest, 4)[0] * rows);
-                    int right = (int) (detections.get(id_closest, 5)[0] * cols);
-                    int bottom = (int) (detections.get(id_closest, 6)[0] * rows);
-                    Rect bbox = new Rect((int) left,
-                            top,
-                            right-left,
-                            bottom-top
-                    );
-                    Log.i("Tracking", "New Init on " +  bbox.x + " " + bbox.y);
-                    mytracker.init(frame, bbox);
-
-                    //DRAW
-                    for (int i = 0; i < detections.rows(); ++i) {
-                        double confidence = detections.get(i, 2)[0];
-                        if (confidence > THRESHOLD) {
-                            int classId = (int) detections.get(i, 1)[0];
-                            left = (int) (detections.get(i, 3)[0] * cols);
-                            top = (int) (detections.get(i, 4)[0] * rows);
-                            right = (int) (detections.get(i, 5)[0] * cols);
-                            bottom = (int) (detections.get(i, 6)[0] * rows);
-                            // Draw rectangle around detected object.
-                            Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                                    new Scalar(0, 255, 0));
-                            String label = classNames[classId] + ": " + confidence;
-                            int[] baseLine = new int[1];
-                            org.opencv.core.Size labelSize = Imgproc.getTextSize(label, 2, 0.5, 1, baseLine);
-                        } // end if confidence
-                    } // next face
-                    // end DRAW
+                    // set
+                foundperson = true;
 
 
-                } // end if is tracking
-                else // Not tracking yet
-                {
-                    // Init tracker on first face
-                    int left = (int) (detections.get(0, 3)[0] * cols);
-                    int top = (int) (detections.get(0, 4)[0] * rows);
-                    int right = (int) (detections.get(0, 5)[0] * cols);
-                    int bottom = (int) (detections.get(0, 6)[0] * rows);
-                    Rect bbox = new Rect((int) left,
-                            top,
-                            right-left,
-                            bottom-top
-                    );
-                    Log.i("Tracking", "First Init on " +  bbox.x + " " + bbox.y);
-                    mytracker.init(frame, bbox);
-                    //set status
-                    istracking = true;
-                }
-            } // end if face found
 
-        } // end if everyxxx frame
-        else
+                }   // end if confidence OK
+
+            } // next detection
+
+        }// end if each xxx frame
+
+
+        // if not tracking
+        if (!istracking)
         {
-            // if is tracking
-            if (istracking)
-//            if (false)
+
+            // if found person
+            if (foundperson)
             {
-                Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
-                // update the tracker
-                Log.i("Tracking", "channels "+ String.valueOf(frame.channels()) );
-                //Update tracker
-//                Rect bbox = new Rect(600, 100, 100, 100);
-                mytracker.update(frame, tracked);
+                // init tracker
+                // init tracker on drawn rect
+                Rect initBB = new Rect(600, 100, 100, 100);
+                mytracker.init(frame, initBB);
 
-//                //record
-//                tracked.x = bbox.x;
-//                tracked.y = bbox.y;
-//                tracked.width = bbox.width;
-//                tracked.height = bbox.height;
+                // set status
+                istracking = true;
+            }
 
-                Log.i("Tracking", "Tracker updated " + tracked.x + " " + tracked.y);
-                // draw a rectangle
-                Imgproc.rectangle(frame, new Point(tracked.x, tracked.y), new Point(tracked.x+10,tracked.y+10), new Scalar(0, 0, 255));
-            } // end if is tracking
-        } // end rest of the frames
+        }
+        else // if tracking
+        {
+            //Update tracker
+            Rect bbox = new Rect();
+            mytracker.update(frame, bbox);
+            Log.i("Tracking", "Tracker updated " + bbox.x + " " + bbox.y);
 
+            // draw a rectangle
+            Imgproc.rectangle(frame, new Point(bbox.x, bbox.y), new Point(bbox.x+bbox.width,bbox.y+bbox.height), new Scalar(0, 0, 255));
+        }
 
-//
-//
-//                if (trackingCheckbox.isChecked()) {
-//                    foundperson = true;
-//                    trackingCheckbox.setChecked(false);
-//                }
-//
-//
-//
-//
-//            }   // end if confidence OK
-//
-//        } // next detection
-//
-//        // set
-//
-//
-//
-//
-//        if (istracking)
-//        {
-//            Log.i("Tracking", "channels "+ String.valueOf(frame.channels()) );
-//            //Update tracker
-//            Rect bbox = new Rect();
-//            mytracker.update(frame, bbox);
-//            Log.i("Tracking", "Tracker updated " + bbox.x + " " + bbox.y);
-//
-//            // draw a rectangle
-//            Imgproc.rectangle(frame, new Point(bbox.x, bbox.y), new Point(bbox.x+bbox.width,bbox.y+bbox.height), new Scalar(0, 0, 255));
-//        }
-//        else // not tracking yet
-//        {
-//            // if found person
-//            if (detections.rows()>0)
-//            {
-//                // init tracker on drawn rect
-//                Rect initBB = new Rect(600, 100, 100, 100);
-//                mytracker.init(frame, initBB);
-//
-//                foundperson = false;
-//                istracking = true;
-//            }
-//        }
-//
-////
-//
-//        } // end if modulo 10
 
 
         return frame;
