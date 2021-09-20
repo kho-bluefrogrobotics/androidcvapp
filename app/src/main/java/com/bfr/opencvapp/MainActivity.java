@@ -155,6 +155,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
 
     Mat blob, detections;
+    Rect trackedBox = new Rect();
+
+    int classId ;
+    int left ;
+    int top ;
+    int right ;
+    int bottom ;
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
 
@@ -202,11 +209,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             for (int i = 0; i < detections.rows(); ++i) {
                 double confidence = detections.get(i, 2)[0];
                 if (confidence > THRESHOLD) {
-                    int classId = (int) detections.get(i, 1)[0];
-                    int left = (int) (detections.get(i, 3)[0] * cols);
-                    int top = (int) (detections.get(i, 4)[0] * rows);
-                    int right = (int) (detections.get(i, 5)[0] * cols);
-                    int bottom = (int) (detections.get(i, 6)[0] * rows);
+                    classId = (int) detections.get(i, 1)[0];
+                    left = (int) (detections.get(i, 3)[0] * cols);
+                    top = (int) (detections.get(i, 4)[0] * rows);
+                    right = (int) (detections.get(i, 5)[0] * cols);
+                    bottom = (int) (detections.get(i, 6)[0] * rows);
                     // Draw rectangle around detected object.
                     Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
                             new Scalar(0, 255, 0));
@@ -214,6 +221,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     int[] baseLine = new int[1];
                     org.opencv.core.Size labelSize = Imgproc.getTextSize(label, 2, 0.5, 1, baseLine);
 
+                    Log.i("TRACKING", left + " " + right + " "+ top + " " + bottom);
                     // set
                 foundperson = true;
 
@@ -229,17 +237,21 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // if not tracking
         if (!istracking)
         {
-
             // if found person
             if (foundperson)
             {
                 // init tracker
                 // init tracker on drawn rect
-                Rect initBB = new Rect(600, 100, 100, 100);
+//                Rect initBB = new Rect(600, 100, 100, 100);
+                Rect initBB = new Rect(left,
+                        top,
+                        right-left,
+                        bottom-top);
                 mytracker.init(frame, initBB);
 
                 // set status
                 istracking = true;
+                foundperson = false;
             }
 
         }
@@ -247,11 +259,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         {
             //Update tracker
             Rect bbox = new Rect();
-            mytracker.update(frame, bbox);
-            Log.i("Tracking", "Tracker updated " + bbox.x + " " + bbox.y);
+            mytracker.update(frame, trackedBox);
+//            Log.i("Tracking", "Tracker updated " + bbox.x + " " + bbox.y);
 
             // draw a rectangle
-            Imgproc.rectangle(frame, new Point(bbox.x, bbox.y), new Point(bbox.x+bbox.width,bbox.y+bbox.height), new Scalar(0, 0, 255));
+//            Imgproc.rectangle(frame, new Point(bbox.x, bbox.y), new Point(bbox.x+bbox.width,bbox.y+bbox.height), new Scalar(0, 0, 255));
+            Imgproc.rectangle(frame, new Point(trackedBox.x, trackedBox.y), new Point(trackedBox.x+trackedBox.width,trackedBox.y+trackedBox.height), new Scalar(0, 0, 255));
         }
 
 
