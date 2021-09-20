@@ -28,7 +28,7 @@ import org.opencv.dnn.Net;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.tracking.TrackerKCF;
 import org.opencv.video.Tracker;
-import org.opencv.video.TrackerMIL;
+import org.opencv.tracking.TrackerCSRT;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -154,7 +154,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        opencvNet = cnnService.getConvertedNet(onnxModelPath, TAG);
 
         // Tracker init
-        mytracker = TrackerKCF.create();
+//        mytracker = TrackerKCF.create();
+        mytracker = TrackerCSRT.create();
 
     }
 
@@ -181,7 +182,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         frame_count +=1;
 
         // every xxx frame
-        if (frame_count%10 == 0) {
+        if (frame_count%15 == 0) {
 
             final int IN_WIDTH = 300;
             final int IN_HEIGHT = 300;
@@ -242,7 +243,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             bottom-top
                     );
                     Log.i("Tracking", "New Init on " +  bbox.x + " " + bbox.y);
-                    mytracker = TrackerKCF.create();
+//                    mytracker = TrackerKCF.create();
+                    mytracker = TrackerCSRT.create();
                     mytracker.init(frame, bbox);
 
                     //DRAW
@@ -256,7 +258,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             bottom = (int) (detections.get(i, 6)[0] * rows);
                             // Draw rectangle around detected object.
                             Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                                    new Scalar(0, 255, 0));
+                                    new Scalar(0, 255, 0), 2);
                             String label = classNames[classId] + ": " + confidence;
                             int[] baseLine = new int[1];
                             org.opencv.core.Size labelSize = Imgproc.getTextSize(label, 2, 0.5, 1, baseLine);
@@ -307,7 +309,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                 Log.i("Tracking", "Tracker updated " + tracked.x + " " + tracked.y);
                 // draw a rectangle
-                Imgproc.rectangle(frame, new Point(tracked.x, tracked.y), new Point(tracked.x+tracked.width,tracked.y+tracked.height ), new Scalar(0, 0, 255));
+                Imgproc.rectangle(frame, new Point(tracked.x, tracked.y), new Point(tracked.x+tracked.width,tracked.y+tracked.height ),
+                        new Scalar(0, 0, 255), 2);
             } // end if is tracking
         } // end rest of the frames
 
