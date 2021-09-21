@@ -35,12 +35,14 @@ import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.tracking.TrackerCSRT;
 import org.opencv.video.Tracker;
 import org.opencv.video.TrackerMIL;
+import org.opencv.videoio.VideoWriter;
 
 import com.bfr.usbservice.BodySensorData;
 import com.bfr.usbservice.HeadSensorData;
@@ -84,6 +86,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private Net opencvNet;
 
     private CNNExtractorService cnnService;
+
+    private String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
 
     // Neural net for detection
     private Net net;
@@ -134,6 +138,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     Rect tracked=new Rect();
 
 
+
+
     // gracet
     private int previous_step ;
     private int step_num;
@@ -145,6 +151,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Log.d("FACE MOOD", "mood set to "+iMood);
         //hasMadeCommand=true;
     };
+
+    //Video writer
+    private VideoWriter videoWriter;
+    private boolean isrecording;
+
+
 
     //classes
     private static final String[] classNames = {"background",
@@ -321,7 +333,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     try {
                         Log.i(TAG, "Sending Yes command");
                         // Move No
-                        mySDK.getUsbInterface().WheelRotate(20,new IUsbCommadRsp.Stub() {
+                        mySDK.getUsbInterface().WheelRotate(30,new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
                             @Override
@@ -336,11 +348,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
 
                 case 22 : // waiting for End of Movement
-//                    if (noMvtStatus.toUpperCase().contains("NO_MOVE_FINISHED") || bypass)
-//                    {
-//                        // go to next step
-//                        step_num = 3;
-//                    }
+
                     // if face to track too much on the left
                     if (tracked.x > 350 )
                     {
@@ -374,7 +382,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     try {
                         Log.i(TAG, "Sending Yes command");
                         // Move No
-                        mySDK.getUsbInterface().WheelRotate(-20 ,new IUsbCommadRsp.Stub() {
+                        mySDK.getUsbInterface().WheelRotate(-30 ,new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
                             @Override
@@ -655,7 +663,19 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 //reset
                 if (!trackingCheckBox.isChecked())
+                {
+                    // reset grafcet
                     step_num =0;
+                    // close record file
+                    isrecording = false;
+                    videoWriter.release();
+
+                }
+                else // checked
+                {
+                    isrecording = true;
+                }
+
             }
         });
 
@@ -707,6 +727,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // Tracker init
         mytracker = TrackerCSRT.create();
 
+        // write video file
+        videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
+                25.0D, new Size(800, 600));
+        videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
+                25.0D,  new Size( 800,600));
     }
 
 
@@ -719,7 +744,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         {
             // Load model
             // directory where the files are saved
-            String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
+//            String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
 
             String proto = dir + "/opencv_face_detector.pbtxt";
             String weights = dir + "/opencv_face_detector_uint8.pb";
@@ -928,10 +953,17 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        } // end if modulo 10
 
 
+        // record video
+        if (isrecording) {
+            Log.i("RecordVideo", frame.channels() + "  " + frame.cols() + "  " + frame.rows());
+            videoWriter.write(frame);
+        }
+
         return frame;
     } // end function
 
     public void onCameraViewStopped() {
+        videoWriter.release();
     }
 
     private static String getPath(String file, Context context) {
