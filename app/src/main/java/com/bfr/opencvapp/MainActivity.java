@@ -20,6 +20,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.bfr.buddysdk.sdk.FacialEvent;
 import com.bfr.buddysdk.sdk.Mood;
 import com.bfr.buddysdk.sdk.Services;
 import com.bfr.opencvapp.cnn.CNNExtractorService;
@@ -110,6 +111,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private CheckBox hideFace;
     TextView noPos;
     private CheckBox trackingCheckBox;
+    private Switch energySwitch;
 
     // Tracking & robot status
     private int noPosition;
@@ -498,6 +500,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         hideFace = findViewById(R.id.visibleCheckBox);
         noPos = findViewById(R.id.noPosTxtView);
         trackingCheckBox = findViewById(R.id.trackingBox);
+        energySwitch = findViewById(R.id.switchEnergy);
 
         // Load model
         // directory where the files are saved
@@ -510,13 +513,58 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        net = cnnService.getConvertedNet("", TAG);
         Log.i(TAG, "Network loaded successfully");
 
+        Context mycontext = this;
         //start tracking button
         initBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Log.i("Tracking", "Tracking is starting");
+                mySDK.setFaceEnergy(1.0F);
+                mySDK.setFacePositivity(1.0F);
             }
         });
+
+
+        Consumer<FacialEvent> onFaceEvent = (FacialEvent iFaceEvent) -> {
+            Log.d("Facial", "Facial event played ");
+
+        };
+        // Energy switch
+        energySwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                if (energySwitch.isChecked())
+                {
+                    mySDK.setFaceEnergy(1.0F);
+                    mySDK.setFacePositivity(1.0F);
+                    mySDK.playEvent(mycontext, FacialEvent.CLOSE_LEFT_EYE, onFaceEvent);
+                }
+                else // unchecked
+                {                mySDK.setFaceEnergy(0.1F);
+                    mySDK.setFacePositivity(0.1F);
+                    mySDK.playEvent(mycontext, FacialEvent.OPEN_LEFT_EYE, onFaceEvent);
+
+                } // end if checked
+            } // end onChecked
+        }); // end listener
+
+        //calbacks for Move button
+        moveButton.setOnClickListener(v -> {
+            try {
+                int no_speed = 50;
+                Log.i("Move_NO", "Moving No to " + targetTextView.getText() + " at " + String.valueOf(no_speed) + "deg/s");
+                // Make No move
+                mySDK.getUsbInterface().buddySayNo(no_speed, Integer.parseInt(String.valueOf(targetTextView.getText())),new IUsbCommadRsp.Stub() {
+                    @Override
+                    public void onSuccess(String success) throws RemoteException {      Log.i("Move_NO: ", success);              }
+                    @Override
+                    public void onFailed(String error) throws RemoteException {Log.e("Move_NO: ", error);  }
+                });
+            } catch (RemoteException e)
+            {                e.printStackTrace();
+            } // end try catch
+        }); // end listener
+
 
 
 
@@ -531,10 +579,16 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 //start the grafcet
                 myGrafcet.start();
 
+                // init face
+                mySDK.setFaceEnergy(0.1F);
+                mySDK.setFacePositivity(0.1F);
+
+
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
         };
+
         mySDK.initSDK(this, onServiceLaunched);
 
         // start grafcet
@@ -722,16 +776,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             Log.i(TAG, "Failed to get model file");
             return;
         }
-//        opencvNet = cnnService.getConvertedNet(onnxModelPath, TAG);
 
         // Tracker init
         mytracker = TrackerCSRT.create();
 
         // write video file
         videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
-                25.0D, new Size(800, 600));
+                30.0D, new Size(800, 600));
         videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
-                25.0D,  new Size( 800,600));
+                30.0D,  new Size( 800,600));
     }
 
 
@@ -753,6 +806,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             isnetloaded = true;
         }
         Mat frame = inputFrame.rgba();
+        Mat frame_record = frame.clone();
 
         frame_count +=1;
 
@@ -956,7 +1010,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // record video
         if (isrecording) {
             Log.i("RecordVideo", frame.channels() + "  " + frame.cols() + "  " + frame.rows());
-            videoWriter.write(frame);
+            videoWriter.write(frame_record);
         }
 
         return frame;

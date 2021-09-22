@@ -85,6 +85,16 @@
             android:layout_marginTop="600px"
             android:text="TRACKING" />
 
+        <Switch
+            android:id="@+id/switchEnergy"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginStart="208dp"
+            android:layout_marginEnd="343dp"
+            android:text="Switch" />
+
 
     </RelativeLayout>
 
