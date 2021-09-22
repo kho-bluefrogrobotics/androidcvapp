@@ -174,6 +174,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         @Override
         public void run()
         {
+            Log.i("Facial", "setting positivity");
+            mySDK.setFaceEnergy(1.0F);
+
 //            // Buddy face
 //            if (smilingFaceProba > 0.7)
 //            {
@@ -577,7 +580,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //                    mySDK.getUsbInterface().registerCb(mydata);
                     mySDK.getUsbInterface().registerCb(mydata);
                 //start the grafcet
-                myGrafcet.start();
+//                myGrafcet.start();
 
                 // init face
                 mySDK.setFaceEnergy(0.1F);
@@ -791,6 +794,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+
+        runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+//                        mySDK.setMood(mycontext,Mood.HAPPY, onMoodSet);
+                        mySDK.setFacePositivity(1.0F);
+                    }
+                });
+
 
         // if not loaded
         if (!isnetloaded)
