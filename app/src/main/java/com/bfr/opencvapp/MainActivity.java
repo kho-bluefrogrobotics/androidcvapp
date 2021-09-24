@@ -37,6 +37,7 @@ import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
+import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.tracking.TrackerKCF;
@@ -689,52 +690,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-//                        Log.i("MoodFace", smilingFaceProba + " " + ((smilingFaceProba - 0.5F)/0.5F) + " " + (1.0F-smilingFaceProba+0.5F));
-                mySDK.setFacePositivity(0.3F);
-                mySDK.setFaceEnergy(1.0F-smilingFaceProba);
-                // if change in eyes open
-                if (leftEyeOpen!=leftEyeOpen_previous)
-                {
-                    // if close eye
-                    if (!leftEyeOpen)
-                    {
-                        mySDK.playEvent(mycontext, FacialEvent.CLOSE_RIGHT_EYE, onFacialEvent) ;
-                    }
-                    else
-                    {
-                        mySDK.playEvent(mycontext, FacialEvent.OPEN_RIGHT_EYE, onFacialEvent) ;
-                    }// end if cloed eye
-                    //update status
-                    leftEyeOpen_previous = leftEyeOpen;
-                }//end if change in eyes open
-
-                // if change in eyes open
-                if (rightEyeOpen!=rightEyeOpen_previous)
-                {
-                    // if close eye
-                    if (!rightEyeOpen)
-                    {
-                        mySDK.playEvent(mycontext, FacialEvent.CLOSE_LEFT_EYE, onFacialEvent) ;
-                    }
-                    else
-                    {
-                        mySDK.playEvent(mycontext, FacialEvent.OPEN_LEFT_EYE, onFacialEvent) ;
-                    }// end if cloed eye
-                    //update status
-                    rightEyeOpen_previous = rightEyeOpen;
-                }//end if change in eyes open
-
-                Imgproc.putText(frame,   "Smile Probability : " + String.valueOf(smilingFaceProba) ,
-                        new Point(20, 40),2, 1, new Scalar(255,0 , 0));
-                Imgproc.putText(frame,   "Eyes open Right = " + String.valueOf(rightEyeOpen) + "  Left = " + String.valueOf(leftEyeOpen) ,
-                        new Point(20, 70),2, 1, new Scalar(255,0 , 0));
-
-            } // end run
-        }); // end RunonUIThread
-
         // if not loaded
         if (!isnetloaded)
         {
@@ -751,225 +706,59 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //                }
 //            });
 
-//            net = Dnn.readNetFromCaffe(proto, weights);
-            //net.setPreferableBackend(Dnn.DNN_BACKEND_OPENCV);
-//            net.setPreferableTarget(Dnn.DNN_TARGET_OPENCL_FP16);
+            net = Dnn.readNetFromCaffe(proto, weights);
 
             isnetloaded = true;
         }
+        Mat frame = inputFrame.rgba();
+
+        // draw a rectangle
+        Imgproc.rectangle(frame, new Point(10, 10), new Point(60,60), new Scalar(255, 10, 10));
+
+        final int IN_WIDTH = 300;
+        final int IN_HEIGHT = 300;
+        final float WH_RATIO = (float)IN_WIDTH / IN_HEIGHT;
+        final double IN_SCALE_FACTOR = 0.007843;
+        final double MEAN_VAL = 127.5;
+        final double THRESHOLD = 0.75;
 
 
-        // Caapture Frame from camera
-        frame = inputFrame.rgba();
-        Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + " Taking picture: ");
-        //Detecting Face
-
-        //convert to bitmap
-        bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(frame, bitmapImage);
-        //convert to InputImage
-        inputImage = InputImage.fromBitmap(bitmapImage, 0);
-        result = faceDetector.process(inputImage)
-                .addOnSuccessListener(new OnSuccessListener<List<Face>>() {
-                    @Override
-                    public void onSuccess(List<Face> faces) {
-//                        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+ " found faces : " + String.valueOf(faces.size()) +" while " +  String.valueOf(foundFaces.size()));
-                        // adjusting size
-                        if (foundFaces.size()<faces.size())
-                        {   // add elements
-                            do {
-                                foundFaces.add(new DetectedFace());
-                            } while (foundFaces.size()<faces.size());
-                        } // end if foundface size < i+1
-                        else if (foundFaces.size()>faces.size())
-                        {   // remove elements
-                            do {
-                                foundFaces.remove(0);
-                            } while (foundFaces.size()>faces.size());
-                        } // end if foundface size < i+1
-
-//                        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+  " NOW faces : " + String.valueOf(faces.size()) +" while " +  String.valueOf(foundFaces.size()));
-
-                        // for each detected face
-                        for (int i=0; i < faces.size(); i++) {
-                            // assiging values
-                            foundFaces.get(i).x1 = faces.get(i).getBoundingBox().left;
-                            foundFaces.get(i).y1 = faces.get(i).getBoundingBox().top;
-                            foundFaces.get(i).x2 = faces.get(i).getBoundingBox().right;
-                            foundFaces.get(i).y2 = faces.get(i).getBoundingBox().bottom;
-                            // tracking id
-                            foundFaces.get(i).trackingId = faces.get(i).getTrackingId();
-                            //classifications
-                            foundFaces.get(i).smilingProbability = faces.get(i).getSmilingProbability();
-                            foundFaces.get(i).leftEyeOpenProbability = faces.get(i).getLeftEyeOpenProbability();
-                            foundFaces.get(i).rightEyeOpenProbability = faces.get(i).getRightEyeOpenProbability();
-//                        Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + " Face detected : "
-//                                + String.valueOf(foundFaces.get(i).trackingId) + "  "
-//                                + String.valueOf(foundFaces.get(i).x1) +
-//                                    " " + String.valueOf(foundFaces.get(i).y1)
-//                                + " " + String.valueOf(foundFaces.get(i).x2)
-//                                + " " + String.valueOf(foundFaces.get(i).y2) );
-
-                        } // next face
-//                        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+  " Finally faces : " + String.valueOf(faces.size()) +" while " +  String.valueOf(foundFaces.size()));
-
-                    } // end onSucess
-                }); // end process image
-
-        try {
-            Tasks.await(result);
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        // draw a rectangle around face
-//        Log.i("MLKit", String.valueOf(System.currentTimeMillis())+ " Found faces : " + String.valueOf(foundFaces.size()) );
-        //
-        try
-        {   // for each found face
-            for (int i=0; i<foundFaces.size(); i++)
-            {
-//                Log.i("MLKit", String.valueOf(System.currentTimeMillis())+ " Attemtpting Drawing index=" + String.valueOf(i));
-//                Log.i("MLKit", String.valueOf(System.currentTimeMillis()) + "Drawing face : "
-//                        + String.valueOf(foundFaces.get(i).x1) +
-//                        " " + String.valueOf(foundFaces.get(i).y1)
-//                        + " " + String.valueOf(foundFaces.get(i).x2)
-//                        + " " + String.valueOf(foundFaces.get(i).y2) );
-
-            } // next face
-
-            // assign value to track : first face to track
-            if(foundFaces.size()>0)
-            {
-                Imgproc.rectangle(frame, new Point(foundFaces.get(0).x1, foundFaces.get(0).y1),
-                        new Point(foundFaces.get(0).x2,foundFaces.get(0).y2),
-                        new Scalar(0, 0, 255), 2);
-                Imgproc.putText(frame,   "Target",
-                        new Point(foundFaces.get(0).x1, foundFaces.get(0).y1-5),2, 0.8, new Scalar(255,0 , 0));
-
-                trackedFaceX = (int) (foundFaces.get(0).x1 +  Math.ceil((foundFaces.get(0).x2 - foundFaces.get(0).x1) /2 ));
-                trackedFaceY = (int) (foundFaces.get(0).y1 +  Math.ceil((foundFaces.get(0).y2 - foundFaces.get(0).y1) /2 ));
-                smilingFaceProba = foundFaces.get(0).smilingProbability;
-                Log.i("Eyeproba", foundFaces.get(0).leftEyeOpenProbability + "  " + foundFaces.get(0).rightEyeOpenProbability);
-                if(foundFaces.get(0).leftEyeOpenProbability>0.5)
-                {
-                    leftEyeOpen=true;
-                }
-                else
-                {
-                    leftEyeOpen=false;
-                }
-                if(foundFaces.get(0).rightEyeOpenProbability>0.5)
-                {
-                    rightEyeOpen=true;
-                }
-                else
-                {
-                    rightEyeOpen=false;
-                }
-
-            }
-        } // end try
-        catch (Exception e)
-        {            e.printStackTrace();
-        }
-
-
-
-//        Imgproc.rectangle(frame, new Point(x1, y1), new Point(x2,y2), new Scalar(255, 10, 10));
-//        Imgproc.putText(frame, String.valueOf(trackId) + "  " + String.valueOf(smilingProba), new Point(x1, y1),2, 0.8, new Scalar(255,0 , 0));
-
-
-//        if (false)
-//        {
-//            // draw a rectangle
-//            Imgproc.rectangle(frame, new Point(600, 100), new Point(700,200), new Scalar(255, 10, 10));
-//
-//            final int IN_WIDTH = 300;
-//            final int IN_HEIGHT = 300;
-//            final float WH_RATIO = (float)IN_WIDTH / IN_HEIGHT;
-//            final double IN_SCALE_FACTOR = 0.007843;
-//            final double MEAN_VAL = 127.5;
-//            final double THRESHOLD = 0.75;
-//
-//
-//            Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
-//
-//            // atempt to find a person
-//            // Forward image through network.
-//            Mat blob = Dnn.blobFromImage(frame, IN_SCALE_FACTOR,
-//                    new org.opencv.core.Size(IN_WIDTH, IN_HEIGHT),
-//                    new Scalar(MEAN_VAL, MEAN_VAL, MEAN_VAL), /*swapRB*/false, /*crop*/false);
-//            net.setInput(blob);
-//            Mat detections = net.forward();
-//            int cols = frame.cols();
-//            int rows = frame.rows();
-//            detections = detections.reshape(1, (int)detections.total() / 7);
-//            for (int i = 0; i < detections.rows(); ++i) {
-//                double confidence = detections.get(i, 2)[0];
-//                if (confidence > THRESHOLD) {
-//                    int classId = (int)detections.get(i, 1)[0];
-//                    int left   = (int)(detections.get(i, 3)[0] * cols);
-//                    int top    = (int)(detections.get(i, 4)[0] * rows);
-//                    int right  = (int)(detections.get(i, 5)[0] * cols);
-//                    int bottom = (int)(detections.get(i, 6)[0] * rows);
-//                    // Draw rectangle around detected object.
-//                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-//                            new Scalar(0, 255, 0));
-//                    String label = classNames[classId] + ": " + confidence;
-//                    int[] baseLine = new int[1];
-//                    org.opencv.core.Size labelSize = Imgproc.getTextSize(label, 2, 0.5, 1, baseLine);
-//                    // Draw background for label.
-//                    //Imgproc.rectangle(frame, new Point(left, top - labelSize.getHeight()),
-//                    //        new Point(left + labelSize.getWidth(), top + baseLine[0]),
-//                    //        new Scalar(255, 255, 255), Imgproc.FILLED);
-//                    Imgproc.rectangle(frame, new Point(left, top - labelSize.height),
-//                            new Point(left + labelSize.width, top + baseLine[0]),
-//                            new Scalar(255, 255, 255));
-//                    // Write class name and confidence.
-////                Imgproc.putText(frame, label, new Point(left, top),
-//                    Imgproc.putText(frame, String.valueOf(classId), new Point(left, top),
-//                            2, 0.8, new Scalar(255,0 , 0));
-//                }   // end if confidence OK
-//            } // next detection
-//
-//
-//            // if found person
-//            if (foundperson)
-//            {
-//                // if not tracking yet
-//                if (!istracking)
-//                {
-//                    // init
-//                    // init tracker on drawn rect
-//                    Rect initBB = new Rect(600, 100, 100, 100);
-//                    mytracker.init(frame, initBB);
-//
-//                    foundperson = false;
-//                    istracking = true;
-//                }
-//                else // is tracking
-//                {
-//
-//                }
-//
-//            }
-//
-//        } // end if modulo 10
-//        else // rest of the frames
-//        {
-//            // if is tracking
-//            if (istracking)
-//            {
-//                //Update tracker
-//                mytracker.update(frame, tracked);
-//
-//                // draw a rectangle
-//                Imgproc.rectangle(frame, new Point(tracked.x, tracked.y), new Point(tracked.x+tracked.width,tracked.y+tracked.height), new Scalar(0, 0, 255));
-//            }
-//        }
+        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
+        // Forward image through network.
+        Mat blob = Dnn.blobFromImage(frame, IN_SCALE_FACTOR,
+                new org.opencv.core.Size(IN_WIDTH, IN_HEIGHT),
+                new Scalar(MEAN_VAL, MEAN_VAL, MEAN_VAL), /*swapRB*/false, /*crop*/false);
+        net.setInput(blob);
+        Mat detections = net.forward();
+        int cols = frame.cols();
+        int rows = frame.rows();
+        detections = detections.reshape(1, (int)detections.total() / 7);
+        for (int i = 0; i < detections.rows(); ++i) {
+            double confidence = detections.get(i, 2)[0];
+            if (confidence > THRESHOLD) {
+                int classId = (int)detections.get(i, 1)[0];
+                int left   = (int)(detections.get(i, 3)[0] * cols);
+                int top    = (int)(detections.get(i, 4)[0] * rows);
+                int right  = (int)(detections.get(i, 5)[0] * cols);
+                int bottom = (int)(detections.get(i, 6)[0] * rows);
+                // Draw rectangle around detected object.
+                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                        new Scalar(0, 255, 0), 2);
+                String label = classNames[classId] + ": " + confidence;
+                int[] baseLine = new int[1];
+                org.opencv.core.Size labelSize = Imgproc.getTextSize(label, 2, 0.5, 1, baseLine);
+                // Draw background for label.
+                //Imgproc.rectangle(frame, new Point(left, top - labelSize.getHeight()),
+                //        new Point(left + labelSize.getWidth(), top + baseLine[0]),
+                //        new Scalar(255, 255, 255), Imgproc.FILLED);
+                Imgproc.rectangle(frame, new Point(left, top - labelSize.height),
+                        new Point(left + labelSize.width, top + baseLine[0]),
+                        new Scalar(255, 255, 255));
+                // Write class name and confidence.
+                Imgproc.putText(frame, label, new Point(left, top),
+                        2, 0.8, new Scalar(255,0 , 0));
+            }   // end if confidence OK
+        } // next detection
 
 
         // record video
