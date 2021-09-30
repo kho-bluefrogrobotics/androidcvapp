@@ -32,6 +32,9 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.aruco.Aruco;
+import org.opencv.aruco.DetectorParameters;
+import org.opencv.aruco.Dictionary;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
@@ -66,6 +69,7 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -658,6 +662,22 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         return Collections.singletonList(mOpenCvCameraView);
     }
 
+
+    // frame captured by camera
+    Mat frame;
+    // conversion to MLKit
+    InputImage inputImage;
+    Bitmap bitmapImage = null ;
+    // Face detector
+    Task result;
+    // List of detected faces
+    Vector<DetectedFace> foundFaces = new Vector<DetectedFace>();
+
+    // List of Aruco Markers
+    List<Mat> arucoCorners;
+    Mat arucoIds ;
+
+
     public void onCameraViewStarted(int width, int height) {
         // obtaining converted network
         String onnxModelPath = getPath(MODEL_FILE, this);
@@ -676,89 +696,40 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
                 25.0D,  new Size( 800,600));
 
+        arucoIds = new Mat();
+        arucoCorners = new ArrayList<>();
+
     }
 
-    // frame captured by camera
-    Mat frame;
-    // conversion to MLKit
-    InputImage inputImage;
-    Bitmap bitmapImage = null ;
-    // Face detector
-    Task result;
-    // List of detected faces
-    Vector<DetectedFace> foundFaces = new Vector<DetectedFace>();
+
+
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
-        // if not loaded
-        if (!isnetloaded)
-        {
-            // Load model
-            // directory where the files are saved
-            String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
 
-            String proto = dir + "/MobileNetSSD_deploy.prototxt";
-            String weights = dir + "/MobileNetSSD_deploy.caffemodel";
-//            runOnUiThread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    Toast.makeText(this, "coucou" , Toast.LENGTH_SHORT).show();
-//                }
-//            });
-
-            net = Dnn.readNetFromCaffe(proto, weights);
-
-            isnetloaded = true;
-        }
         Mat frame = inputFrame.rgba();
+
+        //convert
+        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
+
+        // Definition of dictionary and params
+        Dictionary arucoDict = Aruco.getPredefinedDictionary(Aruco.DICT_APRILTAG_36h11);
+        DetectorParameters arucoParams = DetectorParameters.create();
+
+        // Detect Marker
+
+        Aruco.detectMarkers(frame, arucoDict, arucoCorners, arucoIds, arucoParams);
+
+
+        if (arucoCorners.size()>0)
+        {
+            Aruco.drawDetectedMarkers(frame, arucoCorners);
+            // print list of codes
+            Log.i("aruco", String.valueOf(arucoIds.get(0,0)[0]));
+        }
 
         // draw a rectangle
         Imgproc.rectangle(frame, new Point(10, 10), new Point(60,60), new Scalar(255, 10, 10));
-
-        final int IN_WIDTH = 300;
-        final int IN_HEIGHT = 300;
-        final float WH_RATIO = (float)IN_WIDTH / IN_HEIGHT;
-        final double IN_SCALE_FACTOR = 0.007843;
-        final double MEAN_VAL = 127.5;
-        final double THRESHOLD = 0.75;
-
-
-        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
-        // Forward image through network.
-        Mat blob = Dnn.blobFromImage(frame, IN_SCALE_FACTOR,
-                new org.opencv.core.Size(IN_WIDTH, IN_HEIGHT),
-                new Scalar(MEAN_VAL, MEAN_VAL, MEAN_VAL), /*swapRB*/false, /*crop*/false);
-        net.setInput(blob);
-        Mat detections = net.forward();
-        int cols = frame.cols();
-        int rows = frame.rows();
-        detections = detections.reshape(1, (int)detections.total() / 7);
-        for (int i = 0; i < detections.rows(); ++i) {
-            double confidence = detections.get(i, 2)[0];
-            if (confidence > THRESHOLD) {
-                int classId = (int)detections.get(i, 1)[0];
-                int left   = (int)(detections.get(i, 3)[0] * cols);
-                int top    = (int)(detections.get(i, 4)[0] * rows);
-                int right  = (int)(detections.get(i, 5)[0] * cols);
-                int bottom = (int)(detections.get(i, 6)[0] * rows);
-                // Draw rectangle around detected object.
-                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                        new Scalar(0, 255, 0), 2);
-                String label = classNames[classId] + ": " + confidence;
-                int[] baseLine = new int[1];
-                org.opencv.core.Size labelSize = Imgproc.getTextSize(label, 2, 0.5, 1, baseLine);
-                // Draw background for label.
-                //Imgproc.rectangle(frame, new Point(left, top - labelSize.getHeight()),
-                //        new Point(left + labelSize.getWidth(), top + baseLine[0]),
-                //        new Scalar(255, 255, 255), Imgproc.FILLED);
-                Imgproc.rectangle(frame, new Point(left, top - labelSize.height),
-                        new Point(left + labelSize.width, top + baseLine[0]),
-                        new Scalar(255, 255, 255));
-                // Write class name and confidence.
-                Imgproc.putText(frame, label, new Point(left, top),
-                        2, 0.8, new Scalar(255,0 , 0));
-            }   // end if confidence OK
-        } // next detection
 
 
         // record video

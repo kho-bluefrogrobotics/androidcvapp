@@ -19,7 +19,7 @@
     <RelativeLayout
         android:id="@+id/visage"
         android:visibility="visible"
-        android:alpha="1.0"
+        android:alpha="0.05"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
 
@@ -63,9 +63,10 @@
             android:id="@+id/initButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
             android:layout_alignParentTop="true"
-            android:layout_marginStart="192dp"
-            android:layout_marginTop="100dp"
+            android:layout_marginStart="3dp"
+            android:layout_marginTop="236dp"
             android:text="Button"
             android:visibility="visible" />
 
