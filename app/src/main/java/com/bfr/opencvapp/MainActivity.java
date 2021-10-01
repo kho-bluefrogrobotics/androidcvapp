@@ -39,25 +39,21 @@ import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.tracking.TrackerCSRT;
+import org.opencv.tracking.TrackerKCF;
+import org.opencv.tracking.legacy_TrackerMOSSE;
+import org.opencv.tracking.legacy_TrackerMedianFlow;
 import org.opencv.video.Tracker;
 import org.opencv.video.TrackerMIL;
 import org.opencv.videoio.VideoWriter;
 
+import com.bfr.opencvapp.utils.BuddyData;
 import com.bfr.usbservice.BodySensorData;
 import com.bfr.usbservice.HeadSensorData;
 import com.bfr.usbservice.IUsbAidlCbListner;
 import com.bfr.usbservice.IUsbCommadRsp;
 import com.bfr.usbservice.MotorHeadData;
 import com.bfr.usbservice.MotorMotionData;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
-import com.google.android.gms.tasks.Tasks;
-import com.google.mlkit.vision.common.InputImage;
-import com.google.mlkit.vision.face.Face;
-import com.google.mlkit.vision.face.FaceDetection;
-import com.google.mlkit.vision.face.FaceDetector;
-import com.google.mlkit.vision.face.FaceDetectorOptions;
-import com.google.mlkit.vision.face.FaceLandmark;
+
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -78,35 +74,26 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     private static final String TAG = MainActivity.class.getName();
 
-    private static final String IMAGENET_CLASSES = "imagenet_classes.txt";
-    private static final String MODEL_FILE = "pytorch_mobilenet.onnx";
-
     private CameraBridgeViewBase mOpenCvCameraView;
 
+    // directory where the model files are saved for face detection
     private String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
-
 
     // SDK
     BuddySDK mySDK = new BuddySDK();
-
 
     //button to start tracking
     private Button initBtn;
 
     // Face UI
     private RelativeLayout BuddyFace;
-    private TextView targetTextView;
-    private Switch noSwitch, switchCamera;
-    private Button moveButton;
+    private Switch noSwitch;
     private CheckBox hideFace;
-    TextView noPos;
+
     private CheckBox trackingCheckBox;
+    private CheckBox fastTrackingChckBox;
     JavaCameraView cameraView;
 
-    // Tracking & robot status
-    private int noPosition;
-
-    private String noStatus = "";
 
     //********************  image ***************************
 
@@ -121,19 +108,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // status
     boolean istracking = false;
     int frame_count = 0;
-    // tracked box
-    Rect tracked=new Rect();
+    // Option to switch between fast but low performance Tracking, or Slower but more Robust Tracking
+    boolean fastTracking = false;
 
     // Neural net for detection
     private Net net;
-
-
-    //************************** Grafcet ***************
-    // gracet
-    private int previous_step ;
-    private int step_num;
-    private long time_in_curr_step = 0;
-    private boolean bypass = false;
 
 
     // context
@@ -143,316 +122,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private VideoWriter videoWriter;
     private boolean isrecording;
 
-    // runable for grafcet
-    private Runnable mysequence = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-//            // Buddy face
-//            if (smilingFaceProba > 0.7)
-//            {
-//                runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        mySDK.setMood(mycontext,Mood.HAPPY, onMoodSet);
-//                    }
-//                });
-//
-//            }
-//            else
-//            {
-//                runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        mySDK.setMood(mycontext,Mood.GRUMPY, onMoodSet);
-//                    }
-//                });
-//            }
-
-            // if step changed
-            if( !(step_num == previous_step)) {
-
-                // display current step
-                Log.i("GRAFCET", "current step: " + step_num + "  " + noPosition);
-                // update
-                previous_step = step_num;
-                // start counting time in current step
-                time_in_curr_step = System.currentTimeMillis();
-                bypass = false;
-            } // end if step = same
-            else
-            {
-                // if time > 2s
-                if ((System.currentTimeMillis()-time_in_curr_step > 5000) && step_num >3)
-                {
-                    // activate bypass
-                    bypass = true;
-                }
-            }
-
-            // which grafcet step?
-            switch (step_num) {
-                case 0: // Wait for checkbox
-                    //wait until check box
-                    if (trackingCheckBox.isChecked()) {
-                        // go to next step
-                        step_num = 1;
-                    }
-                    break;
-
-                case 1: // Enable No
-                    try {
-                        mySDK.getUsbInterface().enableWheels(1,1, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException {
-                                Log.i("enable No SUCESS:", success);
-                            }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {
-                                Log.e("enable No FAILED", error);
-                            }
-                        });
-
-                    } //end try enable
-                    catch (RemoteException e) {
-                        e.printStackTrace();
-                    } // end catch
-
-                    // go to next step
-                    step_num = 2;
-                    break;
-
-                case 2: //wait for status No enable
-                    // if yes not disabled
-                    if (!noStatus.toUpperCase().contains("DISABLE")) {
-                        // go to next step
-                        step_num = 3;
-                    }
-                    break;
-
-                case 3: // Move left or right or exit
-                    //
-                    if (!trackingCheckBox.isChecked())
-                    {
-                        // go to next step
-                        step_num = 10;
-                    }
-                    // if face to track too much on the left
-                    if (tracked.x < 350)
-                    {
-                        // go to next step
-                        step_num = 20;
-                    }
-                    else if (tracked.x > 450)
-                    {
-                        // go to next step
-                        step_num = 30;
-                    }
-
-//                    // Buddy face
-//            if (smilingFaceProba > 0.7)
-//            {
-//                runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        mySDK.setMood(mycontext,Mood.HAPPY, onMoodSet);
-//                    }
-//                });
-//
-//            }
-//            else
-//            {
-//                runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        mySDK.setMood(mycontext,Mood.GRUMPY, onMoodSet);
-//                    }
-//                });
-//            }
-
-                    break;
-
-                case 10 : // Disable Motor
-                    try {
-                        mySDK.getUsbInterface().enableWheels(0,0, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException {
-                                Log.i("enable no SUCESS:", success);
-                            }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {
-                                Log.e("enable no FAILED", error);
-                            }
-                        });
-                    } //end try enable Yes
-                    catch (RemoteException e)
-                    {
-                        e.printStackTrace();
-                    } // end catch
-
-                    // go to next step
-                    step_num = 11;
-
-                    break;
-
-                case 11 : // Wait for status Disable
-                    if (noStatus.toUpperCase().contains("DISABLE"))
-                    {   // go to next step
-                        step_num = 0;
-                    }
-                    break;
-
-
-                case 20: // Cmd to Move No to the Left
-                    // reset
-                    noMvtStatus = "NOT_YET";
-                    try {
-                        Log.i(TAG, "Sending Yes command");
-                        // Move No
-                        mySDK.getUsbInterface().WheelRotate(30,new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {Log.e("yesmove", error);  }
-                        });
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    // go to next step
-                    step_num = 22;
-                    break;
-
-
-                case 22 : // waiting for End of Movement
-
-                    // if face to track too much on the left
-                    if (tracked.x > 350 )
-                    {
-                        // go to next step
-                        step_num = 23;
-                    }
-                    break;
-
-                case 23 : // Stop MVT
-                    noMvtStatus = "NOT_YET";
-                    try {
-                        Log.i(TAG, "Sending No command");
-                        // Move No
-                        mySDK.getUsbInterface().WheelRotate(0,new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {Log.e("yesmove", error);  }
-                        });
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    // go to next step
-                    step_num = 3;
-                    break;
-
-
-                case 30: // Cmd to Move No to the Right
-                    // reset
-                    noMvtStatus = "NOT_YET";
-                    try {
-                        Log.i(TAG, "Sending Yes command");
-                        // Move No
-                        mySDK.getUsbInterface().WheelRotate(-30 ,new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {Log.e("yesmove", error);  }
-                        });
-
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                    // go to next step
-                    step_num = 32;
-                    break;
-
-
-
-                case 32 : // waiting for End of Movement
-//                    if (noMvtStatus.toUpperCase().contains("NO_MOVE_FINISHED") || bypass)
-//                    {
-//                        // go to next step
-//                        step_num = 3;
-//                    }
-                    // if face to track too much on the left
-                    if (tracked.x < 450 )
-                    {
-                        // go to next step
-                        step_num = 33;
-                    }
-                    break;
-
-                case 33 : // Stop MVT
-                    noMvtStatus = "NOT_YET";
-                    try {
-                        Log.i(TAG, "Sending No command");
-                        // Move No
-                        mySDK.getUsbInterface().WheelRotate(0,new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {Log.e("yesmove", error);  }
-                        });
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    // go to next step
-                    step_num = 3;
-                    break;
-
-
-                default :
-                    // go to next step
-                    step_num = 0;
-                    break;
-            } //End switch
-
-        } // end run
-    }; // end new runnable
 
     //grafcet
-    bfr_Grafcet myGrafcet = new bfr_Grafcet(mysequence, "myGrafcet");
+    TrackingGrafcet mTrackingGrafcet = new TrackingGrafcet("VisualTracking");
 
-
-    // for Buddy calbacks
-    public class BuddyData extends IUsbAidlCbListner.Stub
-    {
-        @Override
-        // called when the datas from the motor are received
-        public void ReceiveMotorMotionData(MotorMotionData msg) throws RemoteException {
-            noStatus = msg.leftWheelMode;
-        }
-
-        @Override
-        // called when the datas from the head motor are received
-        public void ReceiveMotorHeadData(MotorHeadData msg) throws RemoteException {
-//            Log.i("Move_NO", "No position : " + String.valueOf(msg.noPosition));
-            noPosition = msg.noPosition;
-//            noStatus = msg.noMode;
-        } // end receiveMotorHead Data
-
-        @Override
-        // called when the datas from the head sensor motor are received
-        public void ReceiveHeadSensorData(HeadSensorData msg) throws RemoteException {
-        }
-
-        @Override
-        // called when the datas from the body sensor motor are received
-        public void ReceiveBodySensorData(BodySensorData data) throws RemoteException {
-        }
-    }
-
-    // Instantiate class
-    private final BuddyData mydata = new BuddyData();
+    // Sensors & motor data
+    BuddyData mydata = new BuddyData();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -470,18 +145,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         initBtn = findViewById(R.id.initButton);
         BuddyFace = findViewById(R.id.visage);
         noSwitch = findViewById(R.id.enableNoSwitch);
-
         hideFace = findViewById(R.id.visibleCheckBox);
-
         trackingCheckBox = findViewById(R.id.trackingBox);
-
-
-        // Load model
-        // directory where the files are saved
-        String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
-        String proto = dir + "/MobileNetSSD_deploy.prototxt";
-        String weights = dir + "/MobileNetSSD_deploy.caffemodel";
-
+        fastTrackingChckBox = findViewById(R.id.fastTracking);
 
         //start tracking button
         initBtn.setOnClickListener(new View.OnClickListener() {
@@ -490,7 +156,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 Log.i("Tracking", "Tracking is starting");
             }
         });
-
 
 
         //  SDK
@@ -502,16 +167,22 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //                    mySDK.getUsbInterface().registerCb(mydata);
                     mySDK.getUsbInterface().registerCb(mydata);
                 //start the grafcet
-                myGrafcet.start();
+                mTrackingGrafcet.start();
 
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
         };
+
+        // init SDK
         mySDK.initSDK(this, onServiceLaunched);
 
-        // start grafcet
-        myGrafcet.start();
+        // Pass SDK and data to grafcet
+        mTrackingGrafcet.init(mycontext, mySDK, mydata);
+
+
+
+        //**************** Callbacks for buttons
 
         //callback show face
         hideFace.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -533,82 +204,40 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         noSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-//                // if checked
-//                if (noSwitch.isChecked())
-//                {
-//                    // enable No
-//                    try {
-//                        mySDK.getUsbInterface().enableNoMove(1, new IUsbCommadRsp.Stub() {
-//                            @Override
-//                            public void onSuccess(String success) throws RemoteException { }
-//                            @Override
-//                            public void onFailed(String error) throws RemoteException {}
-//                        });
-//                    } //end try enable Yes
-//                    catch (RemoteException e)
-//                    {            e.printStackTrace();
-//                    } // end catch
-//                }
-//                else // unchecked
-//                {
-//                    //disable no
-//                    try {
-//                        mySDK.getUsbInterface().enableNoMove(0, new IUsbCommadRsp.Stub() {
-//                            @Override
-//                            public void onSuccess(String success) throws RemoteException { }
-//                            @Override
-//                            public void onFailed(String error) throws RemoteException {}
-//                        });
-//
-//                    } //end try enable Yes
-//                    catch (RemoteException e)
-//                    {
-//                        e.printStackTrace();
-//                    } // end catch
-//                } // end if togle
-//
-//            } // end onChecked
-
+                // if checked
                 if (noSwitch.isChecked())
                 {
-                    //enable wheels
+                    // enable No
                     try {
-                        mySDK.getUsbInterface().enableWheels(1, 1, new IUsbCommadRsp.Stub() {
+                        mySDK.getUsbInterface().enableNoMove(1, new IUsbCommadRsp.Stub() {
                             @Override
-                            public void onSuccess(String success) throws RemoteException {
-                                Log.i(TAG, "BBBsuccess : " + success);
-                            }
-
+                            public void onSuccess(String success) throws RemoteException { }
                             @Override
-                            public void onFailed(String error) throws RemoteException {
-                                Log.i(TAG, "BBBerror : " + error);
-
-                            }
+                            public void onFailed(String error) throws RemoteException {}
                         });
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
+                    } //end try enable Yes
+                    catch (RemoteException e)
+                    {            e.printStackTrace();
                     } // end catch
                 }
                 else // unchecked
                 {
-                    //disable wheels
+                    //disable no
                     try {
-                        mySDK.getUsbInterface().enableWheels(0, 0, new IUsbCommadRsp.Stub() {
+                        mySDK.getUsbInterface().enableNoMove(0, new IUsbCommadRsp.Stub() {
                             @Override
-                            public void onSuccess(String success) throws RemoteException {
-                                Log.i(TAG, "BBBsuccess : " + success);
-                            }
-
+                            public void onSuccess(String success) throws RemoteException { }
                             @Override
-                            public void onFailed(String error) throws RemoteException {
-                                Log.i(TAG, "BBBerror : " + error);
-
-                            }
+                            public void onFailed(String error) throws RemoteException {}
                         });
-                    } catch (RemoteException e) {
+
+                    } //end try enable Yes
+                    catch (RemoteException e)
+                    {
                         e.printStackTrace();
-                    }
-                } // end if checked
+                    } // end catch
+                } // end if toggle
+
             } // end onChecked
         }); // end listener
 
@@ -620,7 +249,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 if (!trackingCheckBox.isChecked())
                 {
                     // reset grafcet
-                    step_num =0;
+                    TrackingGrafcet.step_num =0;
+                    TrackingGrafcet.go = false;
                     // close record file
                     isrecording = false;
                     videoWriter.release();
@@ -629,25 +259,29 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 else // checked
                 {
                     isrecording = true;
+                    // let the grafcet continue
+                    TrackingGrafcet.go = true;
                 }
 
             }
         });
 
-        // camera switch
-        noSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        //tracking
+        fastTrackingChckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                //Enable fast tracking
                 if (b)
                 {
-                    cameraView.setCameraIndex(1);
+                    fastTracking = true;
                 }
-                else
+                else // checked
                 {
-                    cameraView.setCameraIndex(0);
+                    fastTracking = false;
                 }
-            } // end onchecked
-        }); // end onchange
+
+            }
+        });
 
     } // End onCreate
 
@@ -668,12 +302,23 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         }
     };
 
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        //stop grafcet
+        mTrackingGrafcet.start();
+    }
+
     @Override
     public void onResume() {
         super.onResume();
         // OpenCV manager initialization
         OpenCVLoader.initDebug();
         mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
+
+        //restart grafcet
+        mTrackingGrafcet.start();
     }
 
 
@@ -690,7 +335,10 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         net = Dnn.readNetFromTensorflow(weights, proto);
 
         // Tracker init
-        mytracker = TrackerCSRT.create();
+        if (fastTracking)
+            mytracker = TrackerKCF.create();
+        else
+            mytracker = TrackerCSRT.create();
 
         // Init write video file
         videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
@@ -713,7 +361,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         // every xxx frame
         if (frame_count%10 == 0) {
-
 
             // convert color to RGB
             Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
@@ -747,7 +394,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             int bottom = (int) (detections.get(i, 6)[0] * rows);
 
                             // if dist min
-                            dist = Math.abs(left - tracked.x) + Math.abs(top - tracked.y);
+                            dist = Math.abs(left - TrackingGrafcet.tracked.x) + Math.abs(top - TrackingGrafcet.tracked.y);
                             if (dist < max_dist) {
                                 // update
                                 max_dist = dist;
@@ -770,7 +417,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     Log.i("Tracking", "New Init on " +  bbox.x + " " + bbox.y);
 
                     try {
-                        mytracker = TrackerCSRT.create();
+                        if (fastTracking)
+                            mytracker = TrackerKCF.create();
+                        else
+                            mytracker = TrackerCSRT.create();
+
                         mytracker.init(frame, bbox);
                     }
                     catch (Exception e)
@@ -837,14 +488,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 Log.i("Tracking", "channels "+ String.valueOf(frame.channels()) );
                 //Update tracker
                 try { // try catch to avoid crash in case of wrong tracking
-                    mytracker.update(frame, tracked);
+                    mytracker.update(frame, TrackingGrafcet.tracked);
                 }
                 catch(Exception e)
                 {                }
 
                 //Log.i("Tracking", "Tracker updated " + tracked.x + " " + tracked.y);
                 // draw a rectangle
-                Imgproc.rectangle(frame, new Point(tracked.x, tracked.y), new Point(tracked.x+tracked.width,tracked.y+tracked.height ),
+                Imgproc.rectangle(frame, new Point(TrackingGrafcet.tracked.x, TrackingGrafcet.tracked.y),
+                        new Point(TrackingGrafcet.tracked.x+TrackingGrafcet.tracked.width,TrackingGrafcet.tracked.y+TrackingGrafcet.tracked.height ),
                         new Scalar(0, 0, 255), 2);
             } // end if is tracking
         } // end rest of the frames

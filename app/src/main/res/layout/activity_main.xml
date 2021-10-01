@@ -33,7 +33,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="20px"
         android:layout_marginTop="40px"
-        android:text="Enable No" />
+        android:text="Enable Yes" />
 
         <Switch
             android:id="@+id/enableNoSwitch"
@@ -72,6 +72,15 @@
             android:layout_marginStart="20px"
             android:layout_marginTop="600px"
             android:text="TRACKING" />
+
+
+    <CheckBox
+        android:id="@+id/fastTracking"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20px"
+        android:layout_marginTop="200px"
+        android:text="Fast Tracking" />
 
 
 
