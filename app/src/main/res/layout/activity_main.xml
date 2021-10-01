@@ -12,8 +12,8 @@
         android:layout_height="match_parent"
         android:visibility="visible"
         opencv:show_fps="true"
-        opencv:camera_id="0" />
-
+        opencv:camera_id="1" />
+    <!--  Wide angle camera : id=0 ; Narrow angle camera: id = 1-->
 
 
     <RelativeLayout
@@ -25,25 +25,26 @@
 
         <include layout="@layout/face" />
 
+    </RelativeLayout>
+
+    <Switch
+        android:id="@+id/enableYesSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20px"
+        android:layout_marginTop="40px"
+        android:text="Enable No" />
+
         <Switch
             android:id="@+id/enableNoSwitch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="20px"
-            android:layout_marginTop="40px"
+            android:layout_marginTop="100px"
             android:text="Enable No" />
 
-        <EditText
-            android:id="@+id/noTargetTxtView"
-            android:layout_width="110px"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="240px"
-            android:layout_marginTop="30px"
-            android:ems="10"
-            android:inputType="number"
-            android:text="20" />
 
-        <CheckBox
+    <CheckBox
             android:id="@+id/visibleCheckBox"
             android:layout_marginStart="1100px"
             android:layout_marginTop="40px"
@@ -51,13 +52,6 @@
             android:layout_height="wrap_content"
             android:text="Hide Face" />
 
-        <Button
-            android:id="@+id/MoveNoButton"
-            android:layout_marginStart="20px"
-            android:layout_marginTop="100px"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Move" />
 
         <Button
             android:id="@+id/initButton"
@@ -70,13 +64,6 @@
             android:text="Button"
             android:visibility="visible" />
 
-        <TextView
-            android:id="@+id/noPosTxtView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="20px"
-            android:layout_marginTop="200px"
-            android:text="TextView" />
 
         <CheckBox
             android:id="@+id/trackingBox"
@@ -86,17 +73,7 @@
             android:layout_marginTop="600px"
             android:text="TRACKING" />
 
-        <Switch
-            android:id="@+id/switchEnergy"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentEnd="true"
-            android:layout_marginStart="208dp"
-            android:layout_marginEnd="343dp"
-            android:text="Switch" />
 
 
-    </RelativeLayout>
 
 </FrameLayout>

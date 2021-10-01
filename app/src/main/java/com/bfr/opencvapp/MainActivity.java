@@ -20,21 +20,16 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.bfr.buddysdk.sdk.FacialEvent;
 import com.bfr.buddysdk.sdk.Mood;
 import com.bfr.buddysdk.sdk.Services;
-import com.bfr.opencvapp.cnn.CNNExtractorService;
-import com.bfr.opencvapp.cnn.impl.CNNExtractorServiceImpl;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraActivity;
 import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
-import org.opencv.aruco.Aruco;
-import org.opencv.aruco.DetectorParameters;
-import org.opencv.aruco.Dictionary;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
@@ -43,8 +38,9 @@ import org.opencv.core.Size;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.tracking.TrackerKCF;
+import org.opencv.tracking.TrackerCSRT;
 import org.opencv.video.Tracker;
+import org.opencv.video.TrackerMIL;
 import org.opencv.videoio.VideoWriter;
 
 import com.bfr.usbservice.BodySensorData;
@@ -69,7 +65,6 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -87,19 +82,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private static final String MODEL_FILE = "pytorch_mobilenet.onnx";
 
     private CameraBridgeViewBase mOpenCvCameraView;
-    private Net opencvNet;
 
-    private CNNExtractorService cnnService;
+    private String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
 
-    // Neural net for detection
-    private Net net;
-    private boolean isnetloaded = false;
 
     // SDK
     BuddySDK mySDK = new BuddySDK();
 
-    // Face detector
-    private FaceDetector faceDetector;
 
     //button to start tracking
     private Button initBtn;
@@ -107,51 +96,52 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // Face UI
     private RelativeLayout BuddyFace;
     private TextView targetTextView;
-    private Switch noSwitch;
+    private Switch noSwitch, switchCamera;
     private Button moveButton;
     private CheckBox hideFace;
     TextView noPos;
     private CheckBox trackingCheckBox;
+    JavaCameraView cameraView;
 
     // Tracking & robot status
     private int noPosition;
-    private int trackedFaceX, trackedFaceY;
-    private int noTargetX, noTargetY;
-    private String noStatus = "";
-    private String noMvtStatus = "";
-    private float smilingFaceProba;
-    private boolean leftEyeOpen, rightEyeOpen, leftEyeOpen_previous, rightEyeOpen_previous;
-    int no_speed = 10;
 
+    private String noStatus = "";
+
+    //********************  image ***************************
+
+    // tHRESHOLD OF FACE DETECTION
+    final double THRESHOLD = 0.75;
+    // Tracker
+    Tracker mytracker;
+    // frame captured by camera
+    Mat frame;
+    // List of detected faces
+    Mat blob, detections;
+    // status
+    boolean istracking = false;
+    int frame_count = 0;
+    // tracked box
+    Rect tracked=new Rect();
+
+    // Neural net for detection
+    private Net net;
+
+
+    //************************** Grafcet ***************
     // gracet
     private int previous_step ;
     private int step_num;
     private long time_in_curr_step = 0;
     private boolean bypass = false;
+
+
     // context
     Context mycontext = this;
-    Consumer<Mood> onMoodSet = (Mood iMood) -> {
-        Log.d("FACE MOOD", "mood set to "+iMood);
-        //hasMadeCommand=true;
-    };
-
-    Consumer<FacialEvent> onFacialEvent = (FacialEvent iFacialEvent) -> {
-
-        //hasMadeCommand=true;
-    };
 
     //Video writer
     private VideoWriter videoWriter;
     private boolean isrecording;
-
-
-    //classes
-    private static final String[] classNames = {"background",
-            "aeroplane", "bicycle", "bird", "boat",
-            "bottle", "bus", "car", "cat", "chair",
-            "cow", "diningtable", "dog", "horse",
-            "motorbike", "person", "pottedplant",
-            "sheep", "sofa", "train", "tvmonitor"};
 
     // runable for grafcet
     private Runnable mysequence = new Runnable()
@@ -213,7 +203,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                 case 1: // Enable No
                     try {
-                        mySDK.getUsbInterface().enableNoMove(1, new IUsbCommadRsp.Stub() {
+                        mySDK.getUsbInterface().enableWheels(1,1, new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String success) throws RemoteException {
                                 Log.i("enable No SUCESS:", success);
@@ -249,12 +239,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                         step_num = 10;
                     }
                     // if face to track too much on the left
-                    if (trackedFaceX < 350)
+                    if (tracked.x < 350)
                     {
                         // go to next step
                         step_num = 20;
                     }
-                    else if (trackedFaceX > 450)
+                    else if (tracked.x > 450)
                     {
                         // go to next step
                         step_num = 30;
@@ -285,7 +275,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                 case 10 : // Disable Motor
                     try {
-                        mySDK.getUsbInterface().enableNoMove(0, new IUsbCommadRsp.Stub() {
+                        mySDK.getUsbInterface().enableWheels(0,0, new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String success) throws RemoteException {
                                 Log.i("enable no SUCESS:", success);
@@ -320,7 +310,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     try {
                         Log.i(TAG, "Sending Yes command");
                         // Move No
-                        mySDK.getUsbInterface().buddySayNo(20,0,new IUsbCommadRsp.Stub() {
+                        mySDK.getUsbInterface().WheelRotate(30,new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
                             @Override
@@ -333,22 +323,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     step_num = 22;
                     break;
 
-                case 21 :   //waiting for acknowledge of cmd
-                    if (noMvtStatus.toUpperCase().contains("OK"))
-                    {
-                        // go to next step
-                        step_num = 22;
-                    }
-                    break;
 
                 case 22 : // waiting for End of Movement
-//                    if (noMvtStatus.toUpperCase().contains("NO_MOVE_FINISHED") || bypass)
-//                    {
-//                        // go to next step
-//                        step_num = 3;
-//                    }
+
                     // if face to track too much on the left
-                    if (trackedFaceX > 350 )
+                    if (tracked.x > 350 )
                     {
                         // go to next step
                         step_num = 23;
@@ -360,7 +339,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     try {
                         Log.i(TAG, "Sending No command");
                         // Move No
-                        mySDK.getUsbInterface().buddySayNo(0,0,new IUsbCommadRsp.Stub() {
+                        mySDK.getUsbInterface().WheelRotate(0,new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
                             @Override
@@ -380,7 +359,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     try {
                         Log.i(TAG, "Sending Yes command");
                         // Move No
-                        mySDK.getUsbInterface().buddySayNo(no_speed,noPosition+2,new IUsbCommadRsp.Stub() {
+                        mySDK.getUsbInterface().WheelRotate(-30 ,new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
                             @Override
@@ -397,22 +376,39 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     break;
 
 
-                case 31 :   //waiting for acknowledge of cmd
-                    if (noMvtStatus.toUpperCase().contains("OK"))
-                    {
-                        // go to next step
-                        step_num = 32;
-                    }
-                    break;
 
                 case 32 : // waiting for End of Movement
-
-                    if (noMvtStatus.toUpperCase().contains("NO_MOVE_FINISHED") || bypass)
+//                    if (noMvtStatus.toUpperCase().contains("NO_MOVE_FINISHED") || bypass)
+//                    {
+//                        // go to next step
+//                        step_num = 3;
+//                    }
+                    // if face to track too much on the left
+                    if (tracked.x < 450 )
                     {
                         // go to next step
-                        step_num = 3;
+                        step_num = 33;
                     }
                     break;
+
+                case 33 : // Stop MVT
+                    noMvtStatus = "NOT_YET";
+                    try {
+                        Log.i(TAG, "Sending No command");
+                        // Move No
+                        mySDK.getUsbInterface().WheelRotate(0,new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
+                            @Override
+                            public void onFailed(String error) throws RemoteException {Log.e("yesmove", error);  }
+                        });
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    // go to next step
+                    step_num = 3;
+                    break;
+
 
                 default :
                     // go to next step
@@ -433,6 +429,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         @Override
         // called when the datas from the motor are received
         public void ReceiveMotorMotionData(MotorMotionData msg) throws RemoteException {
+            noStatus = msg.leftWheelMode;
         }
 
         @Override
@@ -440,7 +437,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         public void ReceiveMotorHeadData(MotorHeadData msg) throws RemoteException {
 //            Log.i("Move_NO", "No position : " + String.valueOf(msg.noPosition));
             noPosition = msg.noPosition;
-            noStatus = msg.noMode;
+//            noStatus = msg.noMode;
         } // end receiveMotorHead Data
 
         @Override
@@ -463,8 +460,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
 
-        // initialize implementation of CNNExtractorService
-        this.cnnService = new CNNExtractorServiceImpl();
+
         // configure camera listener
         mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.CameraView);
         mOpenCvCameraView.setVisibility(CameraBridgeViewBase.VISIBLE);
@@ -473,23 +469,19 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // link to UI
         initBtn = findViewById(R.id.initButton);
         BuddyFace = findViewById(R.id.visage);
-        targetTextView = findViewById(R.id.noTargetTxtView);
         noSwitch = findViewById(R.id.enableNoSwitch);
-        moveButton = findViewById(R.id.MoveNoButton);
+
         hideFace = findViewById(R.id.visibleCheckBox);
-        noPos = findViewById(R.id.noPosTxtView);
+
         trackingCheckBox = findViewById(R.id.trackingBox);
+
 
         // Load model
         // directory where the files are saved
         String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
-
         String proto = dir + "/MobileNetSSD_deploy.prototxt";
         String weights = dir + "/MobileNetSSD_deploy.caffemodel";
-        Toast.makeText(this, dir , Toast.LENGTH_SHORT).show();
-//        net = Dnn.readNetFromCaffe(proto, weights);
-//        net = cnnService.getConvertedNet("", TAG);
-        Log.i(TAG, "Network loaded successfully");
+
 
         //start tracking button
         initBtn.setOnClickListener(new View.OnClickListener() {
@@ -499,17 +491,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             }
         });
 
-        // Real-time contour detection of multiple faces
-        FaceDetectorOptions options =
-                new FaceDetectorOptions.Builder()
-                        .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
-                        .setContourMode(FaceDetectorOptions.CONTOUR_MODE_NONE)
-                        .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
-                        .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
-                        .enableTracking()
-                        .build();
-        FaceDetector detector = FaceDetection.getClient(options);
-        faceDetector = detector;
+
 
         //  SDK
         // suscribe to callbacks
@@ -538,7 +520,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 //if checked
                 if (hideFace.isChecked())
                 {   // set tranparent
-                    BuddyFace.setAlpha(0.4F);
+                    BuddyFace.setAlpha(0.25F);
                 }
                 else // unchecked
                 {// set opaque
@@ -551,65 +533,89 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         noSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                // if checked
+//                // if checked
+//                if (noSwitch.isChecked())
+//                {
+//                    // enable No
+//                    try {
+//                        mySDK.getUsbInterface().enableNoMove(1, new IUsbCommadRsp.Stub() {
+//                            @Override
+//                            public void onSuccess(String success) throws RemoteException { }
+//                            @Override
+//                            public void onFailed(String error) throws RemoteException {}
+//                        });
+//                    } //end try enable Yes
+//                    catch (RemoteException e)
+//                    {            e.printStackTrace();
+//                    } // end catch
+//                }
+//                else // unchecked
+//                {
+//                    //disable no
+//                    try {
+//                        mySDK.getUsbInterface().enableNoMove(0, new IUsbCommadRsp.Stub() {
+//                            @Override
+//                            public void onSuccess(String success) throws RemoteException { }
+//                            @Override
+//                            public void onFailed(String error) throws RemoteException {}
+//                        });
+//
+//                    } //end try enable Yes
+//                    catch (RemoteException e)
+//                    {
+//                        e.printStackTrace();
+//                    } // end catch
+//                } // end if togle
+//
+//            } // end onChecked
+
                 if (noSwitch.isChecked())
                 {
-                    // enable No
+                    //enable wheels
                     try {
-                        mySDK.getUsbInterface().enableNoMove(1, new IUsbCommadRsp.Stub() {
+                        mySDK.getUsbInterface().enableWheels(1, 1, new IUsbCommadRsp.Stub() {
                             @Override
-                            public void onSuccess(String success) throws RemoteException { }
+                            public void onSuccess(String success) throws RemoteException {
+                                Log.i(TAG, "BBBsuccess : " + success);
+                            }
+
                             @Override
-                            public void onFailed(String error) throws RemoteException {}
+                            public void onFailed(String error) throws RemoteException {
+                                Log.i(TAG, "BBBerror : " + error);
+
+                            }
                         });
-                    } //end try enable Yes
-                    catch (RemoteException e)
-                    {            e.printStackTrace();
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
                     } // end catch
                 }
                 else // unchecked
                 {
-                    //disable no
+                    //disable wheels
                     try {
-                        mySDK.getUsbInterface().enableNoMove(0, new IUsbCommadRsp.Stub() {
+                        mySDK.getUsbInterface().enableWheels(0, 0, new IUsbCommadRsp.Stub() {
                             @Override
-                            public void onSuccess(String success) throws RemoteException { }
+                            public void onSuccess(String success) throws RemoteException {
+                                Log.i(TAG, "BBBsuccess : " + success);
+                            }
+
                             @Override
-                            public void onFailed(String error) throws RemoteException {}
+                            public void onFailed(String error) throws RemoteException {
+                                Log.i(TAG, "BBBerror : " + error);
+
+                            }
                         });
-
-                    } //end try enable Yes
-                    catch (RemoteException e)
-                    {
+                    } catch (RemoteException e) {
                         e.printStackTrace();
-                    } // end catch
-                } // end if togle
-
+                    }
+                } // end if checked
             } // end onChecked
-        }); // end listener
-
-        //calbacks for Move button
-        moveButton.setOnClickListener(v -> {
-            try {
-                int no_speed = 50;
-                Log.i("Move_NO", "Moving No to " + targetTextView.getText() + " at " + String.valueOf(no_speed) + "deg/s");
-                // Make No move
-                mySDK.getUsbInterface().buddySayNo(no_speed, Integer.parseInt(String.valueOf(targetTextView.getText())),new IUsbCommadRsp.Stub() {
-                    @Override
-                    public void onSuccess(String success) throws RemoteException {      Log.i("Move_NO: ", success);              }
-                    @Override
-                    public void onFailed(String error) throws RemoteException {Log.e("Move_NO: ", error);  }
-                });
-            } catch (RemoteException e)
-            {                e.printStackTrace();
-            } // end try catch
         }); // end listener
 
         //tracking
         trackingCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                //reset
                 //reset
                 if (!trackingCheckBox.isChecked())
                 {
@@ -624,11 +630,26 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 {
                     isrecording = true;
                 }
+
             }
         });
 
+        // camera switch
+        noSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                if (b)
+                {
+                    cameraView.setCameraIndex(1);
+                }
+                else
+                {
+                    cameraView.setCameraIndex(0);
+                }
+            } // end onchecked
+        }); // end onchange
 
-    }
+    } // End onCreate
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -645,7 +666,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 break;
             }
         }
-
     };
 
     @Override
@@ -662,42 +682,21 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         return Collections.singletonList(mOpenCvCameraView);
     }
 
-
-    // frame captured by camera
-    Mat frame;
-    // conversion to MLKit
-    InputImage inputImage;
-    Bitmap bitmapImage = null ;
-    // Face detector
-    Task result;
-    // List of detected faces
-    Vector<DetectedFace> foundFaces = new Vector<DetectedFace>();
-
-    // List of Aruco Markers
-    List<Mat> arucoCorners;
-    Mat arucoIds ;
-
-
     public void onCameraViewStarted(int width, int height) {
-        // obtaining converted network
-        String onnxModelPath = getPath(MODEL_FILE, this);
-        if (onnxModelPath.trim().isEmpty()) {
-            Log.i(TAG, "Failed to get model file");
-            return;
-        }
-//        opencvNet = cnnService.getConvertedNet(onnxModelPath, TAG);
+
+        // Load Face detection model
+        String proto = dir + "/opencv_face_detector.pbtxt";
+        String weights = dir + "/opencv_face_detector_uint8.pb";
+        net = Dnn.readNetFromTensorflow(weights, proto);
 
         // Tracker init
-//        mytracker = TrackerKCF.create();
+        mytracker = TrackerCSRT.create();
 
-        // write video file
+        // Init write video file
         videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
                 25.0D, new Size(800, 600));
         videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
                 25.0D,  new Size( 800,600));
-
-        arucoIds = new Mat();
-        arucoCorners = new ArrayList<>();
 
     }
 
@@ -706,30 +705,149 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
-
+        // cature frame from camera
         Mat frame = inputFrame.rgba();
 
-        //convert
-        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
+        // COUNT FRAME
+        frame_count +=1;
 
-        // Definition of dictionary and params
-        Dictionary arucoDict = Aruco.getPredefinedDictionary(Aruco.DICT_APRILTAG_36h11);
-        DetectorParameters arucoParams = DetectorParameters.create();
-
-        // Detect Marker
-
-        Aruco.detectMarkers(frame, arucoDict, arucoCorners, arucoIds, arucoParams);
+        // every xxx frame
+        if (frame_count%10 == 0) {
 
 
-        if (arucoCorners.size()>0)
+            // convert color to RGB
+            Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
+
+            // Blob
+            blob = Dnn.blobFromImage(frame, 1.0,
+                    new org.opencv.core.Size(300, 300),
+                    new Scalar(104, 117, 123), /*swapRB*/true, /*crop*/false);
+            net.setInput(blob);
+            // Face detection
+            detections = net.forward();
+            int cols = frame.cols();
+            int rows = frame.rows();
+            detections = detections.reshape(1, (int) detections.total() / 7);
+
+            // If found faces
+            if (detections.rows() > 0) {
+                // only if currently tracking something
+                if (istracking) {
+                    // find id of closest face
+                    int id_closest=0;
+                    int max_dist = 999999;
+                    int dist;
+                    // for each face
+                    for (int i = 0; i < detections.rows(); ++i) {
+                        double confidence = detections.get(i, 2)[0];
+                        if (confidence > THRESHOLD) {
+                            int left = (int) (detections.get(i, 3)[0] * cols);
+                            int top = (int) (detections.get(i, 4)[0] * rows);
+                            int right = (int) (detections.get(i, 5)[0] * cols);
+                            int bottom = (int) (detections.get(i, 6)[0] * rows);
+
+                            // if dist min
+                            dist = Math.abs(left - tracked.x) + Math.abs(top - tracked.y);
+                            if (dist < max_dist) {
+                                // update
+                                max_dist = dist;
+                                id_closest = i;
+                            }
+
+                        } // end if confidence OK
+                    } // next face
+
+                    // Init tracker on closest face
+                    int left = (int) (detections.get(id_closest, 3)[0] * cols);
+                    int top = (int) (detections.get(id_closest, 4)[0] * rows);
+                    int right = (int) (detections.get(id_closest, 5)[0] * cols);
+                    int bottom = (int) (detections.get(id_closest, 6)[0] * rows);
+                    Rect bbox = new Rect((int) left,
+                            top,
+                            right-left,
+                            bottom-top
+                    );
+                    Log.i("Tracking", "New Init on " +  bbox.x + " " + bbox.y);
+
+                    try {
+                        mytracker = TrackerCSRT.create();
+                        mytracker.init(frame, bbox);
+                    }
+                    catch (Exception e)
+                    {
+
+                    }
+
+
+                    //DRAW detected faces
+                    for (int i = 0; i < detections.rows(); ++i) {
+                        double confidence = detections.get(i, 2)[0];
+                        if (confidence > THRESHOLD) {
+                            int classId = (int) detections.get(i, 1)[0];
+                            left = (int) (detections.get(i, 3)[0] * cols);
+                            top = (int) (detections.get(i, 4)[0] * rows);
+                            right = (int) (detections.get(i, 5)[0] * cols);
+                            bottom = (int) (detections.get(i, 6)[0] * rows);
+                            // Draw rectangle around detected object.
+                            Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                                    new Scalar(0, 255, 0), 2);
+
+                        } // end if confidence
+                    } // next face
+                    // end DRAW
+
+
+                } // end if is tracking
+                else // Not tracking yet
+                {
+                    // Init tracker on first face
+                    int left = (int) (detections.get(0, 3)[0] * cols);
+                    int top = (int) (detections.get(0, 4)[0] * rows);
+                    int right = (int) (detections.get(0, 5)[0] * cols);
+                    int bottom = (int) (detections.get(0, 6)[0] * rows);
+                    Rect bbox = new Rect((int) left,
+                            top,
+                            right-left,
+                            bottom-top
+                    );
+                    Log.i("Tracking", "First Init on " +  bbox.x + " " + bbox.y);
+                    // try catch to avoid crash in case of wring detection
+                    try
+                    {
+                        // init tracker
+                        mytracker.init(frame, bbox);
+                        //set status
+                        istracking = true;
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                }
+            } // end if face found
+
+        } // end if every xxx frame
+        else
         {
-            Aruco.drawDetectedMarkers(frame, arucoCorners);
-            // print list of codes
-            Log.i("aruco", String.valueOf(arucoIds.get(0,0)[0]));
-        }
+            // if is tracking
+            if (istracking)
+            {
+                Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
+                // update the tracker
+                Log.i("Tracking", "channels "+ String.valueOf(frame.channels()) );
+                //Update tracker
+                try { // try catch to avoid crash in case of wrong tracking
+                    mytracker.update(frame, tracked);
+                }
+                catch(Exception e)
+                {                }
 
-        // draw a rectangle
-        Imgproc.rectangle(frame, new Point(10, 10), new Point(60,60), new Scalar(255, 10, 10));
+                //Log.i("Tracking", "Tracker updated " + tracked.x + " " + tracked.y);
+                // draw a rectangle
+                Imgproc.rectangle(frame, new Point(tracked.x, tracked.y), new Point(tracked.x+tracked.width,tracked.y+tracked.height ),
+                        new Scalar(0, 0, 255), 2);
+            } // end if is tracking
+        } // end rest of the frames
 
 
         // record video
@@ -738,36 +856,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             videoWriter.write(frame);
         }
 
-
         return frame;
     } // end function
 
     public void onCameraViewStopped() {
         videoWriter.release();
     }
-
-    private static String getPath(String file, Context context) {
-        AssetManager assetManager = context.getAssets();
-        BufferedInputStream inputStream;
-        try {
-            // read the defined data from assets
-            inputStream = new BufferedInputStream(assetManager.open(file));
-            byte[] data = new byte[inputStream.available()];
-            inputStream.read(data);
-            inputStream.close();
-            // Create copy file in storage.
-            File outFile = new File(context.getFilesDir(), file);
-            FileOutputStream os = new FileOutputStream(outFile);
-            os.write(data);
-            os.close();
-            // Return a path to file which may be read in common way.
-            return outFile.getAbsolutePath();
-        } catch (IOException ex) {
-            Log.i(TAG, "Failed to upload a file");
-        }
-        return "";
-    } // end getpath
-
 
 
 
