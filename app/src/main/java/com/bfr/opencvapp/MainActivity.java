@@ -1,6 +1,9 @@
 package com.bfr.opencvapp;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -19,6 +22,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.bfr.buddysdk.sdk.Mood;
 import com.bfr.buddysdk.sdk.Services;
@@ -132,9 +137,19 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // run only in Landscape mode
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(R.layout.activity_main);
 
+        // Check permissions
+        if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED)
+        {   //Request permission
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+        }
 
         // configure camera listener
         mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.CameraView);
@@ -360,7 +375,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         frame_count +=1;
 
         // every xxx frame
-        if (frame_count%10 == 0) {
+        if (frame_count%15 == 0) {
 
             // convert color to RGB
             Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
@@ -446,7 +461,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                         } // end if confidence
                     } // next face
                     // end DRAW
-
 
                 } // end if is tracking
                 else // Not tracking yet
