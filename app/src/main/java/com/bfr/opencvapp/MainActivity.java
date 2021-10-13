@@ -6,11 +6,14 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
+import android.graphics.RectF;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.RemoteException;
+import android.os.Trace;
 import android.text.Layout;
 import android.util.Log;
+import android.util.Pair;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -50,6 +53,7 @@ import org.opencv.tracking.legacy_TrackerMedianFlow;
 import org.opencv.video.Tracker;
 import org.opencv.video.TrackerMIL;
 import org.opencv.videoio.VideoWriter;
+import org.tensorflow.lite.Interpreter;
 
 import com.bfr.opencvapp.utils.BuddyData;
 import com.bfr.usbservice.BodySensorData;
@@ -65,10 +69,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
@@ -440,9 +448,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                         mytracker.init(frame, bbox);
                     }
                     catch (Exception e)
-                    {
-
-                    }
+                    {                    }
 
 
                     //DRAW detected faces
@@ -515,6 +521,16 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             } // end if is tracking
         } // end rest of the frames
 
+        //*******************************************************************************
+        //********************************  RECOGNITION *********************************
+
+//        final RectF boundingBox = new RectF(face.getBoundingBox());
+        final RectF boundingBox = new RectF();
+
+        // instance of facial recognition
+        final SimilarityClassifier.Recognition result = new SimilarityClassifier.Recognition(
+                "0", "coucou", 0.0F, boundingBox);
+
 
         // record video
         if (isrecording) {
@@ -527,6 +543,153 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     public void onCameraViewStopped() {
         videoWriter.release();
+    }
+
+
+    // preallocated buffer for face image
+    private int[] intValues;
+    private ByteBuffer imgData;
+
+    // Facenet model
+    private Interpreter tfLite;
+    // params for Facenet Model
+    private int inputSize = 112;
+    private boolean isModelQuantized = true;
+    private float IMAGE_MEAN = 127F;
+    private float IMAGE_STD = 127F;
+    private static final int OUTPUT_SIZE = 192;
+    // Resulting face embeedings (signature) from Facenet
+    private float[][] embeedings;
+    // Known (previously saved)  faces
+    private HashMap<String, SimilarityClassifier.Recognition> registered = new HashMap<>();
+
+
+    // recognize Face
+    public List<SimilarityClassifier.Recognition> recognizeImage(final Bitmap bitmap, boolean storeExtra) {
+        // Log this method so that it can be analyzed with systrace.
+        Trace.beginSection("recognizeImage");
+
+        Trace.beginSection("preprocessBitmap");
+        // Preprocess the image data from 0-255 int to normalized float based
+        // on the provided parameters.
+        bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+        // fill in the data vales for the FaceNet model
+        imgData.rewind();
+        for (int i = 0; i < inputSize; ++i) {
+            for (int j = 0; j < inputSize; ++j) {
+                int pixelValue = intValues[i * inputSize + j];
+                if (isModelQuantized) {
+                    // Quantized model
+                    imgData.put((byte) ((pixelValue >> 16) & 0xFF));
+                    imgData.put((byte) ((pixelValue >> 8) & 0xFF));
+                    imgData.put((byte) (pixelValue & 0xFF));
+                } else { // Float model
+                    imgData.putFloat((((pixelValue >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
+                    imgData.putFloat((((pixelValue >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
+                    imgData.putFloat(((pixelValue & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
+                }
+            }
+        }
+
+        // for Trace
+        Trace.endSection(); // preprocessBitmap
+        // Copy the input data into TensorFlow.
+        Trace.beginSection("feed");
+
+        // input of Facenet model
+        Object[] inputArray = {imgData};
+
+        // for Trace
+        Trace.endSection();
+
+        // Here outputMap is changed to fit the Face Mask detector
+        Map<Integer, Object> outputMap = new HashMap<>();
+
+        // Init Face embeedings (signature)
+        embeedings = new float[1][OUTPUT_SIZE];
+        // Assign to Facenet output
+        outputMap.put(0, embeedings);
+
+        // todebug
+        Log.i("coucou", "Embeedings Before " + String.valueOf(embeedings[0][0]) + "  "
+                + String.valueOf(embeedings[0][1]) + "  "
+                + String.valueOf(embeedings[0][2]) + "  "
+                +String.valueOf(embeedings[0][3]) + "  ");
+
+        // Run the inference in FaceNet Model
+        Trace.beginSection("run");
+        //tfLite.runForMultipleInputsOutputs(inputArray, outputMapBack);
+        tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
+        Trace.endSection();
+
+        // todebug
+        Log.i("coucou", "Embeedings After " + String.valueOf(embeedings[0][0]) + "  "
+                + String.valueOf(embeedings[0][1]) + "  "
+                + String.valueOf(embeedings[0][2]) + "  "
+                +String.valueOf(embeedings[0][3]) + "  ");
+
+
+        // init for distance computation
+        float distance = Float.MAX_VALUE;
+        String id = "0";
+        String label = "?";
+
+        // if already have recorded faces
+        if (registered.size() > 0) {
+            // find closest face
+            final Pair<String, Float> nearest = findNearest(embeedings[0]);
+            if (nearest != null) {
+                // save closest
+                final String name = nearest.first;
+                label = name;
+                distance = nearest.second;
+                Log.i("NEAREST","nearest: " + name + " - distance: " + distance);
+            }
+        }
+
+        // Recognized face
+        final int numDetectionsOutput = 1;
+        final ArrayList<SimilarityClassifier.Recognition> recognitions = new ArrayList<>(numDetectionsOutput);
+        SimilarityClassifier.Recognition rec = new SimilarityClassifier.Recognition(
+                id,
+                label,
+                distance,
+                new RectF());
+        // add recognized face to array
+        recognitions.add( rec );
+
+        // Save embeedings (signature)
+        if (storeExtra) {
+            rec.setExtra(embeedings);
+        }
+
+        Trace.endSection();
+        // return array of recognitions
+        return recognitions;
+    }
+
+
+    // looks for the nearest embeeding in the dataset (using L2 norm)
+    // and retrurns the pair <id, distance>
+    private Pair<String, Float> findNearest(float[] emb) {
+
+        Pair<String, Float> ret = null;
+        for (Map.Entry<String, SimilarityClassifier.Recognition> entry : registered.entrySet()) {
+            final String name = entry.getKey();
+            final float[] knownEmb = ((float[][]) entry.getValue().getExtra())[0];
+
+            float distance = 0;
+            for (int i = 0; i < emb.length; i++) {
+                float diff = emb[i] - knownEmb[i];
+                distance += diff*diff;
+            }
+            distance = (float) Math.sqrt(distance);
+            if (ret == null || distance < ret.second) {
+                ret = new Pair<>(name, distance);
+            }
+        }
+        return ret;
+
     }
 
 
