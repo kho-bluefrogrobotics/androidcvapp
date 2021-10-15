@@ -1,19 +1,13 @@
 package com.bfr.opencvapp;
 
-import android.Manifest;
 import android.content.Context;
-import android.content.pm.ActivityInfo;
-import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
-import android.graphics.RectF;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.RemoteException;
-import android.os.Trace;
 import android.text.Layout;
 import android.util.Log;
-import android.util.Pair;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -25,19 +19,20 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
+import com.bfr.buddysdk.sdk.FacialEvent;
 import com.bfr.buddysdk.sdk.Mood;
 import com.bfr.buddysdk.sdk.Services;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraActivity;
 import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.aruco.Aruco;
+import org.opencv.aruco.DetectorParameters;
+import org.opencv.aruco.Dictionary;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
@@ -46,37 +41,36 @@ import org.opencv.core.Size;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.tracking.TrackerCSRT;
 import org.opencv.tracking.TrackerKCF;
-import org.opencv.tracking.legacy_TrackerMOSSE;
-import org.opencv.tracking.legacy_TrackerMedianFlow;
 import org.opencv.video.Tracker;
-import org.opencv.video.TrackerMIL;
 import org.opencv.videoio.VideoWriter;
-import org.tensorflow.lite.Interpreter;
 
-import com.bfr.opencvapp.utils.BuddyData;
 import com.bfr.usbservice.BodySensorData;
 import com.bfr.usbservice.HeadSensorData;
 import com.bfr.usbservice.IUsbAidlCbListner;
 import com.bfr.usbservice.IUsbCommadRsp;
 import com.bfr.usbservice.MotorHeadData;
 import com.bfr.usbservice.MotorMotionData;
-
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.face.Face;
+import com.google.mlkit.vision.face.FaceDetection;
+import com.google.mlkit.vision.face.FaceDetector;
+import com.google.mlkit.vision.face.FaceDetectorOptions;
+import com.google.mlkit.vision.face.FaceLandmark;
 
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
@@ -87,77 +81,113 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     private static final String TAG = MainActivity.class.getName();
 
-    private CameraBridgeViewBase mOpenCvCameraView;
+    private static final String IMAGENET_CLASSES = "imagenet_classes.txt";
+    private static final String MODEL_FILE = "pytorch_mobilenet.onnx";
 
-    // directory where the model files are saved for face detection
-    private String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
+    private CameraBridgeViewBase mOpenCvCameraView;
+    private Net opencvNet;
+
+    // Neural net for detection
+    private Net net;
+    private boolean isnetloaded = false;
 
     // SDK
     BuddySDK mySDK = new BuddySDK();
+
+    // Face detector
+    private FaceDetector faceDetector;
 
     //button to start tracking
     private Button initBtn;
 
     // Face UI
     private RelativeLayout BuddyFace;
+    private TextView targetTextView;
     private Switch noSwitch;
+    private Button moveButton;
     private CheckBox hideFace;
-
+    TextView noPos;
     private CheckBox trackingCheckBox;
-    private CheckBox fastTrackingChckBox;
-    JavaCameraView cameraView;
 
+    // Tracking & robot status
+    private int noPosition;
+    private int trackedFaceX, trackedFaceY;
+    private int noTargetX, noTargetY;
+    private String noStatus = "";
+    private String noMvtStatus = "";
+    private float smilingFaceProba;
+    private boolean leftEyeOpen, rightEyeOpen, leftEyeOpen_previous, rightEyeOpen_previous;
+    int no_speed = 10;
 
-    //********************  image ***************************
-
-    // tHRESHOLD OF FACE DETECTION
-    final double THRESHOLD = 0.75;
-    // Tracker
-    Tracker mytracker;
-    // frame captured by camera
-    Mat frame;
-    // List of detected faces
-    Mat blob, detections;
-    // status
-    boolean istracking = false;
-    int frame_count = 0;
-    // Option to switch between fast but low performance Tracking, or Slower but more Robust Tracking
-    boolean fastTracking = false;
-
-    // Neural net for detection
-    private Net net;
-
-
+    // gracet
+    private int previous_step ;
+    private int step_num;
+    private long time_in_curr_step = 0;
+    private boolean bypass = false;
     // context
     Context mycontext = this;
+    Consumer<Mood> onMoodSet = (Mood iMood) -> {
+        Log.d("FACE MOOD", "mood set to "+iMood);
+        //hasMadeCommand=true;
+    };
+
+    Consumer<FacialEvent> onFacialEvent = (FacialEvent iFacialEvent) -> {
+
+        //hasMadeCommand=true;
+    };
 
     //Video writer
     private VideoWriter videoWriter;
     private boolean isrecording;
 
 
-    //grafcet
-    TrackingGrafcet mTrackingGrafcet = new TrackingGrafcet("VisualTracking");
+    //classes
+    private static final String[] classNames = {"background",
+            "aeroplane", "bicycle", "bird", "boat",
+            "bottle", "bus", "car", "cat", "chair",
+            "cow", "diningtable", "dog", "horse",
+            "motorbike", "person", "pottedplant",
+            "sheep", "sofa", "train", "tvmonitor"};
 
-    // Sensors & motor data
-    BuddyData mydata = new BuddyData();
+    //grafcet
+//    bfr_Grafcet myGrafcet = new bfr_Grafcet(mysequence, "myGrafcet");
+
+
+    // for Buddy calbacks
+    public class BuddyData extends IUsbAidlCbListner.Stub
+    {
+        @Override
+        // called when the datas from the motor are received
+        public void ReceiveMotorMotionData(MotorMotionData msg) throws RemoteException {
+        }
+
+        @Override
+        // called when the datas from the head motor are received
+        public void ReceiveMotorHeadData(MotorHeadData msg) throws RemoteException {
+//            Log.i("Move_NO", "No position : " + String.valueOf(msg.noPosition));
+            noPosition = msg.noPosition;
+            noStatus = msg.noMode;
+        } // end receiveMotorHead Data
+
+        @Override
+        // called when the datas from the head sensor motor are received
+        public void ReceiveHeadSensorData(HeadSensorData msg) throws RemoteException {
+        }
+
+        @Override
+        // called when the datas from the body sensor motor are received
+        public void ReceiveBodySensorData(BodySensorData data) throws RemoteException {
+        }
+    }
+
+    // Instantiate class
+    private final BuddyData mydata = new BuddyData();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        // run only in Landscape mode
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(R.layout.activity_main);
-
-        // Check permissions
-        if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED)
-        {   //Request permission
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-        }
 
         // configure camera listener
         mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.CameraView);
@@ -167,10 +197,23 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // link to UI
         initBtn = findViewById(R.id.initButton);
         BuddyFace = findViewById(R.id.visage);
+//        targetTextView = findViewById(R.id.noTargetTxtView);
         noSwitch = findViewById(R.id.enableNoSwitch);
+//        moveButton = findViewById(R.id.MoveNoButton);
         hideFace = findViewById(R.id.visibleCheckBox);
+//        noPos = findViewById(R.id.noPosTxtView);
         trackingCheckBox = findViewById(R.id.trackingBox);
-        fastTrackingChckBox = findViewById(R.id.fastTracking);
+
+        // Load model
+        // directory where the files are saved
+        String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
+
+        String proto = dir + "/MobileNetSSD_deploy.prototxt";
+        String weights = dir + "/MobileNetSSD_deploy.caffemodel";
+        Toast.makeText(this, dir , Toast.LENGTH_SHORT).show();
+//        net = Dnn.readNetFromCaffe(proto, weights);
+//        net = cnnService.getConvertedNet("", TAG);
+        Log.i(TAG, "Network loaded successfully");
 
         //start tracking button
         initBtn.setOnClickListener(new View.OnClickListener() {
@@ -180,6 +223,17 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             }
         });
 
+        // Real-time contour detection of multiple faces
+        FaceDetectorOptions options =
+                new FaceDetectorOptions.Builder()
+                        .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
+                        .setContourMode(FaceDetectorOptions.CONTOUR_MODE_NONE)
+                        .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
+                        .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
+                        .enableTracking()
+                        .build();
+        FaceDetector detector = FaceDetection.getClient(options);
+        faceDetector = detector;
 
         //  SDK
         // suscribe to callbacks
@@ -190,22 +244,16 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //                    mySDK.getUsbInterface().registerCb(mydata);
                     mySDK.getUsbInterface().registerCb(mydata);
                 //start the grafcet
-                mTrackingGrafcet.start();
+//                myGrafcet.start();
 
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
         };
+        //mySDK.initSDK(this, onServiceLaunched);
 
-        // init SDK
-        mySDK.initSDK(this, onServiceLaunched);
-
-        // Pass SDK and data to grafcet
-        mTrackingGrafcet.init(mycontext, mySDK, mydata);
-
-
-
-        //**************** Callbacks for buttons
+        // start grafcet
+//        myGrafcet.start();
 
         //callback show face
         hideFace.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -214,7 +262,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 //if checked
                 if (hideFace.isChecked())
                 {   // set tranparent
-                    BuddyFace.setAlpha(0.25F);
+                    BuddyFace.setAlpha(0.4F);
                 }
                 else // unchecked
                 {// set opaque
@@ -259,21 +307,23 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     {
                         e.printStackTrace();
                     } // end catch
-                } // end if toggle
+                } // end if togle
 
             } // end onChecked
         }); // end listener
+
+
 
         //tracking
         trackingCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 //reset
+                //reset
                 if (!trackingCheckBox.isChecked())
                 {
                     // reset grafcet
-                    TrackingGrafcet.step_num =0;
-                    TrackingGrafcet.go = false;
+                    step_num =0;
                     // close record file
                     isrecording = false;
                     videoWriter.release();
@@ -282,31 +332,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 else // checked
                 {
                     isrecording = true;
-                    // let the grafcet continue
-                    TrackingGrafcet.go = true;
                 }
-
             }
         });
 
-        //tracking
-        fastTrackingChckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                //Enable fast tracking
-                if (b)
-                {
-                    fastTracking = true;
-                }
-                else // checked
-                {
-                    fastTracking = false;
-                }
 
-            }
-        });
-
-    } // End onCreate
+    }
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -323,15 +354,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 break;
             }
         }
+
     };
-
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        //stop grafcet
-        mTrackingGrafcet.start();
-    }
 
     @Override
     public void onResume() {
@@ -339,9 +363,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // OpenCV manager initialization
         OpenCVLoader.initDebug();
         mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-
-        //restart grafcet
-        mTrackingGrafcet.start();
     }
 
 
@@ -350,193 +371,97 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         return Collections.singletonList(mOpenCvCameraView);
     }
 
-    public void onCameraViewStarted(int width, int height) {
 
-        // Load Face detection model
-        String proto = dir + "/opencv_face_detector.pbtxt";
-        String weights = dir + "/opencv_face_detector_uint8.pb";
-        net = Dnn.readNetFromTensorflow(weights, proto);
+    // frame captured by camera
+    Mat frame;
+    // conversion to MLKit
+    InputImage inputImage;
+    Bitmap bitmapImage = null ;
+    // Face detector
+    Task result;
+    // List of detected faces
+    Vector<DetectedFace> foundFaces = new Vector<DetectedFace>();
+
+    // List of Aruco Markers
+    List<Mat> arucoCorners;
+    Mat arucoIds ;
+
+
+    public void onCameraViewStarted(int width, int height) {
+        // obtaining converted network
+        String onnxModelPath = getPath(MODEL_FILE, this);
+        if (onnxModelPath.trim().isEmpty()) {
+            Log.i(TAG, "Failed to get model file");
+            return;
+        }
+//        opencvNet = cnnService.getConvertedNet(onnxModelPath, TAG);
 
         // Tracker init
-        if (fastTracking)
-            mytracker = TrackerKCF.create();
-        else
-            mytracker = TrackerCSRT.create();
+//        mytracker = TrackerKCF.create();
 
-        // Init write video file
+        // write video file
         videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
                 25.0D, new Size(800, 600));
         videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
                 25.0D,  new Size( 800,600));
 
+        arucoIds = new Mat();
+        arucoCorners = new ArrayList<>();
+
     }
-
-
 
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
-        // cature frame from camera
+        arucoIds = new Mat();
+        arucoCorners = new ArrayList<>();
+
         Mat frame = inputFrame.rgba();
 
-        // COUNT FRAME
-        frame_count +=1;
+        //convert
+        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
-        // every xxx frame
-        if (frame_count%15 == 0) {
+        // Definition of dictionary and params
+        Dictionary arucoDict = Aruco.getPredefinedDictionary(Aruco.DICT_APRILTAG_36h11);
+        DetectorParameters arucoParams = DetectorParameters.create();
 
-            // convert color to RGB
-            Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
+        // Detect Marker
+        Aruco.detectMarkers(frame, arucoDict, arucoCorners, arucoIds, arucoParams);
 
-            // Blob
-            blob = Dnn.blobFromImage(frame, 1.0,
-                    new org.opencv.core.Size(300, 300),
-                    new Scalar(104, 117, 123), /*swapRB*/true, /*crop*/false);
-            net.setInput(blob);
-            // Face detection
-            detections = net.forward();
-            int cols = frame.cols();
-            int rows = frame.rows();
-            detections = detections.reshape(1, (int) detections.total() / 7);
-
-            // If found faces
-            if (detections.rows() > 0) {
-                // only if currently tracking something
-                if (istracking) {
-                    // find id of closest face
-                    int id_closest=0;
-                    int max_dist = 999999;
-                    int dist;
-                    // for each face
-                    for (int i = 0; i < detections.rows(); ++i) {
-                        double confidence = detections.get(i, 2)[0];
-                        if (confidence > THRESHOLD) {
-                            int left = (int) (detections.get(i, 3)[0] * cols);
-                            int top = (int) (detections.get(i, 4)[0] * rows);
-                            int right = (int) (detections.get(i, 5)[0] * cols);
-                            int bottom = (int) (detections.get(i, 6)[0] * rows);
-
-                            // if dist min
-                            dist = Math.abs(left - TrackingGrafcet.tracked.x) + Math.abs(top - TrackingGrafcet.tracked.y);
-                            if (dist < max_dist) {
-                                // update
-                                max_dist = dist;
-                                id_closest = i;
-                            }
-
-                        } // end if confidence OK
-                    } // next face
-
-                    // Init tracker on closest face
-                    int left = (int) (detections.get(id_closest, 3)[0] * cols);
-                    int top = (int) (detections.get(id_closest, 4)[0] * rows);
-                    int right = (int) (detections.get(id_closest, 5)[0] * cols);
-                    int bottom = (int) (detections.get(id_closest, 6)[0] * rows);
-                    Rect bbox = new Rect((int) left,
-                            top,
-                            right-left,
-                            bottom-top
-                    );
-                    Log.i("Tracking", "New Init on " +  bbox.x + " " + bbox.y);
-
-                    try {
-                        if (fastTracking)
-                            mytracker = TrackerKCF.create();
-                        else
-                            mytracker = TrackerCSRT.create();
-
-                        mytracker.init(frame, bbox);
-                    }
-                    catch (Exception e)
-                    {                    }
-
-
-                    //DRAW detected faces
-                    for (int i = 0; i < detections.rows(); ++i) {
-                        double confidence = detections.get(i, 2)[0];
-                        if (confidence > THRESHOLD) {
-                            int classId = (int) detections.get(i, 1)[0];
-                            left = (int) (detections.get(i, 3)[0] * cols);
-                            top = (int) (detections.get(i, 4)[0] * rows);
-                            right = (int) (detections.get(i, 5)[0] * cols);
-                            bottom = (int) (detections.get(i, 6)[0] * rows);
-                            // Draw rectangle around detected object.
-                            Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                                    new Scalar(0, 255, 0), 2);
-
-                        } // end if confidence
-                    } // next face
-                    // end DRAW
-
-                } // end if is tracking
-                else // Not tracking yet
-                {
-                    // Init tracker on first face
-                    int left = (int) (detections.get(0, 3)[0] * cols);
-                    int top = (int) (detections.get(0, 4)[0] * rows);
-                    int right = (int) (detections.get(0, 5)[0] * cols);
-                    int bottom = (int) (detections.get(0, 6)[0] * rows);
-                    Rect bbox = new Rect((int) left,
-                            top,
-                            right-left,
-                            bottom-top
-                    );
-                    Log.i("Tracking", "First Init on " +  bbox.x + " " + bbox.y);
-                    // try catch to avoid crash in case of wring detection
-                    try
-                    {
-                        // init tracker
-                        mytracker.init(frame, bbox);
-                        //set status
-                        istracking = true;
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                }
-            } // end if face found
-
-        } // end if every xxx frame
-        else
+        // if marker detected
+        if (arucoCorners.size()>0)
         {
-            // if is tracking
-            if (istracking)
+            Log.i("aruco", "Number of detected Markers : "+ arucoCorners.size() ) ;
+
+            // fora each detected marker
+            for (int k=0; k<arucoCorners.size(); k++)
             {
-                Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
-                // update the tracker
-                Log.i("Tracking", "channels "+ String.valueOf(frame.channels()) );
-                //Update tracker
-                try { // try catch to avoid crash in case of wrong tracking
-                    mytracker.update(frame, TrackingGrafcet.tracked);
-                }
-                catch(Exception e)
-                {                }
+                Log.i("aruco", "Read values in marker " + k + " : "+ arucoIds.get(k,0)[0] ) ;
+                // coordinates of four corners
+                int x1 = (int) arucoCorners.get(k).get(0,0)[0];
+                int y1 = (int) arucoCorners.get(k).get(0,0)[1];
+                int x2 = (int) arucoCorners.get(k).get(0,1)[0];
+                int y2 = (int) arucoCorners.get(k).get(0,1)[1];
+                int x3 = (int) arucoCorners.get(k).get(0,2)[0];
+                int y3 = (int) arucoCorners.get(k).get(0,2)[1];
+                int x4 = (int) arucoCorners.get(k).get(0,3)[0];
+                int y4 = (int) arucoCorners.get(k).get(0,3)[1];
+                // draw corners
+                Imgproc.circle(frame, new Point(x1, y1),  1, new Scalar(0,255,0)  ,5);
+                Imgproc.circle(frame, new Point(x2, y2),  1, new Scalar(255,0,0)  ,5);
+                Imgproc.circle(frame, new Point(x3, y3),  1, new Scalar(0,0,255)  ,5);
+                Imgproc.circle(frame, new Point(x4, y4),  1, new Scalar(125,0,125)  ,5);
 
-                //Log.i("Tracking", "Tracker updated " + tracked.x + " " + tracked.y);
-                // draw a rectangle
-                Imgproc.rectangle(frame, new Point(TrackingGrafcet.tracked.x, TrackingGrafcet.tracked.y),
-                        new Point(TrackingGrafcet.tracked.x+TrackingGrafcet.tracked.width,TrackingGrafcet.tracked.y+TrackingGrafcet.tracked.height ),
-                        new Scalar(0, 0, 255), 2);
-            } // end if is tracking
-        } // end rest of the frames
+            } // next marker
 
-        //*******************************************************************************
-        //********************************  RECOGNITION *********************************
-
-//        final RectF boundingBox = new RectF(face.getBoundingBox());
-        final RectF boundingBox = new RectF();
-
-        // instance of facial recognition
-        final SimilarityClassifier.Recognition result = new SimilarityClassifier.Recognition(
-                "0", "coucou", 0.0F, boundingBox);
-
+        } // end if marker detected
 
         // record video
         if (isrecording) {
             Log.i("RecordVideo", frame.channels() + "  " + frame.cols() + "  " + frame.rows());
             videoWriter.write(frame);
         }
+
 
         return frame;
     } // end function
@@ -545,152 +470,28 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         videoWriter.release();
     }
 
-
-    // preallocated buffer for face image
-    private int[] intValues;
-    private ByteBuffer imgData;
-
-    // Facenet model
-    private Interpreter tfLite;
-    // params for Facenet Model
-    private int inputSize = 112;
-    private boolean isModelQuantized = true;
-    private float IMAGE_MEAN = 127F;
-    private float IMAGE_STD = 127F;
-    private static final int OUTPUT_SIZE = 192;
-    // Resulting face embeedings (signature) from Facenet
-    private float[][] embeedings;
-    // Known (previously saved)  faces
-    private HashMap<String, SimilarityClassifier.Recognition> registered = new HashMap<>();
-
-
-    // recognize Face
-    public List<SimilarityClassifier.Recognition> recognizeImage(final Bitmap bitmap, boolean storeExtra) {
-        // Log this method so that it can be analyzed with systrace.
-        Trace.beginSection("recognizeImage");
-
-        Trace.beginSection("preprocessBitmap");
-        // Preprocess the image data from 0-255 int to normalized float based
-        // on the provided parameters.
-        bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
-        // fill in the data vales for the FaceNet model
-        imgData.rewind();
-        for (int i = 0; i < inputSize; ++i) {
-            for (int j = 0; j < inputSize; ++j) {
-                int pixelValue = intValues[i * inputSize + j];
-                if (isModelQuantized) {
-                    // Quantized model
-                    imgData.put((byte) ((pixelValue >> 16) & 0xFF));
-                    imgData.put((byte) ((pixelValue >> 8) & 0xFF));
-                    imgData.put((byte) (pixelValue & 0xFF));
-                } else { // Float model
-                    imgData.putFloat((((pixelValue >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-                    imgData.putFloat((((pixelValue >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-                    imgData.putFloat(((pixelValue & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-                }
-            }
+    private static String getPath(String file, Context context) {
+        AssetManager assetManager = context.getAssets();
+        BufferedInputStream inputStream;
+        try {
+            // read the defined data from assets
+            inputStream = new BufferedInputStream(assetManager.open(file));
+            byte[] data = new byte[inputStream.available()];
+            inputStream.read(data);
+            inputStream.close();
+            // Create copy file in storage.
+            File outFile = new File(context.getFilesDir(), file);
+            FileOutputStream os = new FileOutputStream(outFile);
+            os.write(data);
+            os.close();
+            // Return a path to file which may be read in common way.
+            return outFile.getAbsolutePath();
+        } catch (IOException ex) {
+            Log.i(TAG, "Failed to upload a file");
         }
+        return "";
+    } // end getpath
 
-        // for Trace
-        Trace.endSection(); // preprocessBitmap
-        // Copy the input data into TensorFlow.
-        Trace.beginSection("feed");
-
-        // input of Facenet model
-        Object[] inputArray = {imgData};
-
-        // for Trace
-        Trace.endSection();
-
-        // Here outputMap is changed to fit the Face Mask detector
-        Map<Integer, Object> outputMap = new HashMap<>();
-
-        // Init Face embeedings (signature)
-        embeedings = new float[1][OUTPUT_SIZE];
-        // Assign to Facenet output
-        outputMap.put(0, embeedings);
-
-        // todebug
-        Log.i("coucou", "Embeedings Before " + String.valueOf(embeedings[0][0]) + "  "
-                + String.valueOf(embeedings[0][1]) + "  "
-                + String.valueOf(embeedings[0][2]) + "  "
-                +String.valueOf(embeedings[0][3]) + "  ");
-
-        // Run the inference in FaceNet Model
-        Trace.beginSection("run");
-        //tfLite.runForMultipleInputsOutputs(inputArray, outputMapBack);
-        tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
-        Trace.endSection();
-
-        // todebug
-        Log.i("coucou", "Embeedings After " + String.valueOf(embeedings[0][0]) + "  "
-                + String.valueOf(embeedings[0][1]) + "  "
-                + String.valueOf(embeedings[0][2]) + "  "
-                +String.valueOf(embeedings[0][3]) + "  ");
-
-
-        // init for distance computation
-        float distance = Float.MAX_VALUE;
-        String id = "0";
-        String label = "?";
-
-        // if already have recorded faces
-        if (registered.size() > 0) {
-            // find closest face
-            final Pair<String, Float> nearest = findNearest(embeedings[0]);
-            if (nearest != null) {
-                // save closest
-                final String name = nearest.first;
-                label = name;
-                distance = nearest.second;
-                Log.i("NEAREST","nearest: " + name + " - distance: " + distance);
-            }
-        }
-
-        // Recognized face
-        final int numDetectionsOutput = 1;
-        final ArrayList<SimilarityClassifier.Recognition> recognitions = new ArrayList<>(numDetectionsOutput);
-        SimilarityClassifier.Recognition rec = new SimilarityClassifier.Recognition(
-                id,
-                label,
-                distance,
-                new RectF());
-        // add recognized face to array
-        recognitions.add( rec );
-
-        // Save embeedings (signature)
-        if (storeExtra) {
-            rec.setExtra(embeedings);
-        }
-
-        Trace.endSection();
-        // return array of recognitions
-        return recognitions;
-    }
-
-
-    // looks for the nearest embeeding in the dataset (using L2 norm)
-    // and retrurns the pair <id, distance>
-    private Pair<String, Float> findNearest(float[] emb) {
-
-        Pair<String, Float> ret = null;
-        for (Map.Entry<String, SimilarityClassifier.Recognition> entry : registered.entrySet()) {
-            final String name = entry.getKey();
-            final float[] knownEmb = ((float[][]) entry.getValue().getExtra())[0];
-
-            float distance = 0;
-            for (int i = 0; i < emb.length; i++) {
-                float diff = emb[i] - knownEmb[i];
-                distance += diff*diff;
-            }
-            distance = (float) Math.sqrt(distance);
-            if (ret == null || distance < ret.second) {
-                ret = new Pair<>(name, distance);
-            }
-        }
-        return ret;
-
-    }
 
 
 
