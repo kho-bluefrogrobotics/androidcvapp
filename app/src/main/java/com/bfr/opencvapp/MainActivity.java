@@ -58,12 +58,6 @@ import org.opencv.videoio.VideoWriter;
 import org.tensorflow.lite.Interpreter;
 
 import com.bfr.opencvapp.utils.BuddyData;
-import com.bfr.usbservice.BodySensorData;
-import com.bfr.usbservice.HeadSensorData;
-import com.bfr.usbservice.IUsbAidlCbListner;
-import com.bfr.usbservice.IUsbCommadRsp;
-import com.bfr.usbservice.MotorHeadData;
-import com.bfr.usbservice.MotorMotionData;
 
 
 import java.io.BufferedInputStream;
@@ -83,9 +77,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
+
+import java.text.SimpleDateFormat;
 
 import com.bfr.buddysdk.sdk.BuddySDK;
 
@@ -110,7 +103,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private CheckBox hideFace;
 
     private CheckBox trackingCheckBox;
-    private CheckBox fastTrackingChckBox;
+    private CheckBox recordingChckBox;
     JavaCameraView cameraView;
 
 
@@ -127,8 +120,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // status
     boolean istracking = false;
     int frame_count = 0;
-    // Option to switch between fast but low performance Tracking, or Slower but more Robust Tracking
-    boolean fastTracking = false;
 
     // Neural net for detection
     private Net net;
@@ -141,12 +132,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private VideoWriter videoWriter;
     private boolean isrecording;
 
+    SimpleDateFormat sdf = new SimpleDateFormat("yyMMddHHmmss");
+    String currentDateandTime = "";
+
 
     //grafcet
     TrackingGrafcet mTrackingGrafcet = new TrackingGrafcet("VisualTracking");
 
-    // Sensors & motor data
-    BuddyData mydata = new BuddyData();
+    // List of known faces
+    private List<trainFace> knownFaces = new ArrayList<>();;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -176,7 +170,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         noSwitch = findViewById(R.id.enableNoSwitch);
         hideFace = findViewById(R.id.visibleCheckBox);
         trackingCheckBox = findViewById(R.id.trackingBox);
-        fastTrackingChckBox = findViewById(R.id.fastTracking);
+        recordingChckBox = findViewById(R.id.Recording);
 
         //start tracking button
         initBtn.setOnClickListener(new View.OnClickListener() {
@@ -185,29 +179,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 Log.i("Tracking", "Tracking is starting");
             }
         });
-
-
-        //  SDK
-        // suscribe to callbacks
-        Consumer<Services> onServiceLaunched = (Services iService) -> {
-            Log.d("OpenCVAPP", "service launched ");
-            try {
-                if (iService == Services.SENSORSMOTORS)
-//                    mySDK.getUsbInterface().registerCb(mydata);
-                    mySDK.getUsbInterface().registerCb(mydata);
-                //start the grafcet
-                mTrackingGrafcet.start();
-
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        };
-
-        // init SDK
-        mySDK.initSDK(this, onServiceLaunched);
-
-        // Pass SDK and data to grafcet
-        mTrackingGrafcet.init(mycontext, mySDK, mydata);
 
 
 
@@ -229,90 +200,28 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             } // end onchange
         });// end listener
 
-        //calbacks for Enable button
-        noSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                // if checked
-                if (noSwitch.isChecked())
-                {
-                    // enable No
-                    try {
-                        mySDK.getUsbInterface().enableNoMove(1, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException { }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {}
-                        });
-                    } //end try enable Yes
-                    catch (RemoteException e)
-                    {            e.printStackTrace();
-                    } // end catch
-                }
-                else // unchecked
-                {
-                    //disable no
-                    try {
-                        mySDK.getUsbInterface().enableNoMove(0, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException { }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {}
-                        });
 
-                    } //end try enable Yes
-                    catch (RemoteException e)
-                    {
-                        e.printStackTrace();
-                    } // end catch
-                } // end if toggle
-
-            } // end onChecked
-        }); // end listener
 
         //tracking
-        trackingCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                //reset
-                if (!trackingCheckBox.isChecked())
-                {
-                    // reset grafcet
-                    TrackingGrafcet.step_num =0;
-                    TrackingGrafcet.go = false;
-                    // close record file
-                    isrecording = false;
-                    videoWriter.release();
-
-                }
-                else // checked
-                {
-                    isrecording = true;
-                    // let the grafcet continue
-                    TrackingGrafcet.go = true;
-                }
-
-            }
-        });
-
-        //tracking
-        fastTrackingChckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        recordingChckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 //Enable fast tracking
                 if (b)
                 {
-                    fastTracking = true;
+                    isrecording = true;
                 }
                 else // checked
                 {
-                    fastTracking = false;
+                    isrecording = false;
                 }
 
             }
         });
 
     } // End onCreate
+
+
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -363,18 +272,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         String weights = dir + "/opencv_face_detector_uint8.pb";
         net = Dnn.readNetFromTensorflow(weights, proto);
 
-        // Tracker init
-        if (fastTracking)
-            mytracker = TrackerKCF.create();
-        else
-            mytracker = TrackerCSRT.create();
-//
-//        try {
-//            tfLite = new Interpreter(loadModelFile(getAssets(),
-//                    "/storage/emulated/0/mobile_face_net.tflite"));
-//        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
+        // Load Facenet model for face recognition
+        File tfliteModel = new File("/storage/emulated/0/Documents/mobile_face_net.tflite");
+        if(tfliteModel.exists()){
+            Log.i("coucou", "FOUND TFLITE MODEL");
+        }
+
+        tfLite = new Interpreter(tfliteModel );
 
         Log.i("coucou", "face recog model loaded");
 
@@ -383,6 +287,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 25.0D, new Size(800, 600));
         videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
                 25.0D,  new Size( 800,600));
+
+        // process all known faces
+        computeKnownFaces(knownFaces);
 
     }
 
@@ -397,101 +304,127 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // COUNT FRAME
         frame_count +=1;
 
+        // convert color to RGB
+        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
-            // convert color to RGB
-            Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
+        // Blob
+        blob = Dnn.blobFromImage(frame, 1.0,
+                new org.opencv.core.Size(300, 300),
+                new Scalar(104, 117, 123), /*swapRB*/true, /*crop*/false);
+        net.setInput(blob);
+        // Face detection
+        detections = net.forward();
+        int cols = frame.cols();
+        int rows = frame.rows();
+        detections = detections.reshape(1, (int) detections.total() / 7);
 
-            // Blob
-            blob = Dnn.blobFromImage(frame, 1.0,
-                    new org.opencv.core.Size(300, 300),
-                    new Scalar(104, 117, 123), /*swapRB*/true, /*crop*/false);
-            net.setInput(blob);
-            // Face detection
-            detections = net.forward();
-            int cols = frame.cols();
-            int rows = frame.rows();
-            detections = detections.reshape(1, (int) detections.total() / 7);
+        // If found faces
+        if (detections.rows() > 0) {
+            // find id of closest face
+            int id_closest=0;
+            int max_dist = 999999;
+            int dist;
+            // for each face
+            for (int i = 0; i < detections.rows(); ++i) {
+                double confidence = detections.get(i, 2)[0];
+                if (confidence > THRESHOLD) {
+                    int left = (int) (detections.get(i, 3)[0] * cols);
+                    int top = (int) (detections.get(i, 4)[0] * rows);
+                    int right = (int) (detections.get(i, 5)[0] * cols);
+                    int bottom = (int) (detections.get(i, 6)[0] * rows);
 
-            // If found faces
-            if (detections.rows() > 0) {
-                    // find id of closest face
-                    int id_closest=0;
-                    int max_dist = 999999;
-                    int dist;
-                    // for each face
-                    for (int i = 0; i < detections.rows(); ++i) {
-                        double confidence = detections.get(i, 2)[0];
-                        if (confidence > THRESHOLD) {
-                            int left = (int) (detections.get(i, 3)[0] * cols);
-                            int top = (int) (detections.get(i, 4)[0] * rows);
-                            int right = (int) (detections.get(i, 5)[0] * cols);
-                            int bottom = (int) (detections.get(i, 6)[0] * rows);
+                    // if dist min
+                    dist = Math.abs(left - TrackingGrafcet.tracked.x) + Math.abs(top - TrackingGrafcet.tracked.y);
+                    if (dist < max_dist) {
+                        // update
+                        max_dist = dist;
+                        id_closest = i;
+                    }
 
-                            // if dist min
-                            dist = Math.abs(left - TrackingGrafcet.tracked.x) + Math.abs(top - TrackingGrafcet.tracked.y);
-                            if (dist < max_dist) {
-                                // update
-                                max_dist = dist;
-                                id_closest = i;
-                            }
+                } // end if confidence OK
+            } // next face
 
-                        } // end if confidence OK
-                    } // next face
-
-                    // Init tracker on closest face
-                    int left = (int) (detections.get(id_closest, 3)[0] * cols);
-                    int top = (int) (detections.get(id_closest, 4)[0] * rows);
-                    int right = (int) (detections.get(id_closest, 5)[0] * cols);
-                    int bottom = (int) (detections.get(id_closest, 6)[0] * rows);
+            // Init tracker on closest face
+            int left = (int) (detections.get(id_closest, 3)[0] * cols);
+            int top = (int) (detections.get(id_closest, 4)[0] * rows);
+            int right = (int) (detections.get(id_closest, 5)[0] * cols);
+            int bottom = (int) (detections.get(id_closest, 6)[0] * rows);
 
 
-                    //DRAW detected faces
-                    for (int i = 0; i < detections.rows(); ++i) {
-                        double confidence = detections.get(i, 2)[0];
-                        if (confidence > THRESHOLD) {
-                            int classId = (int) detections.get(i, 1)[0];
-                            left = (int) (detections.get(i, 3)[0] * cols);
-                            top = (int) (detections.get(i, 4)[0] * rows);
-                            right = (int) (detections.get(i, 5)[0] * cols);
-                            bottom = (int) (detections.get(i, 6)[0] * rows);
-                            // Draw rectangle around detected object.
+            //DRAW detected faces
+            for (int i = 0; i < detections.rows(); ++i) {
+                double confidence = detections.get(i, 2)[0];
+                if (confidence > THRESHOLD) {
+                    int classId = (int) detections.get(i, 1)[0];
+                    left = (int) (detections.get(i, 3)[0] * cols);
+                    top = (int) (detections.get(i, 4)[0] * rows);
+                    right = (int) (detections.get(i, 5)[0] * cols);
+                    bottom = (int) (detections.get(i, 6)[0] * rows);
+                    // Draw rectangle around detected object.
 //                            Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
 //                                    new Scalar(0, 255, 0), 2);
 
-                        } // end if confidence
-                    } // next face
-                    // end DRAW
+                } // end if confidence
+            } // next face
+            // end DRAW
 
-                // Image of only face
-                Rect faceROI = new Rect(new Point(left, top), new Point(right, bottom) );
-                Mat croppedFace = new Mat(frame, faceROI);
-                Mat croppedFaceResize = new Mat();
-                Imgproc.resize(croppedFace, croppedFaceResize, new Size(INPUTSIZE, INPUTSIZE));
-                //to check only (todelete)
-                Imgcodecs.imwrite( "/storage/emulated/0/face.jpg", croppedFaceResize );
+            int candidate = 0;
+            String recog = "";
+try {
+    // Image of only face
+    Rect faceROI = new Rect(new Point(left, top), new Point(right, bottom));
+    Mat croppedFace = new Mat(frame, faceROI);
+    Mat croppedFaceResize = new Mat();
+    Imgproc.resize(croppedFace, croppedFaceResize, new Size(INPUTSIZE, INPUTSIZE));
 
-                //convert to bitmap
-                Bitmap faceBitmap = Bitmap.createBitmap(croppedFaceResize.cols(), croppedFaceResize.rows(), Bitmap.Config.ARGB_8888);
-                Utils.matToBitmap(croppedFaceResize, faceBitmap);
+    //if recording
+    if (isrecording) {
+        // each 20 frames
+        if (frame_count % 10 == 0)
+            //filename
+            currentDateandTime = sdf.format(new Date());
+        //record
+        Imgcodecs.imwrite("/storage/emulated/0/Documents/Faces/face_" + currentDateandTime + ".jpg", croppedFaceResize);
+    }
 
-                // resize
-                computeEmbeddings(faceBitmap);
+    //convert to bitmap
+    Bitmap faceBitmap = Bitmap.createBitmap(croppedFaceResize.cols(), croppedFaceResize.rows(), Bitmap.Config.ARGB_8888);
+    Utils.matToBitmap(croppedFaceResize, faceBitmap);
 
-                //*******************************************************************************
-                //********************************  RECOGNITION *********************************
+    // compute embeddings
+    float[][] faceEmbeddings = computeEmbeddings(faceBitmap);
+
+    // todebug
+    Log.i("coucou", "Embeedings Before " + String.valueOf(faceEmbeddings[0][0]) + "  "
+            + String.valueOf(faceEmbeddings[0][1]) + "  "
+            + String.valueOf(faceEmbeddings[0][2]) + "  "
+            + String.valueOf(faceEmbeddings[0][3]) + "  ");
+
+    //*******************************************************************************
+    //********************************  RECOGNITION *********************************
 
 //        final RectF boundingBox = new RectF(face.getBoundingBox());
-                final RectF boundingBox = new RectF();
+//            final RectF boundingBox = new RectF();
 
-                // instance of facial recognition
-                final SimilarityClassifier.Recognition result = new SimilarityClassifier.Recognition(
-                        "0", "coucou", 0.0F, boundingBox);
+    // Recognize face
+    candidate = findNearest(faceEmbeddings[0], knownFaces);
+    recog = knownFaces.get(candidate).name;
 
+    Log.i("coucou", "FACE RECOGNIZED " + knownFaces.get(candidate).name);
 
+} catch (Exception e) {
+    e.printStackTrace();
+}
 
+            String finalRecog = recog;
+            runOnUiThread(new Runnable() {
+    @Override
+    public void run() {
+        Toast.makeText(getApplicationContext(), "FACE RECOGNIZED " + finalRecog.replace(".jpg", ""), Toast.LENGTH_SHORT).show();
+    }
+});
 
-
-            } // end if face found
+        } // end if face found
 
 
 
@@ -529,7 +462,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private HashMap<String, SimilarityClassifier.Recognition> registered = new HashMap<>();
 
 
-    public void computeEmbeddings(Bitmap faceBitmap)
+    public float[][] computeEmbeddings(Bitmap faceBitmap)
     {
         // init
         intValues = new int[INPUTSIZE * INPUTSIZE];
@@ -580,23 +513,16 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Object[] inputArray = {imgData};
 
         // todebug
-        Log.i("coucou", "Embeedings Before " + String.valueOf(embeedings[0][0]) + "  "
-                + String.valueOf(embeedings[0][1]) + "  "
-                + String.valueOf(embeedings[0][2]) + "  "
-                +String.valueOf(embeedings[0][3]) + "  ");
+//        Log.i("coucou", "Embeedings Before " + String.valueOf(embeedings[0][0]) + "  "
+//                + String.valueOf(embeedings[0][1]) + "  "
+//                + String.valueOf(embeedings[0][2]) + "  "
+//                +String.valueOf(embeedings[0][3]) + "  ");
 
         // Run the inference in FaceNet Model
         Trace.beginSection("run");
         //tfLite.runForMultipleInputsOutputs(inputArray, outputMapBack);
         // Face net model
 
-
-        File tfliteModel = new File("/storage/emulated/0/mobile_face_net.tflite");
-        if(tfliteModel.exists()){
-            Log.i("coucou", "FOUND TFLITE MODEL");
-        }
-
-        tfLite = new Interpreter(tfliteModel );
 
         if(tfLite ==null)
             Log.i("coucou", "tflite null");
@@ -608,13 +534,17 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Trace.endSection();
 
         // todebug
-        Log.i("coucou", "Embeedings After " + String.valueOf(embeedings[0][0]) + "  "
-                + String.valueOf(embeedings[0][1]) + "  "
-                + String.valueOf(embeedings[0][2]) + "  "
-                +String.valueOf(embeedings[0][3]) + "  ");
+//        Log.i("coucou", "Embeedings After " + String.valueOf(embeedings[0][0]) + "  "
+//                + String.valueOf(embeedings[0][1]) + "  "
+//                + String.valueOf(embeedings[0][2]) + "  "
+//                +String.valueOf(embeedings[0][3]) + "  ");
 
+        return embeedings;
 
     } //end compute Embeddings
+
+
+
 
 
 
@@ -671,10 +601,10 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         outputMap.put(0, embeedings);
 
         // todebug
-        Log.i("coucou", "Embeedings Before " + String.valueOf(embeedings[0][0]) + "  "
-                + String.valueOf(embeedings[0][1]) + "  "
-                + String.valueOf(embeedings[0][2]) + "  "
-                +String.valueOf(embeedings[0][3]) + "  ");
+//        Log.i("coucou", "Embeedings Before " + String.valueOf(embeedings[0][0]) + "  "
+//                + String.valueOf(embeedings[0][1]) + "  "
+//                + String.valueOf(embeedings[0][2]) + "  "
+//                +String.valueOf(embeedings[0][3]) + "  ");
 
         // Run the inference in FaceNet Model
         Trace.beginSection("run");
@@ -683,10 +613,10 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Trace.endSection();
 
         // todebug
-        Log.i("coucou", "Embeedings After " + String.valueOf(embeedings[0][0]) + "  "
-                + String.valueOf(embeedings[0][1]) + "  "
-                + String.valueOf(embeedings[0][2]) + "  "
-                +String.valueOf(embeedings[0][3]) + "  ");
+//        Log.i("coucou", "Embeedings After " + String.valueOf(embeedings[0][0]) + "  "
+//                + String.valueOf(embeedings[0][1]) + "  "
+//                + String.valueOf(embeedings[0][2]) + "  "
+//                +String.valueOf(embeedings[0][3]) + "  ");
 
 
         // init for distance computation
@@ -694,18 +624,18 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         String id = "0";
         String label = "?";
 
-        // if already have recorded faces
-        if (registered.size() > 0) {
-            // find closest face
-            final Pair<String, Float> nearest = findNearest(embeedings[0]);
-            if (nearest != null) {
-                // save closest
-                final String name = nearest.first;
-                label = name;
-                distance = nearest.second;
-                Log.i("NEAREST","nearest: " + name + " - distance: " + distance);
-            }
-        }
+//        // if already have recorded faces
+//        if (registered.size() > 0) {
+//            // find closest face
+//            final Pair<String, Float> nearest = findNearest(embeedings[0]);
+//            if (nearest != null) {
+//                // save closest
+//                final String name = nearest.first;
+//                label = name;
+//                distance = nearest.second;
+//                Log.i("NEAREST","nearest: " + name + " - distance: " + distance);
+//            }
+//        }
 
         // Recognized face
         final int numDetectionsOutput = 1;
@@ -729,26 +659,40 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     }
 
 
+
+
     // looks for the nearest embeeding in the dataset (using L2 norm)
-    // and retrurns the pair <id, distance>
-    private Pair<String, Float> findNearest(float[] emb) {
+    private int findNearest(float[] emb, List<trainFace> Faces) {
 
-        Pair<String, Float> ret = null;
-        for (Map.Entry<String, SimilarityClassifier.Recognition> entry : registered.entrySet()) {
-            final String name = entry.getKey();
-            final float[] knownEmb = ((float[][]) entry.getValue().getExtra())[0];
+        //init
+        int foundFaceId = 0;
+        float dist = 9999999F;
+        // for each known face
+        for (int face_id=0; face_id<Faces.size()-1; face_id++)
+        {
+            //init
+            float currentDist = 0;
+            int sizemin = Math.min(emb.length, Faces.get(face_id).embeedings.length);
+            // compute L2 distance
+            for (int k = 0; k < sizemin; k++) {
+                float diff = emb[k] - Faces.get(face_id).embeedings[k];
+                currentDist += diff*diff;
+            }
+            // sqrt
+            currentDist = (float) Math.sqrt(currentDist);
 
-            float distance = 0;
-            for (int i = 0; i < emb.length; i++) {
-                float diff = emb[i] - knownEmb[i];
-                distance += diff*diff;
+            // which face is the nearest?
+            if (currentDist < dist)
+            {
+                //save index
+                foundFaceId = face_id;
+                //update
+                dist = currentDist;
             }
-            distance = (float) Math.sqrt(distance);
-            if (ret == null || distance < ret.second) {
-                ret = new Pair<>(name, distance);
-            }
-        }
-        return ret;
+
+        } // next face
+
+        return foundFaceId;
 
     }
 
@@ -764,6 +708,61 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
 
         //TODO: function load java object on file
+
+    }
+
+
+
+    private void computeKnownFaces(List<trainFace> trainFaces)
+    {
+        // image to open
+        Mat img;
+
+        File directory = new File("/storage/emulated/0/Documents/Faces/");
+        if (directory.exists()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                // for each file
+                for (int i = 0; i < files.length; ++i) {
+                    File file = files[i];
+                    if (file.isDirectory()) {
+                       // do nothing
+                    } else {
+                        // todebug
+                        Log.i("coucou", "Computing FILE " +directory+ "/" + file.getName() ) ;
+
+                        // add a known face
+                        knownFaces.add(new trainFace());
+                        // open image
+                        img = Imgcodecs.imread(directory + "/"+file.getName());
+                        Bitmap faceBitmap = Bitmap.createBitmap(img.cols(), img.rows(), Bitmap.Config.ARGB_8888);
+                        Utils.matToBitmap(img, faceBitmap);
+                        //
+                        float[][] faceSignature = computeEmbeddings(faceBitmap);
+                        // assign embedding to last face
+                        knownFaces.get(knownFaces.size()-1).embeedings = faceSignature[0];
+                        //assign name
+                        knownFaces.get(knownFaces.size()-1).name = file.getName();
+
+                    } // end if fil is a directory
+                } // next file
+            } //end if file null
+        } // end if directory exists
+        
+        
+        // for each saved file
+        for (int i = 0; i<trainFaces.size(); i++)
+        {
+
+        }
+    }
+
+    private class trainFace
+    {
+        // name of the person
+        String name = "";
+        // Resulting face embeedings (signature) from Facenet
+        private float[] embeedings;
 
     }
 

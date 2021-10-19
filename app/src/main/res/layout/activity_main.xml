@@ -12,7 +12,7 @@
         android:layout_height="match_parent"
         android:visibility="visible"
         opencv:show_fps="true"
-        opencv:camera_id="1" />
+        opencv:camera_id="0" />
     <!--  Wide angle camera : id=0 ; Narrow angle camera: id = 1-->
 
 
@@ -75,12 +75,12 @@
 
 
     <CheckBox
-        android:id="@+id/fastTracking"
+        android:id="@+id/Recording"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="20px"
         android:layout_marginTop="200px"
-        android:text="Fast Tracking" />
+        android:text="Recording" />
 
 
 
