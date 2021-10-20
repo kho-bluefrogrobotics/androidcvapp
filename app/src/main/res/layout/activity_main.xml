@@ -12,14 +12,14 @@
         android:layout_height="match_parent"
         android:visibility="visible"
         opencv:show_fps="true"
-        opencv:camera_id="0" />
+        opencv:camera_id="1" />
     <!--  Wide angle camera : id=0 ; Narrow angle camera: id = 1-->
 
 
     <RelativeLayout
         android:id="@+id/visage"
         android:visibility="visible"
-        android:alpha="0.05"
+        android:alpha="0.00"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
 
@@ -33,7 +33,8 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="20px"
         android:layout_marginTop="40px"
-        android:text="Enable Yes" />
+        android:text="Enable Yes"
+        android:visibility="gone"/>
 
         <Switch
             android:id="@+id/enableNoSwitch"
@@ -41,7 +42,8 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="20px"
             android:layout_marginTop="100px"
-            android:text="Enable No" />
+            android:text="Enable No"
+            android:visibility="gone"/>
 
 
     <CheckBox
@@ -62,7 +64,7 @@
             android:layout_marginStart="3dp"
             android:layout_marginTop="236dp"
             android:text="Button"
-            android:visibility="visible" />
+            android:visibility="gone" />
 
 
         <CheckBox
@@ -71,7 +73,8 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="20px"
             android:layout_marginTop="600px"
-            android:text="TRACKING" />
+            android:text="TRACKING"
+            android:visibility="gone"/>
 
 
     <CheckBox

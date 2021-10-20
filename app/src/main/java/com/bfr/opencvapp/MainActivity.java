@@ -370,59 +370,66 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
             int candidate = 0;
             String recog = "";
-try {
-    // Image of only face
-    Rect faceROI = new Rect(new Point(left, top), new Point(right, bottom));
-    Mat croppedFace = new Mat(frame, faceROI);
-    Mat croppedFaceResize = new Mat();
-    Imgproc.resize(croppedFace, croppedFaceResize, new Size(INPUTSIZE, INPUTSIZE));
+            try {
+                // Image of only face
+                Rect faceROI = new Rect(new Point(left, top), new Point(right, bottom));
+                Mat croppedFace = new Mat(frame, faceROI);
+                Mat croppedFaceResize = new Mat();
+                Imgproc.resize(croppedFace, croppedFaceResize, new Size(INPUTSIZE, INPUTSIZE));
 
-    //if recording
-    if (isrecording) {
-        // each 20 frames
-        if (frame_count % 10 == 0)
-            //filename
-            currentDateandTime = sdf.format(new Date());
-        //record
-        Imgcodecs.imwrite("/storage/emulated/0/Documents/Faces/face_" + currentDateandTime + ".jpg", croppedFaceResize);
-    }
+                //if recording
+                if (isrecording) {
+                    // each 20 frames
+                    if (frame_count % 10 == 0)
+                        //filename
+                        currentDateandTime = sdf.format(new Date());
+                    //record
+                    Imgcodecs.imwrite("/storage/emulated/0/Documents/Faces/face_" + currentDateandTime + ".jpg", croppedFaceResize);
+                }
 
-    //convert to bitmap
-    Bitmap faceBitmap = Bitmap.createBitmap(croppedFaceResize.cols(), croppedFaceResize.rows(), Bitmap.Config.ARGB_8888);
-    Utils.matToBitmap(croppedFaceResize, faceBitmap);
+                //convert to bitmap
+                Bitmap faceBitmap = Bitmap.createBitmap(croppedFaceResize.cols(), croppedFaceResize.rows(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(croppedFaceResize, faceBitmap);
 
-    // compute embeddings
-    float[][] faceEmbeddings = computeEmbeddings(faceBitmap);
+                // compute embeddings
+                float[][] faceEmbeddings = computeEmbeddings(faceBitmap);
 
-    // todebug
-    Log.i("coucou", "Embeedings Before " + String.valueOf(faceEmbeddings[0][0]) + "  "
-            + String.valueOf(faceEmbeddings[0][1]) + "  "
-            + String.valueOf(faceEmbeddings[0][2]) + "  "
-            + String.valueOf(faceEmbeddings[0][3]) + "  ");
+                // todebug
+                Log.i("coucou", "Embeedings Before " + String.valueOf(faceEmbeddings[0][0]) + "  "
+                        + String.valueOf(faceEmbeddings[0][1]) + "  "
+                        + String.valueOf(faceEmbeddings[0][2]) + "  "
+                        + String.valueOf(faceEmbeddings[0][3]) + "  ");
 
-    //*******************************************************************************
-    //********************************  RECOGNITION *********************************
+                //*******************************************************************************
+                //********************************  RECOGNITION *********************************
 
 //        final RectF boundingBox = new RectF(face.getBoundingBox());
 //            final RectF boundingBox = new RectF();
 
-    // Recognize face
-    candidate = findNearest(faceEmbeddings[0], knownFaces);
-    recog = knownFaces.get(candidate).name;
+                // Recognize face
+                candidate = findNearest(faceEmbeddings[0], knownFaces);
+                recog = knownFaces.get(candidate).name
+                .replace("0", "")
+                        .replace("1", "")
+                        .replace("2", "")
+                        .replace("3", "")
+                        .replace("4", "")
+                        .replace("5", "")
+                        .replace("6", "");
 
-    Log.i("coucou", "FACE RECOGNIZED " + knownFaces.get(candidate).name);
+//                Log.i("coucou", "Recognized face: " + knownFaces.get(candidate).name.toUpperCase());
 
-} catch (Exception e) {
-    e.printStackTrace();
-}
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
             String finalRecog = recog;
             runOnUiThread(new Runnable() {
-    @Override
-    public void run() {
-        Toast.makeText(getApplicationContext(), "FACE RECOGNIZED " + finalRecog.replace(".jpg", ""), Toast.LENGTH_SHORT).show();
-    }
-});
+                @Override
+                public void run() {
+                    Toast.makeText(getApplicationContext(), "Recognized face: " + finalRecog.replace(".jpg", "").toUpperCase(), Toast.LENGTH_SHORT).show();
+                }
+            });
 
         } // end if face found
 
@@ -726,7 +733,7 @@ try {
                 for (int i = 0; i < files.length; ++i) {
                     File file = files[i];
                     if (file.isDirectory()) {
-                       // do nothing
+                        // do nothing
                     } else {
                         // todebug
                         Log.i("coucou", "Computing FILE " +directory+ "/" + file.getName() ) ;
@@ -748,8 +755,8 @@ try {
                 } // next file
             } //end if file null
         } // end if directory exists
-        
-        
+
+
         // for each saved file
         for (int i = 0; i<trainFaces.size(); i++)
         {
