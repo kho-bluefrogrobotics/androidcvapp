@@ -12,14 +12,14 @@
         android:layout_height="match_parent"
         android:visibility="visible"
         opencv:show_fps="true"
-        opencv:camera_id="1" />
+        opencv:camera_id="0" />
 
 
 
     <RelativeLayout
         android:id="@+id/visage"
         android:visibility="visible"
-        android:alpha="1.0"
+        android:alpha="0.0"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
 
