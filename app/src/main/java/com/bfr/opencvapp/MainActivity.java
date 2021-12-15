@@ -88,9 +88,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private Net net;
     private boolean isnetloaded = false;
 
-    // SDK
-    BuddySDK mySDK = new BuddySDK();
-
     // Face detector
     private FaceDetector faceDetector;
 
@@ -146,275 +143,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             "motorbike", "person", "pottedplant",
             "sheep", "sofa", "train", "tvmonitor"};
 
-    // runable for grafcet
-    private Runnable mysequence = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-//            // Buddy face
-//            if (smilingFaceProba > 0.7)
-//            {
-//                runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        mySDK.setMood(mycontext,Mood.HAPPY, onMoodSet);
-//                    }
-//                });
-//
-//            }
-//            else
-//            {
-//                runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        mySDK.setMood(mycontext,Mood.GRUMPY, onMoodSet);
-//                    }
-//                });
-//            }
-
-            // if step changed
-            if( !(step_num == previous_step)) {
-
-                // display current step
-                Log.i("GRAFCET", "current step: " + step_num + "  " + noPosition);
-                // update
-                previous_step = step_num;
-                // start counting time in current step
-                time_in_curr_step = System.currentTimeMillis();
-                bypass = false;
-            } // end if step = same
-            else
-            {
-                // if time > 2s
-                if ((System.currentTimeMillis()-time_in_curr_step > 5000) && step_num >3)
-                {
-                    // activate bypass
-                    bypass = true;
-                }
-            }
-
-            // which grafcet step?
-            switch (step_num) {
-                case 0: // Wait for checkbox
-                    //wait until check box
-                    if (trackingCheckBox.isChecked()) {
-                        // go to next step
-                        step_num = 1;
-                    }
-                    break;
-
-                case 1: // Enable No
-                    try {
-                        mySDK.getUsbInterface().enableNoMove(1, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException {
-                                Log.i("enable No SUCESS:", success);
-                            }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {
-                                Log.e("enable No FAILED", error);
-                            }
-                        });
-
-                    } //end try enable
-                    catch (RemoteException e) {
-                        e.printStackTrace();
-                    } // end catch
-
-                    // go to next step
-                    step_num = 2;
-                    break;
-
-                case 2: //wait for status No enable
-                    // if yes not disabled
-                    if (!noStatus.toUpperCase().contains("DISABLE")) {
-                        // go to next step
-                        step_num = 3;
-                    }
-                    break;
-
-                case 3: // Move left or right or exit
-                    //
-                    if (!trackingCheckBox.isChecked())
-                    {
-                        // go to next step
-                        step_num = 10;
-                    }
-                    // if face to track too much on the left
-                    if (trackedFaceX < 350)
-                    {
-                        // go to next step
-                        step_num = 20;
-                    }
-                    else if (trackedFaceX > 450)
-                    {
-                        // go to next step
-                        step_num = 30;
-                    }
-
-//                    // Buddy face
-//            if (smilingFaceProba > 0.7)
-//            {
-//                runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        mySDK.setMood(mycontext,Mood.HAPPY, onMoodSet);
-//                    }
-//                });
-//
-//            }
-//            else
-//            {
-//                runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        mySDK.setMood(mycontext,Mood.GRUMPY, onMoodSet);
-//                    }
-//                });
-//            }
-
-                    break;
-
-                case 10 : // Disable Motor
-                    try {
-                        mySDK.getUsbInterface().enableNoMove(0, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException {
-                                Log.i("enable no SUCESS:", success);
-                            }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {
-                                Log.e("enable no FAILED", error);
-                            }
-                        });
-                    } //end try enable Yes
-                    catch (RemoteException e)
-                    {
-                        e.printStackTrace();
-                    } // end catch
-
-                    // go to next step
-                    step_num = 11;
-
-                    break;
-
-                case 11 : // Wait for status Disable
-                    if (noStatus.toUpperCase().contains("DISABLE"))
-                    {   // go to next step
-                        step_num = 0;
-                    }
-                    break;
-
-
-                case 20: // Cmd to Move No to the Left
-                    // reset
-                    noMvtStatus = "NOT_YET";
-                    try {
-                        Log.i(TAG, "Sending Yes command");
-                        // Move No
-                        mySDK.getUsbInterface().buddySayNo(20,0,new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {Log.e("yesmove", error);  }
-                        });
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    // go to next step
-                    step_num = 22;
-                    break;
-
-                case 21 :   //waiting for acknowledge of cmd
-                    if (noMvtStatus.toUpperCase().contains("OK"))
-                    {
-                        // go to next step
-                        step_num = 22;
-                    }
-                    break;
-
-                case 22 : // waiting for End of Movement
-//                    if (noMvtStatus.toUpperCase().contains("NO_MOVE_FINISHED") || bypass)
-//                    {
-//                        // go to next step
-//                        step_num = 3;
-//                    }
-                    // if face to track too much on the left
-                    if (trackedFaceX > 350 )
-                    {
-                        // go to next step
-                        step_num = 23;
-                    }
-                    break;
-
-                case 23 : // Stop MVT
-                    noMvtStatus = "NOT_YET";
-                    try {
-                        Log.i(TAG, "Sending No command");
-                        // Move No
-                        mySDK.getUsbInterface().buddySayNo(0,0,new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {Log.e("yesmove", error);  }
-                        });
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    // go to next step
-                    step_num = 3;
-                    break;
-
-
-                case 30: // Cmd to Move No to the Right
-                    // reset
-                    noMvtStatus = "NOT_YET";
-                    try {
-                        Log.i(TAG, "Sending Yes command");
-                        // Move No
-                        mySDK.getUsbInterface().buddySayNo(no_speed,noPosition+2,new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException {     noMvtStatus = success;                }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {Log.e("yesmove", error);  }
-                        });
-
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                    // go to next step
-                    step_num = 32;
-                    break;
-
-
-                case 31 :   //waiting for acknowledge of cmd
-                    if (noMvtStatus.toUpperCase().contains("OK"))
-                    {
-                        // go to next step
-                        step_num = 32;
-                    }
-                    break;
-
-                case 32 : // waiting for End of Movement
-
-                    if (noMvtStatus.toUpperCase().contains("NO_MOVE_FINISHED") || bypass)
-                    {
-                        // go to next step
-                        step_num = 3;
-                    }
-                    break;
-
-                default :
-                    // go to next step
-                    step_num = 0;
-                    break;
-            } //End switch
-
-        } // end run
-    }; // end new runnable
 
     //grafcet
 
@@ -502,21 +230,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         FaceDetector detector = FaceDetection.getClient(options);
         faceDetector = detector;
 
-        //  SDK
-        // suscribe to callbacks
-        Consumer<Services> onServiceLaunched = (Services iService) -> {
-            Log.d("OpenCVAPP", "service launched ");
-            try {
-                if (iService == Services.SENSORSMOTORS)
-//                    mySDK.getUsbInterface().registerCb(mydata);
-                    mySDK.getUsbInterface().registerCb(mydata);
-                //start the grafcet
-
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        };
-        mySDK.initSDK(this, onServiceLaunched);
 
         // start grafcet
 
@@ -543,35 +256,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 // if checked
                 if (noSwitch.isChecked())
                 {
-                    // enable No
-                    try {
-                        mySDK.getUsbInterface().enableNoMove(1, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException { }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {}
-                        });
-                    } //end try enable Yes
-                    catch (RemoteException e)
-                    {            e.printStackTrace();
-                    } // end catch
+
                 }
                 else // unchecked
                 {
-                    //disable no
-                    try {
-                        mySDK.getUsbInterface().enableNoMove(0, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException { }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {}
-                        });
 
-                    } //end try enable Yes
-                    catch (RemoteException e)
-                    {
-                        e.printStackTrace();
-                    } // end catch
                 } // end if togle
 
             } // end onChecked
@@ -579,19 +268,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         //calbacks for Move button
         moveButton.setOnClickListener(v -> {
-            try {
-                int no_speed = 50;
-                Log.i("Move_NO", "Moving No to " + targetTextView.getText() + " at " + String.valueOf(no_speed) + "deg/s");
-                // Make No move
-                mySDK.getUsbInterface().buddySayNo(no_speed, Integer.parseInt(String.valueOf(targetTextView.getText())),new IUsbCommadRsp.Stub() {
-                    @Override
-                    public void onSuccess(String success) throws RemoteException {      Log.i("Move_NO: ", success);              }
-                    @Override
-                    public void onFailed(String error) throws RemoteException {Log.e("Move_NO: ", error);  }
-                });
-            } catch (RemoteException e)
-            {                e.printStackTrace();
-            } // end try catch
+
         }); // end listener
 
         //tracking
