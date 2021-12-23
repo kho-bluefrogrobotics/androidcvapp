@@ -203,8 +203,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // directory where the files are saved
         String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
 
-        String proto = dir + "/MobileNetSSD_deploy.prototxt";
-        String weights = dir + "/MobileNetSSD_deploy.caffemodel";
+        String proto = dir + "/opencv_face_detector.pbtxt";
+        String weights = dir + "/opencv_face_detector_uint8.pb";
         Toast.makeText(this, dir , Toast.LENGTH_SHORT).show();
 //        net = Dnn.readNetFromCaffe(proto, weights);
 //        net = cnnService.getConvertedNet("", TAG);
@@ -367,8 +367,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             // directory where the files are saved
             String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
 
-            String proto = dir + "/MobileNetSSD_deploy.prototxt";
-            String weights = dir + "/MobileNetSSD_deploy.caffemodel";
+            String proto = dir + "/opencv_face_detector.pbtxt";
+            String weights = dir + "/opencv_face_detector_uint8.pb";
 //            runOnUiThread(new Runnable() {
 //                @Override
 //                public void run() {
@@ -376,7 +376,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //                }
 //            });
 
-            net = Dnn.readNetFromCaffe(proto, weights);
+            net = Dnn.readNetFromTensorflow(weights, proto);
 
             isnetloaded = true;
         }
@@ -395,9 +395,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
         // Forward image through network.
-        Mat blob = Dnn.blobFromImage(frame, IN_SCALE_FACTOR,
-                new org.opencv.core.Size(IN_WIDTH, IN_HEIGHT),
-                new Scalar(MEAN_VAL, MEAN_VAL, MEAN_VAL), /*swapRB*/false, /*crop*/false);
+        Mat blob =  Dnn.blobFromImage(frame, 1.0,
+                new org.opencv.core.Size(300, 300),
+                new Scalar(104, 117, 123), /*swapRB*/true, /*crop*/false);
         net.setInput(blob);
         Mat detections = net.forward();
         int cols = frame.cols();
