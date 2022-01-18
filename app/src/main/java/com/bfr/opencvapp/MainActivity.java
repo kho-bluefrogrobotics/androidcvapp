@@ -29,6 +29,8 @@ import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
@@ -41,11 +43,13 @@ import org.opencv.tracking.TrackerCSRT;
 import org.opencv.tracking.TrackerKCF;
 import org.opencv.video.Tracker;
 
+import org.opencv.video.Video;
 import org.opencv.videoio.VideoWriter;
 
 import com.bfr.opencvapp.utils.BuddyData;
 import com.bfr.usbservice.IUsbCommadRsp;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -110,9 +114,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private VideoWriter videoWriter;
     private boolean isrecording;
 
-    //grafcet
-    TrackingGrafcet mTrackingGrafcet = new TrackingGrafcet("VisualTracking");
-    TrackingYesGrafcet mTrackingYesGrafcet = new TrackingYesGrafcet("VisualTracking");
 
     // Sensors & motor data
     BuddyData mydata = new BuddyData();
@@ -163,9 +164,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 if (iService == Services.SENSORSMOTORS)
 //                    mySDK.getUsbInterface().registerCb(mydata);
                     mySDK.getUsbInterface().registerCb(mydata);
-                //start the grafcet
-                mTrackingGrafcet.start();
-                mTrackingYesGrafcet.start();
 
             } catch (RemoteException e) {
                 e.printStackTrace();
@@ -173,11 +171,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         };
 
         // init SDK
-        mySDK.initSDK(this, onServiceLaunched);
-
-        // Pass SDK and data to grafcet
-        mTrackingGrafcet.init(mycontext, mySDK, mydata);
-        mTrackingYesGrafcet.init(mycontext, mySDK, mydata);
+//        mySDK.initSDK(this, onServiceLaunched);
 
 
 
@@ -309,9 +303,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     @Override
     public void onPause() {
         super.onPause();
-        //stop grafcet
-        mTrackingGrafcet.stop();
-        mTrackingYesGrafcet.stop();
+
     }
 
     @Override
@@ -321,9 +313,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         OpenCVLoader.initDebug();
         mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
 
-        //restart grafcet
-        mTrackingGrafcet.start();
-        mTrackingYesGrafcet.start();
     }
 
 
@@ -334,10 +323,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     public void onCameraViewStarted(int width, int height) {
 
-        // Load Face detection model
-        String proto = dir + "/opencv_face_detector.pbtxt";
-        String weights = dir + "/opencv_face_detector_uint8.pb";
-        net = Dnn.readNetFromTensorflow(weights, proto);
 
         // Tracker init
         if (fastTracking)
@@ -353,196 +338,77 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     }
 
+    //current and previous frame
+    Mat curr_frame, prev_frame;
+    // Optical flow
+    Mat flow;
+    // resize for better performances
+    Size mSize = new Size(320, 240);
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
-        // cature frame from camera
-        Mat frame = inputFrame.rgba();
 
         // COUNT FRAME
         frame_count +=1;
+        //reset
+        if (frame_count>100000)
+            frame_count=2;
 
-        // every xxx frame
-        if (frame_count%15 == 0) {
-
-            // convert color to RGB
-            Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
-
-            // Blob
-            blob = Dnn.blobFromImage(frame, 1.0,
-                    new org.opencv.core.Size(300, 300),
-                    new Scalar(104, 117, 123), /*swapRB*/true, /*crop*/false);
-            net.setInput(blob);
-            // Face detection
-            detections = net.forward();
-            int cols = frame.cols();
-            int rows = frame.rows();
-            detections = detections.reshape(1, (int) detections.total() / 7);
-
-            int faceOverThresh = 0; // number of face detected with enough confidence
-
-            // If found faces
-            if (detections.rows() > 0) {
-                // only if currently tracking something
-                if (istracking) {
-                    // find id of closest face
-                    int id_closest=0;
-                    int max_dist = 999999;
-                    int dist;
-
-                    // for each face
-                    for (int i = 0; i < detections.rows(); ++i) {
-                        double confidence = detections.get(i, 2)[0];
-                        if (confidence > THRESHOLD) {
-                            int left = (int) (detections.get(i, 3)[0] * cols);
-                            int top = (int) (detections.get(i, 4)[0] * rows);
-                            int right = (int) (detections.get(i, 5)[0] * cols);
-                            int bottom = (int) (detections.get(i, 6)[0] * rows);
-
-                            // increment num of faces
-                            faceOverThresh +=1;
-
-                            // if dist min
-                            dist = Math.abs(left - TrackingGrafcet.tracked.x) + Math.abs(top - TrackingGrafcet.tracked.y);
-                            if (dist < max_dist) {
-                                // update
-                                max_dist = dist;
-                                id_closest = i;
-                            }
-
-                        } // end if confidence OK
-                    } // next face
-
-                    // save head position
-                    mTrackingGrafcet.lastValidPos = mydata.noPos;
-                    mTrackingYesGrafcet.lastValidPos = mydata.noPos;
-
-                    // Init tracker on closest face
-                    int left = (int) (detections.get(id_closest, 3)[0] * cols);
-                    int top = (int) (detections.get(id_closest, 4)[0] * rows);
-                    int right = (int) (detections.get(id_closest, 5)[0] * cols);
-                    int bottom = (int) (detections.get(id_closest, 6)[0] * rows);
-                    Rect bbox = new Rect((int) left,
-                            top,
-                            right-left,
-                            bottom-top
-                    );
-                    Log.i("Tracking", "New Init on " +  bbox.x + " " + bbox.y);
-
-                    try {
-                        if (fastTracking)
-                            mytracker = TrackerKCF.create();
-                        else
-                            mytracker = TrackerCSRT.create();
-
-                        mytracker.init(frame, bbox);
-                    }
-                    catch (Exception e)
-                    {
-
-                    }
-
-
-                    //DRAW detected faces
-                    for (int i = 0; i < detections.rows(); ++i) {
-                        double confidence = detections.get(i, 2)[0];
-                        if (confidence > THRESHOLD) {
-                            int classId = (int) detections.get(i, 1)[0];
-                            left = (int) (detections.get(i, 3)[0] * cols);
-                            top = (int) (detections.get(i, 4)[0] * rows);
-                            right = (int) (detections.get(i, 5)[0] * cols);
-                            bottom = (int) (detections.get(i, 6)[0] * rows);
-                            // Draw rectangle around detected object.
-                            Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                                    new Scalar(0, 255, 0), 2);
-
-                        } // end if confidence
-                    } // next face
-                    // end DRAW
-
-                } // end if is tracking
-                else // Not tracking yet
-                {
-                    // Init tracker on first face
-                    int left = (int) (detections.get(0, 3)[0] * cols);
-                    int top = (int) (detections.get(0, 4)[0] * rows);
-                    int right = (int) (detections.get(0, 5)[0] * cols);
-                    int bottom = (int) (detections.get(0, 6)[0] * rows);
-                    Rect bbox = new Rect((int) left,
-                            top,
-                            right-left,
-                            bottom-top
-                    );
-                    Log.i("Tracking", "First Init on " +  bbox.x + " " + bbox.y);
-                    // try catch to avoid crash in case of wring detection
-                    try
-                    {
-                        // init tracker
-                        mytracker.init(frame, bbox);
-                        //set status
-                        istracking = true;
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                }
-            } // end if face found
-
-            if (faceOverThresh ==0) //  if No face found
-            {   Log.i("current step", "NO FACE FOUND " + detections.rows());
-                // go to last know position where a face was found
-                mTrackingGrafcet.lostFaces = true;
-                mTrackingYesGrafcet.lostFaces = true;
-            }
-            else
-            {   Log.i("current step", "OK FACE FOUND " + detections.rows());
-                // go to last know position where a face was found
-                mTrackingGrafcet.lostFaces = false;
-                mTrackingYesGrafcet.lostFaces = false;
-            }
-
-
-        } // end if every xxx frame
-        else
+        // Start after 1st frame
+        if (frame_count>1)
         {
-            // if is tracking
-            if (istracking)
-            {
-                Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
-                // update the tracker
-                Log.i("Tracking", "channels "+ String.valueOf(frame.channels()) );
-                //Update tracker
-                try { // try catch to avoid crash in case of wrong tracking
-                    mytracker.update(frame, TrackingGrafcet.tracked);
-                    mytracker.update(frame,TrackingYesGrafcet.tracked );
-                }
-                catch(Exception e)
-                {                }
+            /*** Optical flow***/
 
-                //Log.i("Tracking", "Tracker updated " + tracked.x + " " + tracked.y);
-                // draw a rectangle
-                Imgproc.rectangle(frame, new Point(TrackingGrafcet.tracked.x, TrackingGrafcet.tracked.y),
-                        new Point(TrackingGrafcet.tracked.x+TrackingGrafcet.tracked.width,TrackingGrafcet.tracked.y+TrackingGrafcet.tracked.height ),
-                        new Scalar(0, 0, 255), 2);
-            } // end if is tracking
-        } // end rest of the frames
+            // save previous frame
+            prev_frame = curr_frame;
+            // cature frame from camera
+            curr_frame = inputFrame.rgba();
+            // convert to gray
+            Imgproc.cvtColor(curr_frame, curr_frame, Imgproc.COLOR_BGR2GRAY);
+            // resize for better performances
+            Imgproc.resize(curr_frame, curr_frame, mSize);
 
-        //Rectangle sur le milieu de la frame pour vérifier que la personne est au milieu
-/*        Imgproc.rectangle(frame, new Point(frame.width()/3, 0),
-                new Point((frame.width()/3)*2,frame.height()),
-                new Scalar(255, 0, 0), 2);
+            //flow
+            flow = new Mat(curr_frame.size(), CvType.CV_32FC2);
+            //compute optical flow
+            Video.calcOpticalFlowFarneback(prev_frame, curr_frame, flow,
+                    0.5, 3, 15, 3, 5, 1.2, 0);
 
-        Imgproc.rectangle(frame, new Point(0, 200),
-                new Point(frame.width(),400),
-                new Scalar(255, 0, 0), 2);*/
+            /*** Visualization***/
+            // visualization
+            ArrayList<Mat> flow_parts = new ArrayList<>(2);
+            // resize to display
+            Imgproc.resize(flow, flow, new Size(800,600));
+            Core.split(flow, flow_parts);
+            Mat magnitude = new Mat(), angle = new Mat(), magn_norm = new Mat();
+            Core.cartToPolar(flow_parts.get(0), flow_parts.get(1), magnitude, angle,true);
+            Core.normalize(magnitude, magn_norm,0.0,1.0, Core.NORM_MINMAX);
+            float factor = (float) ((1.0/360.0)*(180.0/255.0));
+            Mat new_angle = new Mat();
+            Core.multiply(angle, new Scalar(factor), new_angle);
+            //build hsv image
+            ArrayList<Mat> _hsv = new ArrayList<>() ;
+            Mat hsv = new Mat(), hsv8 = new Mat(), bgr = new Mat();
+            _hsv.add(new_angle);
+            _hsv.add(Mat.ones(angle.size(), CvType.CV_32F));
+            _hsv.add(magn_norm);
+            Core.merge(_hsv, hsv);
+            hsv.convertTo(hsv8, CvType.CV_8U, 255.0);
+            Imgproc.cvtColor(hsv8, bgr, Imgproc.COLOR_HSV2BGR);
+
+            return bgr;
 
 
+        }
+        else //1st frame
+        {
+            // cature frame from camera
+            curr_frame = inputFrame.rgba();
+            // convert to gray
+            Imgproc.cvtColor(curr_frame, curr_frame, Imgproc.COLOR_BGR2GRAY);
+            // resize for better performances
+            Imgproc.resize(curr_frame, curr_frame, mSize);
 
-        // record video
-        if (isrecording) {
-            Log.i("RecordVideo", frame.channels() + "  " + frame.cols() + "  " + frame.rows());
-            videoWriter.write(frame);
         }
 
         return frame;
