@@ -19,8 +19,7 @@ import android.widget.Switch;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.bfr.buddysdk.sdk.Mood;
-import com.bfr.buddysdk.sdk.Services;
+import com.bfr.buddysdk.BuddySDK;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraActivity;
@@ -46,19 +45,14 @@ import org.opencv.video.Tracker;
 import org.opencv.video.Video;
 import org.opencv.videoio.VideoWriter;
 
-import com.bfr.opencvapp.utils.BuddyData;
-import com.bfr.usbservice.IUsbCommadRsp;
+
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import java.util.function.Consumer;
 
-import com.bfr.buddysdk.sdk.BuddySDK;
-
-import com.bfr.opencvapp.grafcet.*;
 
 public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -69,8 +63,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // directory where the model files are saved for face detection
     private String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
 
-    // SDK
-    BuddySDK mySDK = new BuddySDK();
+
 
     //button to start tracking
     private Button initBtn;
@@ -115,8 +108,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private boolean isrecording;
 
 
-    // Sensors & motor data
-    BuddyData mydata = new BuddyData();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -141,7 +133,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         // link to UI
         initBtn = findViewById(R.id.initButton);
-        BuddyFace = findViewById(R.id.visage);
         noSwitch = findViewById(R.id.enableNoSwitch);
         hideFace = findViewById(R.id.visibleCheckBox);
         trackingCheckBox = findViewById(R.id.trackingBox);
@@ -156,22 +147,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         });
 
 
-        //  SDK
-        // suscribe to callbacks
-        Consumer<Services> onServiceLaunched = (Services iService) -> {
-            Log.d("buddywelcomehost", "service launched ");
-            try {
-                if (iService == Services.SENSORSMOTORS)
-//                    mySDK.getUsbInterface().registerCb(mydata);
-                    mySDK.getUsbInterface().registerCb(mydata);
-
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        };
-
-        // init SDK
-//        mySDK.initSDK(this, onServiceLaunched);
 
 
 
@@ -197,39 +172,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         noSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                // if checked
-                if (noSwitch.isChecked())
-                {
-                    // enable No
-                    try {
-                        mySDK.getUsbInterface().enableNoMove(1, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException { }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {}
-                        });
-                    } //end try enable Yes
-                    catch (RemoteException e)
-                    {            e.printStackTrace();
-                    } // end catch
-                }
-                else // unchecked
-                {
-                    //disable no
-                    try {
-                        mySDK.getUsbInterface().enableNoMove(0, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException { }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {}
-                        });
 
-                    } //end try enable Yes
-                    catch (RemoteException e)
-                    {
-                        e.printStackTrace();
-                    } // end catch
-                } // end if toggle
 
             } // end onChecked
         }); // end listener
@@ -242,11 +185,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 if (!trackingCheckBox.isChecked())
                 {
                     // reset grafcet
-                    TrackingGrafcet.step_num =0;
-                    TrackingGrafcet.go = false;
 
-                    TrackingYesGrafcet.step_num =0;
-                    TrackingYesGrafcet.go = false;
                     // close record file
                     isrecording = false;
                     videoWriter.release();
@@ -255,9 +194,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 else // checked
                 {
                     isrecording = true;
-                    // let the grafcet continue
-                    TrackingGrafcet.go = true;
-                    TrackingYesGrafcet.go = true;
+
 
                 }
 
@@ -343,7 +280,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // Optical flow
     Mat flow;
     // resize for better performances
-    Size mSize = new Size(320, 240);
+    Size mSize = new Size(640, 480);
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
@@ -396,6 +333,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             hsv.convertTo(hsv8, CvType.CV_8U, 255.0);
             Imgproc.cvtColor(hsv8, bgr, Imgproc.COLOR_HSV2BGR);
 
+            Log.i("Franeback", "Max = " + Core.minMaxLoc(magnitude).maxVal);
+
+            if(BuddySDK.isInitialized)
+            if(Core.minMaxLoc(magnitude).maxVal> 3.0)
+                BuddySDK.Speech.startSpeaking("Je t'ai vu !");
+
             return bgr;
 
 
@@ -417,6 +360,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     public void onCameraViewStopped() {
         videoWriter.release();
     }
+
 
 
 

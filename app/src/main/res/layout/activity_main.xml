@@ -16,17 +16,6 @@
     <!--  Wide angle camera : id=0 ; Narrow angle camera: id = 1-->
 
 
-    <RelativeLayout
-        android:id="@+id/visage"
-        android:visibility="visible"
-        android:alpha="0.05"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-
-        <include layout="@layout/face" />
-
-    </RelativeLayout>
-
     <Switch
         android:id="@+id/enableYesSwitch"
         android:layout_width="wrap_content"
