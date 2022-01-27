@@ -29,8 +29,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.bfr.buddysdk.sdk.Mood;
-import com.bfr.buddysdk.sdk.Services;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraActivity;
@@ -40,6 +38,7 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfRect;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
@@ -55,6 +54,7 @@ import org.opencv.tracking.legacy_TrackerMedianFlow;
 import org.opencv.video.Tracker;
 import org.opencv.video.TrackerMIL;
 import org.opencv.videoio.VideoWriter;
+import org.opencv.objdetect.CascadeClassifier;
 import org.tensorflow.lite.Interpreter;
 
 import com.bfr.opencvapp.utils.BuddyData;
@@ -66,6 +66,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
@@ -88,11 +90,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     private CameraBridgeViewBase mOpenCvCameraView;
 
-    // directory where the model files are saved for face detection
-    private String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
-
-    // SDK
-    BuddySDK mySDK = new BuddySDK();
 
     //button to start tracking
     private Button initBtn;
@@ -120,6 +117,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // status
     boolean istracking = false;
     int frame_count = 0;
+    boolean oncreated = false;
 
     // Neural net for detection
     private Net net;
@@ -136,16 +134,18 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     String currentDateandTime = "";
 
 
-    //grafcet
-    TrackingGrafcet mTrackingGrafcet = new TrackingGrafcet("VisualTracking");
-
     // List of known faces
     private List<trainFace> knownFaces = new ArrayList<>();;
-
+    // directory where the comportemental are saved
+    String dir ;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Copy the assets in the Android/data folder
+        copyAssets();
+
+        oncreated = true;
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         // run only in Landscape mode
@@ -244,8 +244,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     @Override
     public void onPause() {
         super.onPause();
-        //stop grafcet
-        mTrackingGrafcet.start();
     }
 
     @Override
@@ -255,8 +253,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         OpenCVLoader.initDebug();
         mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
 
-        //restart grafcet
-        mTrackingGrafcet.start();
     }
 
 
@@ -267,13 +263,22 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     public void onCameraViewStarted(int width, int height) {
 
+        while(!oncreated)
+        {
+            //wait
+        }
+
+        // Load model
+        // directory where the models are
+        dir = getExternalFilesDir(null).toString()+"/nn_models/";
+
         // Load Face detection model
         String proto = dir + "/opencv_face_detector.pbtxt";
         String weights = dir + "/opencv_face_detector_uint8.pb";
         net = Dnn.readNetFromTensorflow(weights, proto);
 
         // Load Facenet model for face recognition
-        File tfliteModel = new File("/storage/emulated/0/Documents/mobile_face_net.tflite");
+        File tfliteModel = new File(dir+"/mobile_face_net.tflite");
         if(tfliteModel.exists()){
             Log.i("coucou", "FOUND TFLITE MODEL");
         }
@@ -361,12 +366,28 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     right = (int) (detections.get(i, 5)[0] * cols);
                     bottom = (int) (detections.get(i, 6)[0] * rows);
                     // Draw rectangle around detected object.
-//                            Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-//                                    new Scalar(0, 255, 0), 2);
+                            Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                                    new Scalar(0, 255, 0), 2);
 
                 } // end if confidence
             } // next face
             // end DRAW
+
+            /*** Eyes detection */
+            // Init
+            CascadeClassifier eyes_cascade =new CascadeClassifier();
+            eyes_cascade.load( getExternalFilesDir(null).toString()+"/nn_models/"+"haarcascade_eye_tree_eyeglasses.xml");
+            MatOfRect eyes = new MatOfRect();
+            // Eye detection
+            eyes_cascade.detectMultiScale(frame, eyes);
+            if (!eyes.empty())
+            {
+                Log.i("Eyes",eyes.rows() + " "+eyes.get(0, 0)[0]
+                        + " " + eyes.get(0, 0)[1]
+                        + " " + eyes.get(0, 0)[2]
+                        + " " + eyes.get(0, 0)[3]
+                );
+            }
 
             int candidate = 0;
             String recog = "";
@@ -384,7 +405,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                         //filename
                         currentDateandTime = sdf.format(new Date());
                     //record
-                    Imgcodecs.imwrite("/storage/emulated/0/Documents/Faces/face_" + currentDateandTime + ".jpg", croppedFaceResize);
+                    Imgcodecs.imwrite( getExternalFilesDir(null).toString()+"/faces/face_" + currentDateandTime + ".jpg", croppedFaceResize);
                 }
 
                 //convert to bitmap
@@ -725,7 +746,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // image to open
         Mat img;
 
-        File directory = new File("/storage/emulated/0/Documents/Faces/");
+        File directory = new File(getExternalFilesDir(null).toString()+"/faces/");
         if (directory.exists()) {
             File[] files = directory.listFiles();
             if (files != null) {
@@ -771,6 +792,92 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // Resulting face embeedings (signature) from Facenet
         private float[] embeedings;
 
+    }
+
+
+    /*** Copy assets
+     *
+     */
+
+    private void copyAssets() {
+
+/*** copy a file */
+// get assets
+        AssetManager assetManager = getAssets();
+
+        // list of folders
+        String[] folders = null;
+        try {
+            folders = assetManager.list("");
+        } catch (IOException e) {
+            Log.e("Assets", "Failed to get asset file list.", e);
+        }
+
+        // list of comportemental in folder
+        String[] files = null;
+        // for each folder
+        if (folders != null) for (String foldername : folders) {
+            Log.i("Assets", "Found folder: " + foldername  );
+            // list of comportemental
+            try {
+                files = assetManager.list(foldername);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            // for each file
+            if (files != null) for (String filename : files) {
+                Log.i("Assets", "Found comportemental" + foldername + "/" +filename );
+                // Files
+                InputStream in = null;
+                OutputStream out = null;
+                //copy file
+                try {
+                    // open right asset
+                    in = assetManager.open(foldername+"/"+filename);
+                    // create folder if doesn't exist
+                    File folder = new File(getExternalFilesDir(null), foldername);
+                    if(!folder.exists())
+                        folder.mkdirs();
+
+                    // path in Android/data/<package>/comportemental
+                    File outFile = new File(getExternalFilesDir(null), foldername+"/"+filename);
+                    // destination file
+                    out = new FileOutputStream(outFile);
+                    // copy file
+                    copyFile(in, out);
+                    Log.i("Assets", "Copied " + foldername + "/" +filename );
+                } catch(IOException e) {
+                    Log.e("tag", "Failed to copy asset file: " + filename, e);
+                }
+                finally {
+                    if (in != null) {
+                        try {
+                            in.close();
+                        } catch (IOException e) {
+                            // NOOP
+                        }
+                    }
+                    if (out != null) {
+                        try {
+                            out.close();
+                        } catch (IOException e) {
+                            // NOOP
+                        }
+                    }
+                }
+            }
+
+        } // next folder
+
+    }// end copyAssets
+
+
+    private void copyFile(InputStream in, OutputStream out) throws IOException {
+        byte[] buffer = new byte[1024];
+        int read;
+        while((read = in.read(buffer)) != -1){
+            out.write(buffer, 0, read);
+        }
     }
 
 
