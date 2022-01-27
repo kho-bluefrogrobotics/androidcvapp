@@ -68,6 +68,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
@@ -379,7 +380,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             eyes_cascade.load( getExternalFilesDir(null).toString()+"/nn_models/"+"haarcascade_eye_tree_eyeglasses.xml");
             MatOfRect eyes = new MatOfRect();
             // Eye detection
-            eyes_cascade.detectMultiScale(frame, eyes);
+            eyes_cascade.detectMultiScale(frame, eyes );
             if (!eyes.empty())
             {
                 Log.i("Eyes",eyes.rows() + " "+eyes.get(0, 0)[0]
@@ -387,6 +388,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                         + " " + eyes.get(0, 0)[2]
                         + " " + eyes.get(0, 0)[3]
                 );
+            }
+
+            List<Rect> listOfEyes = eyes.toList();
+            for (Rect eye : listOfEyes) {
+                Point eyeCenter = new Point(0 + eye.x + eye.width / 2, 0 + eye.y + eye.height / 2);
+                int radius = (int) Math.round((eye.width + eye.height) * 0.25);
+                Imgproc.circle(frame, eyeCenter, radius, new Scalar(255, 0, 0), 4);
             }
 
             int candidate = 0;
