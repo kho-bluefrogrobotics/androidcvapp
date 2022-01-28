@@ -20,6 +20,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -102,7 +103,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     private CheckBox trackingCheckBox;
     private CheckBox recordingChckBox;
-    JavaCameraView cameraView;
+
+    EditText faceNameTxt;
 
 
     //********************  image ***************************
@@ -172,11 +174,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         hideFace = findViewById(R.id.visibleCheckBox);
         trackingCheckBox = findViewById(R.id.trackingBox);
         recordingChckBox = findViewById(R.id.Recording);
+        faceNameTxt = findViewById(R.id.editPersonName);
 
         //start tracking button
         initBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+
                 Log.i("Tracking", "Tracking is starting");
             }
         });
@@ -301,7 +305,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
 
 
-
+    //
+    Mat frameToSave ;
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
         // cature frame from camera
@@ -323,6 +328,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         int cols = frame.cols();
         int rows = frame.rows();
         detections = detections.reshape(1, (int) detections.total() / 7);
+
+        // save copy to save
+        frameToSave = frame.clone();
 
         // If found faces
         if (detections.rows() > 0) {
@@ -375,45 +383,59 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             // end DRAW
 
             /*** Eyes detection */
-            // Init
-            CascadeClassifier eyes_cascade =new CascadeClassifier();
-            eyes_cascade.load( getExternalFilesDir(null).toString()+"/nn_models/"+"haarcascade_eye_tree_eyeglasses.xml");
-            MatOfRect eyes = new MatOfRect();
-            // Eye detection
-            eyes_cascade.detectMultiScale(frame, eyes );
-            if (!eyes.empty())
-            {
-                Log.i("Eyes",eyes.rows() + " "+eyes.get(0, 0)[0]
-                        + " " + eyes.get(0, 0)[1]
-                        + " " + eyes.get(0, 0)[2]
-                        + " " + eyes.get(0, 0)[3]
-                );
-            }
-
-            List<Rect> listOfEyes = eyes.toList();
-            for (Rect eye : listOfEyes) {
-                Point eyeCenter = new Point(0 + eye.x + eye.width / 2, 0 + eye.y + eye.height / 2);
-                int radius = (int) Math.round((eye.width + eye.height) * 0.25);
-                Imgproc.circle(frame, eyeCenter, radius, new Scalar(255, 0, 0), 4);
-            }
+//            // Init
+//            CascadeClassifier eyes_cascade =new CascadeClassifier();
+//            eyes_cascade.load( getExternalFilesDir(null).toString()+"/nn_models/"+"haarcascade_eye_tree_eyeglasses.xml");
+//            MatOfRect eyes = new MatOfRect();
+//            // Eye detection
+//            eyes_cascade.detectMultiScale(frame, eyes );
+//            if (!eyes.empty())
+//            {
+//                Log.i("Eyes",eyes.rows() + " "+eyes.get(0, 0)[0]
+//                        + " " + eyes.get(0, 0)[1]
+//                        + " " + eyes.get(0, 0)[2]
+//                        + " " + eyes.get(0, 0)[3]
+//                );
+//            }
+//
+//            List<Rect> listOfEyes = eyes.toList();
+//            for (Rect eye : listOfEyes) {
+//                Point eyeCenter = new Point(0 + eye.x + eye.width / 2, 0 + eye.y + eye.height / 2);
+//                int radius = (int) Math.round((eye.width + eye.height) * 0.25);
+//                Imgproc.circle(frame, eyeCenter, radius, new Scalar(255, 0, 0), 4);
+//            }
 
             int candidate = 0;
             String recog = "";
             try {
                 // Image of only face
                 Rect faceROI = new Rect(new Point(left, top), new Point(right, bottom));
-                Mat croppedFace = new Mat(frame, faceROI);
+                Mat croppedFace = new Mat(frameToSave, faceROI);
                 Mat croppedFaceResize = new Mat();
                 Imgproc.resize(croppedFace, croppedFaceResize, new Size(INPUTSIZE, INPUTSIZE));
 
                 //if recording
                 if (isrecording) {
-                    // each 20 frames
-                    if (frame_count % 10 == 0)
-                        //filename
-                        currentDateandTime = sdf.format(new Date());
+                    //filename
+                    currentDateandTime = sdf.format(new Date());
                     //record
-                    Imgcodecs.imwrite( getExternalFilesDir(null).toString()+"/faces/face_" + currentDateandTime + ".jpg", croppedFaceResize);
+                    Imgcodecs.imwrite( getExternalFilesDir(null).toString()+"/faces/"+ faceNameTxt.getText().toString() +"_" + currentDateandTime + ".jpg",
+                            croppedFaceResize);
+                    isrecording = false;
+                    //Confirm
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), "*** SAVED Face: " + faceNameTxt.getText().toString() ,
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    });
+                    Thread.sleep(2000);
+                    // update known faces
+                    // process all known faces
+                    computeKnownFaces(knownFaces);
+
+                    return frame;
                 }
 
                 //convert to bitmap
@@ -456,7 +478,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Toast.makeText(getApplicationContext(), "Recognized face: " + finalRecog.replace(".jpg", "").toUpperCase(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), "Recognized face: " + finalRecog.replace(".jpg", "").split("_")[0].toUpperCase(), Toast.LENGTH_SHORT).show();
                 }
             });
 
@@ -753,6 +775,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     {
         // image to open
         Mat img;
+
+        //init
+        knownFaces.clear();
 
         File directory = new File(getExternalFilesDir(null).toString()+"/faces/");
         if (directory.exists()) {

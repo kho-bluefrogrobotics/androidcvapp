@@ -25,6 +25,7 @@
 
         <include layout="@layout/face" />
 
+
     </RelativeLayout>
 
     <Switch
@@ -83,9 +84,20 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="20px"
         android:layout_marginTop="200px"
-        android:text="Recording" />
+        android:text="Save Face" />
 
 
+    <EditText
+        android:id="@+id/editPersonName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="31px"
+        android:layout_marginTop="400px"
+        android:ems="10"
+        android:hint="Name?"
+        android:inputType="textPersonName" />
 
 
 </FrameLayout>
