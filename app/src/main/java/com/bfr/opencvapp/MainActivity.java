@@ -2,6 +2,7 @@ package com.bfr.opencvapp;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
@@ -82,9 +83,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import java.text.SimpleDateFormat;
-
-import com.bfr.buddysdk.sdk.BuddySDK;
+import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmark;
+import com.google.mediapipe.solutioncore.CameraInput;
+import com.google.mediapipe.solutioncore.SolutionGlSurfaceView;
+import com.google.mediapipe.solutioncore.VideoInput;
+import com.google.mediapipe.solutions.facemesh.FaceMesh;
+import com.google.mediapipe.solutions.facemesh.FaceMeshOptions;
+import com.google.mediapipe.solutions.facemesh.FaceMeshResult;
 
 public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -92,6 +97,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     private CameraBridgeViewBase mOpenCvCameraView;
 
+    //Mediapipe
+    private FaceMesh facemesh;
+    // Video demo UI and video loader components.
+    private VideoInput videoInput;
+    // Live camera demo UI and camera components.
+    private CameraInput cameraInput;
 
     //button to start tracking
     private Button initBtn;
