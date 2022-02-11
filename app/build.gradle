@@ -43,4 +43,5 @@ dependencies {
     // MediaPipe Face Mesh Solution.
     implementation 'com.google.mediapipe:solution-core:latest.release'
     implementation 'com.google.mediapipe:facemesh:latest.release'
+
 }

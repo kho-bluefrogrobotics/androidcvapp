@@ -156,6 +156,14 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+
+        FaceMeshOptions faceMeshOptions =
+                FaceMeshOptions.builder()
+                        .setStaticImageMode(false)
+                        .setRefineLandmarks(true)
+                        .setMaxNumFaces(1)
+                        .setRunOnGpu(true).build();
+
         // Copy the assets in the Android/data folder
         copyAssets();
 
