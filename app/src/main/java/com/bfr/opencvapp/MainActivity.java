@@ -19,7 +19,7 @@ import android.widget.Switch;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.bfr.buddysdk.BuddySDK;
+//import com.bfr.buddysdk.BuddySDK;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraActivity;
@@ -280,7 +280,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // Optical flow
     Mat flow;
     // resize for better performances
-    Size mSize = new Size(640, 480);
+//    Size mSize = new Size(640, 480);
+    Size mSize = new Size(480, 320);
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
@@ -333,11 +334,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             hsv.convertTo(hsv8, CvType.CV_8U, 255.0);
             Imgproc.cvtColor(hsv8, bgr, Imgproc.COLOR_HSV2BGR);
 
-            Log.i("Franeback", "Max = " + Core.minMaxLoc(magnitude).maxVal);
+            Log.i("Franeback", "Max = " + Core.minMaxLoc(magnitude).maxVal
+                    + " at " + Core.minMaxLoc(magnitude).maxLoc );
 
-            if(BuddySDK.isInitialized)
-            if(Core.minMaxLoc(magnitude).maxVal> 3.0)
-                BuddySDK.Speech.startSpeaking("Je t'ai vu !");
+//            if(BuddySDK.isInitialized)
+//            if(Core.minMaxLoc(magnitude).maxVal> 3.0)
+//                BuddySDK.Speech.startSpeaking("Je t'ai vu !");
 
             return bgr;
 
