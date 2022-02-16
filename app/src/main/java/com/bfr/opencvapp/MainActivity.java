@@ -284,7 +284,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // Optical flow
     Mat flow;
     // resize for better performances
-    Size mSize = new Size(160, 120);
+    Size mSize = new Size(48, 32);
     //crop for better performances from 800x600
     Rect imgROI = new Rect(new Point(100, 100), new Point(700, 500) );
     // Knn for color recognition
@@ -292,25 +292,25 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     boolean alreadyTrained = false;
     // Mat of training data for 6 colors : black, white, blue, green, red, yellow
     Mat trainData ;
-    List<Integer> trainLabels = new ArrayList<Integer>();
+    // sample to test
+    Mat toTest;
     Mat data;
-//    Arracolors = np.array([[0, 0, 0],
-//            [255, 255, 255],
-//            [150, 0, 0],
-//            [0, 150, 0],
-//            [0, 0, 255],
-//            [0, 255, 255]], dtype=np.float32)
-//    classes = np.array([[0], [1], [2], [3], [4], [5]], np.float32)
+    //result
+    Mat res;
 
     // Colors to recognize
-    Scalar _RED = new Scalar(255,0,0);
-    Scalar _BLUE = new Scalar(0,0,255);
-    Scalar _GREEN = new Scalar(0,255,0);
-    Scalar _YELLOW = new Scalar(0,255,0);
-    Scalar _WHITE = new Scalar(255,255,255);
+    Scalar _RED = new Scalar(150,0,0);
+    Scalar _BLUE = new Scalar(0,0,150);
+    Scalar _GREEN = new Scalar(0,150,0);
+    Scalar _YELLOW = new Scalar(150,100,0);
+    Scalar _WHITE = new Scalar(170,170,170);
     Scalar _BLACK = new Scalar(0,0,0);
 
 
+    // colored pixel counter
+    int coloredPixels[] = {0,0, 0, 0, 0,0};
+
+    List<Float> tmp = new ArrayList<Float>();
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
@@ -324,44 +324,97 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             // setup training data
             trainData = new Mat();
             List<Integer> trainLabels = new ArrayList<Integer>();
-
-            data = new Mat(1,1, CvType.CV_32FC3, _GREEN);
-            trainLabels.add(1);
-            trainData.push_back(data.reshape(1,1));
-
+            // add red color
             data = new Mat(1,1, CvType.CV_32FC3, _RED);
-            trainLabels.add(2);
             trainData.push_back(data.reshape(1,1));
+            // add green color
+            data = new Mat(1,1, CvType.CV_32FC3, _GREEN);
+            trainData.push_back(data.reshape(1,1));
+            // add blue color
+            data = new Mat(1,1, CvType.CV_32FC3, _BLUE);
+            trainData.push_back(data.reshape(1,1));
+            // add yellow color
+            data = new Mat(1,1, CvType.CV_32FC3, _YELLOW);
+            trainData.push_back(data.reshape(1,1));
+            // add white color
+            data = new Mat(1,1, CvType.CV_32FC3, _WHITE);
+            trainData.push_back(data.reshape(1,1));
+            // add black color
+//            data = new Mat(1,1, CvType.CV_32FC3, _BLACK);
+//            trainData.push_back(data.reshape(1,1));
 
-            Log.i("KNN", " " + trainData.size() );
-            for (int u=0; u<3; u++)
-                Log.i("KNN", " " + trainData.get(0, u)[0] );
+            // labels
+            trainLabels.add(0);
+            trainLabels.add(1);
+            trainLabels.add(2);
+            trainLabels.add(3);
+            trainLabels.add(4);
+//            trainLabels.add(5);
 
-            colorClassifier.train( trainData, 0, Converters.vector_int_to_Mat(trainLabels));
+            Log.i("KNN", " " + trainData.dump() );
+
+            // Train KNN classifier
+            colorClassifier.train( trainData,  Ml.ROW_SAMPLE, Converters.vector_int_to_Mat(trainLabels));
+
+            //init test data
+            toTest = new Mat();
+            tmp.add(0.0f);
+            tmp.add(0.0f);
+            tmp.add(0.0f);
+            toTest = Converters.vector_float_to_Mat(tmp).reshape(1,1);
+            Log.i("KNN", "Totest init  " + toTest.size() + " " + toTest.dump() );
+
+            // set trained flag
             alreadyTrained = true;
         }
 
-
+        // grab image
         frame = inputFrame.rgba();
 
         // cropped image & resize for speed & performance
         Mat croppedFace = new Mat(frame, imgROI);
         Imgproc.resize(croppedFace, frame, mSize);
 
-        Mat res = new Mat();
+        res = new Mat();
+
+        // init
+        for (int x=0; x<coloredPixels.length;x++)
+            coloredPixels[x]=0;
         //for each pixel
         for(int c=0; c<frame.cols(); c++)
         {
             for(int r=0; r<frame.rows(); r++)
             {
-                Mat test = frame.submat(r, r, c, c).reshape(1, 1);
-                Log.i("KNN", "Result  " + test.dump() );
-                test = frame.submat(r, r, c, c).reshape(1, 1);
-                float dist= colorClassifier.findNearest(test, 1, res);
-                Log.i("KNN", "Result  " + res.dump() );
+                //
+//                Log.i("KNN", "Current Pixel  "
+//                        +" " + frame.get(r, c)[0]
+//                        +" " +  frame.get(r, c)[1]
+//                        +" " +  frame.get(r, c)[2]
+//                );
+                //assign rbg values to test vector
+                tmp.set(0,  (float) frame.get(r, c)[0]);
+                tmp.set(1, (float)frame.get(r, c)[1]);
+                tmp.set(2, (float)frame.get(r, c)[2]);
+                toTest = Converters.vector_float_to_Mat(tmp).reshape(1,1);
+                // KNN compute
+                float dist= colorClassifier.findNearest(toTest, 1, res);
+
+                // increment
+                coloredPixels[(int) res.get(0, 0)[0]] +=1;
+                // change color
+                setPixelColor( frame, c, r, (int) res.get(0, 0)[0]);
+
             }
         }
 
+        Log.i("KNN", "Result  "
+                +" " + coloredPixels[0]
+                +" " + coloredPixels[1]
+                +" " + coloredPixels[2]
+                +" " + coloredPixels[3]
+                +" " + coloredPixels[4]
+                +" " + coloredPixels[5]
+        );
 
         //resize back for vizualization
         Imgproc.resize(frame, frame, new Size(800, 600));
@@ -374,6 +427,56 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     }
 
 
+    public void setPixelColor(Mat frame,int c, int r,  int color_idx)
+    {
+        double[] data = frame.get(r, c);
+
+//        data[0] = 255;
+//                data[1] = 255;
+//                data[2] = 0;
+//                frame.put(r, c,data );
+
+        switch (color_idx)
+        {
+            case 0:
+                data[0] = 255.0;
+                data[1] = 0;
+                data[2] = 0;
+                frame.put(r, c,data );
+                break;
+            case 1:
+                data[0] = 0;
+                data[1] = 255;
+                data[2] = 0;
+                frame.put(r, c,data );
+                break;
+            case 2:
+                data[0] = 0;
+                data[1] = 0;
+                data[2] = 255;
+                frame.put(r, c,data );
+                break;
+            case 3:
+                data[0] = 250;
+                data[1] = 250;
+                data[2] = 0;
+                frame.put(r, c,data );
+                break;
+            case 4:
+                data[0] = 255;
+                data[1] = 255;
+                data[2] = 255;
+                frame.put(r, c,data );
+                break;
+            case 5:
+                data[0] = 0;
+                data[1] = 0;
+                data[2] = 0;
+                frame.put(r, c,data );
+                break;
+        } // end switch
+
+    } // end change color
 
 
 }
