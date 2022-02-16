@@ -38,8 +38,12 @@ import org.opencv.core.Size;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.ml.KNearest;
+import org.opencv.ml.Ml;
+import org.opencv.ml.TrainData;
 import org.opencv.tracking.TrackerCSRT;
 import org.opencv.tracking.TrackerKCF;
+import org.opencv.utils.Converters;
 import org.opencv.video.Tracker;
 
 import org.opencv.video.Video;
@@ -280,81 +284,87 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // Optical flow
     Mat flow;
     // resize for better performances
-//    Size mSize = new Size(640, 480);
-    Size mSize = new Size(480, 320);
+    Size mSize = new Size(160, 120);
+    //crop for better performances from 800x600
+    Rect imgROI = new Rect(new Point(100, 100), new Point(700, 500) );
+    // Knn for color recognition
+    private KNearest colorClassifier;
+    boolean alreadyTrained = false;
+    // Mat of training data for 6 colors : black, white, blue, green, red, yellow
+    Mat trainData ;
+    List<Integer> trainLabels = new ArrayList<Integer>();
+    Mat data;
+//    Arracolors = np.array([[0, 0, 0],
+//            [255, 255, 255],
+//            [150, 0, 0],
+//            [0, 150, 0],
+//            [0, 0, 255],
+//            [0, 255, 255]], dtype=np.float32)
+//    classes = np.array([[0], [1], [2], [3], [4], [5]], np.float32)
+
+    // Colors to recognize
+    Scalar _RED = new Scalar(255,0,0);
+    Scalar _BLUE = new Scalar(0,0,255);
+    Scalar _GREEN = new Scalar(0,255,0);
+    Scalar _YELLOW = new Scalar(0,255,0);
+    Scalar _WHITE = new Scalar(255,255,255);
+    Scalar _BLACK = new Scalar(0,0,0);
+
+
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
+        frame = inputFrame.rgba();
 
-        // COUNT FRAME
-        frame_count +=1;
-        //reset
-        if (frame_count>100000)
-            frame_count=2;
-
-        // Start after 1st frame
-        if (frame_count>1)
+        // if not already trained
+        if(alreadyTrained==false)
         {
-            /*** Optical flow***/
+            // instantiate KNN classifier
+            colorClassifier = KNearest.create();
+            // setup training data
+            trainData = new Mat();
+            List<Integer> trainLabels = new ArrayList<Integer>();
 
-            // save previous frame
-            prev_frame = curr_frame;
-            // cature frame from camera
-            curr_frame = inputFrame.rgba();
-            // convert to gray
-            Imgproc.cvtColor(curr_frame, curr_frame, Imgproc.COLOR_BGR2GRAY);
-            // resize for better performances
-            Imgproc.resize(curr_frame, curr_frame, mSize);
+            data = new Mat(1,1, CvType.CV_32FC3, _GREEN);
+            trainLabels.add(1);
+            trainData.push_back(data.reshape(1,1));
 
-            //flow
-            flow = new Mat(curr_frame.size(), CvType.CV_32FC2);
-            //compute optical flow
-            Video.calcOpticalFlowFarneback(prev_frame, curr_frame, flow,
-                    0.5, 3, 15, 3, 5, 1.2, 0);
+            data = new Mat(1,1, CvType.CV_32FC3, _RED);
+            trainLabels.add(2);
+            trainData.push_back(data.reshape(1,1));
 
-            /*** Visualization***/
-            // visualization
-            ArrayList<Mat> flow_parts = new ArrayList<>(2);
-            // resize to display
-            Imgproc.resize(flow, flow, new Size(800,600));
-            Core.split(flow, flow_parts);
-            Mat magnitude = new Mat(), angle = new Mat(), magn_norm = new Mat();
-            Core.cartToPolar(flow_parts.get(0), flow_parts.get(1), magnitude, angle,true);
-            Core.normalize(magnitude, magn_norm,0.0,1.0, Core.NORM_MINMAX);
-            float factor = (float) ((1.0/360.0)*(180.0/255.0));
-            Mat new_angle = new Mat();
-            Core.multiply(angle, new Scalar(factor), new_angle);
-            //build hsv image
-            ArrayList<Mat> _hsv = new ArrayList<>() ;
-            Mat hsv = new Mat(), hsv8 = new Mat(), bgr = new Mat();
-            _hsv.add(new_angle);
-            _hsv.add(Mat.ones(angle.size(), CvType.CV_32F));
-            _hsv.add(magn_norm);
-            Core.merge(_hsv, hsv);
-            hsv.convertTo(hsv8, CvType.CV_8U, 255.0);
-            Imgproc.cvtColor(hsv8, bgr, Imgproc.COLOR_HSV2BGR);
+            Log.i("KNN", " " + trainData.size() );
+            for (int u=0; u<3; u++)
+                Log.i("KNN", " " + trainData.get(0, u)[0] );
 
-            Log.i("Franeback", "Max = " + Core.minMaxLoc(magnitude).maxVal
-                    + " at " + Core.minMaxLoc(magnitude).maxLoc );
-
-//            if(BuddySDK.isInitialized)
-//            if(Core.minMaxLoc(magnitude).maxVal> 3.0)
-//                BuddySDK.Speech.startSpeaking("Je t'ai vu !");
-
-            return bgr;
-
-
+            colorClassifier.train( trainData, 0, Converters.vector_int_to_Mat(trainLabels));
+            alreadyTrained = true;
         }
-        else //1st frame
+
+
+        frame = inputFrame.rgba();
+
+        // cropped image & resize for speed & performance
+        Mat croppedFace = new Mat(frame, imgROI);
+        Imgproc.resize(croppedFace, frame, mSize);
+
+        Mat res = new Mat();
+        //for each pixel
+        for(int c=0; c<frame.cols(); c++)
         {
-            // cature frame from camera
-            curr_frame = inputFrame.rgba();
-            // convert to gray
-            Imgproc.cvtColor(curr_frame, curr_frame, Imgproc.COLOR_BGR2GRAY);
-            // resize for better performances
-            Imgproc.resize(curr_frame, curr_frame, mSize);
-
+            for(int r=0; r<frame.rows(); r++)
+            {
+                Mat test = frame.submat(r, r, c, c).reshape(1, 1);
+                Log.i("KNN", "Result  " + test.dump() );
+                test = frame.submat(r, r, c, c).reshape(1, 1);
+                float dist= colorClassifier.findNearest(test, 1, res);
+                Log.i("KNN", "Result  " + res.dump() );
+            }
         }
+
+
+        //resize back for vizualization
+        Imgproc.resize(frame, frame, new Size(800, 600));
 
         return frame;
     } // end function
