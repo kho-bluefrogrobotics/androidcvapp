@@ -50,8 +50,11 @@ import org.opencv.video.Video;
 import org.opencv.videoio.VideoWriter;
 
 
-
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -286,7 +289,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // resize for better performances
     Size mSize = new Size(48, 32);
     //crop for better performances from 800x600
-    Rect imgROI = new Rect(new Point(100, 100), new Point(700, 500) );
+    Rect imgROI = new Rect(new Point(250, 250), new Point(550, 380) );
     // Knn for color recognition
     private KNearest colorClassifier;
     boolean alreadyTrained = false;
@@ -299,7 +302,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     Mat res;
 
     // Colors to recognize
-    Scalar _RED = new Scalar(150,0,0);
+    Scalar _RED = new Scalar(150,20,20);
     Scalar _BLUE = new Scalar(0,0,150);
     Scalar _GREEN = new Scalar(0,150,0);
     Scalar _YELLOW = new Scalar(150,100,0);
@@ -319,39 +322,93 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // if not already trained
         if(alreadyTrained==false)
         {
+
+
+
+
+
             // instantiate KNN classifier
             colorClassifier = KNearest.create();
             // setup training data
             trainData = new Mat();
             List<Integer> trainLabels = new ArrayList<Integer>();
+
+            List<String> allLines;
             // add red color
-            data = new Mat(1,1, CvType.CV_32FC3, _RED);
-            trainData.push_back(data.reshape(1,1));
+            try {
+                allLines = Files.readAllLines(Paths.get("/sdcard/Download/red.txt"));
+                for (int i=0; i<allLines.size(); i++) {
+
+//                    Log.i("KNNFile", line.split(" ")[0] + line.split(" ")[1] + line.split(" ")[2]);
+                    data = new Mat(1,1, CvType.CV_32FC3, new Scalar(
+                            Float.valueOf(allLines.get(i).split(" ")[0]),
+                            Float.valueOf(allLines.get(i).split(" ")[1]),
+                            Float.valueOf(allLines.get(i).split(" ")[2])
+                    ));
+                    trainData.push_back(data.reshape(1,1));
+                    trainLabels.add(0);
+
+                    // limit  samples number
+                    if (i>50)
+                        break;
+
+                } // next i
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            
+
             // add green color
-            data = new Mat(1,1, CvType.CV_32FC3, _GREEN);
+            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(0,170,30));
             trainData.push_back(data.reshape(1,1));
+            trainLabels.add(1);
+            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(0,255,0));
+            trainData.push_back(data.reshape(1,1));
+            trainLabels.add(1);
+            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(0,250, 50));
+            trainData.push_back(data.reshape(1,1));
+            trainLabels.add(1);
+
             // add blue color
-            data = new Mat(1,1, CvType.CV_32FC3, _BLUE);
+            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(0,30,170));
             trainData.push_back(data.reshape(1,1));
+            trainLabels.add(2);
+            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(0,0,255));
+            trainData.push_back(data.reshape(1,1));
+            trainLabels.add(2);
+            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(0,40, 255));
+            trainData.push_back(data.reshape(1,1));
+            trainLabels.add(2);
+
+
             // add yellow color
             data = new Mat(1,1, CvType.CV_32FC3, _YELLOW);
             trainData.push_back(data.reshape(1,1));
+            trainLabels.add(3);
+            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(255,255, 0));
+            trainData.push_back(data.reshape(1,1));
+            trainLabels.add(3);
+            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(155,155, 0));
+            trainData.push_back(data.reshape(1,1));
+            trainLabels.add(3);
+
             // add white color
+            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(100,100, 100));
+            trainData.push_back(data.reshape(1,1));
+            trainLabels.add(4);
+            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(255,255, 255));
+            trainData.push_back(data.reshape(1,1));
+            trainLabels.add(4);
             data = new Mat(1,1, CvType.CV_32FC3, _WHITE);
             trainData.push_back(data.reshape(1,1));
+            trainLabels.add(4);
             // add black color
 //            data = new Mat(1,1, CvType.CV_32FC3, _BLACK);
 //            trainData.push_back(data.reshape(1,1));
 
             // labels
-            trainLabels.add(0);
-            trainLabels.add(1);
-            trainLabels.add(2);
-            trainLabels.add(3);
-            trainLabels.add(4);
-//            trainLabels.add(5);
 
-            Log.i("KNN", " " + trainData.dump() );
+//            trainLabels.add(5);
 
             // Train KNN classifier
             colorClassifier.train( trainData,  Ml.ROW_SAMPLE, Converters.vector_int_to_Mat(trainLabels));
@@ -391,13 +448,45 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //                        +" " +  frame.get(r, c)[1]
 //                        +" " +  frame.get(r, c)[2]
 //                );
+
+
+//                File file = new File(path + "/test.txt");
+//
+//                createFBtn.setOnClickListener(new View.OnClickListener() {
+//                    @Override
+//                    public void onClick(View v) {
+//                        Log.i("FILECREATION", "attempting to create file");
+//
+//                        // crete if not exists
+//                        if (!file.exists()) {
+//                            try {
+//                                file.createNewFile();
+//                            } catch (IOException e) {
+//                                e.printStackTrace();
+//                            }
+//                        } // end file exists
+//
+//                        FileWriter writer = null;
+//                        try {
+//                            writer = new FileWriter(file, true);
+//                            writer.append("Coucou !");
+//                            writer.flush();
+//                            writer.close();
+//                        } catch (IOException e) {
+//                            e.printStackTrace();
+//                        }
+//
+//
+//                    }
+//                });
+
                 //assign rbg values to test vector
                 tmp.set(0,  (float) frame.get(r, c)[0]);
                 tmp.set(1, (float)frame.get(r, c)[1]);
                 tmp.set(2, (float)frame.get(r, c)[2]);
                 toTest = Converters.vector_float_to_Mat(tmp).reshape(1,1);
                 // KNN compute
-                float dist= colorClassifier.findNearest(toTest, 1, res);
+                float dist= colorClassifier.findNearest(toTest, 3, res);
 
                 // increment
                 coloredPixels[(int) res.get(0, 0)[0]] +=1;
@@ -407,14 +496,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             }
         }
 
-        Log.i("KNN", "Result  "
-                +" " + coloredPixels[0]
-                +" " + coloredPixels[1]
-                +" " + coloredPixels[2]
-                +" " + coloredPixels[3]
-                +" " + coloredPixels[4]
-                +" " + coloredPixels[5]
-        );
+//        Log.i("KNN", "Result  "
+//                +" " + coloredPixels[0]
+//                +" " + coloredPixels[1]
+//                +" " + coloredPixels[2]
+//                +" " + coloredPixels[3]
+//                +" " + coloredPixels[4]
+//                +" " + coloredPixels[5]
+//        );
+
 
         //resize back for vizualization
         Imgproc.resize(frame, frame, new Size(800, 600));
