@@ -31,6 +31,8 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfFloat;
+import org.opencv.core.MatOfInt;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
@@ -63,7 +65,7 @@ import java.util.List;
 
 public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
-    private static final String TAG = MainActivity.class.getName();
+    private static final String TAG = "COLORRecog";
 
     private CameraBridgeViewBase mOpenCvCameraView;
 
@@ -356,55 +358,123 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            
+
+
 
             // add green color
-            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(0,170,30));
-            trainData.push_back(data.reshape(1,1));
-            trainLabels.add(1);
-            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(0,255,0));
-            trainData.push_back(data.reshape(1,1));
-            trainLabels.add(1);
-            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(0,250, 50));
-            trainData.push_back(data.reshape(1,1));
-            trainLabels.add(1);
+            try {
+                allLines = Files.readAllLines(Paths.get("/sdcard/Download/green.txt"));
+                for (int i=0; i<allLines.size(); i++) {
+
+//                    Log.i("KNNFile", line.split(" ")[0] + line.split(" ")[1] + line.split(" ")[2]);
+                    data = new Mat(1,1, CvType.CV_32FC3, new Scalar(
+                            Float.valueOf(allLines.get(i).split(" ")[0]),
+                            Float.valueOf(allLines.get(i).split(" ")[1]),
+                            Float.valueOf(allLines.get(i).split(" ")[2])
+                    ));
+                    trainData.push_back(data.reshape(1,1));
+                    trainLabels.add(1);
+
+                    // limit  samples number
+                    if (i>50)
+                        break;
+
+                } // next i
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
             // add blue color
-            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(0,30,170));
-            trainData.push_back(data.reshape(1,1));
-            trainLabels.add(2);
-            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(0,0,255));
-            trainData.push_back(data.reshape(1,1));
-            trainLabels.add(2);
-            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(0,40, 255));
-            trainData.push_back(data.reshape(1,1));
-            trainLabels.add(2);
+            try {
+                allLines = Files.readAllLines(Paths.get("/sdcard/Download/blue.txt"));
+                for (int i=0; i<allLines.size(); i++) {
+
+//                    Log.i("KNNFile", line.split(" ")[0] + line.split(" ")[1] + line.split(" ")[2]);
+                    data = new Mat(1,1, CvType.CV_32FC3, new Scalar(
+                            Float.valueOf(allLines.get(i).split(" ")[0]),
+                            Float.valueOf(allLines.get(i).split(" ")[1]),
+                            Float.valueOf(allLines.get(i).split(" ")[2])
+                    ));
+                    trainData.push_back(data.reshape(1,1));
+                    trainLabels.add(2);
+
+                    // limit  samples number
+                    if (i>50)
+                        break;
+
+                } // next i
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
 
             // add yellow color
-            data = new Mat(1,1, CvType.CV_32FC3, _YELLOW);
-            trainData.push_back(data.reshape(1,1));
-            trainLabels.add(3);
-            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(255,255, 0));
-            trainData.push_back(data.reshape(1,1));
-            trainLabels.add(3);
-            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(155,155, 0));
-            trainData.push_back(data.reshape(1,1));
-            trainLabels.add(3);
+            try {
+                allLines = Files.readAllLines(Paths.get("/sdcard/Download/yellow.txt"));
+                for (int i=0; i<allLines.size(); i++) {
 
-            // add white color
-            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(100,100, 100));
-            trainData.push_back(data.reshape(1,1));
-            trainLabels.add(4);
-            data = new Mat(1,1, CvType.CV_32FC3, new Scalar(255,255, 255));
-            trainData.push_back(data.reshape(1,1));
-            trainLabels.add(4);
-            data = new Mat(1,1, CvType.CV_32FC3, _WHITE);
-            trainData.push_back(data.reshape(1,1));
-            trainLabels.add(4);
-            // add black color
-//            data = new Mat(1,1, CvType.CV_32FC3, _BLACK);
-//            trainData.push_back(data.reshape(1,1));
+//                    Log.i("KNNFile", line.split(" ")[0] + line.split(" ")[1] + line.split(" ")[2]);
+                    data = new Mat(1,1, CvType.CV_32FC3, new Scalar(
+                            Float.valueOf(allLines.get(i).split(" ")[0]),
+                            Float.valueOf(allLines.get(i).split(" ")[1]),
+                            Float.valueOf(allLines.get(i).split(" ")[2])
+                    ));
+                    trainData.push_back(data.reshape(1,1));
+                    trainLabels.add(3);
+
+                    // limit  samples number
+                    if (i>50)
+                        break;
+
+                } // next i
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+//            // add purple color
+//            try {
+//                allLines = Files.readAllLines(Paths.get("/sdcard/Download/purple.txt"));
+//                for (int i=0; i<allLines.size(); i++) {
+//
+//                    data = new Mat(1,1, CvType.CV_32FC3, new Scalar(
+//                            Float.valueOf(allLines.get(i).split(" ")[0]),
+//                            Float.valueOf(allLines.get(i).split(" ")[1]),
+//                            Float.valueOf(allLines.get(i).split(" ")[2])
+//                    ));
+//                    trainData.push_back(data.reshape(1,1));
+//                    trainLabels.add(4);
+//
+//                    // limit  samples number
+//                    if (i>50)
+//                        break;
+//
+//                } // next i
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+
+            // add White color
+            try {
+                allLines = Files.readAllLines(Paths.get("/sdcard/Download/purple.txt"));
+                for (int i=0; i<allLines.size(); i++) {
+
+//                    Log.i("KNNFile", line.split(" ")[0] + line.split(" ")[1] + line.split(" ")[2]);
+                    data = new Mat(1,1, CvType.CV_32FC3, new Scalar(
+                            255.0,
+                            255.0,
+                           255.0
+                    ));
+                    trainData.push_back(data.reshape(1,1));
+                    trainLabels.add(5);
+
+                    // limit  samples number
+                    if (i>20)
+                        break;
+
+                } // next i
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
             // labels
 
@@ -432,79 +502,120 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Mat croppedFace = new Mat(frame, imgROI);
         Imgproc.resize(croppedFace, frame, mSize);
 
+        //result of KNN classification
         res = new Mat();
 
-        // init
-        for (int x=0; x<coloredPixels.length;x++)
-            coloredPixels[x]=0;
-        //for each pixel
-        for(int c=0; c<frame.cols(); c++)
+        // HSV frame
+        Mat hsv = new Mat();
+        // HLS frame
+        Mat hls = new Mat();
+        /// Convert to HSV
+        Imgproc.cvtColor(frame, hsv, Imgproc.COLOR_BGR2HSV);
+        // idem HLS
+        Imgproc.cvtColor(frame, hls, Imgproc.COLOR_BGR2HLS);
+
+//        /// Using 50 bins for hue and 60 for saturation
+//        int hBins = 180;
+//        int sBins = 60;
+////        MatOfInt histSize = new MatOfInt( hBins,  sBins);
+//        MatOfInt histSize = new MatOfInt( hBins);
+//        // hue varies from 0 to 179, saturation from 0 to 255
+//        MatOfFloat ranges =  new MatOfFloat( 0f,180f );
+//        // we compute the histogram from the 0-th and 1-st channels
+//        MatOfInt channels = new MatOfInt(0, 1);
+//        // resulting histogram
+//        Mat hist = new Mat();
+//        // List of images
+//        ArrayList<Mat> histImages=new ArrayList<Mat>();
+//        histImages.add(hsv);
+//
+//        Imgproc.calcHist(histImages,
+//                channels,
+//                new Mat(),
+//                hist,
+//                histSize,
+//                ranges,
+//                false);
+//
+//        // max in histogram
+//
+//        // ******** find dominant color
+//        //for each color
+//        double max =0;
+//        int id_max=0;
+//        for (int i=0; i<hist.rows(); i++)
+//        {
+//            // if max found
+//            if (hist.get(i, 0)[0]>max)
+//            {
+//                // save
+//                id_max = i;
+//                max = hist.get(i, 0)[0];
+//            }
+//        } // end for each color
+//
+////        Log.i(TAG, "Hist " +max + " " + id_max);
+//
+//        if (id_max <= 30 )
+//            Log.i(TAG, id_max + " "+ "BLUE");
+//        else if( id_max > 30 && id_max <= 85 )
+//            Log.i(TAG, id_max + " "+"GREEN");
+//        else if( id_max > 85 && id_max <= 100 )
+//            Log.i(TAG, id_max + " "+"YELLOW");
+//        else if( id_max > 100 && id_max <= 115 )
+//            Log.i(TAG, id_max + " "+"ORANGE");
+//        else if( id_max > 115 && id_max <= 135 )
+//            Log.i(TAG, id_max + " "+"RED");
+//        else if( id_max > 135 )
+//            Log.i(TAG, id_max + " "+"PURPLE");
+//
+//
+//
+
+
+
+        // White recog
+        /// Using 50 bins for hue and 60 for saturation
+        int hBins = 180;
+        int sBins = 60;
+//        MatOfInt histSize = new MatOfInt( hBins,  sBins);
+        MatOfInt histSize = new MatOfInt( hBins);
+        // hue varies from 0 to 179, saturation from 0 to 255
+        MatOfFloat ranges =  new MatOfFloat( 0f,180f );
+        // we compute the histogram from the 0-th and 1-st channels
+        MatOfInt channels = new MatOfInt(1);
+        // resulting histogram
+        Mat hist = new Mat();
+        // List of images
+        ArrayList<Mat> histImages=new ArrayList<Mat>();
+        histImages.add(hsv);
+
+        Imgproc.calcHist(histImages,
+                channels,
+                new Mat(),
+                hist,
+                histSize,
+                ranges,
+                false);
+
+        // max in histogram
+
+        // ******** find dominant color
+        //for each color
+        double max =0;
+        int id_max=0;
+        for (int i=0; i<hist.rows(); i++)
         {
-            for(int r=0; r<frame.rows(); r++)
+            // if max found
+            if (hist.get(i, 0)[0]>max)
             {
-                //
-//                Log.i("KNN", "Current Pixel  "
-//                        +" " + frame.get(r, c)[0]
-//                        +" " +  frame.get(r, c)[1]
-//                        +" " +  frame.get(r, c)[2]
-//                );
-
-
-//                File file = new File(path + "/test.txt");
-//
-//                createFBtn.setOnClickListener(new View.OnClickListener() {
-//                    @Override
-//                    public void onClick(View v) {
-//                        Log.i("FILECREATION", "attempting to create file");
-//
-//                        // crete if not exists
-//                        if (!file.exists()) {
-//                            try {
-//                                file.createNewFile();
-//                            } catch (IOException e) {
-//                                e.printStackTrace();
-//                            }
-//                        } // end file exists
-//
-//                        FileWriter writer = null;
-//                        try {
-//                            writer = new FileWriter(file, true);
-//                            writer.append("Coucou !");
-//                            writer.flush();
-//                            writer.close();
-//                        } catch (IOException e) {
-//                            e.printStackTrace();
-//                        }
-//
-//
-//                    }
-//                });
-
-                //assign rbg values to test vector
-                tmp.set(0,  (float) frame.get(r, c)[0]);
-                tmp.set(1, (float)frame.get(r, c)[1]);
-                tmp.set(2, (float)frame.get(r, c)[2]);
-                toTest = Converters.vector_float_to_Mat(tmp).reshape(1,1);
-                // KNN compute
-                float dist= colorClassifier.findNearest(toTest, 3, res);
-
-                // increment
-                coloredPixels[(int) res.get(0, 0)[0]] +=1;
-                // change color
-                setPixelColor( frame, c, r, (int) res.get(0, 0)[0]);
-
+                // save
+                id_max = i;
+                max = hist.get(i, 0)[0];
             }
-        }
+        } // end for each color
 
-//        Log.i("KNN", "Result  "
-//                +" " + coloredPixels[0]
-//                +" " + coloredPixels[1]
-//                +" " + coloredPixels[2]
-//                +" " + coloredPixels[3]
-//                +" " + coloredPixels[4]
-//                +" " + coloredPixels[5]
-//        );
-
+        Log.i(TAG, "Hist " +max + " " + id_max);
 
         //resize back for vizualization
         Imgproc.resize(frame, frame, new Size(800, 600));
@@ -553,15 +664,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 frame.put(r, c,data );
                 break;
             case 4:
-                data[0] = 255;
-                data[1] = 255;
-                data[2] = 255;
+                data[0] = 150;
+                data[1] = 0;
+                data[2] = 150;
                 frame.put(r, c,data );
                 break;
             case 5:
-                data[0] = 0;
-                data[1] = 0;
-                data[2] = 0;
+                data[0] = 255;
+                data[1] = 255;
+                data[2] = 255;
                 frame.put(r, c,data );
                 break;
         } // end switch
