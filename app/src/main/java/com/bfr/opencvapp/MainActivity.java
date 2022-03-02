@@ -157,12 +157,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         super.onCreate(savedInstanceState);
 
 
-        FaceMeshOptions faceMeshOptions =
-                FaceMeshOptions.builder()
-                        .setStaticImageMode(false)
-                        .setRefineLandmarks(true)
-                        .setMaxNumFaces(1)
-                        .setRunOnGpu(true).build();
 
         // Copy the assets in the Android/data folder
         copyAssets();
@@ -311,11 +305,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         Log.i("coucou", "face recog model loaded");
 
-        // Init write video file
-        videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
-                25.0D, new Size(800, 600));
-        videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
-                25.0D,  new Size( 800,600));
+        // Iris detector
+        File irisLandmarkModel = new File(dir+"/iris_landmark.tflite");
+        if(irisLandmarkModel.exists()){
+            Log.i("coucou", "FOUND TFLITE MODEL");
+        }
+        irisTflite = new Interpreter(irisLandmarkModel);
 
         // process all known faces
         computeKnownFaces(knownFaces);
@@ -400,6 +395,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 } // end if confidence
             } // next face
             // end DRAW
+
 
             /*** Eyes detection */
 //            // Init
@@ -537,6 +533,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private float[][] embeedings;
     // Known (previously saved)  faces
     private HashMap<String, SimilarityClassifier.Recognition> registered = new HashMap<>();
+
+    // Iris landmarks detector
+    private Interpreter irisTflite;
 
 
     public float[][] computeEmbeddings(Bitmap faceBitmap)
@@ -896,8 +895,16 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     // destination file
                     out = new FileOutputStream(outFile);
                     // copy file
-                    copyFile(in, out);
-                    Log.i("Assets", "Copied " + foldername + "/" +filename );
+                    if(!outFile.exists())
+                    {
+                        copyFile(in, out);
+                        Log.i("Assets", "Copied " + foldername + "/" +filename );
+                    }
+                    else
+                    {
+                        Log.i("Assets", "Found existing file " + foldername + "/" +filename );
+                    } // end file already exists
+
                 } catch(IOException e) {
                     Log.e("tag", "Failed to copy asset file: " + filename, e);
                 }
