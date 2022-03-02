@@ -476,39 +476,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        final RectF boundingBox = new RectF(face.getBoundingBox());
 //            final RectF boundingBox = new RectF();
 
-                // Recognize face
-                candidate = findNearest(faceEmbeddings[0], knownFaces);
-                recog = knownFaces.get(candidate).name
-                .replace("0", "")
-                        .replace("1", "")
-                        .replace("2", "")
-                        .replace("3", "")
-                        .replace("4", "")
-                        .replace("5", "")
-                        .replace("6", "");
-
-                Log.i("coucou", "Recognized face: " + knownFaces.get(candidate).name.toUpperCase());
-
-
-            String finalRecog = recog;
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(getApplicationContext(), "Recognized face: " + finalRecog.replace(".jpg", "").split("_")[0].toUpperCase(), Toast.LENGTH_SHORT).show();
-                }
-            });
 
         } // end if face found
 
-
-
-
-
-        // record video
-        if (isrecording) {
-            Log.i("RecordVideo", frame.channels() + "  " + frame.cols() + "  " + frame.rows());
-            videoWriter.write(frame);
-        }
 
         return frame;
     } // end function
@@ -622,12 +592,16 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         /*** Iris detection */
 
         // Mapping output for iris
-        int NUM_LANDMARKS = 213;
+        float[][] eyeLandmarks;
+        eyeLandmarks = new float[1][213];
+
         float[][] irisLandmarks;
-        irisLandmarks = new float[1][NUM_LANDMARKS];
+        irisLandmarks = new float[1][15];
+
         // Assign to model output
         Map<Integer, Object> irisOutputMap = new HashMap<>();
-        irisOutputMap.put(0, irisLandmarks);
+        irisOutputMap.put(0, eyeLandmarks);
+        irisOutputMap.put(1, irisLandmarks);
 
         irisTflite.runForMultipleInputsOutputs(inputArray, irisOutputMap);
 //        irisTflite.run(inputArray, irisLandmarks);
@@ -636,7 +610,17 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Log.i("coucou", "IrisLandmarks After " + String.valueOf(irisLandmarks[0][0]) + "  "
                 + String.valueOf(irisLandmarks[0][1]) + "  "
                 + String.valueOf(irisLandmarks[0][2]) + "  "
-                +String.valueOf(irisLandmarks[0][3]) + "  ");
+                +String.valueOf(irisLandmarks[0][3]) + "  "
+                +String.valueOf(irisLandmarks[0][4]) + "  "
+                +String.valueOf(irisLandmarks[0][5]) + "  "
+                +String.valueOf(irisLandmarks[0][6]) + "  ");
+        Log.i("coucou", "EyeLandmarks After " + String.valueOf(eyeLandmarks[0][0]) + "  "
+                + String.valueOf(eyeLandmarks[0][1]) + "  "
+                + String.valueOf(eyeLandmarks[0][2]) + "  "
+                +String.valueOf(eyeLandmarks[0][3]) + "  "
+                +String.valueOf(eyeLandmarks[0][4]) + "  "
+                +String.valueOf(eyeLandmarks[0][5]) + "  "
+                +String.valueOf(eyeLandmarks[0][6]) + "  ");
 
 
 
