@@ -495,8 +495,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // Facenet model
     private Interpreter tfLite;
     // params for Facenet Model
-//    private int INPUTSIZE = 112;
-    private int INPUTSIZE = 64;
+    private int INPUTSIZE = 112;
+    private int IRISINPUTSIZE = 64;
     private boolean isModelQuantized = true;
     private float IMAGE_MEAN = 127F;
     private float IMAGE_STD = 127F;
@@ -591,6 +591,30 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         /*** Iris detection */
 
+        // image for iris detection
+        imgData = ByteBuffer.allocateDirect(1 * IRISINPUTSIZE * IRISINPUTSIZE * 3 * numBytesPerChannel);
+        imgData.order(ByteOrder.nativeOrder());
+        imgData.rewind();
+        //for each row
+        for (int i = 0; i < IRISINPUTSIZE; ++i) {
+            // for each col
+            for (int j = 0; j < IRISINPUTSIZE; ++j) {
+                int pixelValue = intValues[i * IRISINPUTSIZE + j];
+                if (isModelQuantized) {
+                    // Quantized model
+                    imgData.put((byte) ((pixelValue >> 16) & 0xFF));
+                    imgData.put((byte) ((pixelValue >> 8) & 0xFF));
+                    imgData.put((byte) (pixelValue & 0xFF));
+                } else { // Float model
+                    imgData.putFloat((((pixelValue >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
+                    imgData.putFloat((((pixelValue >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
+                    imgData.putFloat(((pixelValue & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
+                } // end if quantized model
+            } // next col
+        } // next row
+
+        Object[] irisInputArray = {imgData};
+
         // Mapping output for iris
         float[][] eyeLandmarks;
         eyeLandmarks = new float[1][213];
@@ -603,7 +627,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         irisOutputMap.put(0, eyeLandmarks);
         irisOutputMap.put(1, irisLandmarks);
 
-        irisTflite.runForMultipleInputsOutputs(inputArray, irisOutputMap);
+        irisTflite.runForMultipleInputsOutputs(irisInputArray, irisOutputMap);
 //        irisTflite.run(inputArray, irisLandmarks);
 
         // todebug
