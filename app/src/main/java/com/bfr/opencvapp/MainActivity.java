@@ -422,7 +422,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
             int candidate = 0;
             String recog = "";
-            try {
+
                 // Image of only face
                 Rect faceROI = new Rect(new Point(left, top), new Point(right, bottom));
                 Mat croppedFace = new Mat(frameToSave, faceROI);
@@ -445,7 +445,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                                     Toast.LENGTH_LONG).show();
                         }
                     });
-                    Thread.sleep(2000);
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                     // update known faces
                     // process all known faces
                     computeKnownFaces(knownFaces);
@@ -483,11 +487,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                         .replace("5", "")
                         .replace("6", "");
 
-//                Log.i("coucou", "Recognized face: " + knownFaces.get(candidate).name.toUpperCase());
+                Log.i("coucou", "Recognized face: " + knownFaces.get(candidate).name.toUpperCase());
 
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
 
             String finalRecog = recog;
             runOnUiThread(new Runnable() {
@@ -524,7 +525,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // Facenet model
     private Interpreter tfLite;
     // params for Facenet Model
-    private int INPUTSIZE = 112;
+//    private int INPUTSIZE = 112;
+    private int INPUTSIZE = 64;
     private boolean isModelQuantized = true;
     private float IMAGE_MEAN = 127F;
     private float IMAGE_STD = 127F;
@@ -585,7 +587,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // Assign to Facenet output
         outputMap.put(0, embeedings);
 
-        // input of Facenet model
+        // input for facenet Model
         Object[] inputArray = {imgData};
 
         // todebug
@@ -606,14 +608,41 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             Log.i("coucou", "input null");
         if(outputMap ==null)
             Log.i("coucou", "output null");
-        tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
+//        tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
         Trace.endSection();
 
+
         // todebug
-//        Log.i("coucou", "Embeedings After " + String.valueOf(embeedings[0][0]) + "  "
-//                + String.valueOf(embeedings[0][1]) + "  "
-//                + String.valueOf(embeedings[0][2]) + "  "
-//                +String.valueOf(embeedings[0][3]) + "  ");
+        Log.i("coucou", "Embeedings After " + String.valueOf(embeedings[0][0]) + "  "
+                + String.valueOf(embeedings[0][1]) + "  "
+                + String.valueOf(embeedings[0][2]) + "  "
+                +String.valueOf(embeedings[0][3]) + "  ");
+
+
+        /*** Iris detection */
+
+        // Mapping output for iris
+        int NUM_LANDMARKS = 228;
+        float[][] irisLandmarks;
+        irisLandmarks = new float[2][NUM_LANDMARKS];
+        // Assign to model output
+        Map<Integer, Object> irisOutputMap = new HashMap<>();
+        irisOutputMap.put(0, irisLandmarks);
+
+        irisTflite.runForMultipleInputsOutputs(inputArray, irisOutputMap);
+//        irisTflite.run(inputArray, irisLandmarks);
+
+        // todebug
+        Log.i("coucou", "IrisLandmarks After " + String.valueOf(irisLandmarks[0][0]) + "  "
+                + String.valueOf(irisLandmarks[0][1]) + "  "
+                + String.valueOf(irisLandmarks[0][2]) + "  "
+                +String.valueOf(irisLandmarks[0][3]) + "  ");
+
+
+
+
+
+
 
         return embeedings;
 
@@ -895,15 +924,10 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     // destination file
                     out = new FileOutputStream(outFile);
                     // copy file
-                    if(!outFile.exists())
-                    {
+
                         copyFile(in, out);
                         Log.i("Assets", "Copied " + foldername + "/" +filename );
-                    }
-                    else
-                    {
-                        Log.i("Assets", "Found existing file " + foldername + "/" +filename );
-                    } // end file already exists
+
 
                 } catch(IOException e) {
                     Log.e("tag", "Failed to copy asset file: " + filename, e);
