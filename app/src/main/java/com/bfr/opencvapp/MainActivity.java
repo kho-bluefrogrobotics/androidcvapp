@@ -622,9 +622,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         /*** Iris detection */
 
         // Mapping output for iris
-        int NUM_LANDMARKS = 228;
+        int NUM_LANDMARKS = 213;
         float[][] irisLandmarks;
-        irisLandmarks = new float[2][NUM_LANDMARKS];
+        irisLandmarks = new float[1][NUM_LANDMARKS];
         // Assign to model output
         Map<Integer, Object> irisOutputMap = new HashMap<>();
         irisOutputMap.put(0, irisLandmarks);
