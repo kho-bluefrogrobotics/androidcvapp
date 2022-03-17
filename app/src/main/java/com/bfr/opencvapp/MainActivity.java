@@ -360,82 +360,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
-        // if not loaded
-        if (!isnetloaded)
-        {
-            // Load model
-            // directory where the files are saved
-            String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
 
-            String proto = dir + "/opencv_face_detector.pbtxt";
-            String weights = dir + "/opencv_face_detector_uint8.pb";
-//            runOnUiThread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    Toast.makeText(this, "coucou" , Toast.LENGTH_SHORT).show();
-//                }
-//            });
-
-            net = Dnn.readNetFromTensorflow(weights, proto);
-
-            isnetloaded = true;
-        }
         Mat frame = inputFrame.rgba();
-
-        // draw a rectangle
-        Imgproc.rectangle(frame, new Point(10, 10), new Point(60,60), new Scalar(255, 10, 10));
-
-        final int IN_WIDTH = 300;
-        final int IN_HEIGHT = 300;
-        final float WH_RATIO = (float)IN_WIDTH / IN_HEIGHT;
-        final double IN_SCALE_FACTOR = 0.007843;
-        final double MEAN_VAL = 127.5;
-        final double THRESHOLD = 0.75;
-
-
-        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
-        // Forward image through network.
-        Mat blob =  Dnn.blobFromImage(frame, 1.0,
-                new org.opencv.core.Size(300, 300),
-                new Scalar(104, 117, 123), /*swapRB*/true, /*crop*/false);
-        net.setInput(blob);
-        Mat detections = net.forward();
-        int cols = frame.cols();
-        int rows = frame.rows();
-        detections = detections.reshape(1, (int)detections.total() / 7);
-        for (int i = 0; i < detections.rows(); ++i) {
-            double confidence = detections.get(i, 2)[0];
-            if (confidence > THRESHOLD) {
-                int classId = (int)detections.get(i, 1)[0];
-                int left   = (int)(detections.get(i, 3)[0] * cols);
-                int top    = (int)(detections.get(i, 4)[0] * rows);
-                int right  = (int)(detections.get(i, 5)[0] * cols);
-                int bottom = (int)(detections.get(i, 6)[0] * rows);
-                // Draw rectangle around detected object.
-                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                        new Scalar(0, 255, 0), 2);
-                String label = classNames[classId] + ": " + confidence;
-                int[] baseLine = new int[1];
-                org.opencv.core.Size labelSize = Imgproc.getTextSize(label, 2, 0.5, 1, baseLine);
-                // Draw background for label.
-                //Imgproc.rectangle(frame, new Point(left, top - labelSize.getHeight()),
-                //        new Point(left + labelSize.getWidth(), top + baseLine[0]),
-                //        new Scalar(255, 255, 255), Imgproc.FILLED);
-                Imgproc.rectangle(frame, new Point(left, top - labelSize.height),
-                        new Point(left + labelSize.width, top + baseLine[0]),
-                        new Scalar(255, 255, 255));
-                // Write class name and confidence.
-                Imgproc.putText(frame, label, new Point(left, top),
-                        2, 0.8, new Scalar(255,0 , 0));
-            }   // end if confidence OK
-        } // next detection
-
-
-        // record video
-        if (isrecording) {
-            Log.i("RecordVideo", frame.channels() + "  " + frame.cols() + "  " + frame.rows());
-            videoWriter.write(frame);
-        }
 
 
         return frame;
