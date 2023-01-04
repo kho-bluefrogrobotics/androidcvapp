@@ -86,7 +86,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     //********************  image ***************************
 
     // tHRESHOLD OF FACE DETECTION
-    final double THRESHOLD = 0.75;
+    final double THRESHOLD = 0.9;
     // Tracker
     TrackerNano mytracker;
 //    TrackerNano_Params mytrackerparams = new TrackerNano_Params();
@@ -340,9 +340,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     public void onCameraViewStarted(int width, int height) {
 
         // Load Face detection model
-        String proto = dir + "/opencv_face_detector.pbtxt";
-        String weights = dir + "/opencv_face_detector_uint8.pb";
-        net = Dnn.readNetFromTensorflow(weights, proto);
+//        String proto = dir + "/opencv_face_detector.pbtxt";
+//        String weights = dir + "/opencv_face_detector_uint8.pb";
+//        net = Dnn.readNetFromTensorflow(weights, proto);
+
+        String model_person  = dir + "/MobileNetSSD_deploy.prototxt";
+        String weights_person  = dir + "/MobileNetSSD_deploy.caffemodel";
+
+        //net = Dnn.readNetFromCaffe(proto, weights);
+        net = Dnn.readNetFromCaffe(model_person, weights_person);
 
         // Tracker init
 //        if (fastTracking)
@@ -375,15 +381,18 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         frame_count +=1;
 
         // every xxx frame
-        if (frame_count%30 == 0) {
+        if (frame_count%90 == 0 || frame_count == 1) {
 
             // convert color to RGB
             Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
             // Blob
-            blob = Dnn.blobFromImage(frame, 1.0,
+//            blob = Dnn.blobFromImage(frame, 1.0,
+//                    new org.opencv.core.Size(300, 300),
+//                    new Scalar(104, 117, 123), /*swapRB*/true, /*crop*/false);
+            blob = Dnn.blobFromImage(frame, 0.007843,
                     new org.opencv.core.Size(300, 300),
-                    new Scalar(104, 117, 123), /*swapRB*/true, /*crop*/false);
+                    new Scalar(127.5, 127.5, 127.5), /*swapRB*/true, /*crop*/false);
             net.setInput(blob);
             // Face detection
             detections = net.forward();
@@ -447,7 +456,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //                        else
 //                            mytracker = TrackerCSRT.create();
 
-                        mytracker = TrackerNano.create(mytrackerparams);
+//                        mytracker = TrackerNano.create();
                         mytracker.init(frame, bbox);
                     }
                     catch (Exception e)
@@ -467,7 +476,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             bottom = (int) (detections.get(i, 6)[0] * rows);
                             // Draw rectangle around detected object.
                             Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                                    new Scalar(0, 0, 250), 5);
+                                    new Scalar(250, 0, 0), 5);
 
                         } // end if confidence
                     } // next face
@@ -490,6 +499,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     // try catch to avoid crash in case of wring detection
                     try
                     {
+//                        mytracker = TrackerNano.create();
                         // init tracker
                         mytracker.init(frame, bbox);
                         //set status
@@ -509,7 +519,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 mTrackingYesGrafcet.lostFaces = true;
             }
             else
-            {   Log.i("current step", "OK FACE FOUND " + detections.rows());
+            {
+//                Log.i("current step", "OK FACE FOUND " + detections.rows());
                 // go to last know position where a face was found
                 mTrackingGrafcet.lostFaces = false;
                 mTrackingYesGrafcet.lostFaces = false;
@@ -528,6 +539,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 //Update tracker
                 try { // try catch to avoid crash in case of wrong tracking
                     mytracker.update(frame, TrackingGrafcet.tracked);
+
+                    Log.i(TAG, "TRACKING SCORE "+mytracker.getTrackingScore());
                 }
                 catch(Exception e)
                 {                }
