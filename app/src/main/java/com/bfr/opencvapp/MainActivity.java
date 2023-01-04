@@ -447,7 +447,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //                        else
 //                            mytracker = TrackerCSRT.create();
 
-                        mytracker = TrackerNano.create();
+                        mytracker = TrackerNano.create(mytrackerparams);
                         mytracker.init(frame, bbox);
                     }
                     catch (Exception e)
@@ -467,7 +467,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             bottom = (int) (detections.get(i, 6)[0] * rows);
                             // Draw rectangle around detected object.
                             Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                                    new Scalar(0, 255, 0), 2);
+                                    new Scalar(0, 0, 250), 5);
 
                         } // end if confidence
                     } // next face
@@ -524,11 +524,10 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             {
                 Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
                 // update the tracker
-                Log.i("Tracking", "channels "+ String.valueOf(frame.channels()) );
+//                Log.i("Tracking", "channels "+ String.valueOf(frame.channels()) );
                 //Update tracker
                 try { // try catch to avoid crash in case of wrong tracking
                     mytracker.update(frame, TrackingGrafcet.tracked);
-                    mytracker.update(frame,TrackingYesGrafcet.tracked );
                 }
                 catch(Exception e)
                 {                }
@@ -537,7 +536,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 // draw a rectangle
                 Imgproc.rectangle(frame, new Point(TrackingGrafcet.tracked.x, TrackingGrafcet.tracked.y),
                         new Point(TrackingGrafcet.tracked.x+TrackingGrafcet.tracked.width,TrackingGrafcet.tracked.y+TrackingGrafcet.tracked.height ),
-                        new Scalar(0, 0, 255), 2);
+                        new Scalar(0, 250, 0), 5);
             } // end if is tracking
         } // end rest of the frames
 
