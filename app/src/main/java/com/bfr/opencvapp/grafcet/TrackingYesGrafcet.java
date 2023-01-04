@@ -78,7 +78,7 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
         public void run()
         {
             mMiddleRect = tracked.y /*+ (tracked.height/2)*/;
-            Log.i("GRAFCET YES", "current Y: " + tracked.y + "  ");
+//            Log.i("GRAFCET YES", "current Y: " + tracked.y + "  ");
             //Log.i("GRAFCET", "current step: " + step_num + "  ");
 
             // if step changed

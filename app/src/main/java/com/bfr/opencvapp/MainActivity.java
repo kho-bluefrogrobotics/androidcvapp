@@ -36,11 +36,13 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.tracking.TrackerCSRT;
-import org.opencv.tracking.TrackerKCF;
+
 import org.opencv.video.Tracker;
 
+import org.opencv.video.TrackerNano;
+import org.opencv.video.TrackerNano_Params;
 import org.opencv.videoio.VideoWriter;
 
 import com.bfr.opencvapp.utils.BuddyData;
@@ -86,7 +88,10 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // tHRESHOLD OF FACE DETECTION
     final double THRESHOLD = 0.75;
     // Tracker
-    Tracker mytracker;
+    TrackerNano mytracker;
+//    TrackerNano_Params mytrackerparams = new TrackerNano_Params();
+    TrackerNano_Params mytrackerparams ;
+
     // frame captured by camera
     Mat frame;
     // List of detected faces
@@ -340,10 +345,17 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         net = Dnn.readNetFromTensorflow(weights, proto);
 
         // Tracker init
-        if (fastTracking)
-            mytracker = TrackerKCF.create();
-        else
-            mytracker = TrackerCSRT.create();
+//        if (fastTracking)
+//            mytracker = TrackerKCF.create();
+//        else
+//            mytracker = TrackerCSRT.create();
+
+        mytrackerparams = new TrackerNano_Params();
+        mytrackerparams.set_backbone(dir + "/nanotrack_backbone_sim.onnx");
+        mytrackerparams.set_neckhead(dir + "/nanotrack_head_sim.onnx");
+        mytracker = TrackerNano.create(mytrackerparams);
+
+
 
         // Init write video file
         videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
@@ -363,7 +375,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         frame_count +=1;
 
         // every xxx frame
-        if (frame_count%15 == 0) {
+        if (frame_count%30 == 0) {
 
             // convert color to RGB
             Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
@@ -430,11 +442,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     Log.i("Tracking", "New Init on " +  bbox.x + " " + bbox.y);
 
                     try {
-                        if (fastTracking)
-                            mytracker = TrackerKCF.create();
-                        else
-                            mytracker = TrackerCSRT.create();
+//                        if (fastTracking)
+//                            mytracker = TrackerKCF.create();
+//                        else
+//                            mytracker = TrackerCSRT.create();
 
+                        mytracker = TrackerNano.create();
                         mytracker.init(frame, bbox);
                     }
                     catch (Exception e)
@@ -544,6 +557,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             Log.i("RecordVideo", frame.channels() + "  " + frame.cols() + "  " + frame.rows());
             videoWriter.write(frame);
         }
+
+//        Imgcodecs.imwrite("/sdcard/myimage.jpg", frame);
 
         return frame;
     } // end function
