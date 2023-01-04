@@ -446,7 +446,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     Rect bbox = new Rect((int) left,
                             top,
                             right-left,
-                            bottom-top
+                            (bottom-top)/2
                     );
                     Log.i("Tracking", "New Init on " +  bbox.x + " " + bbox.y);
 
@@ -493,7 +493,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     Rect bbox = new Rect((int) left,
                             top,
                             right-left,
-                            bottom-top
+                            (bottom-top)/2
                     );
                     Log.i("Tracking", "First Init on " +  bbox.x + " " + bbox.y);
                     // try catch to avoid crash in case of wring detection
