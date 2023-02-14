@@ -101,10 +101,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     public void onCameraViewStarted(int width, int height) {
 
-        // ************* Code to validate the version 4.7.0 of OpenCV
+        // ************* Code to validate the version 4.7.0 with contribs of OpenCV
 
         // only available in opencv 4.7
         TrackerNano myNanoTracker;
+
+        // only available with contribs
+        WeChatQRCode myQRCode;
     }
 
 
