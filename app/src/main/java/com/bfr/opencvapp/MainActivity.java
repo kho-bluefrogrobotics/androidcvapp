@@ -22,7 +22,7 @@ import org.opencv.android.OpenCVLoader;
 
 import org.opencv.core.Mat;
 import org.opencv.video.TrackerNano;
-
+import org.opencv.wechat_qrcode.WeChatQRCode;
 
 import java.util.Collections;
 import java.util.List;
