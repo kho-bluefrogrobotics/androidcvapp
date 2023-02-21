@@ -41,6 +41,7 @@ import org.opencv.dnn.Net;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
+import org.opencv.objdetect.FaceRecognizerSF;
 import org.opencv.video.Tracker;
 
 import org.opencv.video.TrackerNano;
@@ -106,6 +107,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     Mat blob, detections;
     // Neural net for detection
     private Net net;
+
+    //Parameters for Facial recognition
+    Size inputFaceSize = new Size(112,112);
+    // List of detected faces
+    Mat faceBlob;
+    // Neural net for detection
+    private Net sfaceNet;
+    private FaceRecognizerSF faceRecognizer;
+    Mat faceEmbedding = new Mat();
 
     // MLKit face detector
     MLKitFaceDetector myMLKitFaceDetector = new MLKitFaceDetector();
@@ -299,6 +309,10 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         String weights = dir + "/opencv_face_detector_uint8.pb";
         net = Dnn.readNetFromTensorflow(weights, proto);
 
+        // Load face recog model
+        faceRecognizer = FaceRecognizerSF.create(dir + "/face_recognition_sface_2021dec-act_int8-wt_int8-quantized",
+                "");
+
 
         // Init write video file
         videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
@@ -347,7 +361,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 Rect faceROI= new Rect(left, top, right-left, bottom-top);
                 Mat faceMat = frame.submat(faceROI);
 
-                // face orientation
+                ////////////////////////////// face orientation
                 //convert to bitmap
                 Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
                 Utils.matToBitmap(frame, bitmapImage);
@@ -361,7 +375,17 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 // rotate
                 Imgproc.warpAffine(faceMat, faceMat, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
 
-                // Compute 
+                ////////////////////////////// Matching
+                // Compute embeddings
+//                faceBlob = Dnn.blobFromImage(faceMat, 1, inputFaceSize, new Scalar(0, 0, 0), true, false);
+//                sfaceNet.setInput(faceBlob);
+//                faceEmbedding = sfaceNet.forward();
+
+                faceRecognizer.feature(faceMat, faceEmbedding);
+
+                // Look for closest
+                // for each known face
+                faceRecognizer.match(faceEmbedding, new Mat(), FaceRecognizerSF.FR_COSINE);
 
 
             }   // end if confidence OK
