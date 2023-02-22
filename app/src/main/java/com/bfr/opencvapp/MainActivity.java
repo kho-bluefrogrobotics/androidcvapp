@@ -13,8 +13,11 @@ import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.RelativeLayout;
 import android.widget.Switch;
+import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -106,7 +109,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // Neural net for detection
     private Net net;
     //
-    float MARGIN_FACTOR = 0.1f;
+    float MARGIN_FACTOR = 0.01f;
 
     //Parameters for Facial recognition
     Size inputFaceSize = new Size(112,112);
@@ -137,6 +140,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     // context
     Context mycontext = this;
+    CheckBox saveCheckbox;
+    EditText personNameExitText;
 
     //Video writer
     private VideoWriter videoWriter;
@@ -178,6 +183,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         //**************** Callbacks for buttons
 
+        saveCheckbox = findViewById(R.id.saveNameCkbox);
+        personNameExitText = findViewById(R.id.personNameEditTxt);
+
 //        //callback show face
 //        hideFace.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
 //            @Override
@@ -194,75 +202,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //            } // end onchange
 //        });// end listener
 //
-//        //calbacks for Enable button
-//        noSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-//                // if checked
-//                if (noSwitch.isChecked())
-//                {
-//                    // enable No
-//                    try {
-//                        mySDK.getUsbInterface().enableNoMove(1, new IUsbCommadRsp.Stub() {
-//                            @Override
-//                            public void onSuccess(String success) throws RemoteException { }
-//                            @Override
-//                            public void onFailed(String error) throws RemoteException {}
-//                        });
-//                    } //end try enable Yes
-//                    catch (RemoteException e)
-//                    {            e.printStackTrace();
-//                    } // end catch
-//                }
-//                else // unchecked
-//                {
-//                    //disable no
-//                    try {
-//                        mySDK.getUsbInterface().enableNoMove(0, new IUsbCommadRsp.Stub() {
-//                            @Override
-//                            public void onSuccess(String success) throws RemoteException { }
-//                            @Override
-//                            public void onFailed(String error) throws RemoteException {}
-//                        });
-//
-//                    } //end try enable Yes
-//                    catch (RemoteException e)
-//                    {
-//                        e.printStackTrace();
-//                    } // end catch
-//                } // end if toggle
-//
-//            } // end onChecked
-//        }); // end listener
 
-        //tracking
-//        trackingCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-//                //reset
-//                if (!trackingCheckBox.isChecked())
-//                {
-//                    // reset grafcet
-//                    TrackingGrafcet.step_num =0;
-//                    TrackingGrafcet.go = false;
-//
-//                    TrackingYesGrafcet.step_num =0;
-//                    TrackingYesGrafcet.go = false;
-//                    // close record file
-//
-//                    videoWriter.release();
-//
-//                }
-//                else // checked
-//                {
-//                    // let the grafcet continue
-//                    TrackingGrafcet.go = true;
-//                    TrackingYesGrafcet.go = true;
-//
-//                }
-//
-//            }
-//        });
+        saveCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+
+                if (isChecked)
+                    isSavingFace = isChecked;
+            }
+        });
 
 
     } // End onCreate
@@ -324,7 +272,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         // init
         faceEmbedding=new Mat();
-        identities.add(new FacialIdentity("UNKNOWN", new Mat(1, 128 , CV_32F)));
+
+//        identities.add(new FacialIdentity("UNKNOWN", new Mat(1, 128 , CV_32F)));
+        identities.add(new FacialIdentity("UNKNOWN", Mat.zeros(1,128, CV_32F)));
         // Load Face detection model
         String proto = dir + "/nnmodels/opencv_face_detector.pbtxt";
         String weights = dir + "/nnmodels/opencv_face_detector_uint8.pb";
@@ -412,8 +362,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 // image rotation
                 Point center = new Point((int)faceMat.cols()/2,(int) faceMat.rows()/2);
                 double angle = detectedFace.getHeadEulerAngleZ();
-                Imgproc.putText(frame, " "+angle, new Point(100, 100),1, 2,
-                        new Scalar(0, 255, 0), 2);
+                //Imgproc.putText(frame, " "+angle, new Point(100, 100),1, 2,
+                //        new Scalar(0, 255, 0), 2);
                 Mat mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
                 // rotate
                 Imgproc.warpAffine(faceMat, faceMat, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
@@ -437,10 +387,19 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     ////////////////////////////// Saving new face
 
                     currentDateandTime = sdf.format(new Date());
-                    identities.add(new FacialIdentity("Coucou"+currentDateandTime, faceEmbedding));
+                    identities.add(new FacialIdentity(personNameExitText.getText()+"_"+currentDateandTime, faceEmbedding));
 
                     // reset
                     isSavingFace = false;
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), "*** SAVED Face: " + personNameExitText.getText()+"_"+currentDateandTime ,
+                                    Toast.LENGTH_LONG).show();
+                            saveCheckbox.setChecked(false);
+                        }
+                    });
 
                 }
                 else
@@ -450,12 +409,22 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     // Look for closest
                     double cosineScore, maxScore = 0.0;
                     int identifiedIdx=0;
+
+                    Log.i(TAG, "Saved face database: " + identities.size());
+
                     // for each known face
                     for (int faceIdx=0; faceIdx< identities.size(); faceIdx++)
                     {
                         //compute similarity;
                         cosineScore = faceRecognizer.match(faceEmbedding, identities.get(faceIdx).embedding,
                                 FaceRecognizerSF.FR_COSINE);
+                        Log.i(TAG, "TODEBUG FaceCOmputing : " + identities.get(faceIdx).name + " - " + cosineScore
+                         + "   " + identities.get(faceIdx).embedding.get(0,0)[0]
+                         + " " + identities.get(faceIdx).embedding.get(0,1)[0]
+                         + " " + identities.get(faceIdx).embedding.get(0,2)[0]
+                         + " " + identities.get(faceIdx).embedding.get(0,3)[0]
+                         + " " + identities.get(faceIdx).embedding.get(0,4)[0]
+                        );
                         // if better score
                         if(cosineScore>maxScore) {
                             maxScore = cosineScore;
@@ -464,6 +433,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     }
 
                     //
+//                    Imgproc.putText(frame, identities.get(identifiedIdx).name.split("_")[0], new Point(100, 100),1, 2,
+                    Imgproc.putText(frame, identities.get(identifiedIdx).name, new Point(100, 100),1, 2,
+                                    new Scalar(0, 255, 0), 2);
                     Log.i(TAG, "Found face : " + identities.get(identifiedIdx).name );
 
                 }

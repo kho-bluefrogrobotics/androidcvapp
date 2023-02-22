@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     xmlns:opencv="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#EFE5E5"
+    android:backgroundTint="#EAE4E4"
     tools:context=".MainActivity">
 
     <org.opencv.android.JavaCameraView
@@ -11,39 +13,30 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="visible"
-        opencv:show_fps="true"
-        opencv:camera_id="0" />
+        opencv:camera_id="0"
+        opencv:show_fps="true" />
     <!--  Wide angle camera : id=0 ; Narrow angle camera: id = 1-->
 
 
     <RelativeLayout
         android:id="@+id/visage"
-        android:visibility="visible"
-        android:alpha="0.05"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:alpha="0.05"
+        android:visibility="visible">
 
         <include layout="@layout/face" />
 
-        <CheckBox
-            android:id="@+id/trackingBox"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentTop="true"
-            android:layout_marginStart="55dp"
-            android:layout_marginTop="173dp"
-            android:text="TRACKING" />
 
     </RelativeLayout>
 
 
     <CheckBox
         android:id="@+id/visibleCheckBox"
-        android:layout_marginStart="1100px"
-        android:layout_marginTop="40px"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="1100px"
+        android:layout_marginTop="40px"
         android:text="Hide Face" />
 
 
@@ -56,7 +49,28 @@
         android:layout_marginStart="3dp"
         android:layout_marginTop="236dp"
         android:text="Button"
-        android:visibility="visible" />
+        android:visibility="gone" />
 
+    <CheckBox
+        android:id="@+id/saveNameCkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="62dp"
+        android:layout_marginTop="102dp"
+        android:buttonTint="#EDE9E9"
+        android:text="SAVE"
+        android:textSize="20sp" />
+
+    <EditText
+        android:id="@+id/personNameEditTxt"
+        android:layout_width="201dp"
+        android:layout_height="49dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="50dp"
+        android:layout_marginTop="136dp"
+        android:text="Name?" />
 
 </FrameLayout>
