@@ -70,13 +70,13 @@ import com.google.mlkit.vision.face.Face;
 
 public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
-    private static final String TAG = MainActivity.class.getName();
+    private static final String TAG = "FaceRecognizerSface";
 
     private CameraBridgeViewBase mOpenCvCameraView;
 
     // directory where the model files are saved for face detection
 //    private String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
-    private String dir = "/storage/emulated/0/Android/data/com.bfr.opencvapp/files/";
+    private String dir = "/sdcard/Android/data/com.bfr.opencvapp/files/";
 
     // SDK
     BuddySDK mySDK = new BuddySDK();
@@ -115,7 +115,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // Neural net for detection
     private Net sfaceNet;
     private FaceRecognizerSF faceRecognizer;
-    Mat faceEmbedding = new Mat();
+    Mat faceEmbedding;
 
     // MLKit face detector
     MLKitFaceDetector myMLKitFaceDetector = new MLKitFaceDetector();
@@ -169,91 +169,91 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         //**************** Callbacks for buttons
 
-        //callback show face
-        hideFace.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                //if checked
-                if (hideFace.isChecked())
-                {   // set tranparent
-                    BuddyFace.setAlpha(0.25F);
-                }
-                else // unchecked
-                {// set opaque
-                    BuddyFace.setAlpha(1.0F);
-                } // end if checked
-            } // end onchange
-        });// end listener
-
-        //calbacks for Enable button
-        noSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                // if checked
-                if (noSwitch.isChecked())
-                {
-                    // enable No
-                    try {
-                        mySDK.getUsbInterface().enableNoMove(1, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException { }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {}
-                        });
-                    } //end try enable Yes
-                    catch (RemoteException e)
-                    {            e.printStackTrace();
-                    } // end catch
-                }
-                else // unchecked
-                {
-                    //disable no
-                    try {
-                        mySDK.getUsbInterface().enableNoMove(0, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String success) throws RemoteException { }
-                            @Override
-                            public void onFailed(String error) throws RemoteException {}
-                        });
-
-                    } //end try enable Yes
-                    catch (RemoteException e)
-                    {
-                        e.printStackTrace();
-                    } // end catch
-                } // end if toggle
-
-            } // end onChecked
-        }); // end listener
+//        //callback show face
+//        hideFace.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+//            @Override
+//            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+//                //if checked
+//                if (hideFace.isChecked())
+//                {   // set tranparent
+//                    BuddyFace.setAlpha(0.25F);
+//                }
+//                else // unchecked
+//                {// set opaque
+//                    BuddyFace.setAlpha(1.0F);
+//                } // end if checked
+//            } // end onchange
+//        });// end listener
+//
+//        //calbacks for Enable button
+//        noSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+//            @Override
+//            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+//                // if checked
+//                if (noSwitch.isChecked())
+//                {
+//                    // enable No
+//                    try {
+//                        mySDK.getUsbInterface().enableNoMove(1, new IUsbCommadRsp.Stub() {
+//                            @Override
+//                            public void onSuccess(String success) throws RemoteException { }
+//                            @Override
+//                            public void onFailed(String error) throws RemoteException {}
+//                        });
+//                    } //end try enable Yes
+//                    catch (RemoteException e)
+//                    {            e.printStackTrace();
+//                    } // end catch
+//                }
+//                else // unchecked
+//                {
+//                    //disable no
+//                    try {
+//                        mySDK.getUsbInterface().enableNoMove(0, new IUsbCommadRsp.Stub() {
+//                            @Override
+//                            public void onSuccess(String success) throws RemoteException { }
+//                            @Override
+//                            public void onFailed(String error) throws RemoteException {}
+//                        });
+//
+//                    } //end try enable Yes
+//                    catch (RemoteException e)
+//                    {
+//                        e.printStackTrace();
+//                    } // end catch
+//                } // end if toggle
+//
+//            } // end onChecked
+//        }); // end listener
 
         //tracking
-        trackingCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                //reset
-                if (!trackingCheckBox.isChecked())
-                {
-                    // reset grafcet
-                    TrackingGrafcet.step_num =0;
-                    TrackingGrafcet.go = false;
-
-                    TrackingYesGrafcet.step_num =0;
-                    TrackingYesGrafcet.go = false;
-                    // close record file
-
-                    videoWriter.release();
-
-                }
-                else // checked
-                {
-                    // let the grafcet continue
-                    TrackingGrafcet.go = true;
-                    TrackingYesGrafcet.go = true;
-
-                }
-
-            }
-        });
+//        trackingCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+//            @Override
+//            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+//                //reset
+//                if (!trackingCheckBox.isChecked())
+//                {
+//                    // reset grafcet
+//                    TrackingGrafcet.step_num =0;
+//                    TrackingGrafcet.go = false;
+//
+//                    TrackingYesGrafcet.step_num =0;
+//                    TrackingYesGrafcet.go = false;
+//                    // close record file
+//
+//                    videoWriter.release();
+//
+//                }
+//                else // checked
+//                {
+//                    // let the grafcet continue
+//                    TrackingGrafcet.go = true;
+//                    TrackingYesGrafcet.go = true;
+//
+//                }
+//
+//            }
+//        });
 
 
     } // End onCreate
@@ -302,15 +302,23 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         return Collections.singletonList(mOpenCvCameraView);
     }
 
+    boolean started = false;
     public void onCameraViewStarted(int width, int height) {
 
+        try {
+            copyAssets();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
         // Load Face detection model
-        String proto = dir + "/opencv_face_detector.pbtxt";
-        String weights = dir + "/opencv_face_detector_uint8.pb";
+        String proto = dir + "/nnmodels/opencv_face_detector.pbtxt";
+        String weights = dir + "/nnmodels/opencv_face_detector_uint8.pb";
         net = Dnn.readNetFromTensorflow(weights, proto);
 
         // Load face recog model
-        faceRecognizer = FaceRecognizerSF.create(dir + "/face_recognition_sface_2021dec-act_int8-wt_int8-quantized",
+        faceRecognizer = FaceRecognizerSF.create(dir + "/nnmodels/face_recognition_sface_2021dec-act_int8-wt_int8-quantized.onnx",
                 "");
 
 
@@ -320,6 +328,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
                 25.0D,  new Size( 800,600));
 
+        started = true;
     }
 
 
@@ -327,6 +336,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         // cature frame from camera
         Mat frame = inputFrame.rgba();
+
+        if (!started)
+            return frame;
 
         // color conversion
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
@@ -402,7 +414,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
 
     private void copyAssets() throws IOException {
-
+        Log.i(TAG, "Copying assets"  );
 /*** copy a file */
 // get assets
         AssetManager assetManager = getAssets();
@@ -416,7 +428,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         String[] files = null;
         // for each folder
         if (folders != null) for (String foldername : folders) {
-            Log.i("Assets", "Found folder: " + foldername  );
+            Log.i(TAG, "Found folder: " + foldername  );
             // list of comportemental
             try {
                 files = assetManager.list(foldername);
@@ -436,13 +448,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                     {
                         // create folder if doesn't exist
-                        File folder = new File(getExternalFilesDir(null), dir+foldername);
+                        File folder = new File(getExternalFilesDir(null), foldername);
                         if(!folder.exists()) {
                             // create folder
                             folder.mkdirs();
                         }
                         // if file to keep (vocal, commercial, ...)
-                        File file = new File ( dir+foldername+"/"+filename );
+                        File file = new File ( foldername+"/"+filename );
 
                         if ( !file.exists() )
                         {
