@@ -312,6 +312,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         {
             e.printStackTrace();
         }
+
+        // init
+        faceEmbedding=new Mat();
         // Load Face detection model
         String proto = dir + "/nnmodels/opencv_face_detector.pbtxt";
         String weights = dir + "/nnmodels/opencv_face_detector_uint8.pb";
@@ -380,10 +383,17 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 // detect-classify face
                 Face detectedFace = myMLKitFaceDetector.detectSingleFaceFromBitmap(bitmapImage);
 
+                if(detectedFace==null){
+                    Imgproc.putText(frame, "MLKIT Failure", new Point(100, 100),1, 2,
+                            new Scalar(0, 255, 0), 2);
+                    return frame;
+                }
                 // image rotation
                 Point center = new Point((int)faceMat.cols()/2,(int) faceMat.rows()/2);
                 double angle = detectedFace.getHeadEulerAngleZ();
-                Mat mapMatrix = Imgproc.getRotationMatrix2D(center, angle, 1.0);
+                Imgproc.putText(frame, " "+angle, new Point(100, 100),1, 2,
+                        new Scalar(0, 255, 0), 2);
+                Mat mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
                 // rotate
                 Imgproc.warpAffine(faceMat, faceMat, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
 
@@ -397,7 +407,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                 // Look for closest
                 // for each known face
-                faceRecognizer.match(faceEmbedding, new Mat(), FaceRecognizerSF.FR_COSINE);
+                faceRecognizer.match(faceEmbedding, faceEmbedding, FaceRecognizerSF.FR_COSINE);
 
 
             }   // end if confidence OK

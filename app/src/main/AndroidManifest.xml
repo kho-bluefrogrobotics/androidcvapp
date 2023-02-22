@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.bfr.opencvapp"
-    android:sharedUserId="android.uid.system">
+    package="com.bfr.opencvapp">
 
     <application
         android:allowBackup="true"
