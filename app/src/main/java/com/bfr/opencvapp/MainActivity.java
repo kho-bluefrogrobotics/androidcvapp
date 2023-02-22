@@ -44,12 +44,16 @@ import org.opencv.videoio.VideoWriter;
 
 import com.bfr.opencvapp.utils.BuddyData;
 import com.bfr.opencvapp.utils.FacialIdentity;
+import com.bfr.opencvapp.utils.IdentitiesDatabase;
 import com.bfr.opencvapp.utils.MLKitFaceDetector;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -120,6 +124,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private Net sfaceNet;
     private FaceRecognizerSF faceRecognizer;
     Mat faceEmbedding;
+    Mat faceMat;
+    Rect faceROI;
 
     // MLKit face detector
     MLKitFaceDetector myMLKitFaceDetector = new MLKitFaceDetector();
@@ -134,7 +140,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     boolean isSavingFace = false;
     boolean started = false;
     // List of known faces
-    final ArrayList<FacialIdentity> identities = new ArrayList<>();
+    private IdentitiesDatabase idDatabase;
+//    public ArrayList<FacialIdentity> identities = new ArrayList<>();
 
     SimpleDateFormat sdf = new SimpleDateFormat("yyMMddHHmmss");
     String currentDateandTime = "";
@@ -274,8 +281,26 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // init
         faceEmbedding=new Mat();
 
+        idDatabase= new IdentitiesDatabase();
+        try {
+            FileInputStream fileIn = new FileInputStream("/sdcard/identities.ser");
+            ObjectInputStream in = new ObjectInputStream(fileIn);
+            idDatabase.identities = ( ArrayList<FacialIdentity>) in.readObject();
+            in.close();
+            fileIn.close();
+
+            Log.w(TAG, "coucou loading identities file : " + idDatabase.identities.get(idDatabase.identities.size()-1).name);
+        } catch (Exception e) {
+           Log.e(TAG, "Error loading identities file : " + e);
+
+        }
+
+        idDatabase = new IdentitiesDatabase();
+        idDatabase.loadFromStorage();
+
 //        identities.add(new FacialIdentity("UNKNOWN", new Mat(1, 128 , CV_32F)));
-        identities.add(new FacialIdentity("UNKNOWN", Mat.zeros(1,128, CV_32F)));
+//        identities.add(new FacialIdentity("UNKNOWN", Mat.zeros(1,128, CV_32F)));
+
         // Load Face detection model
         String proto = dir + "/nnmodels/opencv_face_detector.pbtxt";
         String weights = dir + "/nnmodels/opencv_face_detector_uint8.pb";
@@ -287,11 +312,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 "");
         sfaceNet = Dnn.readNetFromONNX(dir + "/nnmodels/face_recognition_sface_2021dec.onnx");
 
-        // Init write video file
-        videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
-                25.0D, new Size(800, 600));
-        videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
-                25.0D,  new Size( 800,600));
+//        // Init write video file
+//        videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
+//                25.0D, new Size(800, 600));
+//        videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
+//                25.0D,  new Size( 800,600));
 
         started = true;
     }
@@ -304,6 +329,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         if (!started)
             return frame;
+
+        try{
+
 
         // color conversion
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
@@ -333,14 +361,21 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 int right  = (int)(detections.get(i, 5)[0] * cols);
                 int bottom = (int)(detections.get(i, 6)[0] * rows);
 
+                //If face touches the margin, skip -> we need a fully visible face for recognition
+                if(left<10 || top <10 || right> frame.cols()-10 || bottom > frame.rows()-10)
+                    // take next detected face
+                    continue;
                 /*** Recognition ***/
 
-                //crop image around face
-                Rect faceROI= new Rect((int)(left- MARGIN_FACTOR *(right-left)),
-                        (int)(top- MARGIN_FACTOR *(bottom-top)),
-                        (int)(right-left)+(int)(2* MARGIN_FACTOR *(right-left)),
-                        (int)(bottom-top) + +(int)(MARGIN_FACTOR *(bottom-top)));
-                Mat faceMat = frame.submat(faceROI);
+
+                    //crop image around face
+                    faceROI= new Rect( Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
+                            Math.max(top, (int)(top- MARGIN_FACTOR *(bottom-top)) ),
+                            (int)(right-left)+(int)(2* MARGIN_FACTOR *(right-left)),
+                            (int)(bottom-top) + +(int)(MARGIN_FACTOR *(bottom-top)));
+                    faceMat = frame.submat(faceROI);
+
+
 
                 ////////////////////////////// face orientation
                 //convert to bitmap
@@ -362,7 +397,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 double angle = detectedFace.getHeadEulerAngleZ();
                 //Imgproc.putText(frame, " "+angle, new Point(100, 100),1, 2,
                 //        new Scalar(0, 255, 0), 2);
-                Mat mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
+                mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
                 // rotate
                 Imgproc.warpAffine(faceMat, faceMat, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
 
@@ -386,10 +421,20 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                     currentDateandTime = sdf.format(new Date());
 //                    Mat newEmbeddings = faceEmbedding.clone();
-                    identities.add(new FacialIdentity(personNameExitText.getText()+"_"+currentDateandTime, faceEmbedding.clone()));
+                    idDatabase.identities.add(new FacialIdentity(personNameExitText.getText()+"_"+currentDateandTime, faceEmbedding.clone()));
 
-                    // reset
-                    isSavingFace = false;
+                    //saving file
+                    Thread savingThread = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+
+                            idDatabase.saveToStorage();
+                            // reset
+                            isSavingFace = false;
+                        }
+                    });
+                    savingThread.start();
+
 
                     runOnUiThread(new Runnable() {
                         @Override
@@ -409,21 +454,25 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     double cosineScore, maxScore = 0.0;
                     int identifiedIdx=0;
 
-                    Log.i(TAG, "Saved face database: " + identities.size());
+                    Log.i(TAG, "Saved face database: " + idDatabase.identities.size());
 
                     // for each known face
-                    for (int faceIdx=0; faceIdx< identities.size(); faceIdx++)
+                    for (int faceIdx=1; faceIdx< idDatabase.identities.size(); faceIdx++)
                     {
+                        Log.i(TAG, "Checking face database: " + faceIdx + " " + idDatabase.identities.get(faceIdx).name);
+                        Log.i(TAG, "FaceEmbed : " + faceEmbedding.size() );
+                        Log.i(TAG, "Reference : " + idDatabase.identities.get(faceIdx).embedding.size() );
+
                         //compute similarity;
-                        cosineScore = faceRecognizer.match(faceEmbedding, identities.get(faceIdx).embedding,
+                        cosineScore = faceRecognizer.match(faceEmbedding, idDatabase.identities.get(faceIdx).embedding,
                                 FaceRecognizerSF.FR_COSINE);
-//                        Log.i(TAG, "TODEBUG FaceCOmputing : " + identities.get(faceIdx).name + " - " + cosineScore
-//                         + "   " + identities.get(faceIdx).embedding.get(0,0)[0]
-//                         + " " + identities.get(faceIdx).embedding.get(0,1)[0]
-//                         + " " + identities.get(faceIdx).embedding.get(0,2)[0]
-//                         + " " + identities.get(faceIdx).embedding.get(0,3)[0]
-//                         + " " + identities.get(faceIdx).embedding.get(0,4)[0]
-//                        );
+                        Log.i(TAG, "TODEBUG FaceCOmputing : " + idDatabase.identities.get(faceIdx).name + " - " + cosineScore
+                         + "   " + idDatabase.identities.get(faceIdx).embedding.get(0,0)[0]
+                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,1)[0]
+                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,2)[0]
+                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,3)[0]
+                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,4)[0]
+                        );
                         // if better score
                         if(cosineScore>maxScore) {
                             maxScore = cosineScore;
@@ -433,9 +482,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                     //
                     //Imgproc.putText(frame, identities.get(identifiedIdx).name, new Point(100, 100),1, 2,
-                    Imgproc.putText(frame, identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left, top-10),1, 3,
+                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left, top-10),1, 3,
                                     new Scalar(0, 0, 250), 2);
-                    Imgproc.putText(frame, identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left-2, top-12),1, 3,
+                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left-2, top-12),1, 3,
                                     new Scalar(0, 255, 0), 2);
 //                    Log.i(TAG, "Found face : " + identities.get(identifiedIdx).name );
 
@@ -452,7 +501,14 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         } // next detection
 
-        return frame;
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally {
+            return frame;
+        }
     } // end function
 
     public void onCameraViewStopped() {

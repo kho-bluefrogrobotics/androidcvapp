@@ -13,7 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="visible"
-        opencv:camera_id="0"
+        opencv:camera_id="1"
         opencv:show_fps="true" />
     <!--  Wide angle camera : id=0 ; Narrow angle camera: id = 1-->
 

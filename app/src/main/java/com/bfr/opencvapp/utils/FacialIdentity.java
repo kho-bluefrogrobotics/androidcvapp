@@ -2,7 +2,7 @@ package com.bfr.opencvapp.utils;
 
 import org.opencv.core.Mat;
 
-public class FacialIdentity {
+public class FacialIdentity implements java.io.Serializable{
 
     public String name = "";
     public Mat embedding;
