@@ -53,6 +53,13 @@ import com.bfr.buddysdk.sdk.BuddySDK;
 import com.bfr.opencvapp.grafcet.*;
 import com.google.mlkit.vision.face.Face;
 
+
+import org.tensorflow.lite.Interpreter;
+import org.tensorflow.lite.gpu.CompatibilityList;
+import org.tensorflow.lite.gpu.GpuDelegate;
+
+
+
 public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
     private static final String TAG = "FaceRecognizerSface";
