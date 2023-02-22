@@ -332,9 +332,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 int top    = (int)(detections.get(i, 4)[0] * rows);
                 int right  = (int)(detections.get(i, 5)[0] * cols);
                 int bottom = (int)(detections.get(i, 6)[0] * rows);
-                // Draw rectangle around detected object.
-//                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-//                        new Scalar(0, 255, 0), 2);
 
                 /*** Recognition ***/
 
@@ -435,15 +432,24 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     }
 
                     //
-                    Imgproc.putText(frame, identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(100, 100),1, 2,
-//                    Imgproc.putText(frame, identities.get(identifiedIdx).name, new Point(100, 100),1, 2,
+                    //Imgproc.putText(frame, identities.get(identifiedIdx).name, new Point(100, 100),1, 2,
+                    Imgproc.putText(frame, identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left, top-10),1, 3,
+                                    new Scalar(0, 0, 250), 2);
+                    Imgproc.putText(frame, identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left-2, top-12),1, 3,
                                     new Scalar(0, 255, 0), 2);
 //                    Log.i(TAG, "Found face : " + identities.get(identifiedIdx).name );
 
-                }
+                    // Draw rectangle around detected face.
+                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                        new Scalar(0, 255, 0), 2);
 
+                } //end if isSavingFace
+
+                //Stop for-loop (only one face)
+                break;
 
             }   // end if confidence OK
+
         } // next detection
 
         return frame;
