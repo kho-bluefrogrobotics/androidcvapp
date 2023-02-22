@@ -25,23 +25,17 @@
 
         <include layout="@layout/face" />
 
+        <CheckBox
+            android:id="@+id/trackingBox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="55dp"
+            android:layout_marginTop="173dp"
+            android:text="TRACKING" />
+
     </RelativeLayout>
-
-    <Switch
-        android:id="@+id/enableYesSwitch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20px"
-        android:layout_marginTop="40px"
-        android:text="Enable Yes" />
-
-    <Switch
-        android:id="@+id/enableNoSwitch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20px"
-        android:layout_marginTop="100px"
-        android:text="Enable No" />
 
 
     <CheckBox
@@ -63,26 +57,6 @@
         android:layout_marginTop="236dp"
         android:text="Button"
         android:visibility="visible" />
-
-
-    <CheckBox
-        android:id="@+id/trackingBox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20px"
-        android:layout_marginTop="600px"
-        android:text="TRACKING" />
-
-
-    <CheckBox
-        android:id="@+id/fastTracking"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20px"
-        android:layout_marginTop="200px"
-        android:text="Fast Tracking" />
-
-
 
 
 </FrameLayout>

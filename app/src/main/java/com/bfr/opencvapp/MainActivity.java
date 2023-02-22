@@ -1,5 +1,7 @@
 package com.bfr.opencvapp;
 
+import static org.opencv.core.CvType.*;
+
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
@@ -38,6 +40,7 @@ import org.opencv.objdetect.FaceRecognizerSF;
 import org.opencv.videoio.VideoWriter;
 
 import com.bfr.opencvapp.utils.BuddyData;
+import com.bfr.opencvapp.utils.FacialIdentity;
 import com.bfr.opencvapp.utils.MLKitFaceDetector;
 
 import java.io.File;
@@ -45,7 +48,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import com.bfr.buddysdk.sdk.BuddySDK;
@@ -119,6 +125,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     double angle = 90;
     double scale = 1.0;
     Mat mapMatrix;
+
+    // for saving face
+    boolean isSavingFace = false;
+    boolean started = false;
+    // List of known faces
+    final ArrayList<FacialIdentity> identities = new ArrayList<>();
+
+    SimpleDateFormat sdf = new SimpleDateFormat("yyMMddHHmmss");
+    String currentDateandTime = "";
 
     // context
     Context mycontext = this;
@@ -296,7 +311,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         return Collections.singletonList(mOpenCvCameraView);
     }
 
-    boolean started = false;
+
     public void onCameraViewStarted(int width, int height) {
 
         try {
@@ -309,6 +324,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         // init
         faceEmbedding=new Mat();
+        identities.add(new FacialIdentity("UNKNOWN", new Mat(1, 128 , CV_32F)));
         // Load Face detection model
         String proto = dir + "/nnmodels/opencv_face_detector.pbtxt";
         String weights = dir + "/nnmodels/opencv_face_detector_uint8.pb";
@@ -316,6 +332,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         // Load face recog model
         faceRecognizer = FaceRecognizerSF.create(dir + "/nnmodels/face_recognition_sface_2021dec.onnx",
+//        faceRecognizer = FaceRecognizerSF.create(dir + "/nnmodels/face_recognition_sface_2021dec-act_int8-wt_int8-quantized.onnx",
                 "");
 
 
@@ -328,7 +345,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         started = true;
     }
 
-
+    double elapsedTime=0.0;
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
         // cature frame from camera
@@ -340,12 +357,17 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // color conversion
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
+        elapsedTime = System.currentTimeMillis();
+
         // Forward image through network.
         blob =  Dnn.blobFromImage(frame, 1.0,
                 new org.opencv.core.Size(300, 300),
                 new Scalar(104, 117, 123), /*swapRB*/true, /*crop*/false);
         net.setInput(blob);
         Mat detections = net.forward();
+
+        Log.i(TAG, "elapsed time face detect : " + (System.currentTimeMillis()-elapsedTime)  );
+        elapsedTime = System.currentTimeMillis();
 
         int cols = frame.cols();
         int rows = frame.rows();
@@ -379,6 +401,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 // detect-classify face
                 Face detectedFace = myMLKitFaceDetector.detectSingleFaceFromBitmap(bitmapImage);
 
+                Log.i(TAG, "elapsed time face MLKit : " + (System.currentTimeMillis()-elapsedTime)  );
+                elapsedTime = System.currentTimeMillis();
+
                 if(detectedFace==null){
                     Imgproc.putText(frame, "MLKIT Failure", new Point(100, 100),1, 2,
                             new Scalar(0, 255, 0), 2);
@@ -393,7 +418,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 // rotate
                 Imgproc.warpAffine(faceMat, faceMat, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
 
-                ////////////////////////////// Matching
+                Log.i(TAG, "elapsed time rotation : " + (System.currentTimeMillis()-elapsedTime)  );
+                elapsedTime = System.currentTimeMillis();
+
                 // Compute embeddings
 //                faceBlob = Dnn.blobFromImage(faceMat, 1, inputFaceSize, new Scalar(0, 0, 0), true, false);
 //                sfaceNet.setInput(faceBlob);
@@ -401,9 +428,46 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                 faceRecognizer.feature(faceMat, faceEmbedding);
 
-                // Look for closest
-                // for each known face
-                faceRecognizer.match(faceEmbedding, faceEmbedding, FaceRecognizerSF.FR_COSINE);
+                Log.i(TAG, "elapsed time calc embedding : " + (System.currentTimeMillis()-elapsedTime)
+                +"\n " + faceEmbedding.size() +" type " + faceEmbedding.depth());
+                elapsedTime = System.currentTimeMillis();
+
+                if(isSavingFace)
+                {
+                    ////////////////////////////// Saving new face
+
+                    currentDateandTime = sdf.format(new Date());
+                    identities.add(new FacialIdentity("Coucou"+currentDateandTime, faceEmbedding));
+
+                    // reset
+                    isSavingFace = false;
+
+                }
+                else
+                {
+                    ////////////////////////////// Matching
+
+                    // Look for closest
+                    double cosineScore, maxScore = 0.0;
+                    int identifiedIdx=0;
+                    // for each known face
+                    for (int faceIdx=0; faceIdx< identities.size(); faceIdx++)
+                    {
+                        //compute similarity;
+                        cosineScore = faceRecognizer.match(faceEmbedding, identities.get(faceIdx).embedding,
+                                FaceRecognizerSF.FR_COSINE);
+                        // if better score
+                        if(cosineScore>maxScore) {
+                            maxScore = cosineScore;
+                            identifiedIdx = faceIdx;
+                        }
+                    }
+
+                    //
+                    Log.i(TAG, "Found face : " + identities.get(identifiedIdx).name );
+
+                }
+
 
 
             }   // end if confidence OK
