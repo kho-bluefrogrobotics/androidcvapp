@@ -7,22 +7,15 @@ import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.RemoteException;
 import android.util.Log;
-import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.RelativeLayout;
 import android.widget.Switch;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-
-import com.bfr.buddysdk.sdk.Mood;
-import com.bfr.buddysdk.sdk.Services;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraActivity;
@@ -38,19 +31,14 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
-import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import org.opencv.objdetect.FaceRecognizerSF;
-import org.opencv.video.Tracker;
 
-import org.opencv.video.TrackerNano;
-import org.opencv.video.TrackerNano_Params;
 import org.opencv.videoio.VideoWriter;
 
 import com.bfr.opencvapp.utils.BuddyData;
 import com.bfr.opencvapp.utils.MLKitFaceDetector;
-import com.bfr.usbservice.IUsbCommadRsp;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -58,10 +46,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-
-import java.util.function.Consumer;
 
 import com.bfr.buddysdk.sdk.BuddySDK;
 
@@ -107,6 +92,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     Mat blob, detections;
     // Neural net for detection
     private Net net;
+    //
+    float MARGIN_FACTOR = 0.1f;
 
     //Parameters for Facial recognition
     Size inputFaceSize = new Size(112,112);
@@ -321,7 +308,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         net = Dnn.readNetFromTensorflow(weights, proto);
 
         // Load face recog model
-        faceRecognizer = FaceRecognizerSF.create(dir + "/nnmodels/face_recognition_sface_2021dec-act_int8-wt_int8-quantized.onnx",
+        faceRecognizer = FaceRecognizerSF.create(dir + "/nnmodels/face_recognition_sface_2021dec.onnx",
                 "");
 
 
@@ -361,19 +348,21 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         for (int i = 0; i < detections.rows(); ++i) {
             double confidence = detections.get(i, 2)[0];
             if (confidence > THRESHOLD) {
-                int classId = (int)detections.get(i, 1)[0];
                 int left   = (int)(detections.get(i, 3)[0] * cols);
                 int top    = (int)(detections.get(i, 4)[0] * rows);
                 int right  = (int)(detections.get(i, 5)[0] * cols);
                 int bottom = (int)(detections.get(i, 6)[0] * rows);
                 // Draw rectangle around detected object.
-                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                        new Scalar(0, 255, 0), 2);
+//                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+//                        new Scalar(0, 255, 0), 2);
 
                 /*** Recognition ***/
 
                 //crop image around face
-                Rect faceROI= new Rect(left, top, right-left, bottom-top);
+                Rect faceROI= new Rect((int)(left- MARGIN_FACTOR *(right-left)),
+                        (int)(top- MARGIN_FACTOR *(bottom-top)),
+                        (int)(right-left)+(int)(2* MARGIN_FACTOR *(right-left)),
+                        (int)(bottom-top) + +(int)(MARGIN_FACTOR *(bottom-top)));
                 Mat faceMat = frame.submat(faceROI);
 
                 ////////////////////////////// face orientation
