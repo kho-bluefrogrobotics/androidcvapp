@@ -301,7 +301,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             Log.i("coucou", "FOUND TFLITE MODEL");
         }
 
-        tfLite = new Interpreter(tfliteModel );
+        Interpreter.Options interpreterOptions = new Interpreter.Options();
+        interpreterOptions.setUseXNNPACK(true);
+        tfLite = new Interpreter(tfliteModel,interpreterOptions );
 
         Log.i("coucou", "face recog model loaded");
 
@@ -721,6 +723,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         // Run the inference in FaceNet Model
         Trace.beginSection("run");
+
         //tfLite.runForMultipleInputsOutputs(inputArray, outputMapBack);
         tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
         Trace.endSection();
