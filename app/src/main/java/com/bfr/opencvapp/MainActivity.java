@@ -56,6 +56,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import com.bfr.buddysdk.sdk.BuddySDK;
 
@@ -109,7 +110,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // Neural net for detection
     private Net net;
     //
-    float MARGIN_FACTOR = 0.01f;
+    float MARGIN_FACTOR = 0.1f;
 
     //Parameters for Facial recognition
     Size inputFaceSize = new Size(112,112);
@@ -284,7 +285,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         faceRecognizer = FaceRecognizerSF.create(dir + "/nnmodels/face_recognition_sface_2021dec.onnx",
 //        faceRecognizer = FaceRecognizerSF.create(dir + "/nnmodels/face_recognition_sface_2021dec-act_int8-wt_int8-quantized.onnx",
                 "");
-
+        sfaceNet = Dnn.readNetFromONNX(dir + "/nnmodels/face_recognition_sface_2021dec.onnx");
 
         // Init write video file
         videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
@@ -387,7 +388,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     ////////////////////////////// Saving new face
 
                     currentDateandTime = sdf.format(new Date());
-                    identities.add(new FacialIdentity(personNameExitText.getText()+"_"+currentDateandTime, faceEmbedding));
+//                    Mat newEmbeddings = faceEmbedding.clone();
+                    identities.add(new FacialIdentity(personNameExitText.getText()+"_"+currentDateandTime, faceEmbedding.clone()));
 
                     // reset
                     isSavingFace = false;
@@ -418,13 +420,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                         //compute similarity;
                         cosineScore = faceRecognizer.match(faceEmbedding, identities.get(faceIdx).embedding,
                                 FaceRecognizerSF.FR_COSINE);
-                        Log.i(TAG, "TODEBUG FaceCOmputing : " + identities.get(faceIdx).name + " - " + cosineScore
-                         + "   " + identities.get(faceIdx).embedding.get(0,0)[0]
-                         + " " + identities.get(faceIdx).embedding.get(0,1)[0]
-                         + " " + identities.get(faceIdx).embedding.get(0,2)[0]
-                         + " " + identities.get(faceIdx).embedding.get(0,3)[0]
-                         + " " + identities.get(faceIdx).embedding.get(0,4)[0]
-                        );
+//                        Log.i(TAG, "TODEBUG FaceCOmputing : " + identities.get(faceIdx).name + " - " + cosineScore
+//                         + "   " + identities.get(faceIdx).embedding.get(0,0)[0]
+//                         + " " + identities.get(faceIdx).embedding.get(0,1)[0]
+//                         + " " + identities.get(faceIdx).embedding.get(0,2)[0]
+//                         + " " + identities.get(faceIdx).embedding.get(0,3)[0]
+//                         + " " + identities.get(faceIdx).embedding.get(0,4)[0]
+//                        );
                         // if better score
                         if(cosineScore>maxScore) {
                             maxScore = cosineScore;
@@ -433,13 +435,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     }
 
                     //
-//                    Imgproc.putText(frame, identities.get(identifiedIdx).name.split("_")[0], new Point(100, 100),1, 2,
-                    Imgproc.putText(frame, identities.get(identifiedIdx).name, new Point(100, 100),1, 2,
+                    Imgproc.putText(frame, identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(100, 100),1, 2,
+//                    Imgproc.putText(frame, identities.get(identifiedIdx).name, new Point(100, 100),1, 2,
                                     new Scalar(0, 255, 0), 2);
-                    Log.i(TAG, "Found face : " + identities.get(identifiedIdx).name );
+//                    Log.i(TAG, "Found face : " + identities.get(identifiedIdx).name );
 
                 }
-
 
 
             }   // end if confidence OK
