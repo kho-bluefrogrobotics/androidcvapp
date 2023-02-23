@@ -73,7 +73,7 @@ import org.tensorflow.lite.gpu.GpuDelegate;
 
 public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
-    private static final String TAG = "FaceRecognizerSface";
+    private static final String TAG = "FaceRecognizerSface_app";
 
     private CameraBridgeViewBase mOpenCvCameraView;
 
@@ -83,18 +83,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     // SDK
     BuddySDK mySDK = new BuddySDK();
-
-    //button to start tracking
-    private Button initBtn;
-
-    // Face UI
-    private RelativeLayout BuddyFace;
-    private Switch noSwitch;
-    private CheckBox hideFace;
-
-    private CheckBox trackingCheckBox;
-    private CheckBox fastTrackingChckBox;
-    JavaCameraView cameraView;
 
 
     //********************  image ***************************
@@ -474,13 +462,28 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                                     new Scalar(0, 0, 250), 2);
                     Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left-4, top-14),1, 3,
                             new Scalar(0, 0, 250), 2);
-                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left-2, top-12),1, 3,
+//                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase() + " " + maxScore, new Point(left-2, top-12),1, 3,
+                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase() + " "
+                                    + detectedFace.getHeadEulerAngleY(),
+                            new Point(left-2, top-12),1, 3,
                                     new Scalar(0, 255, 0), 2);
 //                    Log.i(TAG, "Found face : " + identities.get(identifiedIdx).name );
 
+
+                    // if looking straight at the camera or not
+                    if (Math.abs(detectedFace.getHeadEulerAngleY()) <20)
                     // Draw rectangle around detected face.
                     Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
                         new Scalar(0, 255, 0), 2);
+                    else
+                    {
+                        Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                                new Scalar(255, 0, 255), 3);
+                        Imgproc.putText(frame, "User Disengaged", new Point(left-20, bottom+30),1, 2,
+                                new Scalar(255, 0, 0), 6);
+                        Imgproc.putText(frame, "User Disengaged", new Point(left-20, bottom+30),1, 2,
+                                new Scalar(0, 255, 0), 2);
+                    }
 
                 } //end if isSavingFace
 
