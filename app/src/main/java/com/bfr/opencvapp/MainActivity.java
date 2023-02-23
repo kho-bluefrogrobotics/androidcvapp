@@ -62,6 +62,7 @@ import java.util.Locale;
 import com.bfr.buddysdk.sdk.BuddySDK;
 
 import com.bfr.opencvapp.grafcet.*;
+import com.bfr.opencvapp.utils.MultiDetector;
 import com.google.mlkit.vision.face.Face;
 
 
@@ -101,12 +102,14 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     //
     float MARGIN_FACTOR = 0.1f;
 
+    //Tflite Multidetector
+    MultiDetector multiDetector;
+
     //Parameters for Facial recognition
     Size inputFaceSize = new Size(112,112);
     // List of detected faces
     Mat faceBlob;
     // Neural net for detection
-    private Net sfaceNet;
     private FaceRecognizerSF faceRecognizer;
     Mat faceEmbedding;
     Mat faceMat;
@@ -132,7 +135,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     String currentDateandTime = "";
 
     // context
-    Context mycontext = this;
+    Context context = this;
     CheckBox saveCheckbox;
     EditText personNameExitText;
 
@@ -172,8 +175,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
 
         // Pass SDK and data to grafcet
-        mTrackingGrafcet.init(mycontext, mySDK, mydata);
-        mTrackingYesGrafcet.init(mycontext, mySDK, mydata);
+        mTrackingGrafcet.init(context, mySDK, mydata);
+        mTrackingYesGrafcet.init(context, mySDK, mydata);
 
 
 
@@ -276,7 +279,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             e.printStackTrace();
         }
 
-
         // Load Face detection model
         String proto = dir + "/nnmodels/opencv_face_detector.pbtxt";
         String weights = dir + "/nnmodels/opencv_face_detector_uint8.pb";
@@ -286,13 +288,14 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         faceRecognizer = FaceRecognizerSF.create(dir + "/nnmodels/face_recognition_sface_2021dec.onnx",
 //        faceRecognizer = FaceRecognizerSF.create(dir + "/nnmodels/face_recognition_sface_2021dec-act_int8-wt_int8-quantized.onnx",
                 "");
-        sfaceNet = Dnn.readNetFromONNX(dir + "/nnmodels/face_recognition_sface_2021dec.onnx");
 
 //        // Init write video file
 //        videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
 //                25.0D, new Size(800, 600));
 //        videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
 //                25.0D,  new Size( 800,600));
+
+        multiDetector = new MultiDetector(context);
 
         started = true;
     }
@@ -328,6 +331,16 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         int rows = frame.rows();
         detections = detections.reshape(1, (int)detections.total() / 7);
 
+        elapsedTime = System.currentTimeMillis();
+//        //convert to bitmap
+//            Mat resizedFrame = new Mat();
+//            Imgproc.resize(frame, resizedFrame, new Size(320,320));
+//        Bitmap bitmapImagefull = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
+//        Utils.matToBitmap(resizedFrame, bitmapImagefull);
+//        multiDetector.recognizeImage(bitmapImagefull);
+//        Log.i(TAG, "elapsed time face detect with tflite : " + (System.currentTimeMillis()-elapsedTime)  );
+//            elapsedTime = System.currentTimeMillis();
+
         //for each detected face
         for (int i = 0; i < detections.rows(); ++i) {
             double confidence = detections.get(i, 2)[0];
@@ -356,8 +369,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                 ////////////////////////////// face orientation
                 //convert to bitmap
-                Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
-                Utils.matToBitmap(frame, bitmapImage);
+                Bitmap bitmapImage = Bitmap.createBitmap(faceMat.cols(), faceMat.rows(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(faceMat, bitmapImage);
                 // detect-classify face
                 Face detectedFace = myMLKitFaceDetector.detectSingleFaceFromBitmap(bitmapImage);
 

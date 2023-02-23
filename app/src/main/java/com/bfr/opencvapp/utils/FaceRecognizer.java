@@ -20,12 +20,12 @@ import java.util.Date;
 
 public class FaceRecognizer {
 
-    private static final String TAG = "FaceRecognizerSface";
+    private final String TAG = "FaceRecognizerSface";
 
     //
-    float MARGIN_FACTOR = 0.1f;
+    private final float MARGIN_FACTOR = 0.1f;
     //where to find the models
-    private String dir = "/sdcard/Android/data/com.bfr.opencvapp/files/";
+    private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/";
     // Face recognition
     private FaceRecognizerSF faceRecognizer;
     Mat faceEmbedding;
@@ -62,7 +62,7 @@ public class FaceRecognizer {
         }
 
         // Load face recog model
-        faceRecognizer = FaceRecognizerSF.create(dir + "/nnmodels/face_recognition_sface_2021dec.onnx",
+        faceRecognizer = FaceRecognizerSF.create(DIR + "/nnmodels/face_recognition_sface_2021dec.onnx",
 //        faceRecognizer = FaceRecognizerSF.create(dir + "/nnmodels/face_recognition_sface_2021dec-act_int8-wt_int8-quantized.onnx",
                 "");
 
