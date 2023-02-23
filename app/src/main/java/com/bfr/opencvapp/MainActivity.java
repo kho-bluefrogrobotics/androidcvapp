@@ -161,6 +161,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // Sensors & motor data
     BuddyData mydata = new BuddyData();
 
+    //to debug
+    double elapsedTime=0.0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -280,13 +283,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         // init
         faceEmbedding=new Mat();
-
         idDatabase= new IdentitiesDatabase();
-
         idDatabase.loadFromStorage();
-
-//        identities.add(new FacialIdentity("UNKNOWN", new Mat(1, 128 , CV_32F)));
-//        identities.add(new FacialIdentity("UNKNOWN", Mat.zeros(1,128, CV_32F)));
 
         // Load Face detection model
         String proto = dir + "/nnmodels/opencv_face_detector.pbtxt";
@@ -308,7 +306,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         started = true;
     }
 
-    double elapsedTime=0.0;
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
         // cature frame from camera
@@ -361,7 +358,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             (int)(right-left)+(int)(2* MARGIN_FACTOR *(right-left)),
                             (int)(bottom-top) + +(int)(MARGIN_FACTOR *(bottom-top)));
                     faceMat = frame.submat(faceROI);
-
 
 
                 ////////////////////////////// face orientation
@@ -446,31 +442,32 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     // for each known face
                     for (int faceIdx=1; faceIdx< idDatabase.identities.size(); faceIdx++)
                     {
-                        Log.i(TAG, "Checking face database: " + faceIdx + " " + idDatabase.identities.get(faceIdx).name);
-                        Log.i(TAG, "FaceEmbed : " + faceEmbedding.size() );
-                        Log.i(TAG, "Reference : " + idDatabase.identities.get(faceIdx).embedding.size() );
+//                        Log.i(TAG, "Checking face database: " + faceIdx + " " + idDatabase.identities.get(faceIdx).name);
+//                        Log.i(TAG, "FaceEmbed : " + faceEmbedding.size() );
+//                        Log.i(TAG, "Reference : " + idDatabase.identities.get(faceIdx).embedding.size() );
 
                         //compute similarity;
                         cosineScore = faceRecognizer.match(faceEmbedding, idDatabase.identities.get(faceIdx).embedding,
                                 FaceRecognizerSF.FR_COSINE);
-                        Log.i(TAG, "TODEBUG FaceCOmputing : " + idDatabase.identities.get(faceIdx).name + " - " + cosineScore
-                         + "   " + idDatabase.identities.get(faceIdx).embedding.get(0,0)[0]
-                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,1)[0]
-                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,2)[0]
-                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,3)[0]
-                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,4)[0]
-                        );
+//                        Log.i(TAG, "TODEBUG FaceCOmputing : " + idDatabase.identities.get(faceIdx).name + " - " + cosineScore
+//                         + "   " + idDatabase.identities.get(faceIdx).embedding.get(0,0)[0]
+//                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,1)[0]
+//                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,2)[0]
+//                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,3)[0]
+//                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,4)[0]
+//                        );
                         // if better score
                         if(cosineScore>maxScore) {
                             maxScore = cosineScore;
                             identifiedIdx = faceIdx;
                         }
                     }
-
-                    //
+                    
                     //Imgproc.putText(frame, identities.get(identifiedIdx).name, new Point(100, 100),1, 2,
                     Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left, top-10),1, 3,
                                     new Scalar(0, 0, 250), 2);
+                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left-4, top-14),1, 3,
+                            new Scalar(0, 0, 250), 2);
                     Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left-2, top-12),1, 3,
                                     new Scalar(0, 255, 0), 2);
 //                    Log.i(TAG, "Found face : " + identities.get(identifiedIdx).name );

@@ -14,7 +14,7 @@ import java.util.ArrayList;
 
 public class IdentitiesDatabase implements java.io.Serializable{
 
-    private String STORAGE_FILE = "/sdcard/identities.ser";
+    private String STORAGE_FILE = "/sdcard/identities.bin";
 
 
 
