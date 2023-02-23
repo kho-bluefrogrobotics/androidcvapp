@@ -282,20 +282,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         faceEmbedding=new Mat();
 
         idDatabase= new IdentitiesDatabase();
-        try {
-            FileInputStream fileIn = new FileInputStream("/sdcard/identities.ser");
-            ObjectInputStream in = new ObjectInputStream(fileIn);
-            idDatabase.identities = ( ArrayList<FacialIdentity>) in.readObject();
-            in.close();
-            fileIn.close();
 
-            Log.w(TAG, "coucou loading identities file : " + idDatabase.identities.get(idDatabase.identities.size()-1).name);
-        } catch (Exception e) {
-           Log.e(TAG, "Error loading identities file : " + e);
-
-        }
-
-        idDatabase = new IdentitiesDatabase();
         idDatabase.loadFromStorage();
 
 //        identities.add(new FacialIdentity("UNKNOWN", new Mat(1, 128 , CV_32F)));
