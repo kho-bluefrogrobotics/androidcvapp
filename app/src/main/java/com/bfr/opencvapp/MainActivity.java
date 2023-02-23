@@ -3,6 +3,7 @@ package com.bfr.opencvapp;
 import static org.opencv.core.CvType.*;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -48,15 +49,11 @@ import com.bfr.opencvapp.utils.IdentitiesDatabase;
 import com.bfr.opencvapp.utils.MLKitFaceDetector;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -284,7 +281,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // init
         faceEmbedding=new Mat();
         idDatabase= new IdentitiesDatabase();
-        idDatabase.loadFromStorage();
+        try{
+            idDatabase.loadFromStorage();
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+
 
         // Load Face detection model
         String proto = dir + "/nnmodels/opencv_face_detector.pbtxt";
@@ -306,6 +309,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         started = true;
     }
 
+    @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
         // cature frame from camera
@@ -349,15 +353,17 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 if(left<10 || top <10 || right> frame.cols()-10 || bottom > frame.rows()-10)
                     // take next detected face
                     continue;
+
+
                 /*** Recognition ***/
 
 
-                    //crop image around face
-                    faceROI= new Rect( Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
+                //crop image around face
+                faceROI= new Rect( Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
                             Math.max(top, (int)(top- MARGIN_FACTOR *(bottom-top)) ),
                             (int)(right-left)+(int)(2* MARGIN_FACTOR *(right-left)),
                             (int)(bottom-top) + +(int)(MARGIN_FACTOR *(bottom-top)));
-                    faceMat = frame.submat(faceROI);
+                faceMat = frame.submat(faceROI);
 
 
                 ////////////////////////////// face orientation
@@ -462,7 +468,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             identifiedIdx = faceIdx;
                         }
                     }
-                    
+
                     //Imgproc.putText(frame, identities.get(identifiedIdx).name, new Point(100, 100),1, 2,
                     Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left, top-10),1, 3,
                                     new Scalar(0, 0, 250), 2);

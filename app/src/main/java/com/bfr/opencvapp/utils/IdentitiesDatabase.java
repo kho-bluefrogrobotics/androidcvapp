@@ -66,7 +66,6 @@ public class IdentitiesDatabase implements java.io.Serializable{
                 Log.w("IdentityDatabase", "filling floats in array "
                         + "from " + serializableIdentities.get(i).floats[idx]
                         +" to " +  identities.get(identities.size() - 1).embedding.get(0, idx)[0]);
-
             }
         }
 
@@ -75,47 +74,50 @@ public class IdentitiesDatabase implements java.io.Serializable{
     public void saveToStorage()
     {
         try {
-        //for each saved face
-        for (int i=0; i<identities.size(); i++) {
-            //convert mat to byte array
-            int length = (int) (identities.get(i).embedding.total());
-            Log.w("IdentityDatabase", "Adding new floats for " + identities.get(i).name
-            + "of size " + length);
-//            byte[] bytes = new byte[length];
-//            identities.get(i).embedding.get(0,0,bytes);
 
-            // add to serializable object
-            serializableIdentities.add(new SerializableId(identities.get(i).name,
-                    new float[length]));
+            //reset
+            serializableIdentities.clear();
+            //for each saved face
+            for (int i=0; i<identities.size(); i++) {
+                //convert mat to byte array
+                int length = (int) (identities.get(i).embedding.total());
+                Log.w("IdentityDatabase", "Adding new floats for " + identities.get(i).name
+                + "of size " + length);
+    //            byte[] bytes = new byte[length];
+    //            identities.get(i).embedding.get(0,0,bytes);
 
-            for (int idx = 0; idx < identities.get(i).embedding.total(); idx++) {
-                if (serializableIdentities.get(serializableIdentities.size() - 1)
-                        .floats == null)
-                    Log.w("IdentityDatabase", "serializableIdentities floats is null");
-                if (identities.get(i).embedding == null)
-                    Log.w("IdentityDatabase", "identities.get(i).embedding is null");
-                else
-                    Log.w("IdentityDatabase", "identities.get(i).embedding size " + identities.get(i).embedding.size()
-                    +"= " + identities.get(i).embedding.elemSize()
-                    +"-- " + identities.get(i).name);
+                // add to serializable object
+                serializableIdentities.add(new SerializableId(identities.get(i).name,
+                        new float[length]));
 
-                Log.w("IdentityDatabase", "starting filling floats array " +  serializableIdentities.get(serializableIdentities.size() - 1)
-                        .floats.length);
+                for (int idx = 0; idx < identities.get(i).embedding.total(); idx++) {
+                    if (serializableIdentities.get(serializableIdentities.size() - 1)
+                            .floats == null)
+                        Log.w("IdentityDatabase", "serializableIdentities floats is null");
+                    if (identities.get(i).embedding == null)
+                        Log.w("IdentityDatabase", "identities.get(i).embedding is null");
+                    else
+                        Log.w("IdentityDatabase", "identities.get(i).embedding size " + identities.get(i).embedding.size()
+                        +"= " + identities.get(i).embedding.elemSize()
+                        +"-- " + identities.get(i).name);
 
-                serializableIdentities.get(serializableIdentities.size() - 1)
-                        .floats[idx] = (float) identities.get(i).embedding.get(0, idx)[0];
-            }
-        }// nextidentity
+                    Log.w("IdentityDatabase", "starting filling floats array " +  serializableIdentities.get(serializableIdentities.size() - 1)
+                            .floats.length);
 
-            //Serialize
+                    serializableIdentities.get(serializableIdentities.size() - 1)
+                            .floats[idx] = (float) identities.get(i).embedding.get(0, idx)[0];
+                }
+            }// nextidentity
 
-                FileOutputStream fileOut =
-                        new FileOutputStream(STORAGE_FILE);
-                ObjectOutputStream out = new ObjectOutputStream(fileOut);
-                out.writeObject(serializableIdentities);
-                out.close();
-                fileOut.close();
-                System.out.printf("Serialized data is saved in /tmp/employee.ser");
+                //Serialize
+
+                    FileOutputStream fileOut =
+                            new FileOutputStream(STORAGE_FILE);
+                    ObjectOutputStream out = new ObjectOutputStream(fileOut);
+                    out.writeObject(serializableIdentities);
+                    out.close();
+                    fileOut.close();
+                    System.out.printf("Serialized data is saved in " + STORAGE_FILE);
 
             } catch (Exception e) {
                 Log.e("IdentityDatabase", "Error during saving identities: " + Log.getStackTraceString(e));
