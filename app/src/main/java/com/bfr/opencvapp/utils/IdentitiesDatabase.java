@@ -63,9 +63,9 @@ public class IdentitiesDatabase implements java.io.Serializable{
 
                 identities.get(identities.size()-1).embedding.put(0, idx, data);
 
-                Log.w("IdentityDatabase", "filling floats in array "
-                        + "from " + serializableIdentities.get(i).floats[idx]
-                        +" to " +  identities.get(identities.size() - 1).embedding.get(0, idx)[0]);
+//                Log.w("IdentityDatabase", "filling floats in array "
+//                        + "from " + serializableIdentities.get(i).floats[idx]
+//                        +" to " +  identities.get(identities.size() - 1).embedding.get(0, idx)[0]);
             }
         }
 

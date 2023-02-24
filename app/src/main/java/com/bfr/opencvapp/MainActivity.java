@@ -54,6 +54,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -94,16 +95,18 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     final float WH_RATIO = (float)IN_WIDTH / IN_HEIGHT;
     final double IN_SCALE_FACTOR = 0.007843;
     final double MEAN_VAL = 127.5;
-    final double THRESHOLD = 0.8;
+    final double THRESHOLD = 0.6;
     // List of detected faces
     Mat blob, detections;
     // Neural net for detection
     private Net net;
     //
-    float MARGIN_FACTOR = 0.1f;
+//    float MARGIN_FACTOR = 0.1f;
+    float MARGIN_FACTOR = -0.05f;
 
     //Tflite Multidetector
     MultiDetector multiDetector;
+    ArrayList<MultiDetector.Recognition> tfliteDetections = new ArrayList<MultiDetector.Recognition>();
 
     //Parameters for Facial recognition
     Size inputFaceSize = new Size(112,112);
@@ -318,37 +321,52 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         elapsedTime = System.currentTimeMillis();
 
         // Forward image through network.
-        blob =  Dnn.blobFromImage(frame, 1.0,
-                new org.opencv.core.Size(300, 300),
-                new Scalar(104, 117, 123), /*swapRB*/true, /*crop*/false);
-        net.setInput(blob);
-        Mat detections = net.forward();
+//        blob =  Dnn.blobFromImage(frame, 1.0,
+//                new org.opencv.core.Size(300, 300),
+//                new Scalar(104, 117, 123), /*swapRB*/true, /*crop*/false);
+//        net.setInput(blob);
+//        Mat detections = net.forward();
 
-        Log.i(TAG, "elapsed time face detect : " + (System.currentTimeMillis()-elapsedTime)  );
-        elapsedTime = System.currentTimeMillis();
 
         int cols = frame.cols();
         int rows = frame.rows();
-        detections = detections.reshape(1, (int)detections.total() / 7);
+//        detections = detections.reshape(1, (int)detections.total() / 7);
+
+//            Log.i(TAG, "elapsed time face detect : " + (System.currentTimeMillis()-elapsedTime)
+//            + "\nSize of detections " + detections.cols() +"x"+detections.rows());
+            elapsedTime = System.currentTimeMillis();
 
         elapsedTime = System.currentTimeMillis();
-//        //convert to bitmap
-//            Mat resizedFrame = new Mat();
-//            Imgproc.resize(frame, resizedFrame, new Size(320,320));
-//        Bitmap bitmapImagefull = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
-//        Utils.matToBitmap(resizedFrame, bitmapImagefull);
-//        multiDetector.recognizeImage(bitmapImagefull);
-//        Log.i(TAG, "elapsed time face detect with tflite : " + (System.currentTimeMillis()-elapsedTime)  );
-//            elapsedTime = System.currentTimeMillis();
+
+////        //convert to bitmap
+
+            Mat resizedFrame = new Mat();
+            Imgproc.resize(frame, resizedFrame, new Size(320,320));
+        Bitmap bitmapImagefull = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(resizedFrame, bitmapImagefull);
+            tfliteDetections = multiDetector.recognizeImage(bitmapImagefull);
+        Log.i(TAG, "elapsed time face detect with tflite : " + (System.currentTimeMillis()-elapsedTime)  );
+            elapsedTime = System.currentTimeMillis();
+
+
 
         //for each detected face
-        for (int i = 0; i < detections.rows(); ++i) {
-            double confidence = detections.get(i, 2)[0];
-            if (confidence > THRESHOLD) {
-                int left   = (int)(detections.get(i, 3)[0] * cols);
-                int top    = (int)(detections.get(i, 4)[0] * rows);
-                int right  = (int)(detections.get(i, 5)[0] * cols);
-                int bottom = (int)(detections.get(i, 6)[0] * rows);
+//        for (int i = 0; i < detections.rows(); ++i) {
+//            double confidence = detections.get(i, 2)[0];
+//            if (confidence > THRESHOLD) {
+//                int left   = (int)(detections.get(i, 3)[0] * cols);
+//                int top    = (int)(detections.get(i, 4)[0] * rows);
+//                int right  = (int)(detections.get(i, 5)[0] * cols);
+//                int bottom = (int)(detections.get(i, 6)[0] * rows);
+
+            for (int i = 0; i < tfliteDetections.size(); ++i) {
+            double confidence = tfliteDetections.get(i).confidence;
+            double detectedClass = tfliteDetections.get(i).getDetectedClass();
+            if (confidence > THRESHOLD && detectedClass == 1 ) {
+                int left   = (int)(tfliteDetections.get(i).left * cols);
+                int top    = (int)(tfliteDetections.get(i).top * rows);
+                int right  = (int)(tfliteDetections.get(i).right * cols);
+                int bottom = (int)(tfliteDetections.get(i).bottom* rows);
 
                 //If face touches the margin, skip -> we need a fully visible face for recognition
                 if(left<10 || top <10 || right> frame.cols()-10 || bottom > frame.rows()-10)
@@ -471,20 +489,20 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     }
 
                     //Imgproc.putText(frame, identities.get(identifiedIdx).name, new Point(100, 100),1, 2,
-                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left, top-10),1, 3,
-                                    new Scalar(0, 0, 250), 2);
-                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left-4, top-14),1, 3,
-                            new Scalar(0, 0, 250), 2);
-//                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase() + " " + maxScore, new Point(left-2, top-12),1, 3,
-                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase() + " "
-                                    + detectedFace.getHeadEulerAngleY(),
-                            new Point(left-2, top-12),1, 3,
+//                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left, top-10),1, 3,
+//                                    new Scalar(0, 0, 250), 2);
+//                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left-4, top-14),1, 3,
+//                            new Scalar(0, 0, 250), 2);
+                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase() , new Point(left-2, top-12),1, 3,
+                            new Scalar(0, 0, 250), 4);
+                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase() , new Point(left-2, top-12),1, 3,
                                     new Scalar(0, 255, 0), 2);
 //                    Log.i(TAG, "Found face : " + identities.get(identifiedIdx).name );
 
 
                     // if looking straight at the camera or not
-                    if (Math.abs(detectedFace.getHeadEulerAngleY()) <20)
+//                    if (Math.abs(detectedFace.getHeadEulerAngleY()) <20)
+                    if (true)
                     // Draw rectangle around detected face.
                     Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
                         new Scalar(0, 255, 0), 2);

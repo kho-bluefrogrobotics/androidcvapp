@@ -6,6 +6,7 @@ import android.graphics.RectF;
 import android.os.Build;
 import android.util.Log;
 
+import org.opencv.core.Mat;
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.CompatibilityList;
 import org.tensorflow.lite.gpu.GpuDelegate;
@@ -34,7 +35,7 @@ public class MultiDetector {
     private final float THRES = 0.75f;
     private final String[] LABELS = {"Human", "Face", "Hand"};
     private final int NUM_THREADS = 4;
-    private boolean WITH_NNAPI = false;
+    private boolean WITH_NNAPI = true;
     private boolean WITH_GPU = false;
     private boolean WITH_DSP = false;
 
@@ -128,65 +129,6 @@ public class MultiDetector {
         return byteBuffer;
     }
 
-    /**
-     * get the detected objects
-     * @param byteBuffer input buffer from image
-     * @param bitmap original bitmap to translate coords into pixel
-     * @return array of detections
-     */
-    private ArrayList<Recognition> getDetections(ByteBuffer byteBuffer, Bitmap bitmap) {
-        ArrayList<Recognition> detections = new ArrayList<Recognition>();
-        Map<Integer, Object> outputMap = new HashMap<>();
-
-        outputMap.put(0, new float[1][OUTPUT_WIDTH_SSD[0]]);
-        outputMap.put(1, new float[1][OUTPUT_WIDTH_SSD[1]][4]);
-        outputMap.put(2, new float[1]);
-        outputMap.put(3, new float[1][OUTPUT_WIDTH_SSD[1]]);
-
-        Object[] inputArray = {byteBuffer};
-        tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
-
-        int gridWidth = OUTPUT_WIDTH_SSD[0];
-        Log.d("GRID", String.valueOf(gridWidth));
-        float[][]  out_score= (float [][]) outputMap.get(0);
-        float[][][] bboxes = (float[][][]) outputMap.get(1);
-        float[] nb_labels = (float[]) outputMap.get(2);
-        float[][] out_labels = (float[][]) outputMap.get(3);
-        Log.i("DEBUG", "" + Arrays.toString(out_score[0]) + "\n" + Arrays.toString(out_labels[0]));
-
-
-        for (int i = 0; i < OUTPUT_WIDTH_SSD[0];i++){
-            int maxClass = (int) nb_labels[0];
-            int detectedClass = (int) out_labels[0][i];
-            final float score = out_score[0][i];
-            if (score > THRES &&  (detectedClass >= 0 && detectedClass <= maxClass)){
-                final float ymin = bboxes[0][i][0];
-                final float xmin = bboxes[0][i][1];
-                final float ymax = bboxes[0][i][2];
-                final float xmax = bboxes[0][i][3];
-
-                if( ymin < ymax
-                        && xmin < xmax){
-
-                    final RectF rectF = new RectF(
-                            Math.max(0, xmin * 320),
-                            Math.max(0, ymin * 320),
-                            Math.min(bitmap.getWidth() - 1, xmax * 320),
-                            Math.min(bitmap.getHeight() - 1, ymax * 320));
-                    detections.add(new Recognition("" + i, LABELS[detectedClass], score, rectF, detectedClass));
-                }
-                else{
-                    Log.i("BBOX",
-                            String.format( "SKIP %s bbox = %s",
-                                    LABELS[detectedClass],
-                                    Arrays.toString(bboxes[0][i])));
-                }
-            }
-        }
-        Log.i("DETECTION_LIST", "" + detections);
-        return detections;
-    }
-
 
     /**
      * get the detected objects in the image
@@ -194,6 +136,8 @@ public class MultiDetector {
      * @return array of detections
      */
     public ArrayList<Recognition> recognizeImage(Bitmap bitmap) {
+
+        Mat detected = new Mat();
 
         Log.d("RECOGNITION", "Start Recognition");
 
@@ -224,20 +168,23 @@ public class MultiDetector {
             int detectedClass = (int) out_labels[0][i];
             final float score = out_score[0][i];
             if (score > THRES &&  (detectedClass >= 0 && detectedClass <= maxClass)){
+                // position in % of the image
                 final float ymin = bboxes[0][i][0];
                 final float xmin = bboxes[0][i][1];
                 final float ymax = bboxes[0][i][2];
                 final float xmax = bboxes[0][i][3];
 
+
                 if( ymin < ymax
                         && xmin < xmax){
 
-                    final RectF rectF = new RectF(
-                            Math.max(0, xmin * 320),
-                            Math.max(0, ymin * 320),
-                            Math.min(bitmap.getWidth() - 1, xmax * 320),
-                            Math.min(bitmap.getHeight() - 1, ymax * 320));
-                    detections.add(new Recognition("" + i, LABELS[detectedClass], score, rectF, detectedClass));
+//                    final RectF rectF = new RectF(
+//                            Math.max(0, xmin * 320),
+//                            Math.max(0, ymin * 320),
+//                            Math.min(bitmap.getWidth() - 1, xmax * 320),
+//                            Math.min(bitmap.getHeight() - 1, ymax * 320));
+//                    detections.add(new Recognition("" + i, LABELS[detectedClass], score, rectF, detectedClass));
+                    detections.add(new Recognition("" + i, LABELS[detectedClass], score, xmin, xmax, ymin, ymax, detectedClass));
                 }
                 else{
                     Log.i("BBOX",
@@ -248,6 +195,8 @@ public class MultiDetector {
             }
         }
         Log.i("DETECTION_LIST", "" + detections);
+
+
         return detections;
 
     }
@@ -269,7 +218,7 @@ public class MultiDetector {
         /**
          * A sortable score for how good the recognition is relative to others. Higher should be better.
          */
-        private final Float confidence;
+        public final Float confidence;
 
         /**
          * Optional location within the source image for the location of the recognized object.
@@ -293,6 +242,21 @@ public class MultiDetector {
             this.location = location;
             this.detectedClass = detectedClass;
         }
+
+        public Recognition(final String id, final String title, final Float confidence, float left, float right, float top, float bottom, int detectedClass) {
+            this.id = id;
+            this.title = title;
+            this.confidence = confidence;
+            this.location = location;
+            this.detectedClass = detectedClass;
+
+            this.left= left;
+            this.right=right;
+            this.top=top;
+            this.bottom=bottom;
+        }
+
+        public float left, right, top, bottom=0;
 
         public String getId() {
             return id;
