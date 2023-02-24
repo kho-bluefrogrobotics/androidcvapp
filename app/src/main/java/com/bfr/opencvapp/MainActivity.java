@@ -45,6 +45,7 @@ import org.opencv.objdetect.FaceRecognizerSF;
 import org.opencv.videoio.VideoWriter;
 
 import com.bfr.opencvapp.utils.BuddyData;
+import com.bfr.opencvapp.utils.FaceRecognizer;
 import com.bfr.opencvapp.utils.FacialIdentity;
 import com.bfr.opencvapp.utils.IdentitiesDatabase;
 import com.bfr.opencvapp.utils.MLKitFaceDetector;
@@ -91,52 +92,18 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     //********************  image ***************************
 
     // Parameters for Base facial detection
-    final int IN_WIDTH = 300;
-    final int IN_HEIGHT = 300;
-    final float WH_RATIO = (float)IN_WIDTH / IN_HEIGHT;
-    final double IN_SCALE_FACTOR = 0.007843;
-    final double MEAN_VAL = 127.5;
     final double THRESHOLD = 0.6;
-    // List of detected faces
-    Mat blob, detections;
-    // Neural net for detection
-    private Net net;
-    //
-//    float MARGIN_FACTOR = 0.1f;
-    float MARGIN_FACTOR = -0.05f;
 
     //Tflite Multidetector
     MultiDetector multiDetector;
     ArrayList<MultiDetector.Recognition> tfliteDetections = new ArrayList<MultiDetector.Recognition>();
 
-    //Parameters for Facial recognition
-    Size inputFaceSize = new Size(112,112);
-    // List of detected faces
-    Mat faceBlob;
     // Neural net for detection
-    private FaceRecognizerSF faceRecognizer;
-    Mat faceEmbedding;
-    Mat faceMat;
-    Rect faceROI;
-
-    // MLKit face detector
-    MLKitFaceDetector myMLKitFaceDetector = new MLKitFaceDetector();
-
-    // image rotation
-    Point center;
-    double angle = 90;
-    double scale = 1.0;
-    Mat mapMatrix;
+    private FaceRecognizer faceRecognizerObj;
 
     // for saving face
     boolean isSavingFace = false;
     boolean started = false;
-    // List of known faces
-    private IdentitiesDatabase idDatabase;
-//    public ArrayList<FacialIdentity> identities = new ArrayList<>();
-
-    SimpleDateFormat sdf = new SimpleDateFormat("yyMMddHHmmss");
-    String currentDateandTime = "";
 
     // context
     Context context = this;
@@ -273,33 +240,16 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             e.printStackTrace();
         }
 
-        // init
-        faceEmbedding=new Mat();
-        idDatabase= new IdentitiesDatabase();
-        try{
-            idDatabase.loadFromStorage();
-        }
-        catch (Exception e){
-            e.printStackTrace();
-        }
-
-        // Load Face detection model
-        String proto = dir + "/nnmodels/opencv_face_detector.pbtxt";
-        String weights = dir + "/nnmodels/opencv_face_detector_uint8.pb";
-        net = Dnn.readNetFromTensorflow(weights, proto);
-
-        // Load face recog model
-        faceRecognizer = FaceRecognizerSF.create(dir + "/nnmodels/face_recognition_sface_2021dec.onnx",
-//        faceRecognizer = FaceRecognizerSF.create(dir + "/nnmodels/face_recognition_sface_2021dec-act_int8-wt_int8-quantized.onnx",
-                "");
+        // init face detector
+        multiDetector = new MultiDetector(context);
+        //init face recognizer
+        faceRecognizerObj = new FaceRecognizer();
 
 //        // Init write video file
 //        videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
 //                25.0D, new Size(800, 600));
 //        videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
 //                25.0D,  new Size( 800,600));
-
-        multiDetector = new MultiDetector(context);
 
         started = true;
     }
@@ -315,214 +265,78 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         try{
 
-
         // color conversion
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
         elapsedTime = System.currentTimeMillis();
 
-        // Forward image through network.
-//        blob =  Dnn.blobFromImage(frame, 1.0,
-//                new org.opencv.core.Size(300, 300),
-//                new Scalar(104, 117, 123), /*swapRB*/true, /*crop*/false);
-//        net.setInput(blob);
-//        Mat detections = net.forward();
-
-
         int cols = frame.cols();
         int rows = frame.rows();
-//        detections = detections.reshape(1, (int)detections.total() / 7);
 
-//            Log.i(TAG, "elapsed time face detect : " + (System.currentTimeMillis()-elapsedTime)
-//            + "\nSize of detections " + detections.cols() +"x"+detections.rows());
-            elapsedTime = System.currentTimeMillis();
-
-        elapsedTime = System.currentTimeMillis();
-
-////        //convert to bitmap
-
-            Mat resizedFrame = new Mat();
-            Imgproc.resize(frame, resizedFrame, new Size(320,320));
+        //convert to bitmap
+        Mat resizedFrame = new Mat();
+        Imgproc.resize(frame, resizedFrame, new Size(320,320));
         Bitmap bitmapImagefull = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(resizedFrame, bitmapImagefull);
-            tfliteDetections = multiDetector.recognizeImage(bitmapImagefull);
+
+        //Face detection
+        tfliteDetections = multiDetector.recognizeImage(bitmapImagefull);
         Log.i(TAG, "elapsed time face detect with tflite : " + (System.currentTimeMillis()-elapsedTime)  );
             elapsedTime = System.currentTimeMillis();
 
-
-
-        //for each detected face
-//        for (int i = 0; i < detections.rows(); ++i) {
-//            double confidence = detections.get(i, 2)[0];
-//            if (confidence > THRESHOLD) {
-//                int left   = (int)(detections.get(i, 3)[0] * cols);
-//                int top    = (int)(detections.get(i, 4)[0] * rows);
-//                int right  = (int)(detections.get(i, 5)[0] * cols);
-//                int bottom = (int)(detections.get(i, 6)[0] * rows);
-
-            for (int i = 0; i < tfliteDetections.size(); ++i) {
-            double confidence = tfliteDetections.get(i).confidence;
-            double detectedClass = tfliteDetections.get(i).getDetectedClass();
-            if (confidence > THRESHOLD && detectedClass == 1 ) {
-                int left   = (int)(tfliteDetections.get(i).left * cols);
-                int top    = (int)(tfliteDetections.get(i).top * rows);
-                int right  = (int)(tfliteDetections.get(i).right * cols);
-                int bottom = (int)(tfliteDetections.get(i).bottom* rows);
-
-                //If face touches the margin, skip -> we need a fully visible face for recognition
-                if(left<10 || top <10 || right> frame.cols()-10 || bottom > frame.rows()-10)
-                    // take next detected face
-                    continue;
-
-
-                /*** Recognition ***/
-
-
-                //crop image around face
-                faceROI= new Rect( Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
-                            Math.max(top, (int)(top- MARGIN_FACTOR *(bottom-top)) ),
-                            (int)(right-left)+(int)(2* MARGIN_FACTOR *(right-left)),
-                            (int)(bottom-top) -(int)(MARGIN_FACTOR *(bottom-top)));
-                faceMat = frame.submat(faceROI);
-
-
-                ////////////////////////////// face orientation
-                //convert to bitmap
-                Bitmap bitmapImage = Bitmap.createBitmap(faceMat.cols(), faceMat.rows(), Bitmap.Config.ARGB_8888);
-                Utils.matToBitmap(faceMat, bitmapImage);
-                // detect-classify face
-                Face detectedFace = myMLKitFaceDetector.detectSingleFaceFromBitmap(bitmapImage);
-
-                Log.i(TAG, "elapsed time face MLKit : " + (System.currentTimeMillis()-elapsedTime)  );
-                elapsedTime = System.currentTimeMillis();
-
-                if(detectedFace==null){
-                    Imgproc.putText(frame, "MLKIT Failure", new Point(100, 100),1, 2,
-                            new Scalar(0, 255, 0), 2);
-                    return frame;
-                }
-                // image rotation
-                Point center = new Point((int)faceMat.cols()/2,(int) faceMat.rows()/2);
-                double angle = detectedFace.getHeadEulerAngleZ();
-                //Imgproc.putText(frame, " "+angle, new Point(100, 100),1, 2,
-                //        new Scalar(0, 255, 0), 2);
-                mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
-                // rotate
-                Imgproc.warpAffine(faceMat, faceMat, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
-
-                Log.i(TAG, "elapsed time rotation : " + (System.currentTimeMillis()-elapsedTime)  );
-                elapsedTime = System.currentTimeMillis();
-
-                // Compute embeddings
-//                faceBlob = Dnn.blobFromImage(faceMat, 1, inputFaceSize, new Scalar(0, 0, 0), true, false);
-//                sfaceNet.setInput(faceBlob);
-//                faceEmbedding = sfaceNet.forward();
-
-                faceRecognizer.feature(faceMat, faceEmbedding);
-
-                Log.i(TAG, "elapsed time calc embedding : " + (System.currentTimeMillis()-elapsedTime)
-                +"\n " + faceEmbedding.size() +" type " + faceEmbedding.depth());
-                elapsedTime = System.currentTimeMillis();
+        for (int i = 0; i < tfliteDetections.size(); ++i) {
+        double confidence = tfliteDetections.get(i).confidence;
+        double detectedClass = tfliteDetections.get(i).getDetectedClass();
+        if (confidence > THRESHOLD && detectedClass == 1 ) {
 
                 if(isSavingFace)
                 {
-                    ////////////////////////////// Saving new face
+                    faceRecognizerObj.saveFace(frame,
+                            tfliteDetections.get(i).left,
+                            tfliteDetections.get(i).right,
+                            tfliteDetections.get(i).top,
+                            tfliteDetections.get(i).bottom,
+                            personNameExitText.getText().toString()
+                            );
 
-                    currentDateandTime = sdf.format(new Date());
-//                    Mat newEmbeddings = faceEmbedding.clone();
-                    idDatabase.identities.add(new FacialIdentity(personNameExitText.getText()+"_"+currentDateandTime, faceEmbedding.clone()));
+                    //reset
+                    isSavingFace=false;
 
-                    //saving file
-                    Thread savingThread = new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-
-                            idDatabase.saveToStorage();
-
-                            //todebug
-                            Mat frameToSave = new Mat();
-                            Imgproc.cvtColor(faceMat, frameToSave, Imgproc.COLOR_BGR2RGB);
-                            Imgcodecs.imwrite("/sdcard/recoFace_"+personNameExitText.getText()+"_"+currentDateandTime+".jpg", frameToSave);
-
-
-                            // reset
-                            isSavingFace = false;
-                        }
-                    });
-                    savingThread.start();
-
-
+                    //display UI
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(getApplicationContext(), "*** SAVED Face: " + personNameExitText.getText()+"_"+currentDateandTime ,
+                            Toast.makeText(getApplicationContext(), "*** SAVED Face: " + personNameExitText.getText().toString().toUpperCase() ,
                                     Toast.LENGTH_LONG).show();
                             saveCheckbox.setChecked(false);
                            }
-                    });
+                    }); // end UI
 
                 }
-                else
+                else   // Facial recognition
                 {
-                    ////////////////////////////// Matching
+                    FacialIdentity identified =  faceRecognizerObj.RecognizeFace(frame,
+                            tfliteDetections.get(i).left,
+                            tfliteDetections.get(i).right,
+                            tfliteDetections.get(i).top,
+                            tfliteDetections.get(i).bottom);
 
-                    // Look for closest
-                    double cosineScore, maxScore = 0.0;
-                    int identifiedIdx=0;
+                    // for display
+                    int left   = (int)(tfliteDetections.get(i).left * cols);
+                    int top    = (int)(tfliteDetections.get(i).top * rows);
+                    int right  = (int)(tfliteDetections.get(i).right * cols);
+                    int bottom = (int)(tfliteDetections.get(i).bottom* rows);
 
-                    Log.i(TAG, "Saved face database: " + idDatabase.identities.size());
-
-                    // for each known face
-                    for (int faceIdx=1; faceIdx< idDatabase.identities.size(); faceIdx++)
-                    {
-//                        Log.i(TAG, "Checking face database: " + faceIdx + " " + idDatabase.identities.get(faceIdx).name);
-//                        Log.i(TAG, "FaceEmbed : " + faceEmbedding.size() );
-//                        Log.i(TAG, "Reference : " + idDatabase.identities.get(faceIdx).embedding.size() );
-
-                        //compute similarity;
-                        cosineScore = faceRecognizer.match(faceEmbedding, idDatabase.identities.get(faceIdx).embedding,
-                                FaceRecognizerSF.FR_COSINE);
-//                        Log.i(TAG, "TODEBUG FaceCOmputing : " + idDatabase.identities.get(faceIdx).name + " - " + cosineScore
-//                         + "   " + idDatabase.identities.get(faceIdx).embedding.get(0,0)[0]
-//                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,1)[0]
-//                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,2)[0]
-//                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,3)[0]
-//                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,4)[0]
-//                        );
-                        // if better score
-                        if(cosineScore>maxScore) {
-                            maxScore = cosineScore;
-                            identifiedIdx = faceIdx;
-                        }
+                    // Display name
+                    if(identified!=null){
+                        Imgproc.putText(frame, identified.name.toUpperCase() , new Point(left-2, top-12),1, 3,
+                                new Scalar(0, 0, 250), 4);
+                        Imgproc.putText(frame, identified.name.toUpperCase() , new Point(left-2, top-12),1, 3,
+                                new Scalar(0, 255, 0), 2);
                     }
-
-                    //Imgproc.putText(frame, identities.get(identifiedIdx).name, new Point(100, 100),1, 2,
-//                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left, top-10),1, 3,
-//                                    new Scalar(0, 0, 250), 2);
-//                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase(), new Point(left-4, top-14),1, 3,
-//                            new Scalar(0, 0, 250), 2);
-                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase() , new Point(left-2, top-12),1, 3,
-                            new Scalar(0, 0, 250), 4);
-                    Imgproc.putText(frame, idDatabase.identities.get(identifiedIdx).name.split("_")[0].toUpperCase() , new Point(left-2, top-12),1, 3,
-                                    new Scalar(0, 255, 0), 2);
-//                    Log.i(TAG, "Found face : " + identities.get(identifiedIdx).name );
-
-
-                    // if looking straight at the camera or not
-//                    if (Math.abs(detectedFace.getHeadEulerAngleY()) <20)
-                    if (true)
                     // Draw rectangle around detected face.
                     Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
                         new Scalar(0, 255, 0), 2);
-                    else
-                    {
-                        Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                                new Scalar(255, 0, 255), 3);
-                        Imgproc.putText(frame, "User Disengaged", new Point(left-20, bottom+30),1, 2,
-                                new Scalar(255, 0, 0), 6);
-                        Imgproc.putText(frame, "User Disengaged", new Point(left-20, bottom+30),1, 2,
-                                new Scalar(0, 255, 0), 2);
-                    }
 
                 } //end if isSavingFace
 

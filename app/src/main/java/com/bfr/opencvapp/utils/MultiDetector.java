@@ -49,7 +49,6 @@ public class MultiDetector {
     public MultiDetector(Context context){
 
         try{
-
             Interpreter.Options options = (new Interpreter.Options());
             CompatibilityList compatList = new CompatibilityList();
 
@@ -137,10 +136,6 @@ public class MultiDetector {
      */
     public ArrayList<Recognition> recognizeImage(Bitmap bitmap) {
 
-        Mat detected = new Mat();
-
-        Log.d("RECOGNITION", "Start Recognition");
-
         ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmap);
 
         ArrayList<Recognition> detections = new ArrayList<Recognition>();
@@ -155,13 +150,10 @@ public class MultiDetector {
         tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
 
         int gridWidth = OUTPUT_WIDTH_SSD[0];
-        Log.d("GRID", String.valueOf(gridWidth));
         float[][]  out_score= (float [][]) outputMap.get(0);
         float[][][] bboxes = (float[][][]) outputMap.get(1);
         float[] nb_labels = (float[]) outputMap.get(2);
         float[][] out_labels = (float[][]) outputMap.get(3);
-        Log.i("DEBUG", "" + Arrays.toString(out_score[0]) + "\n" + Arrays.toString(out_labels[0]));
-
 
         for (int i = 0; i < OUTPUT_WIDTH_SSD[0];i++){
             int maxClass = (int) nb_labels[0];
@@ -174,28 +166,12 @@ public class MultiDetector {
                 final float ymax = bboxes[0][i][2];
                 final float xmax = bboxes[0][i][3];
 
-
-                if( ymin < ymax
-                        && xmin < xmax){
-
-//                    final RectF rectF = new RectF(
-//                            Math.max(0, xmin * 320),
-//                            Math.max(0, ymin * 320),
-//                            Math.min(bitmap.getWidth() - 1, xmax * 320),
-//                            Math.min(bitmap.getHeight() - 1, ymax * 320));
-//                    detections.add(new Recognition("" + i, LABELS[detectedClass], score, rectF, detectedClass));
+                if( ymin < ymax && xmin < xmax){
                     detections.add(new Recognition("" + i, LABELS[detectedClass], score, xmin, xmax, ymin, ymax, detectedClass));
                 }
-                else{
-                    Log.i("BBOX",
-                            String.format( "SKIP %s bbox = %s",
-                                    LABELS[detectedClass],
-                                    Arrays.toString(bboxes[0][i])));
-                }
+
             }
         }
-        Log.i("DETECTION_LIST", "" + detections);
-
 
         return detections;
 

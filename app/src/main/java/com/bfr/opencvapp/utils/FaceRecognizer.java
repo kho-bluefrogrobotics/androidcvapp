@@ -24,6 +24,8 @@ public class FaceRecognizer {
 
     //
     private final float MARGIN_FACTOR = 0.1f;
+    // default file for storing identities
+    private String STORAGE_FILE = "/sdcard/identities.bin";
     //where to find the models
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/";
     // Face recognition
@@ -55,7 +57,7 @@ public class FaceRecognizer {
         faceEmbedding=new Mat();
         idDatabase= new IdentitiesDatabase();
         try{
-            idDatabase.loadFromStorage();
+            idDatabase.loadFromStorage(STORAGE_FILE);
         }
         catch (Exception e){
             e.printStackTrace();
@@ -72,15 +74,23 @@ public class FaceRecognizer {
     /**
      * Recognize a face from a cropped image
      * @param frame original frame
-     * @param left coord to crop the frame where the face is
-     * @param right coord to crop the frame where the face is
-     * @param bottom coord to crop the frame where the face is
-     * @param top coord to crop the frame where the face is
+     * @param leftIn coord to crop the frame where the face is, in % of the original size
+     * @param rightIn coord to crop the frame where the face is, in % of the original size
+     * @param bottomIn coord to crop the frame where the face is, in % of the original size
+     * @param topIn coord to crop the frame where the face is, in % of the original size
      * @return a FacialIdentity object containing the name of the face and the recognition score
      * returns null if the recognition fails
      */
-    public FacialIdentity RecognizeFace(Mat frame, int left, int right, int top, int bottom)
+    public FacialIdentity RecognizeFace(Mat frame, float leftIn, float rightIn, float topIn, float bottomIn)
     {
+        int cols = frame.cols();
+        int rows = frame.rows();
+
+        int left   = (int)(leftIn * cols);
+        int top    = (int)(topIn * rows);
+        int right  = (int)(rightIn * cols);
+        int bottom = (int)(bottomIn* rows);
+
         //If face touches the margin, skip -> we need a fully visible face for recognition
         if(left<10 || top <10 || right> frame.cols()-10 || bottom > frame.rows()-10)
             // take next detected face
@@ -95,8 +105,8 @@ public class FaceRecognizer {
 
         ////////////////////////////// face orientation
         //convert to bitmap
-        Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(frame, bitmapImage);
+        Bitmap bitmapImage = Bitmap.createBitmap(faceMat.cols(), faceMat.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(faceMat, bitmapImage);
         // detect-classify face
         Face detectedFace = mlKitFaceDetector.detectSingleFaceFromBitmap(bitmapImage);
 
@@ -112,8 +122,6 @@ public class FaceRecognizer {
         center.x = (int)faceMat.cols()/2;
         center.y = (int) faceMat.rows()/2;
         angle = detectedFace.getHeadEulerAngleZ();
-        //Imgproc.putText(frame, " "+angle, new Point(100, 100),1, 2,
-        //        new Scalar(0, 255, 0), 2);
         mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
         // rotate
         Imgproc.warpAffine(faceMat, faceMat, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
@@ -136,9 +144,6 @@ public class FaceRecognizer {
         // for each known face
         for (int faceIdx=1; faceIdx< idDatabase.identities.size(); faceIdx++)
         {
-//                        Log.i(TAG, "Checking face database: " + faceIdx + " " + idDatabase.identities.get(faceIdx).name);
-//                        Log.i(TAG, "FaceEmbed : " + faceEmbedding.size() );
-//                        Log.i(TAG, "Reference : " + idDatabase.identities.get(faceIdx).embedding.size() );
 
             //compute similarity;
             cosineScore = faceRecognizer.match(faceEmbedding, idDatabase.identities.get(faceIdx).embedding,
@@ -162,20 +167,42 @@ public class FaceRecognizer {
 
     }
 
+    /**
+     * Save the identity of a face found in a cropped image
+     * @param frame original frame
+     * @param leftIn coord to crop the frame where the face is, in % of the original size
+     * @param rightIn coord to crop the frame where the face is, in % of the original size
+     * @param bottomIn coord to crop the frame where the face is, in % of the original size
+     * @param topIn coord to crop the frame where the face is, in % of the original size
+     * @param name name to link to the face
+     * @return null
+     */
+    public void saveFace(Mat frame, float leftIn, float rightIn, float topIn, float bottomIn, String name)
+    {
+        saveFace(frame, leftIn, rightIn, topIn, bottomIn, name, STORAGE_FILE);
+    }
 
     /**
      * Save the identity of a face found in a cropped image
      * @param frame original frame
-     * @param left coord to crop the frame where the face is
-     * @param right coord to crop the frame where the face is
-     * @param bottom coord to crop the frame where the face is
-     * @param top coord to crop the frame where the face is
+     * @param leftIn coord to crop the frame where the face is, in % of the original size
+     * @param rightIn coord to crop the frame where the face is, in % of the original size
+     * @param bottomIn coord to crop the frame where the face is, in % of the original size
+     * @param topIn coord to crop the frame where the face is, in % of the original size
      * @param name name to link to the face
      * @param storingFile where to store all the identities
      * @return null
      */
-    public void saveFace(Mat frame, int left, int right, int top, int bottom, String name, String storingFile)
+    public void saveFace(Mat frame, float leftIn, float rightIn, float topIn, float bottomIn, String name, String storingFile)
     {
+        int cols = frame.cols();
+        int rows = frame.rows();
+
+        int left   = (int)(leftIn * cols);
+        int top    = (int)(topIn * rows);
+        int right  = (int)(rightIn * cols);
+        int bottom = (int)(bottomIn* rows);
+
         //If face touches the margin, skip -> we need a fully visible face for recognition
         if(left<10 || top <10 || right> frame.cols()-10 || bottom > frame.rows()-10)
             // take next detected face
@@ -195,8 +222,8 @@ public class FaceRecognizer {
 
         ////////////////////////////// face orientation
         //convert to bitmap
-        Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(frame, bitmapImage);
+        Bitmap bitmapImage = Bitmap.createBitmap(faceMat.cols(), faceMat.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(faceMat, bitmapImage);
         // detect-classify face
         Face detectedFace = mlKitFaceDetector.detectSingleFaceFromBitmap(bitmapImage);
 
@@ -212,8 +239,7 @@ public class FaceRecognizer {
         center.x = (int)faceMat.cols()/2;
         center.y = (int) faceMat.rows()/2;
         angle = detectedFace.getHeadEulerAngleZ();
-        //Imgproc.putText(frame, " "+angle, new Point(100, 100),1, 2,
-        //        new Scalar(0, 255, 0), 2);
+
         mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
         // rotate
         Imgproc.warpAffine(faceMat, faceMat, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
@@ -237,7 +263,7 @@ public class FaceRecognizer {
         Thread savingThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                idDatabase.saveToStorage();
+                idDatabase.saveToStorage(storingFile);
             }
         });
         savingThread.start();
