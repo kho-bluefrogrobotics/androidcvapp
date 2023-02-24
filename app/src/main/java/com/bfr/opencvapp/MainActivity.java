@@ -37,6 +37,7 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import org.opencv.objdetect.FaceRecognizerSF;
@@ -381,7 +382,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 faceROI= new Rect( Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
                             Math.max(top, (int)(top- MARGIN_FACTOR *(bottom-top)) ),
                             (int)(right-left)+(int)(2* MARGIN_FACTOR *(right-left)),
-                            (int)(bottom-top) + +(int)(MARGIN_FACTOR *(bottom-top)));
+                            (int)(bottom-top) -(int)(MARGIN_FACTOR *(bottom-top)));
                 faceMat = frame.submat(faceROI);
 
 
@@ -437,6 +438,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                         public void run() {
 
                             idDatabase.saveToStorage();
+
+                            //todebug
+                            Mat frameToSave = new Mat();
+                            Imgproc.cvtColor(faceMat, frameToSave, Imgproc.COLOR_BGR2RGB);
+                            Imgcodecs.imwrite("/sdcard/recoFace_"+personNameExitText.getText()+"_"+currentDateandTime+".jpg", frameToSave);
+
+
                             // reset
                             isSavingFace = false;
                         }
@@ -450,7 +458,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             Toast.makeText(getApplicationContext(), "*** SAVED Face: " + personNameExitText.getText()+"_"+currentDateandTime ,
                                     Toast.LENGTH_LONG).show();
                             saveCheckbox.setChecked(false);
-                        }
+                           }
                     });
 
                 }
