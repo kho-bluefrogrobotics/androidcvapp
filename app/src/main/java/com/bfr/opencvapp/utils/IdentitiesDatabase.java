@@ -65,15 +65,12 @@ public class IdentitiesDatabase implements java.io.Serializable{
             } //next identity
 
         }
-        catch (FileNotFoundException e)
-        {
+        catch (Exception e) {
+            Log.e("IdentityDatabase", "Error during loading identities: " + Log.getStackTraceString(e));
             // init
             identities.add(new FacialIdentity(
                     "UNKNOWN",
                     Mat.zeros(1,128, CV_32F)));
-        }
-        catch (Exception e) {
-            Log.e("IdentityDatabase", "Error during loading identities: " + Log.getStackTraceString(e));
         }
 
 
