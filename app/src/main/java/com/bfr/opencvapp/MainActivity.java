@@ -66,6 +66,7 @@ import com.bfr.buddysdk.sdk.BuddySDK;
 
 import com.bfr.opencvapp.grafcet.*;
 import com.bfr.opencvapp.utils.MultiDetector;
+import com.bfr.opencvapp.utils.TfLiteFaceRecognizer;
 import com.google.mlkit.vision.face.Face;
 
 
@@ -315,6 +316,37 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 }
                 else   // Facial recognition
                 {
+
+                    int left   = (int)(tfliteDetections.get(i).left * cols);
+                    int top    = (int)(tfliteDetections.get(i).top * rows);
+                    int right  = (int)(tfliteDetections.get(i).right * cols);
+                    int bottom = (int)(tfliteDetections.get(i).bottom* rows);
+
+                    //If face touches the margin, skip -> we need a fully visible face for recognition
+                    if(left<10 || top <10 || right> frame.cols()-10 || bottom > frame.rows()-10)
+                        // take next detected face
+                        return null;
+
+                    //crop image around face
+                    float MARGIN_FACTOR = 0.05f;
+                    Rect faceROI= new Rect( Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
+                            Math.max(top, (int)(top- MARGIN_FACTOR *(bottom-top)) ),
+                            (int)(right-left)+(int)(2* MARGIN_FACTOR *(right-left)),
+                            (int)(bottom-top) + +(int)(MARGIN_FACTOR *(bottom-top)));
+                    Mat faceMat = frame.submat(faceROI);
+                    ////////////////////////////// face orientation
+                    //convert to bitmap
+                    Mat resizedFaceFrame = new Mat();
+                    Imgproc.resize(faceMat, resizedFaceFrame, new Size(112,112));
+                    Bitmap bitmapImage = Bitmap.createBitmap(resizedFaceFrame.cols(), resizedFaceFrame.rows(), Bitmap.Config.ARGB_8888);
+                    Utils.matToBitmap(resizedFaceFrame, bitmapImage);
+                    TfLiteFaceRecognizer mytfliterecog = new TfLiteFaceRecognizer(context);
+                    elapsedTime = System.currentTimeMillis();
+                    mytfliterecog.recognizeImage(bitmapImage);
+                    Log.i(TAG, "elapsed time calc embedding tflite: " + (System.currentTimeMillis()-elapsedTime));
+                    elapsedTime = System.currentTimeMillis();
+
+
                     FacialIdentity identified =  faceRecognizerObj.RecognizeFace(frame,
                             tfliteDetections.get(i).left,
                             tfliteDetections.get(i).right,
@@ -322,10 +354,10 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             tfliteDetections.get(i).bottom);
 
                     // for display
-                    int left   = (int)(tfliteDetections.get(i).left * cols);
-                    int top    = (int)(tfliteDetections.get(i).top * rows);
-                    int right  = (int)(tfliteDetections.get(i).right * cols);
-                    int bottom = (int)(tfliteDetections.get(i).bottom* rows);
+                    left   = (int)(tfliteDetections.get(i).left * cols);
+                    top    = (int)(tfliteDetections.get(i).top * rows);
+                    right  = (int)(tfliteDetections.get(i).right * cols);
+                    bottom = (int)(tfliteDetections.get(i).bottom* rows);
 
                     // Display name
                     if(identified!=null){
