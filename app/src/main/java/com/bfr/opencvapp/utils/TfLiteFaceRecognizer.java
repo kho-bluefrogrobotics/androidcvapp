@@ -25,7 +25,7 @@ public class TfLiteFaceRecognizer {
     private final String TAG = "TfLiteFaceRecognizer";
 
     //Params for TFlite interpreter
-    private final boolean IS_QUANTIZED = true;
+    private final boolean IS_QUANTIZED = false;
     private final int INPUT_SIZE = 112;
     private final int OUTPUT_SIZE = 128;
     private final int BATCH_SIZE = 1;
@@ -37,7 +37,7 @@ public class TfLiteFaceRecognizer {
     private boolean WITH_GPU = false;
     private boolean WITH_DSP = false;
     //Face embedding
-    private byte[][] embeedings;
+    private float[][] embeedings;
 
     //where to find the models
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/";
@@ -83,7 +83,8 @@ public class TfLiteFaceRecognizer {
             }
 
             //Init interpreter
-            File tfliteModel = new File(DIR+"/nnmodels/Facenet_uint8.tflite");
+//            File tfliteModel = new File(DIR+"/nnmodels/Facenet_uint8.tflite");
+            File tfliteModel = new File(DIR+"/nnmodels/model_float16_quant.tflite");
             tfLite = new Interpreter(tfliteModel, options );
         }
         catch (Exception e)
@@ -134,7 +135,7 @@ public class TfLiteFaceRecognizer {
      * @param bitmap original image in bitmap format
      * @return array of detections
      */
-    public byte[][] recognizeImage(Bitmap bitmap) {
+    public float[][] recognizeImage(Bitmap bitmap) {
 
         ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmap);
 
@@ -143,7 +144,7 @@ public class TfLiteFaceRecognizer {
 
         // Init Face embeedings (signature)
 //        embeedings = new float[1][OUTPUT_SIZE];
-        embeedings = new byte[1][OUTPUT_SIZE];
+        embeedings = new float[1][OUTPUT_SIZE];
         // Assign to Facenet output
         outputMap.put(0, embeedings);
 
