@@ -18,6 +18,7 @@ import org.opencv.objdetect.FaceRecognizerSF;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 
 public class FaceRecognizer {
@@ -37,7 +38,7 @@ public class FaceRecognizer {
     Rect faceROI;
 
     // MLKit face detector
-    MLKitFaceDetector mlKitFaceDetector = new MLKitFaceDetector();
+    private MLKitFaceDetector mlKitFaceDetector = new MLKitFaceDetector();
 
     // image rotation
     Point center = new Point();
@@ -74,6 +75,21 @@ public class FaceRecognizer {
 
     } // end constructor
 
+
+    // creates the comparator fto sort from the closest to the most different face
+    class FacialIdComparator implements Comparator<FacialIdentity> {
+
+        // override the compare() method
+        @Override
+        public int compare(FacialIdentity o1, FacialIdentity o2) {
+            if (o1.recogScore == o2.recogScore)
+                return 0;
+            else if (o1.recogScore < o2.recogScore)
+                return 1;
+            else
+                return -1;
+        }
+    }
 
     /**
      * Pre-process to align and crop face
@@ -179,15 +195,21 @@ public class FaceRecognizer {
 //                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,3)[0]
 //                         + " " + idDatabase.identities.get(faceIdx).embedding.get(0,4)[0]
 //                        );
+
+            // store k-top results
+            kTopResults.add(idDatabase.identities.get(faceIdx));
+            kTopResults.get(kTopResults.size()-1).recogScore = (float)cosineScore;
             // if better score
             if(cosineScore>maxScore) {
                 maxScore = cosineScore;
                 identifiedIdx = faceIdx;
-                // store k-top results
-                kTopResults.add(0, idDatabase.identities.get(identifiedIdx));
             }
-        }
+        } //next known face
 
+        kTopResults.sort(new FacialIdComparator());
+
+//        kTopResults.sort();
+        Log.i(TAG, "kTopResult size: " + kTopResults.size());
         // return recognized face
         return new FacialIdentity(idDatabase.identities.get(identifiedIdx).name.split("_")[0], new Mat(), (float) maxScore);
 
@@ -256,6 +278,7 @@ public class FaceRecognizer {
     {
         ArrayList<FacialIdentity> candidates = new ArrayList<>();
 
+        Log.i(TAG, "kTopResult size to get: " + kTopResults.size());
         for (int i=0; i<k; i++)
         {
             candidates.add(kTopResults.get(i));

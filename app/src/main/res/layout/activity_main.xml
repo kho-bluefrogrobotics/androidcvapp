@@ -8,69 +8,82 @@
     android:backgroundTint="#EAE4E4"
     tools:context=".MainActivity">
 
-    <org.opencv.android.JavaCameraView
-        android:id="@+id/CameraView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="visible"
-        opencv:camera_id="1"
-        opencv:show_fps="true" />
-    <!--  Wide angle camera : id=0 ; Narrow angle camera: id = 1-->
+
 
 
     <RelativeLayout
         android:id="@+id/visage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:alpha="0.05"
         android:visibility="visible">
 
-        <include layout="@layout/face" />
+        <org.opencv.android.JavaCameraView
+            android:id="@+id/CameraView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="visible"
+            opencv:camera_id="1"
+            opencv:show_fps="true" />
+        <!--  Wide angle camera : id=0 ; Narrow angle camera: id = 1-->
+
+
+        <Button
+            android:id="@+id/candidatesBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="184dp"
+            android:layout_marginTop="228dp"
+            android:layout_toEndOf="@+id/personNameEditTxt"
+            android:text="Display Candidates" />
+
+        <CheckBox
+            android:id="@+id/visibleCheckBox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="168dp"
+            android:layout_marginTop="40px"
+            android:layout_toEndOf="@+id/personNameEditTxt"
+            android:text="Hide Face" />
+
+
+        <Button
+            android:id="@+id/initButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="3dp"
+            android:layout_marginTop="236dp"
+            android:text="Button"
+            android:visibility="gone" />
+
+        <CheckBox
+            android:id="@+id/saveNameCkbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="62dp"
+            android:layout_marginTop="102dp"
+            android:buttonTint="#EDE9E9"
+            android:text="SAVE"
+            android:textSize="20sp" />
+
+        <EditText
+            android:id="@+id/personNameEditTxt"
+            android:layout_width="201dp"
+            android:layout_height="49dp"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="50dp"
+            android:layout_marginTop="164dp"
+            android:text="Name?" />
 
 
     </RelativeLayout>
 
 
-    <CheckBox
-        android:id="@+id/visibleCheckBox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="1100px"
-        android:layout_marginTop="40px"
-        android:text="Hide Face" />
 
-
-    <Button
-        android:id="@+id/initButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginStart="3dp"
-        android:layout_marginTop="236dp"
-        android:text="Button"
-        android:visibility="gone" />
-
-    <CheckBox
-        android:id="@+id/saveNameCkbox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginStart="62dp"
-        android:layout_marginTop="102dp"
-        android:buttonTint="#EDE9E9"
-        android:text="SAVE"
-        android:textSize="20sp" />
-
-    <EditText
-        android:id="@+id/personNameEditTxt"
-        android:layout_width="201dp"
-        android:layout_height="49dp"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginStart="50dp"
-        android:layout_marginTop="136dp"
-        android:text="Name?" />
 
 </FrameLayout>

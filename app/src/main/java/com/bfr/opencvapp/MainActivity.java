@@ -11,6 +11,7 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -123,6 +124,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     //to debug
     double elapsedTime=0.0;
+    String toDisplay="";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -180,6 +182,30 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                 if (isChecked)
                     isSavingFace = isChecked;
+            }
+        });
+
+        findViewById(R.id.candidatesBtn).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                // display all candidates
+                int k=5;
+                ArrayList<FacialIdentity> candidates = faceRecognizerObj.getTopKResults(k);
+                toDisplay="";
+                for (int c=0; c<k; c++)
+                {
+                    toDisplay = toDisplay + "\n" + candidates.get(c).name.split("_")[0] + " "+ String.format(java.util.Locale.US,"%.4f", candidates.get(c).recogScore);
+                }
+                //display UI
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), toDisplay , Toast.LENGTH_LONG).show();
+                    }
+                }); // end UI
+
+
             }
         });
 
@@ -371,6 +397,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     // Draw rectangle around detected face.
                     Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
                         new Scalar(0, 255, 0), 2);
+
 
                 } //end if isSavingFace
 
