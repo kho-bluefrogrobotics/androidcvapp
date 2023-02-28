@@ -351,7 +351,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             tfliteDetections.get(i).left,
                             tfliteDetections.get(i).right,
                             tfliteDetections.get(i).top,
-                            (float)(tfliteDetections.get(i).bottom-(0.1*(tfliteDetections.get(i).bottom-tfliteDetections.get(i).top))));
+                           tfliteDetections.get(i).bottom);
 
                     // for display only
                     left = (int)(tfliteDetections.get(i).left * cols);
@@ -361,9 +361,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                     // Display name
                     if(identified!=null){
-                        Imgproc.putText(frame, identified.name.toUpperCase() , new Point(left-2, top-12),1, 3,
+                        Imgproc.putText(frame, identified.name.toUpperCase() + " "+String.format(java.util.Locale.US,"%.4f", identified.recogScore),
+                                new Point(left-2, top-12),1, 3,
                                 new Scalar(0, 0, 250), 4);
-                        Imgproc.putText(frame, identified.name.toUpperCase() , new Point(left-2, top-12),1, 3,
+                        Imgproc.putText(frame, identified.name.toUpperCase() + " "+String.format(java.util.Locale.US,"%.4f", identified.recogScore),
+                                new Point(left-2, top-12),1, 3,
                                 new Scalar(0, 255, 0), 2);
                     }
                     // Draw rectangle around detected face.

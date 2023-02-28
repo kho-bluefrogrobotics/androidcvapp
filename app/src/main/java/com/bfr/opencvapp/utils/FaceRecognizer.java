@@ -12,6 +12,7 @@ import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.FaceRecognizerSF;
 
@@ -100,13 +101,17 @@ public class FaceRecognizer {
             return null;
         elapsedTime = System.currentTimeMillis();
         //crop image around face
-        faceROI= new Rect( Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
-                Math.max(top, (int)(top- MARGIN_FACTOR *(bottom-top)) ),
-                (int)(right-left)+(int)(2* MARGIN_FACTOR *(right-left)),
-                (int)(bottom-top) -4*(int)(MARGIN_FACTOR *(bottom-top)));
+        faceROI= new Rect(
+                // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
+                left,
+                Math.max(top, (int)(top+ 0.5*MARGIN_FACTOR *(bottom-top)) ),
+                //alternative to crop more:: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
+                (int)(right-left),
+                (int)(bottom-top) -(int)(MARGIN_FACTOR *(bottom-top)));
+                //alternative to crop less :(int)(bottom-top));
         faceMat = frame.submat(faceROI);
 
-        ////////////////////////////// face orientation
+        /*** face orientation*/
         //convert to bitmap
         Bitmap bitmapImage = Bitmap.createBitmap(faceMat.cols(), faceMat.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(faceMat, bitmapImage);
@@ -117,8 +122,7 @@ public class FaceRecognizer {
         elapsedTime = System.currentTimeMillis();
 
         if(detectedFace==null){
-            Imgproc.putText(frame, "MLKIT Failure", new Point(100, 100),1, 2,
-                    new Scalar(0, 255, 0), 2);
+            Log.i(TAG, "error processing image with MLKit");
             return null;
         }
         // image rotation
@@ -129,7 +133,7 @@ public class FaceRecognizer {
         // rotate
         Imgproc.warpAffine(faceMat, faceMat, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
 
-        return faceMat.clone();
+        return faceMat;
     }
 
     /**
@@ -235,6 +239,8 @@ public class FaceRecognizer {
             @Override
             public void run() {
                 idDatabase.saveToStorage(storingFile);
+                //TODEBUG only
+                Imgcodecs.imwrite("/sdcard/faceReco_"+ name+"_"+currentDateandTime+".jpg", faceMat);
             }
         });
         savingThread.start();
@@ -243,11 +249,18 @@ public class FaceRecognizer {
 
     /**
      * Get the list of top-k recognized faces
+     * @param k number of first k candidates
      * @return an array of FacialIdentity objects containing the name and embedding
      */
-    public ArrayList<FacialIdentity> getTopKResults()
+    public ArrayList<FacialIdentity> getTopKResults(int k)
     {
-        return kTopResults;
+        ArrayList<FacialIdentity> candidates = new ArrayList<>();
+
+        for (int i=0; i<k; i++)
+        {
+            candidates.add(kTopResults.get(i));
+        }
+        return candidates;
     }
 
 
