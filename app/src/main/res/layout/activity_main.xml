@@ -38,13 +38,14 @@
             android:text="Display Candidates" />
 
         <CheckBox
-            android:id="@+id/visibleCheckBox"
+            android:id="@+id/PreprocessCheckBox"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
             android:layout_marginStart="168dp"
-            android:layout_marginTop="40px"
+            android:layout_marginTop="15dp"
             android:layout_toEndOf="@+id/personNameEditTxt"
-            android:text="Hide Face" />
+            android:text="w/o preprocess" />
 
 
         <Button

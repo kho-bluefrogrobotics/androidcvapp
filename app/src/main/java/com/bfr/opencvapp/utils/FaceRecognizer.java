@@ -55,6 +55,7 @@ public class FaceRecognizer {
 
     //to debug
     double elapsedTime=0.0;
+    public boolean withPreprocess=true;
 
     public FaceRecognizer()
     {
@@ -89,7 +90,7 @@ public class FaceRecognizer {
             else
                 return -1;
         }
-    }
+    }//end comparator
 
     /**
      * Pre-process to align and crop face
@@ -127,28 +128,30 @@ public class FaceRecognizer {
                 //alternative to crop less :(int)(bottom-top));
         faceMat = frame.submat(faceROI);
 
-        /*** face orientation*/
-        //convert to bitmap
-        Bitmap bitmapImage = Bitmap.createBitmap(faceMat.cols(), faceMat.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(faceMat, bitmapImage);
-        // detect-classify face
-        Face detectedFace = mlKitFaceDetector.detectSingleFaceFromBitmap(bitmapImage);
+        if(withPreprocess) {
+            /*** face orientation*/
+            //convert to bitmap
+            Bitmap bitmapImage = Bitmap.createBitmap(faceMat.cols(), faceMat.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(faceMat, bitmapImage);
+            // detect-classify face
+            Face detectedFace = mlKitFaceDetector.detectSingleFaceFromBitmap(bitmapImage);
 
-        Log.i(TAG, "elapsed time face MLKit : " + (System.currentTimeMillis()-elapsedTime)  );
-        elapsedTime = System.currentTimeMillis();
+            Log.i(TAG, "elapsed time face MLKit : " + (System.currentTimeMillis() - elapsedTime));
+            elapsedTime = System.currentTimeMillis();
 
-        if(detectedFace==null){
-            Log.i(TAG, "error processing image with MLKit");
-            return null;
+            if (detectedFace == null) {
+                Log.i(TAG, "error processing image with MLKit");
+                return null;
+            }
+            // image rotation
+            center.x = (int) faceMat.cols() / 2;
+            center.y = (int) faceMat.rows() / 2;
+            angle = detectedFace.getHeadEulerAngleZ();
+            mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
+            // rotate
+
+            Imgproc.warpAffine(faceMat, faceMat, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
         }
-        // image rotation
-        center.x = (int)faceMat.cols()/2;
-        center.y = (int) faceMat.rows()/2;
-        angle = detectedFace.getHeadEulerAngleZ();
-        mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
-        // rotate
-        Imgproc.warpAffine(faceMat, faceMat, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
-
         return faceMat;
     }
 
@@ -199,6 +202,7 @@ public class FaceRecognizer {
             // store k-top results
             kTopResults.add(idDatabase.identities.get(faceIdx));
             kTopResults.get(kTopResults.size()-1).recogScore = (float)cosineScore;
+
             // if better score
             if(cosineScore>maxScore) {
                 maxScore = cosineScore;
@@ -206,6 +210,7 @@ public class FaceRecognizer {
             }
         } //next known face
 
+        // sort results from closest to most different
         kTopResults.sort(new FacialIdComparator());
 
 //        kTopResults.sort();

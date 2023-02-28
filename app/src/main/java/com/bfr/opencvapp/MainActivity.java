@@ -109,7 +109,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     // context
     Context context = this;
-    CheckBox saveCheckbox;
+    CheckBox saveCheckbox, preprocessCheckbox;
     EditText personNameExitText;
 
     //Video writer
@@ -158,6 +158,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         saveCheckbox = findViewById(R.id.saveNameCkbox);
         personNameExitText = findViewById(R.id.personNameEditTxt);
+        preprocessCheckbox = findViewById(R.id.PreprocessCheckBox);
 
 //        //callback show face
 //        hideFace.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -204,11 +205,16 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                         Toast.makeText(getApplicationContext(), toDisplay , Toast.LENGTH_LONG).show();
                     }
                 }); // end UI
-
-
             }
         });
 
+        preprocessCheckbox.setChecked(true);
+        preprocessCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                faceRecognizerObj.withPreprocess = isChecked;
+            }
+        });
 
     } // End onCreate
 
