@@ -16,6 +16,7 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.FaceRecognizerSF;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 public class FaceRecognizer {
@@ -44,6 +45,8 @@ public class FaceRecognizer {
 
     // List of known faces
     private IdentitiesDatabase idDatabase;
+    //
+    private ArrayList<FacialIdentity> kTopResults = new java.util.ArrayList<>();
 
     SimpleDateFormat sdf = new SimpleDateFormat("yyMMddHHmmss");
     String currentDateandTime = "";
@@ -95,7 +98,7 @@ public class FaceRecognizer {
         if(left<10 || top <10 || right> frame.cols()-10 || bottom > frame.rows()-10)
             // take next detected face
             return null;
-
+        elapsedTime = System.currentTimeMillis();
         //crop image around face
         faceROI= new Rect( Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
                 Math.max(top, (int)(top- MARGIN_FACTOR *(bottom-top)) ),
@@ -140,6 +143,7 @@ public class FaceRecognizer {
         // Look for closest
         double cosineScore, maxScore = 0.0;
         int identifiedIdx=0;
+        kTopResults.clear();
 
         // for each known face
         for (int faceIdx=1; faceIdx< idDatabase.identities.size(); faceIdx++)
@@ -159,6 +163,8 @@ public class FaceRecognizer {
             if(cosineScore>maxScore) {
                 maxScore = cosineScore;
                 identifiedIdx = faceIdx;
+                // store k-top results
+                kTopResults.add(0, idDatabase.identities.get(identifiedIdx));
             }
         }
 
@@ -216,7 +222,7 @@ public class FaceRecognizer {
         faceROI= new Rect( Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
                 Math.max(top, (int)(top- MARGIN_FACTOR *(bottom-top)) ),
                 (int)(right-left)+(int)(2* MARGIN_FACTOR *(right-left)),
-                (int)(bottom-top) + +(int)(MARGIN_FACTOR *(bottom-top)));
+                (int)(bottom-top) -(int)(4*MARGIN_FACTOR *(bottom-top)));
         faceMat = frame.submat(faceROI);
 
 
@@ -268,8 +274,37 @@ public class FaceRecognizer {
         });
         savingThread.start();
 
+    } //end save face
 
+    /**
+     * Get the list of top-k recognized faces
+     * @return an array of FacialIdentity objects containing the name and embedding
+     */
+    public ArrayList<FacialIdentity> getTopKResults()
+    {
+        return kTopResults;
     }
+
+
+    /**
+     * Get the list of saved identities
+     * @return an array of FacialIdentity objects containing the name and embedding
+     */
+    public ArrayList<FacialIdentity> getSavedIdentities()
+    {
+        return idDatabase.identities;
+    }
+
+    /**
+     * remove i-th save identity.
+     * WARNING: this operation is not reversible
+     * @return nothing
+     */
+    public void removeSavedIdentity(int idx)
+    {
+        idDatabase.identities.remove(idx);
+    }
+
 
 
 }

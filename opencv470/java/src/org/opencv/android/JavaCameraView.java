@@ -144,6 +144,7 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
 
                 if (sizes != null) {
                     /* Select the size that fits surface considering maximum size allowed */
+                    // specific for Buddy
                     width = 800;
                     height = 600;
                     Size frameSize = calculateCameraFrameSize(sizes, new JavaCameraSizeAccessor(), width, height);
@@ -172,8 +173,14 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                     List<String> FocusModes = params.getSupportedFocusModes();
                     if (FocusModes != null && FocusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO))
                     {
-                        params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
+//                        params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
+                        params.setFocusMode(Camera.Parameters.FOCUS_MODE_FIXED);
                     }
+
+                    params.setExposureCompensation(5);
+                    params.setAutoWhiteBalanceLock(true);
+
+                    params.setAutoExposureLock(true);
 
                     mCamera.setParameters(params);
                     params = mCamera.getParameters();
@@ -302,8 +309,8 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
 
     @Override
     public void onPreviewFrame(byte[] frame, Camera arg1) {
-//        if (BuildConfig.DEBUG)
-//            Log.d(TAG, "Preview Frame received. Frame size: " + frame.length);
+        if (BuildConfig.DEBUG)
+            Log.d(TAG, "Preview Frame received. Frame size: " + frame.length);
         synchronized (this) {
             mFrameChain[mChainIdx].put(0, 0, frame);
             mCameraFrameReady = true;

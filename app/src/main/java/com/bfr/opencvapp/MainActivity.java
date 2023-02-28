@@ -351,13 +351,14 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             tfliteDetections.get(i).left,
                             tfliteDetections.get(i).right,
                             tfliteDetections.get(i).top,
-                            tfliteDetections.get(i).bottom);
+                            (float)(tfliteDetections.get(i).bottom-(0.1*(tfliteDetections.get(i).bottom-tfliteDetections.get(i).top))));
 
                     // for display
                     left   = (int)(tfliteDetections.get(i).left * cols);
                     top    = (int)(tfliteDetections.get(i).top * rows);
                     right  = (int)(tfliteDetections.get(i).right * cols);
-                    bottom = (int)(tfliteDetections.get(i).bottom* rows);
+//                    bottom = (int)(tfliteDetections.get(i).bottom* rows);
+                    bottom = (int)((tfliteDetections.get(i).bottom-(0.1*(tfliteDetections.get(i).bottom-tfliteDetections.get(i).top)))* rows);
 
                     // Display name
                     if(identified!=null){
