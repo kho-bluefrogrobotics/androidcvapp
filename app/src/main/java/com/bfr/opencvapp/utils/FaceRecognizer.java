@@ -75,7 +75,7 @@ public class FaceRecognizer {
 
 
     /**
-     * Recognize a face from a cropped image
+     * Pre-process to align and crop face
      * @param frame original frame
      * @param leftIn coord to crop the frame where the face is, in % of the original size
      * @param rightIn coord to crop the frame where the face is, in % of the original size
@@ -84,7 +84,7 @@ public class FaceRecognizer {
      * @return a FacialIdentity object containing the name of the face and the recognition score
      * returns null if the recognition fails
      */
-    public FacialIdentity RecognizeFace(Mat frame, float leftIn, float rightIn, float topIn, float bottomIn)
+    private Mat cropAndAlign(Mat frame, float leftIn, float rightIn, float topIn, float bottomIn)
     {
         int cols = frame.cols();
         int rows = frame.rows();
@@ -103,7 +103,7 @@ public class FaceRecognizer {
         faceROI= new Rect( Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
                 Math.max(top, (int)(top- MARGIN_FACTOR *(bottom-top)) ),
                 (int)(right-left)+(int)(2* MARGIN_FACTOR *(right-left)),
-                (int)(bottom-top) + +(int)(MARGIN_FACTOR *(bottom-top)));
+                (int)(bottom-top) -4*(int)(MARGIN_FACTOR *(bottom-top)));
         faceMat = frame.submat(faceROI);
 
         ////////////////////////////// face orientation
@@ -129,10 +129,26 @@ public class FaceRecognizer {
         // rotate
         Imgproc.warpAffine(faceMat, faceMat, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
 
-        Log.i(TAG, "elapsed time rotation : " + (System.currentTimeMillis()-elapsedTime)  );
+        return faceMat.clone();
+    }
+
+    /**
+     * Recognize a face from a cropped image
+     * @param frame original frame
+     * @param leftIn coord to crop the frame where the face is, in % of the original size
+     * @param rightIn coord to crop the frame where the face is, in % of the original size
+     * @param bottomIn coord to crop the frame where the face is, in % of the original size
+     * @param topIn coord to crop the frame where the face is, in % of the original size
+     * @return a FacialIdentity object containing the name of the face and the recognition score
+     * returns null if the recognition fails
+     */
+    public FacialIdentity RecognizeFace(Mat frame, float leftIn, float rightIn, float topIn, float bottomIn)
+    {
         elapsedTime = System.currentTimeMillis();
 
-        faceRecognizer.feature(faceMat, faceEmbedding);
+        faceRecognizer.feature(
+                cropAndAlign(frame, leftIn, rightIn, topIn, bottomIn),
+                faceEmbedding);
 
         Log.i(TAG, "elapsed time calc embedding : " + (System.currentTimeMillis()-elapsedTime)
                 +"\n " + faceEmbedding.size() +" type " + faceEmbedding.depth());
@@ -201,60 +217,9 @@ public class FaceRecognizer {
      */
     public void saveFace(Mat frame, float leftIn, float rightIn, float topIn, float bottomIn, String name, String storingFile)
     {
-        int cols = frame.cols();
-        int rows = frame.rows();
-
-        int left   = (int)(leftIn * cols);
-        int top    = (int)(topIn * rows);
-        int right  = (int)(rightIn * cols);
-        int bottom = (int)(bottomIn* rows);
-
-        //If face touches the margin, skip -> we need a fully visible face for recognition
-        if(left<10 || top <10 || right> frame.cols()-10 || bottom > frame.rows()-10)
-            // take next detected face
-            return;
-
-
-        /*** Recognition ***/
-
-
-        //crop image around face
-        faceROI= new Rect( Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
-                Math.max(top, (int)(top- MARGIN_FACTOR *(bottom-top)) ),
-                (int)(right-left)+(int)(2* MARGIN_FACTOR *(right-left)),
-                (int)(bottom-top) -(int)(4*MARGIN_FACTOR *(bottom-top)));
-        faceMat = frame.submat(faceROI);
-
-
-        ////////////////////////////// face orientation
-        //convert to bitmap
-        Bitmap bitmapImage = Bitmap.createBitmap(faceMat.cols(), faceMat.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(faceMat, bitmapImage);
-        // detect-classify face
-        Face detectedFace = mlKitFaceDetector.detectSingleFaceFromBitmap(bitmapImage);
-
-        Log.i(TAG, "elapsed time face MLKit : " + (System.currentTimeMillis()-elapsedTime)  );
-        elapsedTime = System.currentTimeMillis();
-
-        if(detectedFace==null){
-            Imgproc.putText(frame, "MLKIT Failure", new Point(100, 100),1, 2,
-                    new Scalar(0, 255, 0), 2);
-            return ;
-        }
-        // image rotation
-        center.x = (int)faceMat.cols()/2;
-        center.y = (int) faceMat.rows()/2;
-        angle = detectedFace.getHeadEulerAngleZ();
-
-        mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
-        // rotate
-        Imgproc.warpAffine(faceMat, faceMat, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
-
-        Log.i(TAG, "elapsed time rotation : " + (System.currentTimeMillis()-elapsedTime)  );
-        elapsedTime = System.currentTimeMillis();
-
-        // Compute embeddings
-        faceRecognizer.feature(faceMat, faceEmbedding);
+        faceRecognizer.feature(
+                cropAndAlign(frame, leftIn, rightIn, topIn, bottomIn),
+                faceEmbedding);
 
         Log.i(TAG, "elapsed time calc embedding : " + (System.currentTimeMillis()-elapsedTime)
                 +"\n " + faceEmbedding.size() +" type " + faceEmbedding.depth());
