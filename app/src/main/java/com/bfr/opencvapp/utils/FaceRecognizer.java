@@ -34,7 +34,7 @@ public class FaceRecognizer {
     // Face recognition
     private FaceRecognizerSF faceRecognizer;
     Mat faceEmbedding;
-    Mat faceMat;
+    Mat faceMat, rotatedFace;
     Rect faceROI;
 
     // MLKit face detector
@@ -128,6 +128,8 @@ public class FaceRecognizer {
                 //alternative to crop less :(int)(bottom-top));
         faceMat = frame.submat(faceROI);
 
+        rotatedFace = faceMat.clone();
+
         if(withPreprocess) {
             /*** face orientation*/
             //convert to bitmap
@@ -150,9 +152,9 @@ public class FaceRecognizer {
             mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
             // rotate
 
-            Imgproc.warpAffine(faceMat, faceMat, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
+            Imgproc.warpAffine(rotatedFace, rotatedFace, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
         }
-        return faceMat;
+        return rotatedFace;
     }
 
     /**
