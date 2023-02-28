@@ -187,7 +187,7 @@ public class FaceRecognizer {
         kTopResults.clear();
 
         // for each known face
-        for (int faceIdx=1; faceIdx< idDatabase.identities.size(); faceIdx++)
+        for (int faceIdx=0; faceIdx< idDatabase.identities.size(); faceIdx++)
         {
 
             //compute similarity;
@@ -269,12 +269,25 @@ public class FaceRecognizer {
             public void run() {
                 idDatabase.saveToStorage(storingFile);
                 //TODEBUG only
-                Imgcodecs.imwrite("/sdcard/faceReco_"+ name+"_"+currentDateandTime+".jpg", faceMat);
+                Mat toSave = new Mat();
+                Imgproc.cvtColor(faceMat, toSave, Imgproc.COLOR_RGB2BGR);
+                Imgcodecs.imwrite("/sdcard/faceReco_"+ name+"_"+currentDateandTime+".jpg", toSave);
             }
         });
         savingThread.start();
 
     } //end save face
+
+    /**
+     * Load a custom file which contains saved identities
+     * @param fileName file
+     * @return null
+     */
+    public void loadFaces(String fileName)
+    {
+        idDatabase.identities.clear();
+        idDatabase.loadFromStorage(fileName);
+    }
 
     /**
      * Get the list of top-k recognized faces
@@ -284,13 +297,21 @@ public class FaceRecognizer {
     public ArrayList<FacialIdentity> getTopKResults(int k)
     {
         ArrayList<FacialIdentity> candidates = new ArrayList<>();
-
-        Log.i(TAG, "kTopResult size to get: " + kTopResults.size());
-        for (int i=0; i<k; i++)
-        {
-            candidates.add(kTopResults.get(i));
+        try{
+            Log.i(TAG, "kTopResult size to get: " + kTopResults.size());
+            for (int i=0; i<k; i++)
+            {
+                candidates.add(kTopResults.get(i));
+            }
+            return candidates;
         }
-        return candidates;
+        catch (Exception e)
+        {
+            Log.i(TAG, "Error getting K-top candidates " + e);
+            return null;
+        }
+
+
     }
 
 
@@ -300,19 +321,52 @@ public class FaceRecognizer {
      */
     public ArrayList<FacialIdentity> getSavedIdentities()
     {
-        return idDatabase.identities;
+        try{
+            return idDatabase.identities;
+        }
+          catch (Exception e)
+        {
+            Log.i(TAG, "Error getting saved identities " + e);
+            return null;
+        }
     }
 
     /**
      * remove i-th save identity.
      * WARNING: this operation is not reversible
+     * @param idx number of first k candidates
      * @return nothing
      */
     public void removeSavedIdentity(int idx)
     {
-        idDatabase.identities.remove(idx);
-    }
+        removeSavedIdentity(idx, STORAGE_FILE);
+    } // end remove identity
 
 
+    /**
+     * remove i-th save identity.
+     * WARNING: this operation is not reversible
+     * @param idx number of first k candidates
+     * @param storageFile custom file to save on device
+     * @return nothing
+     */
+    public void removeSavedIdentity(int idx, String storageFile)
+    {
+        try{
+            idDatabase.identities.remove(idx);
+            //saving file
+            Thread savingThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    idDatabase.saveToStorage(storageFile);
+                }
+            });
+            savingThread.start();
+        } catch (Exception e)
+        {
+            Log.i(TAG, "Error removing saved identity " + e);
+        }
+
+    } // end remove identity
 
 }

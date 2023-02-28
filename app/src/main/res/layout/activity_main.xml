@@ -17,6 +17,9 @@
         android:layout_height="wrap_content"
         android:visibility="visible">
 
+        <!--  Wide angle camera : id=0 ; Narrow angle camera: id = 1-->
+
+
         <org.opencv.android.JavaCameraView
             android:id="@+id/CameraView"
             android:layout_width="match_parent"
@@ -24,16 +27,14 @@
             android:visibility="visible"
             opencv:camera_id="1"
             opencv:show_fps="true" />
-        <!--  Wide angle camera : id=0 ; Narrow angle camera: id = 1-->
-
 
         <Button
             android:id="@+id/candidatesBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
-            android:layout_marginStart="184dp"
-            android:layout_marginTop="228dp"
+            android:layout_marginStart="275dp"
+            android:layout_marginTop="291dp"
             android:layout_toEndOf="@+id/personNameEditTxt"
             android:text="Display Candidates" />
 
@@ -80,6 +81,50 @@
             android:layout_marginStart="50dp"
             android:layout_marginTop="164dp"
             android:text="Name?" />
+
+        <Button
+            android:id="@+id/displayAllBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="520dp"
+            android:layout_marginTop="55dp"
+            android:text="all?" />
+
+        <Button
+            android:id="@+id/loadBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/idxRemove"
+            android:layout_alignStart="@+id/idxRemove"
+            android:layout_marginStart="-20dp"
+            android:layout_marginTop="5dp"
+            android:text="load" />
+
+        <Button
+            android:id="@+id/removeBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/displayAllBtn"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="514dp"
+            android:layout_marginTop="13dp"
+            android:text="remove"
+            android:textSize="10sp" />
+
+        <EditText
+            android:id="@+id/idxRemove"
+            android:layout_width="58dp"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/removeBtn"
+            android:layout_alignStart="@+id/removeBtn"
+            android:layout_marginStart="36dp"
+            android:layout_marginTop="13dp"
+            android:ems="10"
+            android:inputType="number"
+            android:text="0"
+            tools:text="0" />
 
 
     </RelativeLayout>

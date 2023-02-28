@@ -110,7 +110,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // context
     Context context = this;
     CheckBox saveCheckbox, preprocessCheckbox;
-    EditText personNameExitText;
+    Button showAll, removeIdx;
+    EditText personNameExitText, idxToRemove;
 
     //Video writer
     private VideoWriter videoWriter;
@@ -159,6 +160,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         saveCheckbox = findViewById(R.id.saveNameCkbox);
         personNameExitText = findViewById(R.id.personNameEditTxt);
         preprocessCheckbox = findViewById(R.id.PreprocessCheckBox);
+        showAll = findViewById(R.id.displayAllBtn);
+        removeIdx = findViewById(R.id.removeBtn);
+        idxToRemove = findViewById(R.id.idxRemove);
 
 //        //callback show face
 //        hideFace.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -213,6 +217,43 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 faceRecognizerObj.withPreprocess = isChecked;
+            }
+        });
+
+        showAll.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                // display all stored identities
+                toDisplay="";
+                for (int c=0; c<faceRecognizerObj.getSavedIdentities().size(); c++)
+                {
+                    toDisplay = toDisplay + "\n" +
+                            c + " - " +faceRecognizerObj.getSavedIdentities().get(c).name.split("_")[0];
+                }
+                //display UI
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), toDisplay , Toast.LENGTH_LONG).show();
+                    }
+                }); // end UI
+
+            } // end onClick
+        });
+
+        removeIdx.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                faceRecognizerObj.removeSavedIdentity(Integer.parseInt(idxToRemove.getText().toString()));
+
+            } // end onClick
+        });
+
+        findViewById(R.id.loadBtn).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                faceRecognizerObj.loadFaces("/sdcard/Documents/identities.bin");
             }
         });
 
@@ -395,7 +436,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     if(identified!=null){
                         Imgproc.putText(frame, identified.name.toUpperCase() + " "+String.format(java.util.Locale.US,"%.4f", identified.recogScore),
                                 new Point(left-2, top-12),1, 3,
-                                new Scalar(0, 0, 250), 4);
+                                new Scalar(0, 0, 0), 4);
                         Imgproc.putText(frame, identified.name.toUpperCase() + " "+String.format(java.util.Locale.US,"%.4f", identified.recogScore),
                                 new Point(left-2, top-12),1, 3,
                                 new Scalar(0, 255, 0), 2);
