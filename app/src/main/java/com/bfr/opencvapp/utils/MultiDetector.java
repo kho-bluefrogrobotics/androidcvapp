@@ -32,7 +32,10 @@ public class MultiDetector {
     private final int[] OUTPUT_WIDTH_SSD = new int[]{50, 50, 50};
     private final int BATCH_SIZE = 1;
     private final int PIXEL_SIZE = 3;
-    private final float THRES = 0.75f;
+    //Empiric valules for Thres of acceptance
+    private final float THRES_FACE = 0.5f;
+    private final float THRES_HUMAN = 0.6f;
+    private final float THRES_HAND = 0.3f;
     private final String[] LABELS = {"Human", "Face", "Hand"};
     private final int NUM_THREADS = 4;
     private boolean WITH_NNAPI = true;
@@ -159,7 +162,9 @@ public class MultiDetector {
             int maxClass = (int) nb_labels[0];
             int detectedClass = (int) out_labels[0][i];
             final float score = out_score[0][i];
-            if (score > THRES &&  (detectedClass >= 0 && detectedClass <= maxClass)){
+            if ( (score > THRES_HUMAN &&  detectedClass == 0)
+            || (score > THRES_FACE &&  detectedClass == 1)
+            || (score > THRES_HAND &&  detectedClass == 2)){
                 // position in % of the image
                 final float ymin = bboxes[0][i][0];
                 final float xmin = bboxes[0][i][1];
