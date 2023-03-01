@@ -28,7 +28,7 @@ public class FaceRecognizer {
     //
     private final float MARGIN_FACTOR = 0.1f;
     // default file for storing identities
-    private String STORAGE_FILE = "/sdcard/identities.bin";
+    private final String STORAGE_FILE = "/sdcard/identities.bin";
     //where to find the models
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
     private final String MODEL_NAME = "/face_recognition_sface_2021dec.onnx";
