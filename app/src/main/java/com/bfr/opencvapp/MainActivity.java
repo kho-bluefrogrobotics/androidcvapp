@@ -244,9 +244,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 for (int c=0; c<faceRecognizerObj.getSavedIdentities().size(); c+=2)
                 {
                     try {
-                        toDisplay = toDisplay + "\n" +
+                        toDisplay = toDisplay +
                                 c + " - " +faceRecognizerObj.getSavedIdentities().get(c).name.split("_")[0]
-                                + "    " + (c+1) + " - " +faceRecognizerObj.getSavedIdentities().get(c+1).name.split("_")[0];
+                                + "    " + (c+1) + " - " +faceRecognizerObj.getSavedIdentities().get(c+1).name.split("_")[0] + "\n";
                     }
                     catch (Exception e)
                     {
@@ -256,9 +256,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 }
                 // adjusting to odd number (add last one)
                 if (faceRecognizerObj.getSavedIdentities().size()%2!=0)
-                    toDisplay = toDisplay + "\n" +
+                    toDisplay = toDisplay  +
                             (faceRecognizerObj.getSavedIdentities().size()-1) + " - " +faceRecognizerObj.getSavedIdentities().get(faceRecognizerObj.getSavedIdentities().size()-1)
-                            .name.split("_")[0];
+                            .name.split("_")[0]+"\n";
 
                 //display UI
                 runOnUiThread(new Runnable() {
