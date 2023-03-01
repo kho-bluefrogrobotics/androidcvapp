@@ -93,6 +93,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     //********************  image ***************************
 
+    //Video capture
+    Mat frame_orig, frame;
     // Parameters for Base facial detection
     final double THRESHOLD = 0.6;
 
@@ -314,6 +316,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             e.printStackTrace();
         }
 
+        frame_orig= new Mat();
+        frame = new Mat();
         // init face detector
         multiDetector = new MultiDetector(context);
         //init face recognizer
@@ -332,7 +336,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
         // cature frame from camera
-        Mat frame = inputFrame.rgba();
+        frame_orig = inputFrame.rgba();
+
+        int cols = frame_orig.cols();
+        int rows = frame_orig.rows();
+
+        // resize
+        Imgproc.resize(frame_orig, frame, new Size(640,480));
 
         if (!started)
             return frame;
@@ -344,8 +354,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         elapsedTime = System.currentTimeMillis();
 
-        int cols = frame.cols();
-        int rows = frame.rows();
 
         //convert to bitmap
         Mat resizedFrame = new Mat();
@@ -434,15 +442,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                     // Display name
                     if(identified!=null){
-                        Imgproc.putText(frame, identified.name.toUpperCase() + " "+String.format(java.util.Locale.US,"%.4f", identified.recogScore),
+                        Imgproc.putText(frame_orig, identified.name.toUpperCase() + " "+String.format(java.util.Locale.US,"%.4f", identified.recogScore),
                                 new Point(left-2, top-12),1, 3,
                                 new Scalar(0, 0, 0), 4);
-                        Imgproc.putText(frame, identified.name.toUpperCase() + " "+String.format(java.util.Locale.US,"%.4f", identified.recogScore),
+                        Imgproc.putText(frame_orig, identified.name.toUpperCase() + " "+String.format(java.util.Locale.US,"%.4f", identified.recogScore),
                                 new Point(left-2, top-12),1, 3,
                                 new Scalar(0, 255, 0), 2);
                     }
                     // Draw rectangle around detected face.
-                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                    Imgproc.rectangle(frame_orig, new Point(left, top), new Point(right, bottom),
                         new Scalar(0, 255, 0), 2);
 
 
@@ -461,7 +469,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             e.printStackTrace();
         }
         finally {
-            return frame;
+            return frame_orig;
         }
     } // end function
 
