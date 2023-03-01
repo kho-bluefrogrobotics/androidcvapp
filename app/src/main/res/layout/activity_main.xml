@@ -127,6 +127,7 @@
             android:ems="10"
             android:inputType="number"
             android:text="0"
+            android:visibility="gone"
             tools:text="0" />
 
 

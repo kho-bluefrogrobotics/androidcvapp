@@ -40,7 +40,8 @@ public class TfLiteFaceRecognizer {
     private float[][] embeedings;
 
     //where to find the models
-    private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/";
+    private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
+    private final String MODEL_NAME = "model_float16_quant.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
@@ -83,8 +84,7 @@ public class TfLiteFaceRecognizer {
             }
 
             //Init interpreter
-//            File tfliteModel = new File(DIR+"/nnmodels/Facenet_uint8.tflite");
-            File tfliteModel = new File(DIR+"/nnmodels/model_float16_quant.tflite");
+            File tfliteModel = new File(DIR+MODEL_NAME);
             tfLite = new Interpreter(tfliteModel, options );
         }
         catch (Exception e)

@@ -30,7 +30,9 @@ public class FaceRecognizer {
     // default file for storing identities
     private String STORAGE_FILE = "/sdcard/identities.bin";
     //where to find the models
-    private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/";
+    private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
+    private final String MODEL_NAME = "/face_recognition_sface_2021dec.onnx";
+//    private final String MODEL_NAME = "face_recognition_sface_2021dec-act_int8-wt_int8-quantized.onnx";
     // Face recognition
     private FaceRecognizerSF faceRecognizer;
     Mat faceEmbedding;
@@ -70,8 +72,7 @@ public class FaceRecognizer {
         }
 
         // Load face recog model
-        faceRecognizer = FaceRecognizerSF.create(DIR + "/nnmodels/face_recognition_sface_2021dec.onnx",
-//        faceRecognizer = FaceRecognizerSF.create(dir + "/nnmodels/face_recognition_sface_2021dec-act_int8-wt_int8-quantized.onnx",
+        faceRecognizer = FaceRecognizerSF.create(DIR + MODEL_NAME,
                 "");
 
     } // end constructor
@@ -122,10 +123,10 @@ public class FaceRecognizer {
                 // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
                 left,
                 Math.max(top, (int)(top+ 0.5*MARGIN_FACTOR *(bottom-top)) ),
-                //alternative to crop more:: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
+                //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
                 (int)(right-left),
                 (int)(bottom-top) -(int)(MARGIN_FACTOR *(bottom-top)));
-                //alternative to crop less :(int)(bottom-top));
+                //alternative to crop less: (int)(bottom-top));
         faceMat = frame.submat(faceROI);
 
         rotatedFace = faceMat.clone();
@@ -133,8 +134,8 @@ public class FaceRecognizer {
         if(withPreprocess) {
             /*** face orientation*/
             //convert to bitmap
-            Bitmap bitmapImage = Bitmap.createBitmap(faceMat.cols(), faceMat.rows(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(faceMat, bitmapImage);
+            Bitmap bitmapImage = Bitmap.createBitmap(rotatedFace.cols(), rotatedFace.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(rotatedFace, bitmapImage);
             // detect-classify face
             Face detectedFace = mlKitFaceDetector.detectSingleFaceFromBitmap(bitmapImage);
 
@@ -146,12 +147,11 @@ public class FaceRecognizer {
                 return null;
             }
             // image rotation
-            center.x = (int) faceMat.cols() / 2;
-            center.y = (int) faceMat.rows() / 2;
+            center.x = rotatedFace.cols() / 2;
+            center.y = rotatedFace.rows() / 2;
             angle = detectedFace.getHeadEulerAngleZ();
             mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
             // rotate
-
             Imgproc.warpAffine(rotatedFace, rotatedFace, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
         }
         return rotatedFace;
@@ -215,8 +215,6 @@ public class FaceRecognizer {
         // sort results from closest to most different
         kTopResults.sort(new FacialIdComparator());
 
-//        kTopResults.sort();
-        Log.i(TAG, "kTopResult size: " + kTopResults.size());
         // return recognized face
         return new FacialIdentity(idDatabase.identities.get(identifiedIdx).name.split("_")[0], new Mat(), (float) maxScore);
 
@@ -279,6 +277,15 @@ public class FaceRecognizer {
     } //end save face
 
     /**
+     * Load the saved identities
+     * @return null
+     */
+    public void loadFaces()
+    {
+        loadFaces(STORAGE_FILE);
+    }
+
+    /**
      * Load a custom file which contains saved identities
      * @param fileName file
      * @return null
@@ -310,8 +317,6 @@ public class FaceRecognizer {
             Log.i(TAG, "Error getting K-top candidates " + e);
             return null;
         }
-
-
     }
 
 
@@ -332,7 +337,7 @@ public class FaceRecognizer {
     }
 
     /**
-     * remove i-th save identity.
+     * remove i-th save identity and save.
      * WARNING: this operation is not reversible
      * @param idx number of first k candidates
      * @return nothing
@@ -344,7 +349,7 @@ public class FaceRecognizer {
 
 
     /**
-     * remove i-th save identity.
+     * remove i-th save identity and save to a custom file an the device.
      * WARNING: this operation is not reversible
      * @param idx number of first k candidates
      * @param storageFile custom file to save on device
@@ -353,15 +358,22 @@ public class FaceRecognizer {
     public void removeSavedIdentity(int idx, String storageFile)
     {
         try{
-            idDatabase.identities.remove(idx);
-            //saving file
-            Thread savingThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    idDatabase.saveToStorage(storageFile);
-                }
-            });
-            savingThread.start();
+            // always leave at least one identity in the list
+            if(idDatabase.identities.size()>1)
+            {
+                idDatabase.identities.remove(idx);
+                //saving file
+                Thread savingThread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        idDatabase.saveToStorage(storageFile);
+                    }
+                });
+                savingThread.start();
+            }
+            else
+                Log.w(TAG, "Can't remove the identity : you should always leave at least one identity in the database");
+
         } catch (Exception e)
         {
             Log.i(TAG, "Error removing saved identity " + e);

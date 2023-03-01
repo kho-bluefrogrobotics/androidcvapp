@@ -40,7 +40,8 @@ public class MultiDetector {
     private boolean WITH_DSP = false;
 
     //where to find the models
-    private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/";
+    private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
+    private final String MODEL_NAME = "ssd_3output.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
@@ -83,7 +84,7 @@ public class MultiDetector {
             }
 
             //Init interpreter
-            File tfliteModel = new File(DIR+"/nnmodels/ssd_3output.tflite");
+            File tfliteModel = new File(DIR+MODEL_NAME);
             tfLite = new Interpreter(tfliteModel, options );
         }
         catch (Exception e)
@@ -149,7 +150,6 @@ public class MultiDetector {
         Object[] inputArray = {byteBuffer};
         tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
 
-        int gridWidth = OUTPUT_WIDTH_SSD[0];
         float[][]  out_score= (float [][]) outputMap.get(0);
         float[][][] bboxes = (float[][][]) outputMap.get(1);
         float[] nb_labels = (float[]) outputMap.get(2);
