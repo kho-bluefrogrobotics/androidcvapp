@@ -241,11 +241,25 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                 // display all stored identities
                 toDisplay="";
-                for (int c=0; c<faceRecognizerObj.getSavedIdentities().size(); c++)
+                for (int c=0; c<faceRecognizerObj.getSavedIdentities().size(); c+=2)
                 {
-                    toDisplay = toDisplay + "\n" +
-                            c + " - " +faceRecognizerObj.getSavedIdentities().get(c).name.split("_")[0];
+                    try {
+                        toDisplay = toDisplay + "\n" +
+                                c + " - " +faceRecognizerObj.getSavedIdentities().get(c).name.split("_")[0]
+                                + "    " + (c+1) + " - " +faceRecognizerObj.getSavedIdentities().get(c+1).name.split("_")[0];
+                    }
+                    catch (Exception e)
+                    {
+                        Log.e(TAG, e.toString());
+                    }
+
                 }
+                // adjusting to odd number (add last one)
+                if (faceRecognizerObj.getSavedIdentities().size()%2!=0)
+                    toDisplay = toDisplay + "\n" +
+                            (faceRecognizerObj.getSavedIdentities().size()-1) + " - " +faceRecognizerObj.getSavedIdentities().get(faceRecognizerObj.getSavedIdentities().size()-1)
+                            .name.split("_")[0];
+
                 //display UI
                 runOnUiThread(new Runnable() {
                     @Override
@@ -464,7 +478,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     if(identified!=null){
                         Imgproc.putText(frame_orig, identified.name.toUpperCase() + " "+String.format(java.util.Locale.US,"%.4f", identified.recogScore),
                                 new Point(left-2, top-12),1, 3,
-                                new Scalar(0, 0, 0), 4);
+                                new Scalar(0, 0, 0), 5);
                         Imgproc.putText(frame_orig, identified.name.toUpperCase() + " "+String.format(java.util.Locale.US,"%.4f", identified.recogScore),
                                 new Point(left-2, top-12),1, 3,
                                 new Scalar(0, 255, 0), 2);
