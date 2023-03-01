@@ -195,7 +195,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
                 if (isChecked)
+                {
                     isSavingFace = isChecked;
+                    countToPicture.start = isChecked;
+                    countToPicture.time = 5;
+                    countToPicture.elapsedTime= System.currentTimeMillis();
+                }
+
             }
         });
 
@@ -387,6 +393,36 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                 if(isSavingFace)
                 {
+                    if(countToPicture.start)
+                    {
+                        Imgproc.putText(frame_orig, "Placez-vous en face",
+                                new Point(150, 200),1, 3,
+                                new Scalar(0, 0, 0), 10);
+                        Imgproc.putText(frame_orig, "Placez-vous en face",
+                                new Point(150, 200),1, 3,
+                                new Scalar(0, 250, 0), 4);
+                        Imgproc.putText(frame_orig, "de la camera",
+                                new Point(150, 250),1, 3,
+                                new Scalar(0, 0, 0), 10);
+                        Imgproc.putText(frame_orig, "de la camera",
+                                new Point(150, 250),1, 3,
+                                new Scalar(0, 250, 0), 4);
+
+                        Imgproc.putText(frame_orig, ""+countToPicture.time,
+                                new Point(300, 400),1, 10,
+                                new Scalar(0, 0, 0), 30);
+                        Imgproc.putText(frame_orig, ""+countToPicture.time,
+                                new Point(300, 400),1, 10,
+                                new Scalar(255, 0, 0), 15);
+                        if (System.currentTimeMillis()-countToPicture.elapsedTime>1000 && countToPicture.time>0) {
+                            countToPicture.time-=1;
+                            countToPicture.elapsedTime= System.currentTimeMillis();
+                        }
+                        if (countToPicture.time<=0)
+                            countToPicture.start=false;
+                        break;
+                    }
+
                     faceRecognizerObj.saveFace(frame,
                             tfliteDetections.get(i).left,
                             tfliteDetections.get(i).right,
@@ -411,7 +447,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 }
                 else   // Facial recognition
                 {
-                    FacialIdentity identified =  faceRecognizerObj.RecognizeFace(frame,
+
+                   FacialIdentity identified =  faceRecognizerObj.RecognizeFace(frame,
                             tfliteDetections.get(i).left,
                             tfliteDetections.get(i).right,
                             tfliteDetections.get(i).top,
