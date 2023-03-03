@@ -34,7 +34,7 @@ public class TfLiteFaceRecognizer {
     private final String[] LABELS = {"Human", "Face", "Hand"};
     private final int NUM_THREADS = 4;
     private boolean WITH_NNAPI = true;
-    private boolean WITH_GPU = false;
+    private boolean WITH_GPU = true;
     private boolean WITH_DSP = false;
     //Face embedding
     private float[][] embeedings;

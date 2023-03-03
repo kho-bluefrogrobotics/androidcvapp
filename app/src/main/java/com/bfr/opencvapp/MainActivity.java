@@ -68,6 +68,7 @@ import com.bfr.buddysdk.sdk.BuddySDK;
 import com.bfr.opencvapp.grafcet.*;
 import com.bfr.opencvapp.utils.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteFaceRecognizer;
+import com.bfr.opencvapp.utils.TfLiteReIdentifier;
 import com.google.mlkit.vision.face.Face;
 
 
@@ -79,7 +80,7 @@ import org.tensorflow.lite.gpu.GpuDelegate;
 
 public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
-    private static final String TAG = "FaceRecognizerSface_app";
+    private static final String TAG = "FaceReidentifier_app";
 
     private CameraBridgeViewBase mOpenCvCameraView;
 
@@ -94,7 +95,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     //********************  image ***************************
 
     //Video capture
-    Mat frame_orig, frame;
+    Mat frame;
     // Parameters for Base facial detection
     final double THRESHOLD = 0.6;
 
@@ -350,7 +351,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             e.printStackTrace();
         }
 
-        frame_orig= new Mat();
         frame = new Mat();
         // init face detector
         multiDetector = new MultiDetector(context);
@@ -370,13 +370,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
         // cature frame from camera
-        frame_orig = inputFrame.rgba();
+        frame = inputFrame.rgba();
 
-        int cols = frame_orig.cols();
-        int rows = frame_orig.rows();
+
 
         // resize
-        Imgproc.resize(frame_orig, frame, new Size(640,480));
+//        Imgproc.resize(frame_orig, frame, new Size(640,480));
+
+        int cols = frame.cols();
+        int rows = frame.rows();
 
         if (!started)
             return frame;
@@ -395,7 +397,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Bitmap bitmapImagefull = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(resizedFrame, bitmapImagefull);
 
-        //Face detection
+        //Human detection
         tfliteDetections = multiDetector.recognizeImage(bitmapImagefull);
         Log.i(TAG, "elapsed time face detect with tflite : " + (System.currentTimeMillis()-elapsedTime)  );
             elapsedTime = System.currentTimeMillis();
@@ -403,88 +405,68 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         for (int i = 0; i < tfliteDetections.size(); ++i) {
         double confidence = tfliteDetections.get(i).confidence;
         double detectedClass = tfliteDetections.get(i).getDetectedClass();
-        if (confidence > THRESHOLD && detectedClass == 1 ) {
+        if (confidence > THRESHOLD && detectedClass == 0 ) {
 
                 if(isSavingFace)
                 {
-                    if(countToPicture.start)
-                    {
-                        Imgproc.putText(frame_orig, "Placez-vous en face",
-                                new Point(150, 200),1, 3,
-                                new Scalar(0, 0, 0), 10);
-                        Imgproc.putText(frame_orig, "Placez-vous en face",
-                                new Point(150, 200),1, 3,
-                                new Scalar(0, 250, 0), 4);
-                        Imgproc.putText(frame_orig, "de la camera",
-                                new Point(150, 250),1, 3,
-                                new Scalar(0, 0, 0), 10);
-                        Imgproc.putText(frame_orig, "de la camera",
-                                new Point(150, 250),1, 3,
-                                new Scalar(0, 250, 0), 4);
 
-                        Imgproc.putText(frame_orig, ""+countToPicture.time,
-                                new Point(300, 400),1, 10,
-                                new Scalar(0, 0, 0), 30);
-                        Imgproc.putText(frame_orig, ""+countToPicture.time,
-                                new Point(300, 400),1, 10,
-                                new Scalar(255, 0, 0), 15);
-                        if (System.currentTimeMillis()-countToPicture.elapsedTime>1000 && countToPicture.time>0) {
-                            countToPicture.time-=1;
-                            countToPicture.elapsedTime= System.currentTimeMillis();
-                        }
-                        if (countToPicture.time<=0)
-                            countToPicture.start=false;
-                        break;
-                    }
-
-                    faceRecognizerObj.saveFace(frame,
-                            tfliteDetections.get(i).left,
-                            tfliteDetections.get(i).right,
-                            tfliteDetections.get(i).top,
-                            tfliteDetections.get(i).bottom,
-                            personNameExitText.getText().toString()
-                            );
 
                     //reset
                     isSavingFace=false;
 
-                    //display UI
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(getApplicationContext(), "*** SAVED Face: " + personNameExitText.getText().toString().toUpperCase() ,
-                                    Toast.LENGTH_LONG).show();
-                            saveCheckbox.setChecked(false);
-                           }
-                    }); // end UI
+
 
                 }
                 else   // Facial recognition
                 {
 
-                   FacialIdentity identified =  faceRecognizerObj.RecognizeFace(frame,
-                            tfliteDetections.get(i).left,
-                            tfliteDetections.get(i).right,
-                            tfliteDetections.get(i).top,
-                           tfliteDetections.get(i).bottom);
+                    int left   = (int)(tfliteDetections.get(i).left * cols);
+                    int top    = (int)(tfliteDetections.get(i).top * rows);
+                    int right  = (int)(tfliteDetections.get(i).right * cols);
+                    int bottom = (int)(tfliteDetections.get(i).bottom* rows);
+
+
+
+                    //crop image around detection
+                    float MARGIN_FACTOR = 0.05f;
+                    Log.i(TAG, "Cropping from detection: "
+                                    + "x=" + Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) )
+                            + "y=" + Math.max(top, (int)(top- MARGIN_FACTOR *(bottom-top)) )
+                    +"height="+((int)(right-left)+(int)(2* MARGIN_FACTOR *(right-left)))
+                    +"width="+((int)(bottom-top) + (int)(MARGIN_FACTOR *(bottom-top)))
+                            );
+
+                    Rect faceROI= new Rect( Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
+                            Math.max(top, (int)(top- MARGIN_FACTOR *(bottom-top)) ),
+                            (right-left),
+                            (bottom-top) );
+                    Mat faceMat = frame.submat(faceROI);
+
+                    ////////////////////////////// face orientation
+                    //convert to bitmap
+                    Mat resizedFaceFrame = new Mat();
+                    Imgproc.resize(faceMat, resizedFaceFrame, new Size(256,128));
+                    Bitmap bitmapImage = Bitmap.createBitmap(resizedFaceFrame.cols(), resizedFaceFrame.rows(), Bitmap.Config.ARGB_8888);
+                    Utils.matToBitmap(resizedFaceFrame, bitmapImage);
+                    TfLiteReIdentifier mytfliterecog = new TfLiteReIdentifier(context);
+                    elapsedTime = System.currentTimeMillis();
+                    mytfliterecog.recognizeImage(bitmapImage);
+                    Log.i(TAG, "elapsed time calc embedding tflite: " + (System.currentTimeMillis()-elapsedTime));
+                    elapsedTime = System.currentTimeMillis();
+
 
                     // for display only
+                    cols = frame.cols();
+                    rows = frame.rows();
+
                     left = (int)(tfliteDetections.get(i).left * cols);
                     top = (int)(tfliteDetections.get(i).top * rows);
                     right = (int)(tfliteDetections.get(i).right * cols);
                     bottom = (int)(tfliteDetections.get(i).bottom* rows);
 
-                    // Display name
-                    if(identified!=null){
-                        Imgproc.putText(frame_orig, identified.name.toUpperCase() + " "+String.format(java.util.Locale.US,"%.4f", identified.recogScore),
-                                new Point(left-2, top-12),1, 3,
-                                new Scalar(0, 0, 0), 5);
-                        Imgproc.putText(frame_orig, identified.name.toUpperCase() + " "+String.format(java.util.Locale.US,"%.4f", identified.recogScore),
-                                new Point(left-2, top-12),1, 3,
-                                new Scalar(0, 255, 0), 2);
-                    }
+
                     // Draw rectangle around detected face.
-                    Imgproc.rectangle(frame_orig, new Point(left, top), new Point(right, bottom),
+                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
                         new Scalar(0, 255, 0), 2);
 
 
@@ -503,7 +485,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             e.printStackTrace();
         }
         finally {
-            return frame_orig;
+            return frame;
         }
     } // end function
 
