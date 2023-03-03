@@ -34,7 +34,7 @@ public class MultiDetector {
     private final int PIXEL_SIZE = 3;
     //Empiric valules for Thres of acceptance
     private final float THRES_FACE = 0.5f;
-    private final float THRES_HUMAN = 0.6f;
+    private final float THRES_HUMAN = 0.7f;
     private final float THRES_HAND = 0.3f;
     private final String[] LABELS = {"Human", "Face", "Hand"};
     private final int NUM_THREADS = 4;
