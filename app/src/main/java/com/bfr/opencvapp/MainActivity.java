@@ -371,12 +371,14 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         // cature frame from camera
         frame_orig = inputFrame.rgba();
+        frame=frame_orig;
 
-        int cols = frame_orig.cols();
-        int rows = frame_orig.rows();
+
 
         // resize
         Imgproc.resize(frame_orig, frame, new Size(640,480));
+        int cols = frame_orig.cols();
+        int rows = frame_orig.rows();
 
         if (!started)
             return frame;
@@ -503,6 +505,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             e.printStackTrace();
         }
         finally {
+            // resize
+            Imgproc.resize(frame_orig, frame, new Size(800,600));
             return frame_orig;
         }
     } // end function

@@ -26,7 +26,7 @@ public class FaceRecognizer {
     private final String TAG = "FaceRecognizerSface";
 
     //
-    private final float MARGIN_FACTOR = 0.1f;
+    private final float MARGIN_FACTOR = 0.05f;
     // default file for storing identities
     private final String STORAGE_FILE = "/sdcard/identities.bin";
     //where to find the models
@@ -119,23 +119,33 @@ public class FaceRecognizer {
             return null;
         elapsedTime = System.currentTimeMillis();
         //crop image around face
+//        faceROI= new Rect(
+//                // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
+//                left,
+//                Math.max(top, (int)(top+ 0.5*MARGIN_FACTOR *(bottom-top)) ),
+//                //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
+//                right-left,
+//                (bottom-top) -(int)(MARGIN_FACTOR *(bottom-top)));
+//                //alternative to crop less: (int)(bottom-top));
+
         faceROI= new Rect(
                 // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
                 left,
-                Math.max(top, (int)(top+ 0.5*MARGIN_FACTOR *(bottom-top)) ),
+                top,
                 //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
-                (int)(right-left),
-                (int)(bottom-top) -(int)(MARGIN_FACTOR *(bottom-top)));
-                //alternative to crop less: (int)(bottom-top));
+                right-left,
+                (bottom-top) );
+
+
         faceMat = frame.submat(faceROI);
 
-        rotatedFace = faceMat.clone();
+//        rotatedFace = faceMat.clone();
 
         if(withPreprocess) {
             /*** face orientation*/
             //convert to bitmap
-            Bitmap bitmapImage = Bitmap.createBitmap(rotatedFace.cols(), rotatedFace.rows(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(rotatedFace, bitmapImage);
+            Bitmap bitmapImage = Bitmap.createBitmap(faceMat.cols(), faceMat.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(faceMat, bitmapImage);
             // detect-classify face
             Face detectedFace = mlKitFaceDetector.detectSingleFaceFromBitmap(bitmapImage);
 
@@ -146,15 +156,37 @@ public class FaceRecognizer {
                 Log.i(TAG, "error processing image with MLKit");
                 return null;
             }
+            //adjust crop
+            //crop image around face
+            Log.i("coucou", "face rect " + detectedFace.getBoundingBox().left
+            + " "+ detectedFace.getBoundingBox().right
+            + " " + detectedFace.getBoundingBox().top
+            + " " + detectedFace.getBoundingBox().bottom);
+
+            right = left + detectedFace.getBoundingBox().right;
+            left = left + detectedFace.getBoundingBox().left;
+            bottom = top + detectedFace.getBoundingBox().bottom + (int)(MARGIN_FACTOR *(bottom-top));
+            top = top + + detectedFace.getBoundingBox().top;
+
+            Rect newfaceROI= new Rect(
+                    // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
+                    left,
+                    top,
+                    //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
+                    right-left,
+                    (bottom-top) );
+
+            faceMat = frame.submat(newfaceROI);
+
             // image rotation
-            center.x = rotatedFace.cols() / 2;
-            center.y = rotatedFace.rows() / 2;
+            center.x = faceMat.cols() / 2;
+            center.y = faceMat.rows() / 2;
             angle = detectedFace.getHeadEulerAngleZ();
             mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
             // rotate
-            Imgproc.warpAffine(rotatedFace, rotatedFace, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
+            Imgproc.warpAffine(faceMat, faceMat, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
         }
-        return rotatedFace;
+        return faceMat;
     }
 
     /**
