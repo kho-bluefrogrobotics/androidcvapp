@@ -107,6 +107,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     // for saving face
     boolean isSavingFace = false;
+    boolean errorSavingFace = false;
     boolean started = false;
 
     // context
@@ -371,14 +372,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         // cature frame from camera
         frame_orig = inputFrame.rgba();
-        frame=frame_orig;
 
-
+        int cols = frame_orig.cols();
+        int rows = frame_orig.rows();
 
         // resize
         Imgproc.resize(frame_orig, frame, new Size(640,480));
-        int cols = frame_orig.cols();
-        int rows = frame_orig.rows();
+
 
         if (!started)
             return frame;
@@ -444,21 +444,76 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             tfliteDetections.get(i).right,
                             tfliteDetections.get(i).top,
                             tfliteDetections.get(i).bottom,
-                            personNameExitText.getText().toString()
-                            );
+                            personNameExitText.getText().toString(),
+                            new FaceRecognizer.IFaceRecogRsp() {
+                                @Override
+                                public void onSuccess(String success) {
+                                    //reset
+                                    isSavingFace=false;
 
-                    //reset
-                    isSavingFace=false;
+                                    //display UI
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Toast.makeText(getApplicationContext(), "*** SAVED Face: " + personNameExitText.getText().toString().toUpperCase() ,
+                                                    Toast.LENGTH_LONG).show();
+                                            saveCheckbox.setChecked(false);
+                                        }
+                                    }); // end UI
+                                }
 
-                    //display UI
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(getApplicationContext(), "*** SAVED Face: " + personNameExitText.getText().toString().toUpperCase() ,
-                                    Toast.LENGTH_LONG).show();
-                            saveCheckbox.setChecked(false);
-                           }
-                    }); // end UI
+                                @Override
+                                public void onFailed(String error) {
+                                    Log.e(TAG, "coucou ERROR : " + error);
+
+                                    errorSavingFace = true;
+                                    countToPicture.time = 5;
+                                    countToPicture.elapsedTime= System.currentTimeMillis();
+
+                                    //display UI
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Toast.makeText(getApplicationContext(), "ERROR !!! Please try again " ,
+                                                    Toast.LENGTH_LONG).show();
+                                            saveCheckbox.setChecked(false);
+                                            isSavingFace=false;
+                                        }
+                                    }); // end UI
+                                }
+                            }
+                    );
+
+
+                }
+                else if (errorSavingFace)
+                {
+                        Imgproc.putText(frame_orig, "Erreur merci",
+                                new Point(150, 200),1, 3,
+                                new Scalar(0, 0, 0), 10);
+                        Imgproc.putText(frame_orig, "Erreur merci",
+                                new Point(150, 200),1, 3,
+                                new Scalar(0, 250, 0), 4);
+                        Imgproc.putText(frame_orig, "de ressayer",
+                                new Point(150, 250),1, 3,
+                                new Scalar(0, 0, 0), 10);
+                        Imgproc.putText(frame_orig, "de ressayer",
+                                new Point(150, 250),1, 3,
+                                new Scalar(0, 250, 0), 4);
+
+                        Imgproc.putText(frame_orig, ""+countToPicture.time,
+                                new Point(300, 400),1, 10,
+                                new Scalar(0, 0, 0), 30);
+                        Imgproc.putText(frame_orig, ""+countToPicture.time,
+                                new Point(300, 400),1, 10,
+                                new Scalar(255, 0, 0), 15);
+                        if (System.currentTimeMillis()-countToPicture.elapsedTime>500 && countToPicture.time>0) {
+                            countToPicture.time-=1;
+                            countToPicture.elapsedTime= System.currentTimeMillis();
+                        }
+                        if (countToPicture.time<=0)
+                            errorSavingFace=false;
+                        break;
 
                 }
                 else   // Facial recognition
@@ -506,7 +561,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         }
         finally {
             // resize
-            Imgproc.resize(frame_orig, frame, new Size(800,600));
+//            Imgproc.resize(frame_orig, frame, new Size(800,600));
             return frame_orig;
         }
     } // end function

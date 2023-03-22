@@ -23,7 +23,12 @@ import java.util.Date;
 
 public class FaceRecognizer {
 
-    private final String TAG = "FaceRecognizerSface";
+    public interface IFaceRecogRsp {
+        void onSuccess(String success);
+        void onFailed(String error);
+    }
+
+    private final String TAG = "FaceRecognizerSfaceImpl";
 
     //
     private final float MARGIN_FACTOR = 0.05f;
@@ -36,13 +41,14 @@ public class FaceRecognizer {
     // Face recognition
     private FaceRecognizerSF faceRecognizer;
     Mat faceEmbedding;
-    Mat faceMat, rotatedFace;
-    Rect faceROI;
+    Mat faceMat, rotatedFace, croppedFace;
+    Rect faceROI, adjustedROI;
 
     // MLKit face detector
     private MLKitFaceDetector mlKitFaceDetector = new MLKitFaceDetector();
 
     // image rotation
+    int left, right, top, bottom;
     Point center = new Point();
     double angle = 0;
     Mat mapMatrix;
@@ -58,6 +64,7 @@ public class FaceRecognizer {
     //to debug
     double elapsedTime=0.0;
     public boolean withPreprocess=true;
+    boolean saving = false;
 
     public FaceRecognizer()
     {
@@ -74,6 +81,8 @@ public class FaceRecognizer {
         // Load face recog model
         faceRecognizer = FaceRecognizerSF.create(DIR + MODEL_NAME,
                 "");
+
+        croppedFace = new Mat();
 
     } // end constructor
 
@@ -105,13 +114,19 @@ public class FaceRecognizer {
      */
     private Mat cropAndAlign(Mat frame, float leftIn, float rightIn, float topIn, float bottomIn)
     {
+
+        try{
+
+
+
+
         int cols = frame.cols();
         int rows = frame.rows();
 
-        int left   = (int)(leftIn * cols);
-        int top    = (int)(topIn * rows);
-        int right  = (int)(rightIn * cols);
-        int bottom = (int)(bottomIn* rows);
+        left   = (int)(leftIn * cols);
+        top    = (int)(topIn * rows);
+        right  = (int)(rightIn * cols);
+        bottom = (int)(bottomIn* rows);
 
         //If face touches the margin, skip -> we need a fully visible face for recognition
         if(left<10 || top <10 || right> frame.cols()-10 || bottom > frame.rows()-10)
@@ -119,27 +134,23 @@ public class FaceRecognizer {
             return null;
         elapsedTime = System.currentTimeMillis();
         //crop image around face
-//        faceROI= new Rect(
-//                // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
-//                left,
-//                Math.max(top, (int)(top+ 0.5*MARGIN_FACTOR *(bottom-top)) ),
-//                //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
-//                right-left,
-//                (bottom-top) -(int)(MARGIN_FACTOR *(bottom-top)));
-//                //alternative to crop less: (int)(bottom-top));
-
         faceROI= new Rect(
                 // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
-                left,
-                top,
+                Math.max(0,left ) ,
+                Math.max(0,top),
                 //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
-                right-left,
-                (bottom-top) );
+                Math.min(frame.cols()-left,right-left),
+                Math.min(frame.rows()-top, bottom-top) );
 
+        if(saving)
+            Log.i(TAG, "1st crop : " + left + " " + right + " " + top + " "  + bottom);
 
         faceMat = frame.submat(faceROI);
-
-//        rotatedFace = faceMat.clone();
+        //TODEBUG only
+        Mat toSave = new Mat();
+        Imgproc.cvtColor(faceMat, toSave, Imgproc.COLOR_RGB2BGR);
+        if(saving)
+            Imgcodecs.imwrite("/sdcard/faceReco_"+ currentDateandTime+"_1stfacemat"+".jpg", toSave);
 
         if(withPreprocess) {
             /*** face orientation*/
@@ -156,37 +167,62 @@ public class FaceRecognizer {
                 Log.i(TAG, "error processing image with MLKit");
                 return null;
             }
-            //adjust crop
-            //crop image around face
-            Log.i("coucou", "face rect " + detectedFace.getBoundingBox().left
-            + " "+ detectedFace.getBoundingBox().right
-            + " " + detectedFace.getBoundingBox().top
-            + " " + detectedFace.getBoundingBox().bottom);
 
+            if(saving)
+                Log.i(TAG, "MLKit crop : " + detectedFace.getBoundingBox().left + " "
+                    + detectedFace.getBoundingBox().right + " "
+                    + detectedFace.getBoundingBox().top + " "
+                    + detectedFace.getBoundingBox().bottom);
+
+            //adjust crop with actual found face
             right = left + detectedFace.getBoundingBox().right;
             left = left + detectedFace.getBoundingBox().left;
+            //empiric added margin to compensate tendencies of the face detector
             bottom = top + detectedFace.getBoundingBox().bottom + (int)(MARGIN_FACTOR *(bottom-top));
             top = top + + detectedFace.getBoundingBox().top;
 
-            Rect newfaceROI= new Rect(
-                    // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
-                    left,
-                    top,
+            if (saving)
+                Log.i(TAG, "2nd crop : " + left + " " + right + " " + top + " "  + bottom);
+            adjustedROI= new Rect(
+                    Math.max(0,left ) ,
+                    Math.max(0,top),
                     //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
-                    right-left,
-                    (bottom-top) );
+                    Math.min(frame.cols()-left,right-left),
+                    Math.min(frame.rows()-top, bottom-top) );
 
-            faceMat = frame.submat(newfaceROI);
+            rotatedFace = frame.submat(adjustedROI).clone();
+
+            //TODEBUG only
+            Mat toSave2 = new Mat();
+            Imgproc.cvtColor(rotatedFace, toSave2, Imgproc.COLOR_RGB2BGR);
+            if(saving)
+                Imgcodecs.imwrite("/sdcard/faceReco_"+ currentDateandTime+"_rotatedFace"+".jpg", toSave2);
 
             // image rotation
-            center.x = faceMat.cols() / 2;
-            center.y = faceMat.rows() / 2;
+            center.x = rotatedFace.cols() / 2;
+            center.y = rotatedFace.rows() / 2;
             angle = detectedFace.getHeadEulerAngleZ();
             mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
             // rotate
-            Imgproc.warpAffine(faceMat, faceMat, mapMatrix, new Size(faceMat.cols(), faceMat.rows()));
+            Imgproc.warpAffine(rotatedFace, rotatedFace, mapMatrix, new Size(rotatedFace.cols(), rotatedFace.rows()));
+            Log.i(TAG, "elapsed time rotating : " + (System.currentTimeMillis() - elapsedTime));
+
+            //TODEBUG only
+            Mat toSave3 = new Mat();
+            Imgproc.cvtColor(rotatedFace, toSave3, Imgproc.COLOR_RGB2BGR);
+            if(saving)
+                Imgcodecs.imwrite("/sdcard/faceReco_"+ currentDateandTime+"_2ndrotatedFace"+".jpg", toSave3);
+
         }
-        return faceMat;
+        return rotatedFace;
+
+        } catch (Exception e)
+        {
+            Log.e(TAG, "error during crop: " + left + " " + right + " " + top + " " + bottom + " "
+                    + "\n" + frame.cols() + " " + frame.rows() +"\n"
+                    + Log.getStackTraceString(e));
+            return null;
+        }
     }
 
     /**
@@ -201,11 +237,17 @@ public class FaceRecognizer {
      */
     public FacialIdentity RecognizeFace(Mat frame, float leftIn, float rightIn, float topIn, float bottomIn)
     {
+
+        saving = false;
         elapsedTime = System.currentTimeMillis();
 
-        faceRecognizer.feature(
-                cropAndAlign(frame, leftIn, rightIn, topIn, bottomIn),
+        croppedFace = cropAndAlign(frame, leftIn, rightIn, topIn, bottomIn);
+        if (croppedFace!=null)
+            faceRecognizer.feature(
+                croppedFace,
                 faceEmbedding);
+        else
+            return null;
 
         Log.i(TAG, "elapsed time calc embedding : " + (System.currentTimeMillis()-elapsedTime)
                 +"\n " + faceEmbedding.size() +" type " + faceEmbedding.depth());
@@ -262,9 +304,9 @@ public class FaceRecognizer {
      * @param name name to link to the face
      * @return null
      */
-    public void saveFace(Mat frame, float leftIn, float rightIn, float topIn, float bottomIn, String name)
+    public void saveFace(Mat frame, float leftIn, float rightIn, float topIn, float bottomIn, String name, IFaceRecogRsp response)
     {
-        saveFace(frame, leftIn, rightIn, topIn, bottomIn, name, STORAGE_FILE);
+        saveFace(frame, leftIn, rightIn, topIn, bottomIn, name, STORAGE_FILE, response);
     }
 
     /**
@@ -278,11 +320,22 @@ public class FaceRecognizer {
      * @param storingFile where to store all the identities
      * @return null
      */
-    public void saveFace(Mat frame, float leftIn, float rightIn, float topIn, float bottomIn, String name, String storingFile)
+    public void saveFace(Mat frame, float leftIn, float rightIn, float topIn, float bottomIn, String name, String storingFile, IFaceRecogRsp response)
     {
-        faceRecognizer.feature(
-                cropAndAlign(frame, leftIn, rightIn, topIn, bottomIn),
-                faceEmbedding);
+
+        saving = true;
+        croppedFace = cropAndAlign(frame, leftIn, rightIn, topIn, bottomIn);
+        if (croppedFace!=null)
+            faceRecognizer.feature(
+                    croppedFace,
+                    faceEmbedding);
+        else
+        {
+            response.onFailed("Failed saving face: Failing to crop");
+            return;
+        }
+
+
 
         Log.i(TAG, "elapsed time calc embedding : " + (System.currentTimeMillis()-elapsedTime)
                 +"\n " + faceEmbedding.size() +" type " + faceEmbedding.depth());
@@ -298,9 +351,11 @@ public class FaceRecognizer {
             @Override
             public void run() {
                 idDatabase.saveToStorage(storingFile);
+                response.onSuccess("Identity successfully saved in file " + storingFile);
+
                 //TODEBUG only
                 Mat toSave = new Mat();
-                Imgproc.cvtColor(faceMat, toSave, Imgproc.COLOR_RGB2BGR);
+                Imgproc.cvtColor(rotatedFace, toSave, Imgproc.COLOR_RGB2BGR);
                 Imgcodecs.imwrite("/sdcard/faceReco_"+ name+"_"+currentDateandTime+".jpg", toSave);
             }
         });
