@@ -16,6 +16,8 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.FaceRecognizerSF;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -36,8 +38,8 @@ public class FaceRecognizer {
     private final String STORAGE_FILE = "/sdcard/identities.bin";
     //where to find the models
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
-    private final String MODEL_NAME = "/face_recognition_sface_2021dec.onnx";
-//    private final String MODEL_NAME = "face_recognition_sface_2021dec-act_int8-wt_int8-quantized.onnx";
+//    private final String MODEL_NAME = "/face_recognition_sface_2021dec.onnx";
+    private final String MODEL_NAME = "face_recognition_sface_2021dec-act_int8-wt_int8-quantized.onnx";
     // Face recognition
     private FaceRecognizerSF faceRecognizer;
     Mat faceEmbedding;
@@ -45,6 +47,7 @@ public class FaceRecognizer {
     Rect faceROI, adjustedROI;
 
     // MLKit face detector
+    Bitmap bitmapImage;
     private MLKitFaceDetector mlKitFaceDetector = new MLKitFaceDetector();
 
     // image rotation
@@ -65,6 +68,27 @@ public class FaceRecognizer {
     double elapsedTime=0.0;
     public boolean withPreprocess=true;
     boolean saving = false;
+
+
+    Mat toSave;
+    Thread tbitmpa = new Thread(new Runnable() {
+        @Override
+        public void run() {
+            try (FileOutputStream out = new FileOutputStream("/sdcard/faceReco_"+ currentDateandTime+"_bitmap"+".bmp")) {
+                bitmapImage.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+                // PNG is a lossless format, the compression factor (100) is ignored
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    });
+
+    Thread save1 = new Thread(new Runnable() {
+        @Override
+        public void run() {
+            Imgcodecs.imwrite("/sdcard/faceReco_"+ currentDateandTime+"_1stfacemat"+".jpg", toSave);
+        }
+    });
 
     public FaceRecognizer()
     {
@@ -117,21 +141,6 @@ public class FaceRecognizer {
 
         try{
 
-
-
-
-        int cols = frame.cols();
-        int rows = frame.rows();
-
-        left   = (int)(leftIn * cols);
-        top    = (int)(topIn * rows);
-        right  = (int)(rightIn * cols);
-        bottom = (int)(bottomIn* rows);
-
-        //If face touches the margin, skip -> we need a fully visible face for recognition
-        if(left<10 || top <10 || right> frame.cols()-10 || bottom > frame.rows()-10)
-            // take next detected face
-            return null;
         elapsedTime = System.currentTimeMillis();
         //crop image around face
         faceROI= new Rect(
@@ -147,16 +156,19 @@ public class FaceRecognizer {
 
         faceMat = frame.submat(faceROI);
         //TODEBUG only
-        Mat toSave = new Mat();
+        toSave = new Mat();
         Imgproc.cvtColor(faceMat, toSave, Imgproc.COLOR_RGB2BGR);
         if(saving)
-            Imgcodecs.imwrite("/sdcard/faceReco_"+ currentDateandTime+"_1stfacemat"+".jpg", toSave);
+            save1.start();
 
         if(withPreprocess) {
             /*** face orientation*/
             //convert to bitmap
-            Bitmap bitmapImage = Bitmap.createBitmap(faceMat.cols(), faceMat.rows(), Bitmap.Config.ARGB_8888);
+            bitmapImage = Bitmap.createBitmap(faceMat.cols(), faceMat.rows(), Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(faceMat, bitmapImage);
+            if(saving)
+                tbitmpa.start();
+
             // detect-classify face
             Face detectedFace = mlKitFaceDetector.detectSingleFaceFromBitmap(bitmapImage);
 
@@ -174,11 +186,13 @@ public class FaceRecognizer {
                     + detectedFace.getBoundingBox().top + " "
                     + detectedFace.getBoundingBox().bottom);
 
-            //adjust crop with actual found face
-            right = left + detectedFace.getBoundingBox().right;
+            //if face found by MLKit smaller adjust crop with actual found face if
+            if(detectedFace.getBoundingBox().right <right-left)
+                right = left + detectedFace.getBoundingBox().right;
             left = left + detectedFace.getBoundingBox().left;
-            //empiric added margin to compensate tendencies of the face detector
-            bottom = top + detectedFace.getBoundingBox().bottom + (int)(MARGIN_FACTOR *(bottom-top));
+            if(detectedFace.getBoundingBox().bottom <bottom-top)
+                //empiric added margin to compensate tendencies of the face detector
+                bottom = top + detectedFace.getBoundingBox().bottom + (int)(MARGIN_FACTOR *(bottom-top));
             top = top + + detectedFace.getBoundingBox().top;
 
             if (saving)
@@ -324,6 +338,20 @@ public class FaceRecognizer {
     {
 
         saving = true;
+
+        left   = (int)(leftIn * frame.cols());
+        top    = (int)(topIn * frame.rows());
+        right  = (int)(rightIn * frame.cols());
+        bottom = (int)(bottomIn* frame.rows());
+
+        //If face touches the margin, skip -> we need a fully visible face for recognition
+        if(left<10 || top <10 || right> frame.cols()-10 || bottom > frame.rows()-10)
+        {
+            // take next detected face
+            response.onFailed("Failed saving face: the face must not touch the borders for a correct recognition");
+            return;
+        }
+
         croppedFace = cropAndAlign(frame, leftIn, rightIn, topIn, bottomIn);
         if (croppedFace!=null)
             faceRecognizer.feature(
@@ -334,7 +362,6 @@ public class FaceRecognizer {
             response.onFailed("Failed saving face: Failing to crop");
             return;
         }
-
 
 
         Log.i(TAG, "elapsed time calc embedding : " + (System.currentTimeMillis()-elapsedTime)
@@ -350,8 +377,18 @@ public class FaceRecognizer {
         Thread savingThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                idDatabase.saveToStorage(storingFile);
-                response.onSuccess("Identity successfully saved in file " + storingFile);
+                try {
+                    idDatabase.saveToStorage(storingFile);
+                    response.onSuccess("Identity successfully saved in file " + storingFile);
+                }
+                catch (IOException e)
+                {
+                    response.onFailed("Error saving file with identities");
+                }
+                catch (Exception e)
+                {
+                    response.onFailed("Error saving file with identities: " + e.toString());
+                }
 
                 //TODEBUG only
                 Mat toSave = new Mat();
@@ -429,9 +466,9 @@ public class FaceRecognizer {
      * @param idx number of first k candidates
      * @return nothing
      */
-    public void removeSavedIdentity(int idx)
+    public void removeSavedIdentity(int idx, IFaceRecogRsp response)
     {
-        removeSavedIdentity(idx, STORAGE_FILE);
+        removeSavedIdentity(idx, STORAGE_FILE, response);
     } // end remove identity
 
 
@@ -442,7 +479,7 @@ public class FaceRecognizer {
      * @param storageFile custom file to save on device
      * @return nothing
      */
-    public void removeSavedIdentity(int idx, String storageFile)
+    public void removeSavedIdentity(int idx, String storageFile, IFaceRecogRsp response)
     {
         try{
             // always leave at least one identity in the list
@@ -453,7 +490,19 @@ public class FaceRecognizer {
                 Thread savingThread = new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        idDatabase.saveToStorage(storageFile);
+
+                        try {
+                            idDatabase.saveToStorage(storageFile);
+                            response.onSuccess("Identity successfully removed in file");
+                        }
+                        catch (IOException e)
+                        {
+                            response.onFailed("Error saving file with identities");
+                        }
+                        catch (Exception e)
+                        {
+                            response.onFailed("Error saving file with identities: " + e.toString());
+                        }
                     }
                 });
                 savingThread.start();
@@ -464,6 +513,7 @@ public class FaceRecognizer {
         } catch (Exception e)
         {
             Log.i(TAG, "Error removing saved identity " + e);
+            response.onFailed("Error removing identities: " + e.toString());
         }
 
     } // end remove identity

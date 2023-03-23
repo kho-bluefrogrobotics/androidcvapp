@@ -73,8 +73,7 @@ public class IdentitiesDatabase implements java.io.Serializable{
     }// end loadfromstorage
 
 
-    public void saveToStorage(String fileName)
-    {
+    public void saveToStorage(String fileName) throws Exception {
         try {
                 //reset
                 serializableIdentities.clear();
@@ -103,9 +102,16 @@ public class IdentitiesDatabase implements java.io.Serializable{
                 fileOut.close();
                 System.out.printf("Serialized data is saved in " + fileName);
 
-            } catch (Exception e) {
-                Log.e("IdentityDatabase", "Error during saving identities: " + Log.getStackTraceString(e));
             }
+        catch (IOException e) {
+                Log.e("IdentityDatabase", "Error during saving identities: " + Log.getStackTraceString(e));
+                throw new IOException("Error during saving identities");
+            }
+        catch (Exception e)
+        {
+            Log.e("IdentityDatabase", "Error during saving identities: " + Log.getStackTraceString(e));
+            throw new Exception("Error during saving identities");
+        }
 
     }
 

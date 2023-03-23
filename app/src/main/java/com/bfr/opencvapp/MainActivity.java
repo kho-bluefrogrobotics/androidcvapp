@@ -276,7 +276,18 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             @Override
             public void onClick(View v) {
                 try{
-                    faceRecognizerObj.removeSavedIdentity(Integer.parseInt( personNameExitText.getText().toString() ) );
+                    faceRecognizerObj.removeSavedIdentity(Integer.parseInt(personNameExitText.getText().toString()),
+                            new FaceRecognizer.IFaceRecogRsp() {
+                                @Override
+                                public void onSuccess(String success) {
+
+                                }
+
+                                @Override
+                                public void onFailed(String error) {
+
+                                }
+                            });
                 }
                 catch(Exception e)
                 {
@@ -377,7 +388,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         int rows = frame_orig.rows();
 
         // resize
-        Imgproc.resize(frame_orig, frame, new Size(640,480));
+        Imgproc.resize(frame_orig, frame, new Size(1024,768));
 
 
         if (!started)
@@ -411,32 +422,55 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 {
                     if(countToPicture.start)
                     {
-                        Imgproc.putText(frame_orig, "Placez-vous en face",
-                                new Point(150, 200),1, 3,
-                                new Scalar(0, 0, 0), 10);
-                        Imgproc.putText(frame_orig, "Placez-vous en face",
-                                new Point(150, 200),1, 3,
-                                new Scalar(0, 250, 0), 4);
-                        Imgproc.putText(frame_orig, "de la camera",
-                                new Point(150, 250),1, 3,
-                                new Scalar(0, 0, 0), 10);
-                        Imgproc.putText(frame_orig, "de la camera",
-                                new Point(150, 250),1, 3,
-                                new Scalar(0, 250, 0), 4);
+                        //if  face large enough
+                        float wThres= 120f/1024f;
+                        if(tfliteDetections.get(i).right-tfliteDetections.get(i).left>wThres)
+                        {
+                            Imgproc.putText(frame_orig, "Placez-vous en face ",
+                                    new Point(150, 200),1, 3,
+                                    new Scalar(0, 0, 0), 10);
+                            Imgproc.putText(frame_orig, "Placez-vous en face"+ (tfliteDetections.get(i).right-tfliteDetections.get(i).left),
+                                    new Point(150, 200),1, 3,
+                                    new Scalar(0, 250, 0), 4);
+                            Imgproc.putText(frame_orig, "de la camera" ,
+                                    new Point(150, 250),1, 3,
+                                    new Scalar(0, 0, 0), 10);
+                            Imgproc.putText(frame_orig, "de la camera" + " " + wThres,
+                                    new Point(150, 250),1, 3,
+                                    new Scalar(0, 250, 0), 4);
 
-                        Imgproc.putText(frame_orig, ""+countToPicture.time,
-                                new Point(300, 400),1, 10,
-                                new Scalar(0, 0, 0), 30);
-                        Imgproc.putText(frame_orig, ""+countToPicture.time,
-                                new Point(300, 400),1, 10,
-                                new Scalar(255, 0, 0), 15);
-                        if (System.currentTimeMillis()-countToPicture.elapsedTime>1000 && countToPicture.time>0) {
-                            countToPicture.time-=1;
-                            countToPicture.elapsedTime= System.currentTimeMillis();
+                            Imgproc.putText(frame_orig, ""+countToPicture.time,
+                                    new Point(300, 400),1, 10,
+                                    new Scalar(0, 0, 0), 30);
+                            Imgproc.putText(frame_orig, ""+countToPicture.time,
+                                    new Point(300, 400),1, 10,
+                                    new Scalar(255, 0, 0), 15);
+                            if (System.currentTimeMillis()-countToPicture.elapsedTime>1000 && countToPicture.time>0) {
+                                countToPicture.time-=1;
+                                countToPicture.elapsedTime= System.currentTimeMillis();
+                            }
+                            if (countToPicture.time<=0)
+                                countToPicture.start=false;
+                            break;
                         }
-                        if (countToPicture.time<=0)
-                            countToPicture.start=false;
-                        break;
+                        else // face not big enough
+                        {
+                            Imgproc.putText(frame_orig, "Approchez vous",
+                                    new Point(150, 200),1, 3,
+                                    new Scalar(0, 0, 0), 10);
+                            Imgproc.putText(frame_orig, "Approchez vous",
+                                    new Point(150, 200),1, 3,
+                                    new Scalar(0, 250, 0), 4);
+                            Imgproc.putText(frame_orig, "du robot",
+                                    new Point(150, 250),1, 3,
+                                    new Scalar(0, 0, 0), 10);
+                            Imgproc.putText(frame_orig, "du robot",
+                                    new Point(150, 250),1, 3,
+                                    new Scalar(0, 250, 0), 4);
+                            break;
+                        }
+
+
                     }
 
                     faceRecognizerObj.saveFace(frame,
