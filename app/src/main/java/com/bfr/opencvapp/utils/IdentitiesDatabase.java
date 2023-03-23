@@ -30,8 +30,7 @@ public class IdentitiesDatabase implements java.io.Serializable{
     }
 
 
-    public void loadFromStorage(String fileName)
-    {
+    public void loadFromStorage(String fileName) throws Exception {
         try {
             //reset
             serializableIdentities.clear();
@@ -68,6 +67,8 @@ public class IdentitiesDatabase implements java.io.Serializable{
             identities.add(new FacialIdentity(
                     "UNKNOWN",
                     Mat.zeros(1,128, CV_32F)));
+
+            throw new Exception("Error during loading identities: " + e);
         }
 
     }// end loadfromstorage
@@ -100,17 +101,11 @@ public class IdentitiesDatabase implements java.io.Serializable{
                 out.writeObject(serializableIdentities);
                 out.close();
                 fileOut.close();
-                System.out.printf("Serialized data is saved in " + fileName);
-
-            }
-        catch (IOException e) {
-                Log.e("IdentityDatabase", "Error during saving identities: " + Log.getStackTraceString(e));
-                throw new IOException("Error during saving identities");
             }
         catch (Exception e)
         {
             Log.e("IdentityDatabase", "Error during saving identities: " + Log.getStackTraceString(e));
-            throw new Exception("Error during saving identities");
+            throw new Exception("Error during saving identities: " + e);
         }
 
     }

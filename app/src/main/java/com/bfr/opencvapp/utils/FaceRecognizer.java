@@ -138,97 +138,100 @@ public class FaceRecognizer {
      */
     private Mat cropAndAlign(Mat frame, float leftIn, float rightIn, float topIn, float bottomIn)
     {
-
         try{
 
-        elapsedTime = System.currentTimeMillis();
-        //crop image around face
-        faceROI= new Rect(
-                // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
-                Math.max(0,left ) ,
-                Math.max(0,top),
-                //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
-                Math.min(frame.cols()-left,right-left),
-                Math.min(frame.rows()-top, bottom-top) );
-
-        if(saving)
-            Log.i(TAG, "1st crop : " + left + " " + right + " " + top + " "  + bottom);
-
-        faceMat = frame.submat(faceROI);
-        //TODEBUG only
-        toSave = new Mat();
-        Imgproc.cvtColor(faceMat, toSave, Imgproc.COLOR_RGB2BGR);
-        if(saving)
-            save1.start();
-
-        if(withPreprocess) {
-            /*** face orientation*/
-            //convert to bitmap
-            bitmapImage = Bitmap.createBitmap(faceMat.cols(), faceMat.rows(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(faceMat, bitmapImage);
-            if(saving)
-                tbitmpa.start();
-
-            // detect-classify face
-            Face detectedFace = mlKitFaceDetector.detectSingleFaceFromBitmap(bitmapImage);
-
-            Log.i(TAG, "elapsed time face MLKit : " + (System.currentTimeMillis() - elapsedTime));
             elapsedTime = System.currentTimeMillis();
-
-            if (detectedFace == null) {
-                Log.i(TAG, "error processing image with MLKit");
-                return null;
-            }
-
-            if(saving)
-                Log.i(TAG, "MLKit crop : " + detectedFace.getBoundingBox().left + " "
-                    + detectedFace.getBoundingBox().right + " "
-                    + detectedFace.getBoundingBox().top + " "
-                    + detectedFace.getBoundingBox().bottom);
-
-            //if face found by MLKit smaller adjust crop with actual found face if
-            if(detectedFace.getBoundingBox().right <right-left)
-                right = left + detectedFace.getBoundingBox().right;
-            left = left + detectedFace.getBoundingBox().left;
-            if(detectedFace.getBoundingBox().bottom <bottom-top)
-                //empiric added margin to compensate tendencies of the face detector
-                bottom = top + detectedFace.getBoundingBox().bottom + (int)(MARGIN_FACTOR *(bottom-top));
-            top = top + + detectedFace.getBoundingBox().top;
-
-            if (saving)
-                Log.i(TAG, "2nd crop : " + left + " " + right + " " + top + " "  + bottom);
-            adjustedROI= new Rect(
+            //crop image around face
+            faceROI= new Rect(
+                    // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
                     Math.max(0,left ) ,
                     Math.max(0,top),
                     //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
                     Math.min(frame.cols()-left,right-left),
                     Math.min(frame.rows()-top, bottom-top) );
 
-            rotatedFace = frame.submat(adjustedROI).clone();
+            if(saving)
+                Log.i(TAG, "1st crop : " + left + " " + right + " " + top + " "  + bottom);
+
+            faceMat = frame.submat(faceROI);
 
             //TODEBUG only
-            Mat toSave2 = new Mat();
-            Imgproc.cvtColor(rotatedFace, toSave2, Imgproc.COLOR_RGB2BGR);
+            toSave = new Mat();
+            Imgproc.cvtColor(faceMat, toSave, Imgproc.COLOR_RGB2BGR);
             if(saving)
-                Imgcodecs.imwrite("/sdcard/faceReco_"+ currentDateandTime+"_rotatedFace"+".jpg", toSave2);
+                save1.start();
 
-            // image rotation
-            center.x = rotatedFace.cols() / 2;
-            center.y = rotatedFace.rows() / 2;
-            angle = detectedFace.getHeadEulerAngleZ();
-            mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
-            // rotate
-            Imgproc.warpAffine(rotatedFace, rotatedFace, mapMatrix, new Size(rotatedFace.cols(), rotatedFace.rows()));
-            Log.i(TAG, "elapsed time rotating : " + (System.currentTimeMillis() - elapsedTime));
+            if(withPreprocess) {
+                /*** face orientation*/
+                //convert to bitmap
+                bitmapImage = Bitmap.createBitmap(faceMat.cols(), faceMat.rows(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(faceMat, bitmapImage);
+                if(saving)
+                    tbitmpa.start();
 
-            //TODEBUG only
-            Mat toSave3 = new Mat();
-            Imgproc.cvtColor(rotatedFace, toSave3, Imgproc.COLOR_RGB2BGR);
-            if(saving)
-                Imgcodecs.imwrite("/sdcard/faceReco_"+ currentDateandTime+"_2ndrotatedFace"+".jpg", toSave3);
+                // detect-classify face
+                Face detectedFace = mlKitFaceDetector.detectSingleFaceFromBitmap(bitmapImage);
 
-        }
-        return rotatedFace;
+                Log.i(TAG, "elapsed time face MLKit : " + (System.currentTimeMillis() - elapsedTime));
+                elapsedTime = System.currentTimeMillis();
+
+                if (detectedFace == null) {
+                    Log.i(TAG, "error processing image with MLKit");
+                    return null;
+                }
+
+                if(saving)
+                    Log.i(TAG, "MLKit crop : " + detectedFace.getBoundingBox().left + " "
+                        + detectedFace.getBoundingBox().right + " "
+                        + detectedFace.getBoundingBox().top + " "
+                        + detectedFace.getBoundingBox().bottom);
+
+                //check abnormal behaviour from MLKit detector (should not detect out of the image)
+                if(detectedFace.getBoundingBox().right >right-left ||
+                        detectedFace.getBoundingBox().bottom >bottom-top)
+                    return null;
+
+                //crop on the actual detected face
+                right = left + detectedFace.getBoundingBox().right;
+                left = left + detectedFace.getBoundingBox().left;
+                //empiric added margin to compensate tendencies of the face detector
+                bottom = top + detectedFace.getBoundingBox().bottom + (int)(MARGIN_FACTOR *(bottom-top));
+                top = top + + detectedFace.getBoundingBox().top;
+
+                if (saving)
+                    Log.i(TAG, "2nd crop : " + left + " " + right + " " + top + " "  + bottom);
+                adjustedROI= new Rect(
+                        Math.max(0,left ) ,
+                        Math.max(0,top),
+                        //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
+                        Math.min(frame.cols()-left,right-left),
+                        Math.min(frame.rows()-top, bottom-top) );
+
+                rotatedFace = frame.submat(adjustedROI).clone();
+
+                //TODEBUG only
+                Mat toSave2 = new Mat();
+                Imgproc.cvtColor(rotatedFace, toSave2, Imgproc.COLOR_RGB2BGR);
+                if(saving)
+                    Imgcodecs.imwrite("/sdcard/faceReco_"+ currentDateandTime+"_rotatedFace"+".jpg", toSave2);
+
+                // image rotation
+                center.x = rotatedFace.cols() / 2;
+                center.y = rotatedFace.rows() / 2;
+                angle = detectedFace.getHeadEulerAngleZ();
+                mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
+                // rotate
+                Imgproc.warpAffine(rotatedFace, rotatedFace, mapMatrix, new Size(rotatedFace.cols(), rotatedFace.rows()));
+                Log.i(TAG, "elapsed time rotating : " + (System.currentTimeMillis() - elapsedTime));
+
+                //TODEBUG only
+                Mat toSave3 = new Mat();
+                Imgproc.cvtColor(rotatedFace, toSave3, Imgproc.COLOR_RGB2BGR);
+                if(saving)
+                    Imgcodecs.imwrite("/sdcard/faceReco_"+ currentDateandTime+"_2ndrotatedFace"+".jpg", toSave3);
+
+            }
+            return rotatedFace;
 
         } catch (Exception e)
         {
@@ -404,9 +407,9 @@ public class FaceRecognizer {
      * Load the saved identities
      * @return null
      */
-    public void loadFaces()
+    public void loadFaces(IFaceRecogRsp response)
     {
-        loadFaces(STORAGE_FILE);
+        loadFaces(STORAGE_FILE, response);
     }
 
     /**
@@ -414,10 +417,18 @@ public class FaceRecognizer {
      * @param fileName file
      * @return null
      */
-    public void loadFaces(String fileName)
+    public void loadFaces(String fileName, IFaceRecogRsp response)
     {
-        idDatabase.identities.clear();
-        idDatabase.loadFromStorage(fileName);
+        try{
+            idDatabase.identities.clear();
+            idDatabase.loadFromStorage(fileName);
+            response.onSuccess("Identities loaded with success");
+        }
+        catch (Exception e)
+        {
+            response.onSuccess("Failed loading identities: " + e);
+        }
+
     }
 
     /**

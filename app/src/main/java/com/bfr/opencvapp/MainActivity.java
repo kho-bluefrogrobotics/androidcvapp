@@ -301,7 +301,17 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         findViewById(R.id.loadBtn).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                faceRecognizerObj.loadFaces();
+                faceRecognizerObj.loadFaces(new FaceRecognizer.IFaceRecogRsp() {
+                    @Override
+                    public void onSuccess(String success) {
+
+                    }
+
+                    @Override
+                    public void onFailed(String error) {
+
+                    }
+                });
             }
         });
 
@@ -423,7 +433,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     if(countToPicture.start)
                     {
                         //if  face large enough
-                        float wThres= 120f/1024f;
+                        float wThres= 112f/1024f;
                         if(tfliteDetections.get(i).right-tfliteDetections.get(i).left>wThres)
                         {
                             Imgproc.putText(frame_orig, "Placez-vous en face ",
