@@ -50,7 +50,7 @@ public class MLKitFaceDetector {
                 .addOnSuccessListener(new OnSuccessListener<List<Face>>() {
                     @Override
                     public void onSuccess(List<Face> faces) {
-                        Log.i(TAG, String.valueOf(System.currentTimeMillis())+ " found faces : " + String.valueOf(faces.size()) );
+//                        Log.i(TAG, String.valueOf(System.currentTimeMillis())+ " found faces : " + String.valueOf(faces.size()) );
                         // if found face
                         if (faces.size()>0) {
 
@@ -92,7 +92,7 @@ public class MLKitFaceDetector {
                 .addOnSuccessListener(new OnSuccessListener<List<Face>>() {
                     @Override
                     public void onSuccess(List<Face> faces) {
-                        Log.i(TAG, String.valueOf(System.currentTimeMillis())+ " found faces : " + String.valueOf(faces.size()) );
+//                        Log.i(TAG, String.valueOf(System.currentTimeMillis())+ " found faces : " + String.valueOf(faces.size()) );
                         // if found face
                         if (faces.size()>0) {
 

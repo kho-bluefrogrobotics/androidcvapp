@@ -433,7 +433,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     if(countToPicture.start)
                     {
                         //if  face large enough
-                        float wThres= 112f/1024f;
+                        float wThres= 125f/1024f;
                         if(tfliteDetections.get(i).right-tfliteDetections.get(i).left>wThres)
                         {
                             Imgproc.putText(frame_orig, "Placez-vous en face ",
@@ -511,7 +511,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                                     Log.e(TAG, "coucou ERROR : " + error);
 
                                     errorSavingFace = true;
-                                    countToPicture.time = 5;
+                                    countToPicture.time = 7;
                                     countToPicture.elapsedTime= System.currentTimeMillis();
 
                                     //display UI
@@ -545,12 +545,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                                 new Point(150, 250),1, 3,
                                 new Scalar(0, 250, 0), 4);
 
-                        Imgproc.putText(frame_orig, ""+countToPicture.time,
-                                new Point(300, 400),1, 10,
-                                new Scalar(0, 0, 0), 30);
-                        Imgproc.putText(frame_orig, ""+countToPicture.time,
-                                new Point(300, 400),1, 10,
-                                new Scalar(255, 0, 0), 15);
                         if (System.currentTimeMillis()-countToPicture.elapsedTime>500 && countToPicture.time>0) {
                             countToPicture.time-=1;
                             countToPicture.elapsedTime= System.currentTimeMillis();

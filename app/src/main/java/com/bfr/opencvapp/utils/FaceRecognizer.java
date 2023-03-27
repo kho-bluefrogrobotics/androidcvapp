@@ -12,8 +12,11 @@ import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
+import org.opencv.dnn.Dnn;
+import org.opencv.dnn.Net;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.FaceDetectorYN;
 import org.opencv.objdetect.FaceRecognizerSF;
 
 import java.io.FileOutputStream;
@@ -40,6 +43,8 @@ public class FaceRecognizer {
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
 //    private final String MODEL_NAME = "/face_recognition_sface_2021dec.onnx";
     private final String MODEL_NAME = "face_recognition_sface_2021dec-act_int8-wt_int8-quantized.onnx";
+    private final String YNMODEL_NAME = "face_detection_yunet_2022mar.onnx";
+//    private final String YNMODEL_NAME = "face_recognition_sface_2021dec-act_int8-wt_int8-quantized.onnx";
     // Face recognition
     private FaceRecognizerSF faceRecognizer;
     Mat faceEmbedding;
@@ -49,6 +54,13 @@ public class FaceRecognizer {
     // MLKit face detector
     Bitmap bitmapImage;
     private MLKitFaceDetector mlKitFaceDetector = new MLKitFaceDetector();
+
+    // Face detector for robust crop
+    FaceDetectorYN ynFaceDetector;
+    Mat ynFaces;
+    public Net detector;
+    int leftInFaceMat, rightInFaceMat, topInFaceMat, bottomInFaceMat;
+    int leftYN, rightYN, topYN, bottomYN;
 
     // image rotation
     int left, right, top, bottom;
@@ -108,6 +120,16 @@ public class FaceRecognizer {
 
         croppedFace = new Mat();
 
+        // Face detection for robust crop
+        ynFaceDetector = FaceDetectorYN.create(DIR+YNMODEL_NAME, "", new Size(640, 480), 0.7f);
+        ynFaces = new Mat();
+
+        //legacy face detector
+        String modelFace = DIR + "/opencv_face_detector.pbtxt";
+        String weightsFace = DIR + "/opencv_face_detector_uint8.pb";
+        detector = Dnn.readNetFromTensorflow(weightsFace, modelFace);
+
+
     } // end constructor
 
 
@@ -140,6 +162,12 @@ public class FaceRecognizer {
     {
         try{
 
+            left   = (int)(leftIn * frame.cols())-10;
+            top    = (int)(topIn * frame.rows()) -10;
+            right  = (int)(rightIn * frame.cols())+10;
+            bottom = (int)(bottomIn* frame.rows())+10;
+
+
             elapsedTime = System.currentTimeMillis();
             //crop image around face
             faceROI= new Rect(
@@ -159,20 +187,21 @@ public class FaceRecognizer {
             toSave = new Mat();
             Imgproc.cvtColor(faceMat, toSave, Imgproc.COLOR_RGB2BGR);
             if(saving)
-                save1.start();
+                Imgcodecs.imwrite("/sdcard/faceReco_"+ currentDateandTime+"_01_1stfacemat"+".jpg", toSave);
 
             if(withPreprocess) {
                 /*** face orientation*/
                 //convert to bitmap
                 bitmapImage = Bitmap.createBitmap(faceMat.cols(), faceMat.rows(), Bitmap.Config.ARGB_8888);
                 Utils.matToBitmap(faceMat, bitmapImage);
-                if(saving)
-                    tbitmpa.start();
+//                if(saving)
+//                    tbitmpa.start();
 
                 // detect-classify face
                 Face detectedFace = mlKitFaceDetector.detectSingleFaceFromBitmap(bitmapImage);
 
-                Log.i(TAG, "elapsed time face MLKit : " + (System.currentTimeMillis() - elapsedTime));
+                if(saving)
+                    Log.i(TAG, "elapsed time face MLKit : " + (System.currentTimeMillis() - elapsedTime));
                 elapsedTime = System.currentTimeMillis();
 
                 if (detectedFace == null) {
@@ -186,17 +215,113 @@ public class FaceRecognizer {
                         + detectedFace.getBoundingBox().top + " "
                         + detectedFace.getBoundingBox().bottom);
 
-                //check abnormal behaviour from MLKit detector (should not detect out of the image)
-                if(detectedFace.getBoundingBox().right >right-left ||
-                        detectedFace.getBoundingBox().bottom >bottom-top)
-                    return null;
+                /****************************** Legacy face detection */
 
-                //crop on the actual detected face
-                right = left + detectedFace.getBoundingBox().right;
-                left = left + detectedFace.getBoundingBox().left;
+                if(true)
+                {
+                ynFaceDetector.setInputSize(new Size(faceMat.cols(), faceMat.rows()));
+                ynFaceDetector.detect(faceMat, ynFaces);
+//
+                leftYN   = (int)( ynFaces.get(0, 0)[0] );
+                topYN    = (int)( ynFaces.get(0, 1)[0] );
+                rightYN  = leftYN+(int)( ynFaces.get(0, 2)[0] );
+                bottomYN = topYN+(int)( ynFaces.get(0, 3)[0]);
+
+                Log.i(TAG, "YN crop : " + leftYN + " " + rightYN + " " + topYN + " "  + bottomYN);
+                Log.i(TAG, "YN crop : " + ynFaces.get(0, 0)[0] + " "
+                        + ynFaces.get(0, 1)[0] + " "
+                        + ynFaces.get(0, 2)[0] + " "
+                        + ynFaces.get(0, 3)[0]);
+
+
+//                    Size frameResize = new Size(300,300);
+//                    Scalar frameMeanFace = new Scalar(104, 117, 123);
+//
+//                    Mat blob = Dnn.blobFromImage(faceMat, 1.0,
+//                            frameResize,
+//                            frameMeanFace, /*swapRB*/true, /*crop*/false);
+//                    detector.setInput(blob);
+//                    // Detection
+//                    Log.i(TAG, "Legacy detection");
+//                    Mat detections = detector.forward();
+//                    int frameCols = frame.cols();
+//                    int frameRows = frame.rows();
+//                    detections = detections.reshape(1, (int) detections.total() / 7);
+//
+//                    //init
+//                    double confidence=0;
+//
+//                    // for each detection
+//                    for (int i = 0; i < detections.rows(); ++i) {
+//                        confidence = detections.get(i, 2)[0];
+//                        Log.i(TAG, "Found face " + confidence);
+//                        // if confidence level > Threshold
+//                        if (confidence > 0.8) {
+//                            // save detection
+//
+//
+//                            leftInFaceMat   =  (int)((detections.get(i, 3)[0]) * faceMat.cols());
+//                            topInFaceMat    =  (int)( (detections.get(i, 4)[0]) * faceMat.rows());
+//                            rightInFaceMat  = (int)( (detections.get(i, 5)[0]) * faceMat.cols());
+//                            bottomInFaceMat =  (int)( (detections.get(i, 6)[0]) * faceMat.rows());
+//
+//                            Log.i(TAG, "Found face OK at "
+//                                    + (detections.get(i, 3)[0])+ "x"+ leftInFaceMat + " "
+//                                    + (detections.get(i, 5)[0])+ "x"+ rightInFaceMat + " "
+//                                    + (detections.get(i, 4)[0])+ "x"+ topInFaceMat  + " "
+//                                    + (detections.get(i, 6)[0])+ "x"+ bottomInFaceMat + " in "
+//                                    + faceMat.cols() + " "
+//                                    + faceMat.rows()+ " " );
+//                            break;
+//                            //classId = (int) detections.get(i, 1)[0];
+//                        }
+//                    }
+//
+//                    Imgproc.rectangle(faceMat, new Point(leftInFaceMat, topInFaceMat),
+//                            new Point(rightInFaceMat, bottomInFaceMat),
+//                            new Scalar(0, 255, 0), 2);
+                }
+
+//                Imgproc.rectangle(faceMat, new Point(leftYN, topYN),
+//                        new Point(rightYN, bottomYN),
+//                        new Scalar(0, 0, 255), 2);
+
+
+
+                /******************************* end legacy detection */
+                //TODEBUG only
+                // Draw rectangle around detected face.
+//                Imgproc.rectangle(faceMat, new Point(detectedFace.getBoundingBox().left, detectedFace.getBoundingBox().top),
+//                        new Point(detectedFace.getBoundingBox().right, detectedFace.getBoundingBox().bottom),
+//                        new Scalar(255, 0, 0), 2);
+
+                toSave = new Mat();
+                Imgproc.cvtColor(faceMat, toSave, Imgproc.COLOR_RGB2BGR);
+                if(saving)
+                    Imgcodecs.imwrite("/sdcard/faceReco_"+ currentDateandTime+"_02_facematwithrecog"+".jpg", toSave);
+
+
+                //check abnormal behaviour from MLKit detector (should not detect out of the image)
+//                if(detectedFace.getBoundingBox().right >right-left ||
+//                        detectedFace.getBoundingBox().bottom >bottom-top)
+//                    return null;
+//
+//                //crop on the actual detected face
+//                right = left + detectedFace.getBoundingBox().right;
+//                left = left + detectedFace.getBoundingBox().left;
+//                //empiric added margin to compensate tendencies of the face detector
+//                bottom = top + detectedFace.getBoundingBox().bottom + (int)(MARGIN_FACTOR *(bottom-top));
+//                top = top + + detectedFace.getBoundingBox().top;//
+//
+//                right = left + rightInFaceMat;
+                right = left + rightYN;
+//                left = left + leftInFaceMat;
+                left = left + leftYN;
                 //empiric added margin to compensate tendencies of the face detector
-                bottom = top + detectedFace.getBoundingBox().bottom + (int)(MARGIN_FACTOR *(bottom-top));
-                top = top + + detectedFace.getBoundingBox().top;
+//                bottom = top + bottomInFaceMat;
+                bottom = top + bottomYN;
+//                top = top + topInFaceMat;
+                top = top + topYN;
 
                 if (saving)
                     Log.i(TAG, "2nd crop : " + left + " " + right + " " + top + " "  + bottom);
@@ -210,11 +335,12 @@ public class FaceRecognizer {
                 rotatedFace = frame.submat(adjustedROI).clone();
 
                 //TODEBUG only
-                Mat toSave2 = new Mat();
-                Imgproc.cvtColor(rotatedFace, toSave2, Imgproc.COLOR_RGB2BGR);
-                if(saving)
-                    Imgcodecs.imwrite("/sdcard/faceReco_"+ currentDateandTime+"_rotatedFace"+".jpg", toSave2);
 
+                if(saving) {
+                    Mat toSave2 = new Mat();
+                    Imgproc.cvtColor(rotatedFace, toSave2, Imgproc.COLOR_RGB2BGR);
+                    Imgcodecs.imwrite("/sdcard/faceReco_" + currentDateandTime + "_03_rotatedFace" + ".jpg", toSave2);
+                }
                 // image rotation
                 center.x = rotatedFace.cols() / 2;
                 center.y = rotatedFace.rows() / 2;
@@ -222,14 +348,16 @@ public class FaceRecognizer {
                 mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
                 // rotate
                 Imgproc.warpAffine(rotatedFace, rotatedFace, mapMatrix, new Size(rotatedFace.cols(), rotatedFace.rows()));
-                Log.i(TAG, "elapsed time rotating : " + (System.currentTimeMillis() - elapsedTime));
+                if(saving)
+                    Log.i(TAG, "elapsed time rotating : " + (System.currentTimeMillis() - elapsedTime));
 
                 //TODEBUG only
                 Mat toSave3 = new Mat();
                 Imgproc.cvtColor(rotatedFace, toSave3, Imgproc.COLOR_RGB2BGR);
                 if(saving)
-                    Imgcodecs.imwrite("/sdcard/faceReco_"+ currentDateandTime+"_2ndrotatedFace"+".jpg", toSave3);
-
+                    Imgcodecs.imwrite("/sdcard/faceReco_"+ currentDateandTime+"_04__2ndrotatedFace"+".jpg", toSave3);
+                else
+                    Imgcodecs.imwrite("/sdcard/faceReco_"+ currentDateandTime+"_ongoing"+".jpg", toSave3);
             }
             return rotatedFace;
 
@@ -265,7 +393,7 @@ public class FaceRecognizer {
                 faceEmbedding);
         else
             return null;
-
+        if(saving)
         Log.i(TAG, "elapsed time calc embedding : " + (System.currentTimeMillis()-elapsedTime)
                 +"\n " + faceEmbedding.size() +" type " + faceEmbedding.depth());
         elapsedTime = System.currentTimeMillis();
@@ -366,7 +494,7 @@ public class FaceRecognizer {
             return;
         }
 
-
+        if(saving)
         Log.i(TAG, "elapsed time calc embedding : " + (System.currentTimeMillis()-elapsedTime)
                 +"\n " + faceEmbedding.size() +" type " + faceEmbedding.depth());
         elapsedTime = System.currentTimeMillis();
