@@ -26,7 +26,7 @@ public class MLKitFaceDetector {
     FaceDetectorOptions options =
             new FaceDetectorOptions.Builder()
                     .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
-                    .setContourMode(FaceDetectorOptions.CONTOUR_MODE_NONE)
+                    .setContourMode(FaceDetectorOptions.CONTOUR_MODE_ALL)
                     .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
                     .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
                     .build();
