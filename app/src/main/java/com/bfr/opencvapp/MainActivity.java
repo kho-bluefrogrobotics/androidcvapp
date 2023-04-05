@@ -398,7 +398,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         int rows = frame_orig.rows();
 
         // resize
-        Imgproc.resize(frame_orig, frame, new Size(1024,768));
+//        Imgproc.resize(frame_orig, frame, new Size(1024,768));
+
+        frame = frame_orig;
 
 
         if (!started)
@@ -433,19 +435,19 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     if(countToPicture.start)
                     {
                         //if  face large enough
-                        float wThres= 125f/1024f;
+                        float wThres= 150f/1024f;
                         if(tfliteDetections.get(i).right-tfliteDetections.get(i).left>wThres)
                         {
                             Imgproc.putText(frame_orig, "Placez-vous en face ",
                                     new Point(150, 200),1, 3,
                                     new Scalar(0, 0, 0), 10);
-                            Imgproc.putText(frame_orig, "Placez-vous en face"+ (tfliteDetections.get(i).right-tfliteDetections.get(i).left),
+                            Imgproc.putText(frame_orig, "Placez-vous en face",
                                     new Point(150, 200),1, 3,
                                     new Scalar(0, 250, 0), 4);
                             Imgproc.putText(frame_orig, "de la camera" ,
                                     new Point(150, 250),1, 3,
                                     new Scalar(0, 0, 0), 10);
-                            Imgproc.putText(frame_orig, "de la camera" + " " + wThres,
+                            Imgproc.putText(frame_orig, "de la camera" + " ",
                                     new Point(150, 250),1, 3,
                                     new Scalar(0, 250, 0), 4);
 
@@ -477,6 +479,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             Imgproc.putText(frame_orig, "du robot",
                                     new Point(150, 250),1, 3,
                                     new Scalar(0, 250, 0), 4);
+                            //reset
+                            countToPicture.time = 5;
                             break;
                         }
 
@@ -579,8 +583,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                                 new Scalar(0, 255, 0), 2);
                     }
                     // Draw rectangle around detected face.
-                    Imgproc.rectangle(frame_orig, new Point(left, top), new Point(right, bottom),
-                        new Scalar(0, 255, 0), 2);
+//                    Imgproc.rectangle(frame_orig, new Point(left, top), new Point(right, bottom),
+//                        new Scalar(0, 255, 0), 2);
 
 
                 } //end if isSavingFace
