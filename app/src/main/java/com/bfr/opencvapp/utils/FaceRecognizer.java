@@ -82,7 +82,7 @@ public class FaceRecognizer {
     int RIGHT_EAR = 234;
     int RIGHT_CHEEK = 123;
     int NOSE_TIP = 1;
-    int CHIN = 152;
+    int CHIN = 175;
     int FOREHEAD = 10;
 
     // Face detector for robust crop
