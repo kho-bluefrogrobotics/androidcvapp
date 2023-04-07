@@ -66,6 +66,25 @@ public class FaceRecognizer {
     Bitmap bitmapImage;
     private MLKitFaceDetector mlKitFaceDetector = new MLKitFaceDetector();
 
+    // Index for face landmarks
+     /*
+     https://developers.google.com/static/ml-kit/vision/face-mesh-detection/images/uv_unwrap_full.png
+                454: near the left ear
+                234: near the right ear
+                280: left cheek
+                50: right cheek
+                1: nose tip
+                152 : chin
+                10 : top forehead
+                 */
+    int LEFT_EAR = 454;
+    int LEFT_CHEEK = 352;
+    int RIGHT_EAR = 234;
+    int RIGHT_CHEEK = 123;
+    int NOSE_TIP = 1;
+    int CHIN = 152;
+    int FOREHEAD = 10;
+
     // Face detector for robust crop
     FaceDetectorYN ynFaceDetector;
     Mat ynFaces;
@@ -251,25 +270,6 @@ public class FaceRecognizer {
                 // Gets all points
                 List<FaceMeshPoint> faceMeshpoints = mFaceMesh.getResult().get(0).getAllPoints();
 
-                /*
-                454: near the left ear
-                234: near the right ear
-                352: left cheek
-                1: nose tip
-                152 : chin
-                10 : top forehead
-                 */
-                int maxpoint = (int) (Math.max(Math.max(faceMeshpoints.get(352).getPosition().getX(),
-                        faceMeshpoints.get(454).getPosition().getX()),
-                        faceMeshpoints.get(1).getPosition().getX()));
-                Imgproc.circle(frame, new Point(leftFaceMat+maxpoint,
-                                topFaceMat+faceMeshpoints.get(454).getPosition().getY()),
-                        3,
-                        new Scalar(0, 255, 255), 5);
-                Imgproc.circle(frame, new Point(leftFaceMat+faceMeshpoints.get(195).getPosition().getX(),
-                                topFaceMat+faceMeshpoints.get(195).getPosition().getY()),
-                        3,
-                        new Scalar(0, 255, 255), 5);
 
 
                 // image rotation
@@ -289,14 +289,6 @@ public class FaceRecognizer {
 //                center.x = leftFaceMat + faceMeshpoints.get(195).getPosition().getX() ;
 //                center.y = topFaceMat + faceMeshpoints.get(195).getPosition().getY() ;
 
-                  /*
-                454: near the left ear
-                234: near the right ear
-                352: left cheek
-                1: nose tip
-                152 : chin
-                10 : top forehead
-                 */
 
 
 
@@ -340,25 +332,25 @@ public class FaceRecognizer {
 
 
                 //Left limit
-                int minLeft = (int) (Math.min(Math.min(faceMeshpoints.get(50).getPosition().getX(),
-                                faceMeshpoints.get(234).getPosition().getX()),
-                        faceMeshpoints.get(1).getPosition().getX()));
+                int minLeft = (int) (Math.min(Math.min(faceMeshpoints.get(RIGHT_CHEEK).getPosition().getX(),
+                                faceMeshpoints.get(RIGHT_EAR).getPosition().getX()),
+                        faceMeshpoints.get(NOSE_TIP).getPosition().getX()));
 
                 int distX=0;
                 int distY=0;
                 int posEdgeLX = 0;
                 int posEdgeLY = 0;
-                if (minLeft == (int)faceMeshpoints.get(1).getPosition().getX()){
-                    posEdgeLX = (int)faceMeshpoints.get(1).getPosition().getX();
-                    posEdgeLY = (int)faceMeshpoints.get(1).getPosition().getY();
+                if (minLeft == (int)faceMeshpoints.get(NOSE_TIP).getPosition().getX()){
+                    posEdgeLX = (int)faceMeshpoints.get(NOSE_TIP).getPosition().getX();
+                    posEdgeLY = (int)faceMeshpoints.get(NOSE_TIP).getPosition().getY();
                 }
-                else if (minLeft == (int) faceMeshpoints.get(50).getPosition().getX()){
-                    posEdgeLX = (int)faceMeshpoints.get(50).getPosition().getX();
-                    posEdgeLY = (int)faceMeshpoints.get(50).getPosition().getY();
+                else if (minLeft == (int) faceMeshpoints.get(RIGHT_CHEEK).getPosition().getX()){
+                    posEdgeLX = (int)faceMeshpoints.get(RIGHT_CHEEK).getPosition().getX();
+                    posEdgeLY = (int)faceMeshpoints.get(RIGHT_CHEEK).getPosition().getY();
                 }
-                else if (minLeft == (int) faceMeshpoints.get(234).getPosition().getX()){
-                    posEdgeLX = (int)faceMeshpoints.get(234).getPosition().getX();
-                    posEdgeLY = (int)faceMeshpoints.get(234).getPosition().getY();
+                else if (minLeft == (int) faceMeshpoints.get(RIGHT_EAR).getPosition().getX()){
+                    posEdgeLX = (int)faceMeshpoints.get(RIGHT_EAR).getPosition().getX();
+                    posEdgeLY = (int)faceMeshpoints.get(RIGHT_EAR).getPosition().getY();
                 }
                 distX = posEdgeLX-centerInFaceMatX;
                 distY = posEdgeLY-centerInFaceMatY;
@@ -367,44 +359,41 @@ public class FaceRecognizer {
                 newLeft =  (int) center.x -(int)Math.sqrt(distX*distX +distY*distY);
 
 
-
                 //Right limit
-                int maxRight = (int) (Math.max(Math.max(faceMeshpoints.get(280).getPosition().getX(),
-                                faceMeshpoints.get(454).getPosition().getX()),
-                        faceMeshpoints.get(1).getPosition().getX()));
+                int maxRight = (int) (Math.max(Math.max(faceMeshpoints.get(LEFT_CHEEK).getPosition().getX(),
+                                faceMeshpoints.get(LEFT_EAR).getPosition().getX()),
+                        faceMeshpoints.get(NOSE_TIP).getPosition().getX()));
                 int posEdgeRX = 0;
                 int posEdgeRY = 0;
-                if (maxRight == (int)faceMeshpoints.get(1).getPosition().getX()){
-                    posEdgeRX = (int)faceMeshpoints.get(1).getPosition().getX();
-                    posEdgeRY = (int)faceMeshpoints.get(1).getPosition().getY();
+                if (maxRight == (int)faceMeshpoints.get(NOSE_TIP).getPosition().getX()){
+                    posEdgeRX = (int)faceMeshpoints.get(NOSE_TIP).getPosition().getX();
+                    posEdgeRY = (int)faceMeshpoints.get(NOSE_TIP).getPosition().getY();
                 }
-                else if (maxRight == (int)faceMeshpoints.get(280).getPosition().getX()){
-                    posEdgeRX = (int)faceMeshpoints.get(280).getPosition().getX();
-                    posEdgeRY = (int)faceMeshpoints.get(280).getPosition().getY();
+                else if (maxRight == (int)faceMeshpoints.get(LEFT_CHEEK).getPosition().getX()){
+                    posEdgeRX = (int)faceMeshpoints.get(LEFT_CHEEK).getPosition().getX();
+                    posEdgeRY = (int)faceMeshpoints.get(LEFT_CHEEK).getPosition().getY();
                 }
-                else if (maxRight == (int)faceMeshpoints.get(454).getPosition().getX()){
-                    posEdgeRX = (int)faceMeshpoints.get(454).getPosition().getX();
-                    posEdgeRY = (int)faceMeshpoints.get(454).getPosition().getY();
+                else if (maxRight == (int)faceMeshpoints.get(LEFT_EAR).getPosition().getX()){
+                    posEdgeRX = (int)faceMeshpoints.get(LEFT_EAR).getPosition().getX();
+                    posEdgeRY = (int)faceMeshpoints.get(LEFT_EAR).getPosition().getY();
                 }
                 distX = posEdgeRX-centerInFaceMatX;
                 distY = posEdgeRY-centerInFaceMatY;
 
                 newRight = (int) center.x +(int)Math.sqrt(distX*distX +distY*distY);
 
-                //
-
 
                 //Top limit
-                int posEdgeTX = (int)faceMeshpoints.get(10).getPosition().getX();
-                int posEdgeTY = (int)faceMeshpoints.get(10).getPosition().getY();
+                int posEdgeTX = (int)faceMeshpoints.get(FOREHEAD).getPosition().getX();
+                int posEdgeTY = (int)faceMeshpoints.get(FOREHEAD).getPosition().getY();
                 distX = posEdgeTX-centerInFaceMatX;
                 distY = posEdgeTY-centerInFaceMatY;
 
                 newTop = (int) center.y -(int)Math.sqrt(distX*distX +distY*distY);
 
                 // Bottom Limit
-                int posEdgeBX = (int)faceMeshpoints.get(152).getPosition().getX();
-                int posEdgeBY = (int)faceMeshpoints.get(152).getPosition().getY();
+                int posEdgeBX = (int)faceMeshpoints.get(CHIN).getPosition().getX();
+                int posEdgeBY = (int)faceMeshpoints.get(CHIN).getPosition().getY();
                 distX = posEdgeBX-centerInFaceMatX;
                 distY = posEdgeBY-centerInFaceMatY;
 
@@ -416,7 +405,7 @@ public class FaceRecognizer {
 
                 adjustedROI= new Rect(
                         Math.max(0,newLeft),
-                        Math.max(0,topFaceMat),
+                        Math.max(0,newTop),
                         Math.min(frame_cpy.cols()-newLeft,newRight-newLeft),
                         Math.min(frame_cpy.rows()-newTop, newBottom-newTop) );
 
