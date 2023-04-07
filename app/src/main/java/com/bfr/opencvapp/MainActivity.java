@@ -584,8 +584,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                                 new Scalar(0, 255, 0), 2);
                     }
                     // Draw rectangle around detected face.
-//                    Imgproc.rectangle(frame_orig, new Point(left, top), new Point(right, bottom),
-//                        new Scalar(0, 255, 0), 2);
+                    Imgproc.rectangle(frame_orig, new Point(left, top), new Point(right, bottom),
+                        new Scalar(0, 255, 0), 2);
 
 
                 } //end if isSavingFace
