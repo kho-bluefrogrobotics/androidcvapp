@@ -278,12 +278,12 @@ public class FaceRecognizer {
                                 faceMeshpoints.get(454).getPosition().getX() - faceMeshpoints.get(234).getPosition().getX())
                                );
 
-                Imgproc.putText(frame, "Angle : " + angle,
-                        new Point(150, 250),1, 3,
-                        new Scalar(0, 0, 0), 10);
-                Imgproc.putText(frame, "Angle : " + angle,
-                        new Point(150, 250),1, 3,
-                        new Scalar(0, 250, 0), 4);
+//                Imgproc.putText(frame, "Angle : " + angle,
+//                        new Point(150, 250),1, 3,
+//                        new Scalar(0, 0, 0), 10);
+//                Imgproc.putText(frame, "Angle : " + angle,
+//                        new Point(150, 250),1, 3,
+//                        new Scalar(0, 250, 0), 4);
 
 
 //                center.x = leftFaceMat + faceMeshpoints.get(195).getPosition().getX() ;
@@ -393,13 +393,27 @@ public class FaceRecognizer {
 
                 //
 
-                Imgproc.line(frame, new Point(newLeft, 10),  new Point(newLeft, 600), new Scalar(0, 0, 255), 2);
-                Imgproc.line(frame, new Point(newRight, 10),  new Point(newRight, 600), new Scalar(0, 255, 0), 2);
 
+                //Top limit
+                int posEdgeTX = (int)faceMeshpoints.get(10).getPosition().getX();
+                int posEdgeTY = (int)faceMeshpoints.get(10).getPosition().getY();
+                distX = posEdgeTX-centerInFaceMatX;
+                distY = posEdgeTY-centerInFaceMatY;
+
+                newTop = (int) center.y -(int)Math.sqrt(distX*distX +distY*distY);
+
+                // Bottom Limit
+                int posEdgeBX = (int)faceMeshpoints.get(152).getPosition().getX();
+                int posEdgeBY = (int)faceMeshpoints.get(152).getPosition().getY();
+                distX = posEdgeBX-centerInFaceMatX;
+                distY = posEdgeBY-centerInFaceMatY;
+
+                newBottom = (int) center.y +(int)Math.sqrt(distX*distX +distY*distY);
+
+
+                Imgproc.rectangle(frame_cpy, new Point(newLeft, newTop),  new Point(newRight, newBottom), new Scalar(0, 0, 255), 2);
                 Log.w("coucou", "cropping again : " + center.x + " " + distX + " " + distY +" "+newRight + " " + newLeft +" ");
 
-                newTop = topFaceMat;
-                newBottom = bottomFaceMat;
                 adjustedROI= new Rect(
                         Math.max(0,newLeft),
                         Math.max(0,topFaceMat),
@@ -408,7 +422,7 @@ public class FaceRecognizer {
 
 
                 rotatedFace = frame_cpy.submat(adjustedROI);
-                Imgcodecs.imwrite("/sdcard/coucou_"+currentDateandTime+".jpg", rotatedFace);
+//                Imgcodecs.imwrite("/sdcard/coucou_"+currentDateandTime+".jpg", rotatedFace);
 //
 //                rotatedFace = frame_cpy.submat(adjustedROI);
 
