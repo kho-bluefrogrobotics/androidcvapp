@@ -131,7 +131,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     String toDisplay="";
 
     class Countdown {
-        public int time=5;
+        public int time=3;
         public double elapsedTime = 0.0;
         public boolean start = false;
     }
@@ -199,7 +199,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 {
                     isSavingFace = isChecked;
                     countToPicture.start = isChecked;
-                    countToPicture.time = 5;
+                    countToPicture.time = 3;
                     countToPicture.elapsedTime= System.currentTimeMillis();
                 }
 
@@ -262,6 +262,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                             .name.split("_")[0]+"\n";
 
                 //display UI
+                Log.i(TAG, toDisplay);
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {

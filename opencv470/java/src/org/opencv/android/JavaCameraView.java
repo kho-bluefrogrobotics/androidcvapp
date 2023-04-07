@@ -145,10 +145,8 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                 if (sizes != null) {
                     /* Select the size that fits surface considering maximum size allowed */
                     // specific for Buddy
-//                    width = 800;
-//                    height = 600;
                     width = 1024;
-                    height = 720;
+                    height = 768;
                     Size frameSize = calculateCameraFrameSize(sizes, new JavaCameraSizeAccessor(), width, height);
 
                     /* Image format NV21 causes issues in the Android emulators */
@@ -179,10 +177,10 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                         params.setFocusMode(Camera.Parameters.FOCUS_MODE_FIXED);
                     }
 
-                    params.setExposureCompensation(5);
+                    params.setExposureCompensation(3);
                     params.setAutoWhiteBalanceLock(true);
 
-                    params.setAutoExposureLock(true);
+                    params.setAutoExposureLock(false);
 
                     mCamera.setParameters(params);
                     params = mCamera.getParameters();

@@ -5,8 +5,16 @@ import android.graphics.PointF;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
+import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.face.Face;
 import com.google.mlkit.vision.face.FaceContour;
+import com.google.mlkit.vision.facemesh.FaceMesh;
+import com.google.mlkit.vision.facemesh.FaceMeshDetection;
+import com.google.mlkit.vision.facemesh.FaceMeshDetector;
+import com.google.mlkit.vision.facemesh.FaceMeshDetectorOptions;
+import com.google.mlkit.vision.facemesh.FaceMeshPoint;
 
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
@@ -167,31 +175,54 @@ public class FaceRecognizer {
                 bitmapImage = Bitmap.createBitmap(faceMat.cols(), faceMat.rows(), Bitmap.Config.ARGB_8888);
                 Utils.matToBitmap(faceMat, bitmapImage);
 
+                //FaceMesh
+                FaceMeshDetector detector;
                 // detect-classify face
-                Face detectedFace = mlKitFaceDetector.detectSingleFaceFromBitmap(bitmapImage);
+                FaceMeshDetectorOptions.Builder optionsBuilder = new FaceMeshDetectorOptions.Builder();
 
+                optionsBuilder.setUseCase(FaceMeshDetectorOptions.FACE_MESH);
+
+                detector = FaceMeshDetection.getClient(optionsBuilder.build());
+
+                InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
+
+                Task<List<FaceMesh>> mFaceMesh = detector.process(inputImage);
+
+                try {
+                    Tasks.await(mFaceMesh);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 Log.i(TAG, "elapsed time face MLKit : " + (System.currentTimeMillis() - elapsedTime));
                 elapsedTime = System.currentTimeMillis();
 
-                if (detectedFace == null) {
+                if (mFaceMesh == null) {
                     Log.w(TAG, "error preprocessing image with MLKit");
                     return null;
                 }
 
 
-                // Robust face detection to crop around the face
-                ynFaceDetector.setInputSize(new Size(faceMat.cols(), faceMat.rows()));
-                ynFaceDetector.detect(faceMat, ynFaces);
+                // Gets all points
+                List<FaceMeshPoint> faceMeshpoints = mFaceMesh.getResult().get(0).getAllPoints();
 
-                if (ynFaces.rows()<=0) {
-                    Log.w(TAG, "error preprocessing image to crop (face detection)");
-                    return null;
-                }
+                Imgproc.circle(frame, new Point(leftFaceMat+faceMeshpoints.get(454).getPosition().getX(),
+                                topFaceMat+faceMeshpoints.get(454).getPosition().getY()),
+                        5,
+                        new Scalar(0, 255, 255), 10);
 
-                leftYN   = (int)( ynFaces.get(0, 0)[0] );
-                topYN    = (int)( ynFaces.get(0, 1)[0] );
-                rightYN  = leftYN+(int)( ynFaces.get(0, 2)[0] );
-                bottomYN = topYN+(int)( ynFaces.get(0, 3)[0]);
+//                // Robust face detection to crop around the face
+//                ynFaceDetector.setInputSize(new Size(faceMat.cols(), faceMat.rows()));
+//                ynFaceDetector.detect(faceMat, ynFaces);
+//
+//                if (ynFaces.rows()<=0) {
+//                    Log.w(TAG, "error preprocessing image to crop (face detection)");
+//                    return null;
+//                }
+//
+//                leftYN   = (int)( ynFaces.get(0, 0)[0] );
+//                topYN    = (int)( ynFaces.get(0, 1)[0] );
+//                rightYN  = leftYN+(int)( ynFaces.get(0, 2)[0] );
+//                bottomYN = topYN+(int)( ynFaces.get(0, 3)[0]);
 
 //                Log.i(TAG, "YN crop : " + leftYN + " " + rightYN + " " + topYN + " "  + bottomYN);
 //                Log.i(TAG, "YN crop : " + ynFaces.get(0, 0)[0] + " "
@@ -202,11 +233,11 @@ public class FaceRecognizer {
                 Log.i(TAG, "elapsed time Yunet : " + (System.currentTimeMillis() - elapsedTime));
                 elapsedTime = System.currentTimeMillis();
 
-                right = left + rightYN;
-                left = left + leftYN;
-                //empiric added margin to compensate tendencies of the face detector
-                bottom = top + bottomYN;
-                top = top + topYN;
+//                right = left + rightYN;
+//                left = left + leftYN;
+//                //empiric added margin to compensate tendencies of the face detector
+//                bottom = top + bottomYN;
+//                top = top + topYN;
 
 
 
@@ -220,12 +251,13 @@ public class FaceRecognizer {
 //                center.y = top + (bottom-top)/2;
                 center.x = leftFaceMat + (rightFaceMat-leftFaceMat)/2;
                 center.y = topFaceMat + (bottomFaceMat-topFaceMat)/2;
-                angle = detectedFace.getHeadEulerAngleZ();
+//                angle = detectedFace.getHeadEulerAngleZ();
+                angle = 0;
                 mapMatrix = Imgproc.getRotationMatrix2D(center, -angle, 1.0);
                 // rotate
 //                Imgproc.warpAffine(rotatedFace, rotatedFace, mapMatrix, new Size(rotatedFace.cols(), rotatedFace.rows()));
-//                Mat frame_cpy = frame.clone();
-                Mat frame_cpy = frame;
+                Mat frame_cpy = frame.clone();
+//                Mat frame_cpy = frame;
                 Imgproc.warpAffine(frame_cpy, frame_cpy, mapMatrix, new Size(frame.cols(), frame.rows()));
 
 
@@ -294,114 +326,115 @@ public class FaceRecognizer {
 
 
 
-
-                List<PointF> faceContour = detectedFace.getContour(FaceContour.FACE).getPoints();
-                int mentonX = leftFaceMat + (int)( faceContour.get(18).x);
-                int mentonY = topFaceMat + (int)( faceContour.get(18).y);
-                // Draw rectangle around detected face.
-//                Imgproc.circle(frame, new Point(mentonX, mentonY), 5,
-//                        new Scalar(0, 255, 255), 10);
-
-                int lCheekX = leftFaceMat + (int)( faceContour.get(8).x);
-                int lCheekY = topFaceMat + (int)( faceContour.get(8).y);
-                // Draw rectangle around detected face.
-//                Imgproc.circle(frame, new Point(lCheekX, lCheekY), 5,
-//                        new Scalar(0, 255, 255), 10);
-
-                int rCheekX = leftFaceMat + (int)( faceContour.get(28).x);
-                int rCheekY = topFaceMat + (int)( faceContour.get(28).y);
-                // Draw rectangle around detected face.
-//                Imgproc.circle(frame, new Point(rCheekX, rCheekY), 5,
-//                        new Scalar(0, 255, 255), 10);
-
-                List<PointF> noseFaceContour = detectedFace.getContour(FaceContour.NOSE_BRIDGE).getPoints();
-                int noseX = leftFaceMat + (int)( noseFaceContour.get(1).x);
-                int noseY = topFaceMat + (int)( noseFaceContour.get(1).y);
-                // Draw rectangle around detected face.
-//                Imgproc.circle(frame, new Point(noseX, noseY), 5,
-//                        new Scalar(0, 255, 255), 10);
-
-                // Draw rectangle around detected face.
-//                        Imgproc.circle(frame, new Point(center.x, center.y), 5,
-//                                new Scalar(255, 0, 0), 5);
-                // crop again
-
-                // detect-classify face
-                int posLCheekCenteredX = (int) (faceContour.get(8).x - (rightFaceMat-leftFaceMat)/2);
-                int posLCheekCenteredY= (int)(faceContour.get(8).y - (bottomFaceMat-topFaceMat)/2);
-                int newRight = (int) leftFaceMat + (rightFaceMat-leftFaceMat)/2 +(int)Math.sqrt(posLCheekCenteredX*posLCheekCenteredX +posLCheekCenteredY*posLCheekCenteredY);
-                int newposY = (int) top +(int)(faceContour.get(8).y );
-
-                int posRCheekCenteredX = (int) (faceContour.get(28).x - (rightFaceMat-leftFaceMat)/2);
-                int posRCheekCenteredY= (int)(faceContour.get(28).y - (bottomFaceMat-topFaceMat)/2);
-                int newLeft = leftFaceMat+ + (rightFaceMat-leftFaceMat)/2 -(int)Math.sqrt(posRCheekCenteredX*posRCheekCenteredX +posRCheekCenteredY*posRCheekCenteredY);
-
-                int posLChinCenteredX = (int) (faceContour.get(18).x - (rightFaceMat-leftFaceMat)/2);
-                int posLChinCenteredY= (int)(faceContour.get(18).y - (bottomFaceMat-topFaceMat)/2);
-                int newBottom = (int) topFaceMat + (bottomFaceMat-topFaceMat)/2 +(int)Math.sqrt(posLChinCenteredX*posLChinCenteredX +posLChinCenteredY*posLChinCenteredY);
-
-                int posFrontHeadCenteredX = (int) (faceContour.get(0).x - (rightFaceMat-leftFaceMat)/2);
-                int posFrontHeadCenteredY= (int)(faceContour.get(0).y - (bottomFaceMat-topFaceMat)/2);
-                int newTop = (int) topFaceMat + (rightFaceMat-leftFaceMat)/2 -(int)Math.sqrt(posFrontHeadCenteredX*posFrontHeadCenteredX +posFrontHeadCenteredY*posFrontHeadCenteredY);
-
-                newRight +=5;
-
-                newLeft -=5;
-
-
-                // Draw rectangle around detected face.
-//                Imgproc.circle(frame, new Point(newRight, center.y), 5,
-//                        new Scalar(0, 255, 0), 5);
-
-                Imgproc.rectangle(frame, new Point(newRight, 10), new Point(newRight, 600),
-                        new Scalar(0, 255, 0), 2);
-                Imgproc.rectangle(frame, new Point(newLeft, 10), new Point(newLeft, 600),
-                        new Scalar(0, 255, 0), 2);
-
-                Imgproc.rectangle(frame, new Point(10, newBottom), new Point(900, newBottom),
-                        new Scalar(0, 255, 0), 2);
-                Imgproc.rectangle(frame, new Point(10, newTop), new Point(900, newTop),
-                        new Scalar(0, 255, 0), 2);
-
-//                Log.i(TAG, "cropping again : " + posCenteredFaceMatX + " " + posCenteredFaceMatY +" " + right + " " +newposX + " "+ left +" " + faceContour.get(18).x + " " );
-//                adjustedROI= new Rect(
-//                        Math.max(0,left ) ,
-//                        Math.max(0,top),
-//                        //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
-//                        Math.min(frame.cols()-left,newposX-left),
-//                        Math.min(frame.rows()-top, bottom-top) );
 //
-//                rotatedFace =  frame_cpy.submat(adjustedROI);
+//                List<PointF> faceContour = detectedFace.getContour(FaceContour.FACE).getPoints();
+//                int mentonX = leftFaceMat + (int)( faceContour.get(18).x);
+//                int mentonY = topFaceMat + (int)( faceContour.get(18).y);
+//                // Draw rectangle around detected face.
+////                Imgproc.circle(frame, new Point(mentonX, mentonY), 5,
+////                        new Scalar(0, 255, 255), 10);
+//
+//                int lCheekX = leftFaceMat + (int)( faceContour.get(8).x);
+//                int lCheekY = topFaceMat + (int)( faceContour.get(8).y);
+//                // Draw rectangle around detected face.
+////                Imgproc.circle(frame, new Point(lCheekX, lCheekY), 5,
+////                        new Scalar(0, 255, 255), 10);
+//
+//                int rCheekX = leftFaceMat + (int)( faceContour.get(28).x);
+//                int rCheekY = topFaceMat + (int)( faceContour.get(28).y);
+//                // Draw rectangle around detected face.
+////                Imgproc.circle(frame, new Point(rCheekX, rCheekY), 5,
+////                        new Scalar(0, 255, 255), 10);
+//
+//                List<PointF> noseFaceContour = detectedFace.getContour(FaceContour.NOSE_BRIDGE).getPoints();
+//                int noseX = leftFaceMat + (int)( noseFaceContour.get(1).x);
+//                int noseY = topFaceMat + (int)( noseFaceContour.get(1).y);
+//                // Draw rectangle around detected face.
+////                Imgproc.circle(frame, new Point(noseX, noseY), 5,
+////                        new Scalar(0, 255, 255), 10);
+//
+//                // Draw rectangle around detected face.
+////                        Imgproc.circle(frame, new Point(center.x, center.y), 5,
+////                                new Scalar(255, 0, 0), 5);
+//                // crop again
+//
+//                // detect-classify face
+//                int posLCheekCenteredX = (int) (faceContour.get(8).x - (rightFaceMat-leftFaceMat)/2);
+//                int posLCheekCenteredY= (int)(faceContour.get(8).y - (bottomFaceMat-topFaceMat)/2);
+//                int newRight = (int) leftFaceMat + (rightFaceMat-leftFaceMat)/2 +(int)Math.sqrt(posLCheekCenteredX*posLCheekCenteredX +posLCheekCenteredY*posLCheekCenteredY);
+//                int newposY = (int) top +(int)(faceContour.get(8).y );
+//
+//                int posRCheekCenteredX = (int) (faceContour.get(28).x - (rightFaceMat-leftFaceMat)/2);
+//                int posRCheekCenteredY= (int)(faceContour.get(28).y - (bottomFaceMat-topFaceMat)/2);
+//                int newLeft = leftFaceMat+ + (rightFaceMat-leftFaceMat)/2 -(int)Math.sqrt(posRCheekCenteredX*posRCheekCenteredX +posRCheekCenteredY*posRCheekCenteredY);
+//
+//                int posLChinCenteredX = (int) (faceContour.get(18).x - (rightFaceMat-leftFaceMat)/2);
+//                int posLChinCenteredY= (int)(faceContour.get(18).y - (bottomFaceMat-topFaceMat)/2);
+//                int newBottom = (int) topFaceMat + (bottomFaceMat-topFaceMat)/2 +(int)Math.sqrt(posLChinCenteredX*posLChinCenteredX +posLChinCenteredY*posLChinCenteredY);
+//
+//                int posFrontHeadCenteredX = (int) (faceContour.get(0).x - (rightFaceMat-leftFaceMat)/2);
+//                int posFrontHeadCenteredY= (int)(faceContour.get(0).y - (bottomFaceMat-topFaceMat)/2);
+//                int newTop = (int) topFaceMat + (rightFaceMat-leftFaceMat)/2 -(int)Math.sqrt(posFrontHeadCenteredX*posFrontHeadCenteredX +posFrontHeadCenteredY*posFrontHeadCenteredY);
+//
+//
+//                newTop+=10;
+//
+//
+//                // Draw rectangle around detected face.
+////                Imgproc.circle(frame, new Point(newRight, center.y), 5,
+////                        new Scalar(0, 255, 0), 5);
+//
+////                Imgproc.rectangle(frame, new Point(newRight, 10), new Point(newRight, 600),
+////                        new Scalar(0, 255, 0), 2);
+////                Imgproc.rectangle(frame, new Point(newLeft, 10), new Point(newLeft, 600),
+////                        new Scalar(0, 255, 0), 2);
+////
+////                Imgproc.rectangle(frame, new Point(10, newBottom), new Point(900, newBottom),
+////                        new Scalar(0, 255, 0), 2);
+////                Imgproc.rectangle(frame, new Point(10, newTop), new Point(900, newTop),
+////                        new Scalar(0, 255, 0), 2);
+//
+//
+////                Log.i(TAG, "cropping again : " + posCenteredFaceMatX + " " + posCenteredFaceMatY +" " + right + " " +newposX + " "+ left +" " + faceContour.get(18).x + " " );
+////                adjustedROI= new Rect(
+////                        Math.max(0,left ) ,
+////                        Math.max(0,top),
+////                        //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
+////                        Math.min(frame.cols()-left,newposX-left),
+////                        Math.min(frame.rows()-top, bottom-top) );
+////
+////                rotatedFace =  frame_cpy.submat(adjustedROI);
+//
+//
+//
+//                adjustedROI= new Rect(
+//                        Math.max(0,newLeft ) ,
+//                        Math.max(0,newTop),
+//                        //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
+//                        Math.min(frame.cols()-newLeft,newRight-newLeft),
+//                        Math.min(frame.rows()-newTop, newBottom-newTop) );
+//
+//                rotatedFace = frame_cpy.submat(adjustedROI);
 
 
 
-                adjustedROI= new Rect(
-                        Math.max(0,newLeft ) ,
-                        Math.max(0,topFaceMat),
-                        //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
-                        Math.min(frame.cols()-newLeft,newRight-newLeft),
-                        Math.min(frame.rows()-topFaceMat, newBottom-topFaceMat) );
-
-                rotatedFace = frame_cpy.submat(adjustedROI);
 
 
 
 
-
-
-
-
-
-
-
-
-                // Draw rectangle around detected face.
-                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                        new Scalar(0, 0, 255), 2);
-
-                Log.i(TAG, "elapsed time rotating : " + (System.currentTimeMillis() - elapsedTime) +
-                        "\n" + faceContour.get(18).x + " " +  faceContour.get(18).y
-                + " " + mentonX + " " + mentonY);
+//
+//
+//                // Draw rectangle around detected face.
+//                Imgproc.rectangle(frame, new Point(newLeft, newTop), new Point(newRight, newBottom),
+//                        new Scalar(0, 0, 255), 2);
+//
+//                Imgproc.rectangle(frame, new Point((int)(leftIn * frame.cols()), (int)(topIn * frame.rows())),
+//                        new Point((int)(rightIn * frame.cols()), bottomIn* frame.rows()),
+//                        new Scalar(0, 255, 0), 2, 3);
+//
+//                Log.i(TAG, "elapsed time rotating : " + (System.currentTimeMillis() - elapsedTime) +
+//                        "\n" + faceContour.get(18).x + " " +  faceContour.get(18).y
+//                + " " + mentonX + " " + mentonY);
 
             }
             else // no preprocess
