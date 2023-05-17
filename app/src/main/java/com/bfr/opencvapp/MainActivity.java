@@ -25,11 +25,15 @@ import org.opencv.android.OpenCVLoader;
 
 import org.opencv.core.Mat;
 
+import org.opencv.core.Point;
+import org.opencv.core.Scalar;
+import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoWriter;
+import org.opencv.wechat_qrcode.WeChatQRCode;
 import org.opencv.wechat_qrcode.Wechat_qrcode;
 
 
-
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -37,7 +41,7 @@ import java.util.List;
 
 public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
-    private static final String TAG = "COLORRecog";
+    private static final String TAG = "QRCode detector";
 
     private CameraBridgeViewBase mOpenCvCameraView;
 
@@ -142,9 +146,26 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         return Collections.singletonList(mOpenCvCameraView);
     }
 
+    // WeChat QRCode detector
+    protected WeChatQRCode wechatDetector = null;
+    String wechatDetectorPrototxtPath = "/sdcard/Download/detect.prototxt";
+    String wechatDetectorCaffeModelPath = "/sdcard/Download/detect.caffemodel";
+    String wechatSuperResolutionPrototxtPath = "/sdcard/Download/sr.prototxt";
+    String wechatSuperResolutionCaffeModelPath = "/sdcard/Download/sr.caffemodel";
+
     public void onCameraViewStarted(int width, int height) {
 
-
+        //init WeChat QRCode detector
+        try {
+            wechatDetector = new WeChatQRCode(  wechatDetectorPrototxtPath,
+                    wechatDetectorCaffeModelPath,
+                    wechatSuperResolutionPrototxtPath,
+                    wechatSuperResolutionCaffeModelPath);
+        } catch (Exception e) {
+            Log.e(TAG, "couldn't initialize wechat detector, check that wechat model files are on the robot");
+            e.printStackTrace();
+            wechatDetector = null;
+        }
 
     }
 
@@ -153,6 +174,34 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         frame = inputFrame.rgba();
 
+        int x = 0;
+        int y = 0;
+
+        List<Mat> qrCodesCorner = new ArrayList<Mat>();
+        List<String> qrCodesContent = wechatDetector.detectAndDecode(frame, qrCodesCorner);
+
+        if (qrCodesContent.size()>0)
+        {
+            Log.w(TAG, "QRCode detected :" + qrCodesContent.get(0));
+            Log.w(TAG, "QRCode position :" + qrCodesCorner.get(0).get(0,0)[0]);
+
+            x = (int) (qrCodesCorner.get(0).get(0,0)[0]);
+            y = (int) (qrCodesCorner.get(0).get(0,1)[0]);
+            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(255, 0, 0), 10);
+
+            x = (int) (qrCodesCorner.get(0).get(1,0)[0]);
+            y = (int) (qrCodesCorner.get(0).get(1,1)[0]);
+            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(0, 255, 0), 10);
+
+            x = (int) (qrCodesCorner.get(0).get(2,0)[0]);
+            y = (int) (qrCodesCorner.get(0).get(2,1)[0]);
+            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(0, 0, 255), 10);
+
+            x = (int) (qrCodesCorner.get(0).get(3,0)[0]);
+            y = (int) (qrCodesCorner.get(0).get(3,1)[0]);
+            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(150, 0, 150), 10);
+
+        }
 
 
         return frame;
