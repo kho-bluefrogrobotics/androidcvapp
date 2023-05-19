@@ -1,5 +1,9 @@
 package com.bfr.opencvapp;
 
+import static org.opencv.core.CvType.CV_32F;
+import static org.opencv.core.CvType.CV_32FC3;
+import static org.opencv.core.CvType.CV_8U;
+
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
@@ -26,6 +30,7 @@ import org.opencv.android.OpenCVLoader;
 
 import org.opencv.core.Mat;
 
+import org.opencv.core.MatOfFloat;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
@@ -158,7 +163,14 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     String wechatSuperResolutionPrototxtPath = "/sdcard/Download/sr_2021nov.prototxt";
     String wechatSuperResolutionCaffeModelPath = "/sdcard/Download/sr_2021nov.caffemodel";
 
+    String yoloCFG = "/sdcard/Download/yolov4-tiny-custom-640.cfg";
+    String yoloWeights = "/sdcard/Download/yolov4-tiny-custom-640_last.weights";
+
     private Net superResNet;
+
+    // Yolo
+    private Net yoloQrDetector;
+
     public void onCameraViewStarted(int width, int height) {
 
         //init WeChat QRCode detector
@@ -175,8 +187,25 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         //
         superResNet = Dnn.readNetFromCaffe(wechatSuperResolutionPrototxtPath, wechatSuperResolutionCaffeModelPath);
+        //
+        yoloQrDetector = Dnn.readNetFromDarknet(yoloCFG, yoloWeights);
     }
 
+    /**
+     Returns index of maximum element in the list
+     */
+    private  int argmax(List<Float> array)
+    {
+    float max = array.get(0);
+    int re = 0;
+        for (int i = 1; i < array.size(); i++) {
+        if (array.get(i) > max) {
+            max = array.get(i);
+            re = i;
+        }
+    }
+        return re;
+}
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
@@ -190,16 +219,16 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         List<String> qrCodesContent = wechatDetector.detectAndDecode(frame, qrCodesCorner);
 
         // Super resolution
-        Mat frame_resize = new Mat();
-        Imgproc.resize(frame, frame_resize, new Size(224, 224));
-        Imgproc.cvtColor(frame_resize, frame_resize, Imgproc.COLOR_RGB2GRAY);
-        Mat blob = Dnn.blobFromImage(frame_resize, 1/255.0,
-                new org.opencv.core.Size(224, 224),
-                new Scalar(0.0, 0.0, 0.0), /*swapRB*/false, /*crop*/false);
-        superResNet.setInput(blob);
-        Mat superResMat = superResNet.forward();
-
-        Log.w(TAG, "mysize:  " + superResMat.size());
+//        Mat frame_resize = new Mat();
+//        Imgproc.resize(frame, frame_resize, new Size(224, 224));
+//        Mat frame_resize = frame.clone();
+//        Imgproc.cvtColor(frame_resize, frame_resize, Imgproc.COLOR_RGB2GRAY);
+//        Mat blob = Dnn.blobFromImage(frame_resize, 1/255.0,
+//                new org.opencv.core.Size(224, 224),
+//                new Scalar(0.0, 0.0, 0.0), /*swapRB*/false, /*crop*/false);
+//        superResNet.setInput(blob);
+//        Mat superResMat = superResNet.forward();
+//        Log.w(TAG, "mysize:  " + superResMat.size());
 
 
         /*** Traditional QRCode detection
@@ -211,6 +240,56 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
 
 
+
+
+        /***
+         *  YOLO custom detector
+         */
+        yoloQrDetector.getLayerNames();
+        Mat frame_yolo = new Mat();
+        Imgproc.cvtColor(frame, frame_yolo, Imgproc.COLOR_RGBA2RGB);
+        Mat blob = Dnn.blobFromImage(frame_yolo, 1/255.0,
+                new org.opencv.core.Size(640, 640),
+                new Scalar(new double[]{0.0, 0.0, 0.0}), /*swapRB*/true, /*crop*/false, CV_32F);
+        yoloQrDetector.setInput(blob);
+
+        //  -- determine  the output layer names that we need from YOLO
+        // The forward() function in OpenCV’s Net class needs the ending layer till which it should run in the network.
+
+        List<String> layerNames = yoloQrDetector.getLayerNames();
+        List<String> outputLayers = new ArrayList<String>();
+        for (Integer i : yoloQrDetector.getUnconnectedOutLayers().toList()) {
+            outputLayers.add(layerNames.get(i - 1));
+        }
+
+        List<Mat> outputs = new ArrayList<Mat>();
+        yoloQrDetector.forward(outputs, outputLayers);
+
+        for(Mat output : outputs) {
+            //  loop over each of the detections. Each row is a candidate detection,
+            System.out.println("Output.rows(): " + output.rows() + ", Output.cols(): " + output.cols());
+            for (int i = 0; i < output.rows(); i++) {
+                Mat row = output.row(i);
+                List<Float> detect = new MatOfFloat(row).toList();
+                List<Float> score = detect.subList(5, output.cols());
+                int class_id = argmax(score); // index maximalnog elementa liste
+                float conf = score.get(class_id);
+                if (conf >= 0.4) {
+                    int center_x = (int) (detect.get(0) * frame_yolo.cols());
+                    int center_y = (int) (detect.get(1) * frame_yolo.rows());
+                    int width = (int) (detect.get(2) * frame_yolo.cols());
+                    int height = (int) (detect.get(3) * frame_yolo.rows());
+
+                    Imgproc.circle(frame, new Point(center_x,center_y), width, new Scalar(255, 0, 0), 5);
+//                    int x = (center_x - width / 2);
+//                    int y = (center_y - height / 2);
+//                    Rect2d box = new Rect2d(x, y, width, height);
+//                    result.get("boxes").add(box);
+//                    result.get("confidences").add(conf);
+//                    result.get("class_ids").add(class_id);
+                }
+            }
+        }
 
         /***************Display*******************/
         if (qrCodesContent.size()>0)
@@ -246,9 +325,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         }
 
-        /***
-         *  YOLO custom detector
-         */
+
         return frame;
     } // end function
 
