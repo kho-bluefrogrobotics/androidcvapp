@@ -28,6 +28,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.QRCodeDetector;
 import org.opencv.videoio.VideoWriter;
 import org.opencv.wechat_qrcode.WeChatQRCode;
 import org.opencv.wechat_qrcode.Wechat_qrcode;
@@ -148,10 +149,10 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     // WeChat QRCode detector
     protected WeChatQRCode wechatDetector = null;
-    String wechatDetectorPrototxtPath = "/sdcard/Download/detect.prototxt";
-    String wechatDetectorCaffeModelPath = "/sdcard/Download/detect.caffemodel";
-    String wechatSuperResolutionPrototxtPath = "/sdcard/Download/sr.prototxt";
-    String wechatSuperResolutionCaffeModelPath = "/sdcard/Download/sr.caffemodel";
+    String wechatDetectorPrototxtPath = "/sdcard/Download/detect_2021nov.prototxt";
+    String wechatDetectorCaffeModelPath = "/sdcard/Download/detect_2021nov.caffemodel";
+    String wechatSuperResolutionPrototxtPath = "/sdcard/Download/sr_2021nov.prototxt";
+    String wechatSuperResolutionCaffeModelPath = "/sdcard/Download/sr_2021nov.caffemodel";
 
     public void onCameraViewStarted(int width, int height) {
 
@@ -178,8 +179,22 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         int y = 0;
 
         List<Mat> qrCodesCorner = new ArrayList<Mat>();
+        wechatDetector.setScaleFactor(1.0f);
         List<String> qrCodesContent = wechatDetector.detectAndDecode(frame, qrCodesCorner);
 
+
+
+        /*** Traditional QRCode detection
+         *
+         */
+        QRCodeDetector decoder = new QRCodeDetector();
+        Mat points = new Mat();
+        String data = decoder.detectAndDecode(frame, points);
+
+
+
+
+        /***************Display*******************/
         if (qrCodesContent.size()>0)
         {
             Log.w(TAG, "QRCode detected :" + qrCodesContent.get(0));
@@ -203,7 +218,19 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         }
 
+        if (!points.empty()) {
 
+            for (int i = 0; i < points.cols(); i++) {
+                Point pt1 = new Point(points.get(0, i));
+                Point pt2 = new Point(points.get(0, (i + 1) % 4));
+                Imgproc.line(frame, pt1, pt2, new Scalar(150, 250, 0), 3);
+            }
+
+        }
+
+        /***
+         *  YOLO custom detector
+         */
         return frame;
     } // end function
 
