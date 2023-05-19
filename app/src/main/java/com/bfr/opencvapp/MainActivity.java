@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.icu.text.AlphabeticIndex;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -27,6 +28,9 @@ import org.opencv.core.Mat;
 
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
+import org.opencv.dnn.Dnn;
+import org.opencv.dnn.Net;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.QRCodeDetector;
 import org.opencv.videoio.VideoWriter;
@@ -154,6 +158,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     String wechatSuperResolutionPrototxtPath = "/sdcard/Download/sr_2021nov.prototxt";
     String wechatSuperResolutionCaffeModelPath = "/sdcard/Download/sr_2021nov.caffemodel";
 
+    private Net superResNet;
     public void onCameraViewStarted(int width, int height) {
 
         //init WeChat QRCode detector
@@ -168,6 +173,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             wechatDetector = null;
         }
 
+        //
+        superResNet = Dnn.readNetFromCaffe(wechatSuperResolutionPrototxtPath, wechatSuperResolutionCaffeModelPath);
     }
 
 
@@ -182,6 +189,17 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         wechatDetector.setScaleFactor(1.0f);
         List<String> qrCodesContent = wechatDetector.detectAndDecode(frame, qrCodesCorner);
 
+        // Super resolution
+        Mat frame_resize = new Mat();
+        Imgproc.resize(frame, frame_resize, new Size(224, 224));
+        Imgproc.cvtColor(frame_resize, frame_resize, Imgproc.COLOR_RGB2GRAY);
+        Mat blob = Dnn.blobFromImage(frame_resize, 1/255.0,
+                new org.opencv.core.Size(224, 224),
+                new Scalar(0.0, 0.0, 0.0), /*swapRB*/false, /*crop*/false);
+        superResNet.setInput(blob);
+        Mat superResMat = superResNet.forward();
+
+        Log.w(TAG, "mysize:  " + superResMat.size());
 
 
         /*** Traditional QRCode detection
