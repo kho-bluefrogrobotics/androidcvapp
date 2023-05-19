@@ -50,4 +50,9 @@ dependencies {
 
     // added MLKit dependencies for face detector
     implementation 'com.google.mlkit:face-detection:16.0.0'
+
+    ['boofcv-android', 'boofcv-core'].each {
+        String a -> implementation group: 'org.boofcv', name: a, version: '0.41'
+    }
+
 }

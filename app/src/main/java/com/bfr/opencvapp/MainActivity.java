@@ -8,6 +8,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.icu.text.AlphabeticIndex;
 import android.os.Bundle;
 import android.os.Environment;
@@ -28,6 +29,8 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 
+import org.opencv.android.Utils;
+import org.opencv.core.CvException;
 import org.opencv.core.Mat;
 
 import org.opencv.core.MatOfFloat;
@@ -47,6 +50,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import boofcv.abst.fiducial.QrCodeDetector;
+import boofcv.alg.fiducial.qrcode.QrCode;
+import boofcv.android.ConvertBitmap;
+import boofcv.factory.fiducial.ConfigQrCode;
+import boofcv.factory.fiducial.FactoryFiducial;
+import boofcv.struct.image.GrayU8;
 
 
 public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -274,13 +283,14 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 List<Float> score = detect.subList(5, output.cols());
                 int class_id = argmax(score); // index maximalnog elementa liste
                 float conf = score.get(class_id);
-                if (conf >= 0.4) {
+                if (conf >= 0.5) {
                     int center_x = (int) (detect.get(0) * frame_yolo.cols());
                     int center_y = (int) (detect.get(1) * frame_yolo.rows());
                     int width = (int) (detect.get(2) * frame_yolo.cols());
                     int height = (int) (detect.get(3) * frame_yolo.rows());
 
                     Imgproc.circle(frame, new Point(center_x,center_y), width, new Scalar(255, 0, 0), 5);
+                    Imgproc.putText(frame, String.valueOf(conf), new Point(center_x,center_y), 2, 1, new Scalar(200, 255, 10));
 //                    int x = (center_x - width / 2);
 //                    int y = (center_y - height / 2);
 //                    Rect2d box = new Rect2d(x, y, width, height);
@@ -289,6 +299,39 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //                    result.get("class_ids").add(class_id);
                 }
             }
+        }
+
+        /***
+         * Boofcv
+         */
+
+        // convert mat to boof cv
+        Bitmap bmp = null;
+        Mat rgb = new Mat();
+        Imgproc.cvtColor(frame, rgb, Imgproc.COLOR_BGR2RGB);
+        try {
+            bmp = Bitmap.createBitmap(rgb.cols(), rgb.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(rgb, bmp);
+        }
+        catch (CvException e){
+            Log.d("Exception",e.getMessage());
+        }
+
+        // Easiest way to convert a Bitmap into a BoofCV type
+        GrayU8 image = ConvertBitmap.bitmapToGray(bmp, (GrayU8)null, null);
+
+        ConfigQrCode config = new ConfigQrCode();
+//		config.considerTransposed = false; // by default, it will consider incorrectly encoded markers. Faster if false
+        QrCodeDetector<GrayU8> detector = FactoryFiducial.qrcode(config, GrayU8.class);
+
+        detector.process(image);
+
+        // Gets a list of all the qr codes it could successfully detect and decode
+        List<QrCode> detections = detector.getDetections();
+
+        if(detections.size()>0)
+        {
+            Log.w(TAG, "Found QRCode with boofCV");
         }
 
         /***************Display*******************/
