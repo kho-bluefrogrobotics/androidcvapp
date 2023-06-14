@@ -39,6 +39,7 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
+import org.opencv.dnn_superres.*;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.QRCodeDetector;
 import org.opencv.videoio.VideoWriter;
@@ -198,6 +199,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         superResNet = Dnn.readNetFromCaffe(wechatSuperResolutionPrototxtPath, wechatSuperResolutionCaffeModelPath);
         //
         yoloQrDetector = Dnn.readNetFromDarknet(yoloCFG, yoloWeights);
+
+        //super resolution
+        //DnnSuperResImpl mSupRes = DnnSuperResImpl.create();
     }
 
     /**
@@ -215,7 +219,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     }
         return re;
 }
-
+    List<String> qrCodesContent;
+    List<Mat> qrCodesCorner ;//= new ArrayList<Mat>();
+    Mat points;// = new Mat();
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
         frame = inputFrame.rgba();
@@ -223,9 +229,18 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         int x = 0;
         int y = 0;
 
-        List<Mat> qrCodesCorner = new ArrayList<Mat>();
-        wechatDetector.setScaleFactor(1.0f);
-        List<String> qrCodesContent = wechatDetector.detectAndDecode(frame, qrCodesCorner);
+
+        Thread wechat = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                wechatDetector.setScaleFactor(1.0f);
+                qrCodesCorner = new ArrayList<Mat>();
+                qrCodesContent = wechatDetector.detectAndDecode(frame, qrCodesCorner);
+            }
+        });
+
+        wechat.start();
+
 
         // Super resolution
 //        Mat frame_resize = new Mat();
@@ -243,10 +258,16 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         /*** Traditional QRCode detection
          *
          */
-        QRCodeDetector decoder = new QRCodeDetector();
-        Mat points = new Mat();
-        String data = decoder.detectAndDecode(frame, points);
+        Thread tradi = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                QRCodeDetector decoder = new QRCodeDetector();
+                points = new Mat();
+                String data = decoder.detectAndDecode(frame, points);
+            }
+        });
 
+        tradi.start();
 
 
 
@@ -254,86 +275,100 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         /***
          *  YOLO custom detector
          */
-        yoloQrDetector.getLayerNames();
-        Mat frame_yolo = new Mat();
-        Imgproc.cvtColor(frame, frame_yolo, Imgproc.COLOR_RGBA2RGB);
-        Mat blob = Dnn.blobFromImage(frame_yolo, 1/255.0,
-                new org.opencv.core.Size(640, 640),
-                new Scalar(new double[]{0.0, 0.0, 0.0}), /*swapRB*/true, /*crop*/false, CV_32F);
-        yoloQrDetector.setInput(blob);
+        Thread yolo = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                yoloQrDetector.getLayerNames();
+                Mat frame_yolo = new Mat();
+                Imgproc.cvtColor(frame, frame_yolo, Imgproc.COLOR_RGBA2RGB);
+                Mat blob = Dnn.blobFromImage(frame_yolo, 1/255.0,
+                        new org.opencv.core.Size(640, 640),
+                        new Scalar(new double[]{0.0, 0.0, 0.0}), /*swapRB*/true, /*crop*/false, CV_32F);
+                yoloQrDetector.setInput(blob);
 
-        //  -- determine  the output layer names that we need from YOLO
-        // The forward() function in OpenCV’s Net class needs the ending layer till which it should run in the network.
+                //  -- determine  the output layer names that we need from YOLO
+                // The forward() function in OpenCV’s Net class needs the ending layer till which it should run in the network.
 
-        List<String> layerNames = yoloQrDetector.getLayerNames();
-        List<String> outputLayers = new ArrayList<String>();
-        for (Integer i : yoloQrDetector.getUnconnectedOutLayers().toList()) {
-            outputLayers.add(layerNames.get(i - 1));
-        }
+                List<String> layerNames = yoloQrDetector.getLayerNames();
+                List<String> outputLayers = new ArrayList<String>();
+                for (Integer i : yoloQrDetector.getUnconnectedOutLayers().toList()) {
+                    outputLayers.add(layerNames.get(i - 1));
+                }
 
-        List<Mat> outputs = new ArrayList<Mat>();
-        yoloQrDetector.forward(outputs, outputLayers);
+                List<Mat> outputs = new ArrayList<Mat>();
+                yoloQrDetector.forward(outputs, outputLayers);
 
-        for(Mat output : outputs) {
-            //  loop over each of the detections. Each row is a candidate detection,
-            System.out.println("Output.rows(): " + output.rows() + ", Output.cols(): " + output.cols());
-            for (int i = 0; i < output.rows(); i++) {
-                Mat row = output.row(i);
-                List<Float> detect = new MatOfFloat(row).toList();
-                List<Float> score = detect.subList(5, output.cols());
-                int class_id = argmax(score); // index maximalnog elementa liste
-                float conf = score.get(class_id);
-                if (conf >= 0.5) {
-                    int center_x = (int) (detect.get(0) * frame_yolo.cols());
-                    int center_y = (int) (detect.get(1) * frame_yolo.rows());
-                    int width = (int) (detect.get(2) * frame_yolo.cols());
-                    int height = (int) (detect.get(3) * frame_yolo.rows());
+                for(Mat output : outputs) {
+                    //  loop over each of the detections. Each row is a candidate detection,
+                    System.out.println("Output.rows(): " + output.rows() + ", Output.cols(): " + output.cols());
+                    for (int i = 0; i < output.rows(); i++) {
+                        Mat row = output.row(i);
+                        List<Float> detect = new MatOfFloat(row).toList();
+                        List<Float> score = detect.subList(5, output.cols());
+                        int class_id = argmax(score); // index maximalnog elementa liste
+                        float conf = score.get(class_id);
+                        if (conf >= 0.5) {
+                            int center_x = (int) (detect.get(0) * frame_yolo.cols());
+                            int center_y = (int) (detect.get(1) * frame_yolo.rows());
+                            int width = (int) (detect.get(2) * frame_yolo.cols());
+                            int height = (int) (detect.get(3) * frame_yolo.rows());
 
-                    Imgproc.circle(frame, new Point(center_x,center_y), width, new Scalar(255, 0, 0), 5);
-                    Imgproc.putText(frame, String.valueOf(conf), new Point(center_x,center_y), 2, 1, new Scalar(200, 255, 10));
+                            Imgproc.circle(frame, new Point(center_x,center_y), width, new Scalar(255, 0, 0), 5);
+                            Imgproc.putText(frame, String.valueOf(conf), new Point(center_x,center_y), 2, 1, new Scalar(200, 255, 10));
 //                    int x = (center_x - width / 2);
 //                    int y = (center_y - height / 2);
 //                    Rect2d box = new Rect2d(x, y, width, height);
 //                    result.get("boxes").add(box);
 //                    result.get("confidences").add(conf);
 //                    result.get("class_ids").add(class_id);
+                        }
+                    }
                 }
             }
-        }
+        });
 
-        /***
-         * Boofcv
-         */
+        yolo.start();
 
-        // convert mat to boof cv
-        Bitmap bmp = null;
-        Mat rgb = new Mat();
-        Imgproc.cvtColor(frame, rgb, Imgproc.COLOR_BGR2RGB);
+//        /***
+//         * Boofcv
+//         */
+//
+//        // convert mat to boof cv
+//        Bitmap bmp = null;
+//        Mat rgb = new Mat();
+//        Imgproc.cvtColor(frame, rgb, Imgproc.COLOR_BGR2RGB);
+//        try {
+//            bmp = Bitmap.createBitmap(rgb.cols(), rgb.rows(), Bitmap.Config.ARGB_8888);
+//            Utils.matToBitmap(rgb, bmp);
+//        }
+//        catch (CvException e){
+//            Log.d("Exception",e.getMessage());
+//        }
+//
+//        // Easiest way to convert a Bitmap into a BoofCV type
+//        GrayU8 image = ConvertBitmap.bitmapToGray(bmp, (GrayU8)null, null);
+//
+//        ConfigQrCode config = new ConfigQrCode();
+////		config.considerTransposed = false; // by default, it will consider incorrectly encoded markers. Faster if false
+//        QrCodeDetector<GrayU8> detector = FactoryFiducial.qrcode(config, GrayU8.class);
+//
+//        detector.process(image);
+//
+//        // Gets a list of all the qr codes it could successfully detect and decode
+//        List<QrCode> detections = detector.getDetections();
+//
+//        if(detections.size()>0)
+//        {
+//            Log.w(TAG, "Found QRCode with boofCV");
+//        }
+
         try {
-            bmp = Bitmap.createBitmap(rgb.cols(), rgb.rows(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(rgb, bmp);
+            wechat.join();
+            yolo.join();
+            tradi.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-        catch (CvException e){
-            Log.d("Exception",e.getMessage());
-        }
-
-        // Easiest way to convert a Bitmap into a BoofCV type
-        GrayU8 image = ConvertBitmap.bitmapToGray(bmp, (GrayU8)null, null);
-
-        ConfigQrCode config = new ConfigQrCode();
-//		config.considerTransposed = false; // by default, it will consider incorrectly encoded markers. Faster if false
-        QrCodeDetector<GrayU8> detector = FactoryFiducial.qrcode(config, GrayU8.class);
-
-        detector.process(image);
-
-        // Gets a list of all the qr codes it could successfully detect and decode
-        List<QrCode> detections = detector.getDetections();
-
-        if(detections.size()>0)
-        {
-            Log.w(TAG, "Found QRCode with boofCV");
-        }
-
         /***************Display*******************/
         if (qrCodesContent.size()>0)
         {
