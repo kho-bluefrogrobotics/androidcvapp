@@ -201,7 +201,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         yoloQrDetector = Dnn.readNetFromDarknet(yoloCFG, yoloWeights);
 
         //super resolution
-        //DnnSuperResImpl mSupRes = DnnSuperResImpl.create();
+        DnnSuperResImpl mSupRes = null;
+        mSupRes.
+        
     }
 
     /**
