@@ -46,6 +46,13 @@ public class QrCode {
         setPose(rotationVector, translationVector);
     }
 
+
+    public String read()
+    {
+        return null;
+    }
+
+
     public void setPose(Mat rotationVector, Mat translationVector){
         Calib3d.Rodrigues(rotationVector, rotationMatrix);
         this.translationVector = translationVector;

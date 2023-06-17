@@ -31,6 +31,7 @@ import org.opencv.android.OpenCVLoader;
 
 import org.opencv.android.Utils;
 import org.opencv.core.CvException;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
 import org.opencv.core.MatOfFloat;
@@ -40,6 +41,7 @@ import org.opencv.core.Size;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.opencv.dnn_superres.*;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.QRCodeDetector;
 import org.opencv.videoio.VideoWriter;
@@ -181,6 +183,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // Yolo
     private Net yoloQrDetector;
 
+    //Super resolution
+    DnnSuperResImpl mSupRes = null;
+
     public void onCameraViewStarted(int width, int height) {
 
         //init WeChat QRCode detector
@@ -201,9 +206,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         yoloQrDetector = Dnn.readNetFromDarknet(yoloCFG, yoloWeights);
 
         //super resolution
-        DnnSuperResImpl mSupRes = null;
-        mSupRes.
-        
+        mSupRes = DnnSuperResImpl.create();
+//        mSupRes.readModel( "/sdcard/Download/EDSR_x4.pb");
+        mSupRes.readModel( "/sdcard/Download/ESPCN_x4.pb");
+//        mSupRes.setModel("edsr", 4);
+        mSupRes.setModel("espcn", 4);
+
     }
 
     /**
@@ -231,6 +239,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         int x = 0;
         int y = 0;
 
+        Mat supResMat = new Mat();
+        Mat inSuperReso = new Mat();
+//        Imgproc.cvtColor(frame, inSuperReso, Imgproc.COLOR_RGBA2RGB);
+        Imgproc.cvtColor(frame, inSuperReso, Imgproc.COLOR_RGB2YCrCb);
+        mSupRes.upsample(inSuperReso, supResMat);
 
         Thread wechat = new Thread(new Runnable() {
             @Override
@@ -405,8 +418,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         }
 
+//        return frame;
 
+        Log.w("coucou", ""+supResMat.size());
+        Imgproc.cvtColor(supResMat, supResMat, Imgproc.COLOR_YCrCb2BGR);
+        Imgcodecs.imwrite("/storage/emulated/0/superres.jpg", supResMat);
         return frame;
+
     } // end function
 
     public void onCameraViewStopped() {

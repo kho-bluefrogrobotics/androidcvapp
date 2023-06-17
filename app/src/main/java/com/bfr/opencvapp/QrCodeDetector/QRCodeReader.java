@@ -2,14 +2,19 @@ package com.bfr.opencvapp.QrCodeDetector;
 
 import android.util.Log;
 
+import org.opencv.core.Mat;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.opencv.wechat_qrcode.WeChatQRCode;
 
+import java.util.List;
+
 public class QRCodeReader {
 
+    String TAG = "QRCode reader";
     // WeChat QRCode detector
-    protected WeChatQRCode wechatDetector = null;
+    private WeChatQRCode wechatDetector = null;
+    private Net superResoNet;
     String wechatDetectorPrototxtPath = "/sdcard/Download/detect_2021nov.prototxt";
     String wechatDetectorCaffeModelPath = "/sdcard/Download/detect_2021nov.caffemodel";
     String wechatSuperResolutionPrototxtPath = "/sdcard/Download/sr_2021nov.prototxt";
@@ -19,6 +24,12 @@ public class QRCodeReader {
     private Net yoloQrDetector;
     String yoloCFG = "/sdcard/Download/yolov4-tiny-custom-640.cfg";
     String yoloWeights = "/sdcard/Download/yolov4-tiny-custom-640_last.weights";
+
+
+    //results from Wechat
+    List<String> qrCodesContent;
+    List<Mat> qrCodesCorner ;//= new ArrayList<Mat>();
+    Mat points;// = new Mat();
 
     public QRCodeReader()
     {
@@ -33,10 +44,12 @@ public class QRCodeReader {
             e.printStackTrace();
             wechatDetector = null;
         }
-        //
-        superResNet = Dnn.readNetFromCaffe(wechatSuperResolutionPrototxtPath, wechatSuperResolutionCaffeModelPath);
+        // super resolution
+        superResoNet = Dnn.readNetFromCaffe(wechatSuperResolutionPrototxtPath, wechatSuperResolutionCaffeModelPath);
 
         //init YOLO detector
         yoloQrDetector = Dnn.readNetFromDarknet(yoloCFG, yoloWeights);
     }
+
+
 }
