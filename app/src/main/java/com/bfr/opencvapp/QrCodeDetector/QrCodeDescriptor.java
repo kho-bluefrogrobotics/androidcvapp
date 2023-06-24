@@ -12,7 +12,10 @@ public class QrCodeDescriptor {
     double side;
 
     // Methods
-    public QrCodeDescriptor(double qrCodeSide){
+    public QrCodeDescriptor(){
+    }
+
+    public void setWorldModel(double qrCodeSide){
         side = qrCodeSide;
         worldModel = new MatOfPoint3f();
         List<Point3> cornerDescription = new ArrayList<Point3>();
