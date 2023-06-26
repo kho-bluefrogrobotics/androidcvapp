@@ -79,6 +79,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // Face UI
     private CheckBox hideFace;
 
+    private final int IMG_WIDTH = 800;
+    private final int IMG_HEIGHT = 600;
 
 
     //********************  image ***************************
@@ -430,14 +432,19 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        Imgproc.cvtColor(supResMat, supResMat, Imgproc.COLOR_YCrCb2BGR);
 //        Imgcodecs.imwrite("/storage/emulated/0/superres.jpg", supResMat);
 
+//        Imgproc.rectangle(frame , new Point((int) IMG_WIDTH/4,(int) IMG_HEIGHT/4),
+//                new Point((int) (3*IMG_WIDTH/4),(int) (3*IMG_HEIGHT/4)), new Scalar(250, 0, 0), 2 );
 
         List<QrCode> listQr =  mQRCodeReader.QRCodeDetectAndDecode(frame);
 
         try {
             if (listQr.size() > 0) {
-                listQr.get(0).getPose(0.2);
+                listQr.get(0).getPose(0.15);
 
-                Log.w(TAG, "QRCOde trouve: " + listQr.get(0).angle());
+                String angle = ""+ 180/3.14*listQr.get(0).angle() ;
+                Log.w(TAG, "QRCOde trouve: " + angle);
+
+                Imgproc.putText(frame , angle, new Point((int) IMG_WIDTH/4,(int) IMG_HEIGHT/4),1,2, new Scalar(255,0,0) );
             }
         } catch (Exception e) {
             e.printStackTrace();
