@@ -8,6 +8,7 @@ import org.opencv.core.Scalar;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.QRCodeDetector;
 import org.opencv.wechat_qrcode.WeChatQRCode;
 
 import java.util.ArrayList;
@@ -68,37 +69,76 @@ public class QRCodeReader {
         List<QrCode> foundQrCodes = new ArrayList<>();
 
         //reset
-        qrCodesContent.clear();
-        qrCodesCorner.clear();
+//        qrCodesContent.clear();
+//        qrCodesCorner.clear();
+//
+//        qrCodesContent = wechatDetector.detectAndDecode(frame, qrCodesCorner);
+//
+//        int x, y;
+//        // compile results
+//        for (int i=0; i<qrCodesContent.size(); i++)
+//        {
+////            Log.w(TAG, "QRCOde trouve: " + qrCodesContent.get(i));
+//
+//            x = (int) (qrCodesCorner.get(i).get(0,0)[0]);
+//            y = (int) (qrCodesCorner.get(i).get(0,1)[0]);
+//            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(255, 0, 0), 10);
+//
+//            x = (int) (qrCodesCorner.get(i).get(1,0)[0]);
+//            y = (int) (qrCodesCorner.get(i).get(1,1)[0]);
+//            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(0, 255, 0), 10);
+//
+//            x = (int) (qrCodesCorner.get(i).get(2,0)[0]);
+//            y = (int) (qrCodesCorner.get(i).get(2,1)[0]);
+//            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(0, 0, 255), 10);
+//
+//            x = (int) (qrCodesCorner.get(i).get(3,0)[0]);
+//            y = (int) (qrCodesCorner.get(i).get(3,1)[0]);
+//            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(150, 0, 150), 10);
+//
+//            foundQrCodes.add(new QrCode(qrCodesContent.get(i), qrCodesCorner.get(i)));
+//        }
 
-        qrCodesContent = wechatDetector.detectAndDecode(frame, qrCodesCorner);
-
-        int x, y;
-        // compile results
-        for (int i=0; i<qrCodesContent.size(); i++)
-        {
-//            Log.w(TAG, "QRCOde trouve: " + qrCodesContent.get(i));
-
-            x = (int) (qrCodesCorner.get(i).get(0,0)[0]);
-            y = (int) (qrCodesCorner.get(i).get(0,1)[0]);
-            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(255, 0, 0), 10);
-
-            x = (int) (qrCodesCorner.get(i).get(1,0)[0]);
-            y = (int) (qrCodesCorner.get(i).get(1,1)[0]);
-            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(0, 255, 0), 10);
-
-            x = (int) (qrCodesCorner.get(i).get(2,0)[0]);
-            y = (int) (qrCodesCorner.get(i).get(2,1)[0]);
-            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(0, 0, 255), 10);
-
-            x = (int) (qrCodesCorner.get(i).get(3,0)[0]);
-            y = (int) (qrCodesCorner.get(i).get(3,1)[0]);
-            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(150, 0, 150), 10);
 
 
+        QRCodeDetector decoder = new QRCodeDetector();
+        points = new Mat();
+        String data = decoder.detectAndDecode(frame, points);
 
-            foundQrCodes.add(new QrCode(qrCodesContent.get(i), qrCodesCorner.get(i)));
+        if (!points.empty()) {
+
+            for (int i = 0; i < points.cols(); i++) {
+                Point pt1 = new Point(points.get(0, i));
+                Point pt2 = new Point(points.get(0, (i + 1) % 4));
+                Imgproc.line(frame, pt1, pt2, new Scalar(150, 250, 0), 3);
+            }
+            foundQrCodes.add(new QrCode(data, points));
+
         }
+        //        int x, y;
+//        // compile results
+//        for (int i=0; i<qrCodesContent.size(); i++)
+//        {
+////            Log.w(TAG, "QRCOde trouve: " + qrCodesContent.get(i));
+//
+//            x = (int) (qrCodesCorner.get(i).get(0,0)[0]);
+//            y = (int) (qrCodesCorner.get(i).get(0,1)[0]);
+//            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(255, 0, 0), 10);
+//
+//            x = (int) (qrCodesCorner.get(i).get(1,0)[0]);
+//            y = (int) (qrCodesCorner.get(i).get(1,1)[0]);
+//            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(0, 255, 0), 10);
+//
+//            x = (int) (qrCodesCorner.get(i).get(2,0)[0]);
+//            y = (int) (qrCodesCorner.get(i).get(2,1)[0]);
+//            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(0, 0, 255), 10);
+//
+//            x = (int) (qrCodesCorner.get(i).get(3,0)[0]);
+//            y = (int) (qrCodesCorner.get(i).get(3,1)[0]);
+//            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(150, 0, 150), 10);
+//
+//            foundQrCodes.add(new QrCode(qrCodesContent.get(i), qrCodesCorner.get(i)));
+//        }
 
         return foundQrCodes;
     }
