@@ -435,6 +435,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        Imgproc.rectangle(frame , new Point((int) IMG_WIDTH/4,(int) IMG_HEIGHT/4),
 //                new Point((int) (3*IMG_WIDTH/4),(int) (3*IMG_HEIGHT/4)), new Scalar(250, 0, 0), 2 );
 
+//        List<QrCode> listQr =  mQRCodeReader.QRCodeDetectAndDecode(frame);
         List<QrCode> listQr =  mQRCodeReader.QRCodeDetectAndDecode(frame);
 
         try {
@@ -442,7 +443,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 listQr.get(0).getPose(0.15);
 
                 String angle = ""+ 180/3.14*listQr.get(0).angle() ;
-                Log.w(TAG, "QRCOde trouve: " + angle);
+//                Log.w(TAG, "QRCOde trouve: " + angle);
 
                 Imgproc.putText(frame , angle, new Point((int) IMG_WIDTH/4,(int) IMG_HEIGHT/4),1,2, new Scalar(0,0,255), 6 );
                 Imgproc.putText(frame , angle, new Point((int) IMG_WIDTH/4,(int) IMG_HEIGHT/4),1,2, new Scalar(255,255,255), 2 );

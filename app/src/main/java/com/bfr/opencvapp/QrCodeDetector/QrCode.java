@@ -33,10 +33,11 @@ public class QrCode {
     // for real world corner coords
     protected QrCodeDescriptor qrCodeDescriptor = new QrCodeDescriptor();
     // camera calibration
-    private final double[][] cameraCalibrationMatrixCoeff = {{622.1937 , 0       , 399.7594},
-            {0        , 616.9286, 299.5756},
+    private final double[][] cameraCalibrationMatrixCoeff = {{347.1784748095083 , 0       , 326.6795720628966},
+            {0        , 345.1916479410069, 233.1696799590856},
             {0        , 0       , 1       }};
-    private final double[] distortionCoeff = {0.0598, -0.0309, -0.0038, -0.0033, -0.0872};
+//    private final double[] distortionCoeff = {0.0598, -0.0309, -0.0038, -0.0033, -0.0872};
+    private final double[] distortionCoeff = {-0.27803360529321036, 0.06339702764223658, -0.000203214885858507, -0.0014783300318126165};
     protected Mat cameraCalibrationMatrix;
     protected MatOfDouble cameraDistortionVector;
     // Pose
@@ -82,9 +83,9 @@ public class QrCode {
         //set world model
         qrCodeDescriptor.setWorldModel(qrSize);
 
-//        QRCodeUtils.logMat("coucou", matOfCorners);
+
         corners = QRCodeUtils.matToMatOfPoints2f(matOfCorners);
-//        QRCodeUtils.logMat("coucou", corners);
+
 
 
         cameraCalibrationMatrix = new Mat(3, 3, CvType.CV_64FC1);
@@ -101,7 +102,8 @@ public class QrCode {
 
 
 
-        return Calib3d.solvePnP(qrCodeDescriptor.worldModel,
+
+        Calib3d.solvePnP(qrCodeDescriptor.worldModel,
                     corners,
                     cameraCalibrationMatrix,
                     cameraDistortionVector,
@@ -109,6 +111,14 @@ public class QrCode {
                     qrCodeTranslation,
                     false, // check if it should stay to false
                     Calib3d.SOLVEPNP_IPPE_SQUARE);
+
+        QRCodeUtils.logMat("matofCorners", matOfCorners);
+        QRCodeUtils.logMat("corners", corners);
+        QRCodeUtils.logMat("qrCodeRotation", qrCodeRotation);
+        QRCodeUtils.logMat("qrCodeTranslation", qrCodeTranslation);
+
+            this.angle();
+         return true;
 
     }
 
@@ -195,7 +205,7 @@ public class QrCode {
 //    }
 
     public double angle() {
-//        return -Math.asin(rotationMatrix.get(2, 0)[0]);
+        Log.w("coucou2", "QRCOde trouve: " + -180/3.14*Math.asin(qrCodeRotation.get(2, 0)[0]));
         return -Math.asin(qrCodeRotation.get(2, 0)[0]);
     }
 
