@@ -33,24 +33,24 @@ public class QrCode {
     // for real world corner coords
     protected QrCodeDescriptor qrCodeDescriptor = new QrCodeDescriptor();
     // camera calibration
-    //wideangle
+    //wideangle 640x480
 //    private final double[][] cameraCalibrationMatrixCoeff = {{347.1784748095083 , 0       , 326.6795720628966},
 //            {0        , 345.1916479410069, 233.1696799590856},
 //            {0        , 0       , 1       }};
 //    private final double[] distortionCoeff = {-0.27803360529321036, 0.06339702764223658, -0.000203214885858507, -0.0014783300318126165};
 
-//    //1024x768
-//    private final double[][] cameraCalibrationMatrixCoeff = {{564.4894 , 0       , 510.8668},
-//        {0        , 566.9299, 382.2685},
-//        {0        , 0       , 1       }};
-//    private final double[] distortionCoeff = {-0.2151,-0.3785, -0.0015, 0.0022, 0.8043};
+//    //wide angle 1024x768
+    private final double[][] cameraCalibrationMatrixCoeff = {{564.4894 , 0       , 510.8668},
+        {0        , 566.9299, 382.2685},
+        {0        , 0       , 1       }};
+    private final double[] distortionCoeff = {-0.2151,-0.3785, -0.0015, 0.0022, 0.8043};
 
 
     //zoom 640x480
-    private final double[][] cameraCalibrationMatrixCoeff = {{622.1937 , 0       , 399.7594},
-            {0        , 616.9286, 299.5756},
-            {0        , 0       , 1       }};
-    private final double[] distortionCoeff = {0.0598, -0.0309, -0.0038, -0.0033, -0.0872};
+//    private final double[][] cameraCalibrationMatrixCoeff = {{622.1937 , 0       , 399.7594},
+//            {0        , 616.9286, 299.5756},
+//            {0        , 0       , 1       }};
+//    private final double[] distortionCoeff = {0.0598, -0.0309, -0.0038, -0.0033, -0.0872};
 
     protected Mat cameraCalibrationMatrix;
     protected MatOfDouble cameraDistortionVector;
