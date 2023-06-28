@@ -440,9 +440,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         try {
             if (listQr.size() > 0) {
-                listQr.get(0).getPose(0.15);
+                listQr.get(0).getPose(152);
 
-                String angle = ""+ 180/3.14*listQr.get(0).angle() ;
+                String angle = ""+ listQr.get(0).angle() ;
 //                Log.w(TAG, "QRCOde trouve: " + angle);
 
                 Imgproc.putText(frame , angle, new Point((int) IMG_WIDTH/4,(int) IMG_HEIGHT/4),1,2, new Scalar(0,0,255), 6 );
