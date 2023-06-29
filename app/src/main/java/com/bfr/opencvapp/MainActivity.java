@@ -1,15 +1,9 @@
 package com.bfr.opencvapp;
 
-import static org.opencv.core.CvType.CV_32F;
-import static org.opencv.core.CvType.CV_32FC3;
-import static org.opencv.core.CvType.CV_8U;
-
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.icu.text.AlphabeticIndex;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -32,35 +26,23 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 
-import org.opencv.android.Utils;
-import org.opencv.core.CvException;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
-import org.opencv.core.MatOfFloat;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.opencv.dnn_superres.*;
-import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.QRCodeDetector;
 import org.opencv.videoio.VideoWriter;
 import org.opencv.wechat_qrcode.WeChatQRCode;
-import org.opencv.wechat_qrcode.Wechat_qrcode;
 
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import boofcv.abst.fiducial.QrCodeDetector;
-import boofcv.android.ConvertBitmap;
-import boofcv.factory.fiducial.ConfigQrCode;
-import boofcv.factory.fiducial.FactoryFiducial;
-import boofcv.struct.image.GrayU8;
 
 
 public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -278,19 +260,19 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 ////        Log.w(TAG, "mysize:  " + superResMat.size());
 //
 //
-//        /*** Traditional QRCode detection
-//         *
-//         */
-//        Thread tradi = new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                QRCodeDetector decoder = new QRCodeDetector();
-//                points = new Mat();
-//                String data = decoder.detectAndDecode(frame, points);
-//            }
-//        });
-//
-//        tradi.start();
+        /*** Traditional QRCode detection
+         *
+         */
+        Thread tradi = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                QRCodeDetector decoder = new QRCodeDetector();
+                points = new Mat();
+                String data = decoder.detectAndDecode(frame, points);
+            }
+        });
+
+        tradi.start();
 //
 //
 //
@@ -386,8 +368,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 ////        }
 //
 //        try {
-//            wechat.join();
-//            yolo.join();
+////            wechat.join();
+////            yolo.join();
 //            tradi.join();
 //        } catch (InterruptedException e) {
 //            e.printStackTrace();
@@ -436,13 +418,18 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //                new Point((int) (3*IMG_WIDTH/4),(int) (3*IMG_HEIGHT/4)), new Scalar(250, 0, 0), 2 );
 
 //        List<QrCode> listQr =  mQRCodeReader.QRCodeDetectAndDecode(frame);
-        List<QrCode> listQr =  mQRCodeReader.QRCodeDetectAndDecode(frame);
+
+
+
+
+
+        List<QrCode> listQr =  mQRCodeReader.DetectAndDecode(frame);
 
         try {
             if (listQr.size() > 0) {
-                listQr.get(0).getPose(0.125);
+//                listQr.get(0).getPose(0.125);
 
-                String angle = ""+ listQr.get(0).angle() ;
+                String angle = ""+ listQr.get(0).getAngle(0.125) ;
 //                Log.w(TAG, "QRCOde trouve: " + angle + " " + listQr.get(0).getTranslationVector().get(1,0));
 
                 Imgproc.putText(frame , angle, new Point((int) IMG_WIDTH/4,(int) IMG_HEIGHT/4),1,2, new Scalar(0,0,255), 6 );
@@ -450,13 +437,29 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                 Imgproc.putText(frame , ""+listQr.get(0).qrCodeTranslation.get(2,0)[0], new Point((int) IMG_WIDTH/4,(int)40+ IMG_HEIGHT/4),1,2, new Scalar(0,0,255), 6 );
                 Imgproc.putText(frame , ""+listQr.get(0).qrCodeTranslation.get(2,0)[0], new Point((int) IMG_WIDTH/4,(int) 40+IMG_HEIGHT/4),1,2, new Scalar(255,255,255), 2 );
-
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        return frame;
+
+
+//        Mat resized = new Mat();
+//        Imgproc.resize(frame, resized , new Size(1024,768));
+//        Rect displayROI= new Rect(
+//                0,
+//                0,
+//                resized.cols(),
+//                resized.rows() );
+//        Mat roiInDisplayMat = frame.submat(displayROI);
+//        resized.copyTo(roiInDisplayMat);
+
+
+
+        return frame ;
+
+
+//        return frame;
 
     } // end function
 

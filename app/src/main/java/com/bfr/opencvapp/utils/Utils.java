@@ -9,8 +9,17 @@ import org.opencv.core.Point;
 import java.util.ArrayList;
 import java.util.List;
 
-public class QRCodeUtils {
+public class Utils {
     protected final static String LOG_TAG = "OpenCvUtils";
+
+    /*** Path for models ***/
+    public static String wechatDetectorPrototxtPath = "/sdcard/Download/detect_2021nov.prototxt";
+    public static String wechatDetectorCaffeModelPath = "/sdcard/Download/detect_2021nov.caffemodel";
+    public static String wechatSuperResolutionPrototxtPath = "/sdcard/Download/sr_2021nov.prototxt";
+    public static String wechatSuperResolutionCaffeModelPath = "/sdcard/Download/sr_2021nov.caffemodel";
+
+    public static String yoloQRCodeCFG = "/sdcard/Download/yolov4-tiny-custom-640.cfg";
+    public static String yoloQRCodeWeights = "/sdcard/Download/yolov4-tiny-custom-640_last.weights";
 
     /** transfrom matrix from type Mat to MatOfPoint2f
      *

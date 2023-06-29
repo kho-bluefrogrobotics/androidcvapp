@@ -2,7 +2,7 @@ package com.bfr.opencvapp.QrCodeDetector;
 
 import android.util.Log;
 
-import com.bfr.opencvapp.utils.QRCodeUtils;
+import com.bfr.opencvapp.utils.Utils;
 import com.bfr.opencvapp.utils.Pose;
 
 import org.opencv.calib3d.Calib3d;
@@ -11,8 +11,6 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
-
-import java.util.List;
 
 public class QrCode {
     public Mat rotationMatrix;
@@ -97,8 +95,7 @@ public class QrCode {
         //set world model
         qrCodeDescriptor.setWorldModel(qrSize);
 
-
-        corners = QRCodeUtils.matToMatOfPoints2f(matOfCorners);
+        corners = Utils.matToMatOfPoints2f(matOfCorners);
 
         //convert to 640x480
 ////        Log.w("coucou", "before " + corners.get(0,0)[0] +","+corners.get(0,0)[1]);
@@ -119,10 +116,6 @@ public class QrCode {
         // fill camera distortion vector
         cameraDistortionVector.fromArray(distortionCoeff);
 
-
-
-
-
         Calib3d.solvePnP(qrCodeDescriptor.worldModel,
                     corners,
                     cameraCalibrationMatrix,
@@ -133,107 +126,60 @@ public class QrCode {
                     Calib3d.SOLVEPNP_IPPE_SQUARE);
 //                    Calib3d.SOLVEPNP_ITERATIVE);
 
-        QRCodeUtils.logMat("matofCorners", matOfCorners);
-        QRCodeUtils.logMat("corners", corners);
-        QRCodeUtils.logMat("qrCodeRotation", qrCodeRotation);
-        QRCodeUtils.logMat("qrCodeTranslation", qrCodeTranslation);
+        Utils.logMat("matofCorners", matOfCorners);
+        Utils.logMat("corners", corners);
+        Utils.logMat("qrCodeRotation", qrCodeRotation);
+        Utils.logMat("qrCodeTranslation", qrCodeTranslation);
 
         Log.w("coucouTranslate",
                 "dist: " +  qrCodeTranslation.get(2,0)[0]);
 
-        this.angle();
+//        this.angle();
 
          return true;
 
     }
 
 
+    public double getAngle(double qrSize) {
 
+        //set world model
+        qrCodeDescriptor.setWorldModel(qrSize);
 
-//    public void setPose(Mat rotationVector, Mat translationVector){
-//        Calib3d.Rodrigues(rotationVector, rotationMatrix);
-//        this.translationVector = translationVector;
-//    }
+        corners = Utils.matToMatOfPoints2f(matOfCorners);
 
+        //convert to 640x480
+////        Log.w("coucou", "before " + corners.get(0,0)[0] +","+corners.get(0,0)[1]);
+//        corners.put(0,0,  new double[]{(int)corners.get(0,0)[0] *640.0f/1024.0f,corners.get(0,0)[1]*640.0f/1024.0f});
+////        Log.w("coucou", "after " + corners.get(0,0)[0] +","+corners.get(0,0)[1]);
+//        corners.put(1,0,  new double[]{(int)corners.get(1,0)[0] *640.0f/1024.0f,corners.get(1,0)[1]*640.0f/1024.0f});
+//        corners.put(2,0,  new double[]{(int)corners.get(2,0)[0] *640.0f/1024.0f,(int)corners.get(2,0)[1]*640.0f/1024.0f});
+//        corners.put(3,0,  new double[]{(int)corners.get(3,0)[0] *640.0f/1024.0f,(int)corners.get(3,0)[1]*640.0f/1024.0f});
 
-//    public void setCorners(MatOfPoint2f corners) {
-//        this.corners = corners;
-//        setImageProperties();
-//    }
+        cameraCalibrationMatrix = new Mat(3, 3, CvType.CV_64FC1);
+        cameraDistortionVector = new MatOfDouble();
+        // fill calibration matrix
+        for(int row=0; row<3; ++row){
+            for(int column=0; column<3; ++column){
+                cameraCalibrationMatrix.put(row, column, cameraCalibrationMatrixCoeff[row][column]);
+            }
+        }
+        // fill camera distortion vector
+        cameraDistortionVector.fromArray(distortionCoeff);
 
-//    protected void setImageProperties(){
-//        if(corners != null){
-//            center = centroid(corners);
-//            List<Point> cornerList = corners.toList();
-//            size = QRCodeUtils.distanceBetweenPoints(cornerList.get(0), cornerList.get(1));
-//        }
-//    }
-//
-//    protected Point centroid(MatOfPoint2f points){
-//        Point centroid = new Point();
-//        double xSum = 0;
-//        double ySum = 0;
-//        List<Point> pointList = points.toList();
-//        int pointNumber = pointList.size();
-//        for(Point p : pointList){
-//            xSum += p.x;
-//            ySum += p.y;
-//        }
-//
-//        centroid.x = xSum / pointNumber;
-//        centroid.y = ySum / pointNumber;
-//
-//        return centroid;
-//    }
-//
-//    public boolean setPose(Pose robotPose){
-//        if(translationVector.empty()){
-//            return false;
-//        }
-//        double zQ = translationVector.get(2, 0)[0] / 1000;
-//        double xQ = translationVector.get(0, 0)[0] / 1000;
-//        pose = new Pose();
-//        pose.x = robotPose.x + (zQ * Math.cos(robotPose.theta) + xQ * Math.sin(robotPose.theta));
-//        pose.y = robotPose.y + (zQ * Math.sin(robotPose.theta) - xQ * Math.cos(robotPose.theta));
-//        pose.theta = robotPose.theta - angle();
-//        return true;
-//    }
-//
-//    protected void setId(){
-//        if(!rawContent.equals("")){
-//            String[] dataArray = rawContent.split(";");
-//            id = Integer.parseInt(dataArray[0]);
-//        }
-//        else{
-//            id = -1;
-//        }
-//    }
-//
-//    protected void setDirection(){
-//        if(!rawContent.equals("")){
-//            String[] dataArray = rawContent.split(";");
-//            switch (dataArray[1]){
-//                case "LEFT":
-//                    direction = (Math.PI / 2.0);
-//                    break;
-//
-//                case "RIGHT":
-//                    direction = -(Math.PI / 2.0);
-//                    break;
-//
-//                default:
-//                    direction = 0;
-//                    Log.i("QR_CODE", "unknown QrCode content");
-//                    break;
-//            }
-//        }
-//    }
+        Calib3d.solvePnP(qrCodeDescriptor.worldModel,
+                corners,
+                cameraCalibrationMatrix,
+                cameraDistortionVector,
+                qrCodeRotation,
+                qrCodeTranslation,
+                false, // check if it should stay to false
+                Calib3d.SOLVEPNP_IPPE_SQUARE);
 
-    public double angle() {
         Calib3d.Rodrigues(qrCodeRotation, rotationMatrix);
         Log.w("coucouangle", "angle =" + -180/3.14*Math.asin(rotationMatrix.get(2, 0)[0]));
 //        return -Math.asin(qrCodeRotation.get(2, 0)[0]);
-        return -180/3.14*Math.asin(rotationMatrix.get(2, 0)[0]);
+        return (-180/3.14)*Math.asin(rotationMatrix.get(2, 0)[0]);
     }
 
     public Mat getTranslationVector() {
