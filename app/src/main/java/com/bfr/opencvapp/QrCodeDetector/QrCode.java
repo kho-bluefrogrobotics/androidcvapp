@@ -34,16 +34,16 @@ public class QrCode {
     protected QrCodeDescriptor qrCodeDescriptor = new QrCodeDescriptor();
     // camera calibration
     //wideangle 640x480
-    private final double[][] cameraCalibrationMatrixCoeff = {{347.1784748095083 , 0       , 326.6795720628966},
-            {0        , 345.1916479410069, 233.1696799590856},
-            {0        , 0       , 1       }};
-    private final double[] distortionCoeff = {-0.27803360529321036, 0.06339702764223658, -0.000203214885858507, -0.0014783300318126165};
+//    private final double[][] cameraCalibrationMatrixCoeff = {{347.1784748095083 , 0       , 326.6795720628966},
+//            {0        , 345.1916479410069, 233.1696799590856},
+//            {0        , 0       , 1       }};
+//    private final double[] distortionCoeff = {-0.27803360529321036, 0.06339702764223658, -0.000203214885858507, -0.0014783300318126165};
 
 //    //wide angle 1024x768
-//    private final double[][] cameraCalibrationMatrixCoeff = {{564.4894 , 0       , 510.8668},
-//        {0        , 566.9299, 382.2685},
-//        {0        , 0       , 1       }};
-//    private final double[] distortionCoeff = {-0.2151,-0.3785, -0.0015, 0.0022, 0.8043};
+    private final double[][] cameraCalibrationMatrixCoeff = {{614.9288 , 0       , 511.257},
+        {0        , 604.4629, 383.5352},
+        {0        , 0       , 1       }};
+    private final double[] distortionCoeff = {-0.1024,-0.3817, -0.0044, 0.0025, 0.0247};
 
 
     //zoom 640x480
@@ -101,12 +101,12 @@ public class QrCode {
         corners = QRCodeUtils.matToMatOfPoints2f(matOfCorners);
 
         //convert to 640x480
-//        Log.w("coucou", "before " + corners.get(0,0)[0] +","+corners.get(0,0)[1]);
-        corners.put(0,0,  new double[]{(int)corners.get(0,0)[0] *640.0f/1024.0f,corners.get(0,0)[1]*640.0f/1024.0f});
-//        Log.w("coucou", "after " + corners.get(0,0)[0] +","+corners.get(0,0)[1]);
-        corners.put(1,0,  new double[]{(int)corners.get(1,0)[0] *640.0f/1024.0f,corners.get(1,0)[1]*640.0f/1024.0f});
-        corners.put(2,0,  new double[]{(int)corners.get(2,0)[0] *640.0f/1024.0f,(int)corners.get(2,0)[1]*640.0f/1024.0f});
-        corners.put(3,0,  new double[]{(int)corners.get(3,0)[0] *640.0f/1024.0f,(int)corners.get(3,0)[1]*640.0f/1024.0f});
+////        Log.w("coucou", "before " + corners.get(0,0)[0] +","+corners.get(0,0)[1]);
+//        corners.put(0,0,  new double[]{(int)corners.get(0,0)[0] *640.0f/1024.0f,corners.get(0,0)[1]*640.0f/1024.0f});
+////        Log.w("coucou", "after " + corners.get(0,0)[0] +","+corners.get(0,0)[1]);
+//        corners.put(1,0,  new double[]{(int)corners.get(1,0)[0] *640.0f/1024.0f,corners.get(1,0)[1]*640.0f/1024.0f});
+//        corners.put(2,0,  new double[]{(int)corners.get(2,0)[0] *640.0f/1024.0f,(int)corners.get(2,0)[1]*640.0f/1024.0f});
+//        corners.put(3,0,  new double[]{(int)corners.get(3,0)[0] *640.0f/1024.0f,(int)corners.get(3,0)[1]*640.0f/1024.0f});
 
         cameraCalibrationMatrix = new Mat(3, 3, CvType.CV_64FC1);
         cameraDistortionVector = new MatOfDouble();
