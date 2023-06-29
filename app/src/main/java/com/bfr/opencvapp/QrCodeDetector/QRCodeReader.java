@@ -99,7 +99,7 @@ public class QRCodeReader {
 //
 //            foundQrCodes.add(new QrCode(qrCodesContent.get(i), qrCodesCorner.get(i)));
 //        }
-//
+
 
          // traditional opencv method for QRCode detection
         QRCodeDetector decoder = new QRCodeDetector();

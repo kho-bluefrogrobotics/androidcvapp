@@ -440,13 +440,17 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         try {
             if (listQr.size() > 0) {
-                listQr.get(0).getPose(152);
+                listQr.get(0).getPose(0.125);
 
                 String angle = ""+ listQr.get(0).angle() ;
-//                Log.w(TAG, "QRCOde trouve: " + angle);
+//                Log.w(TAG, "QRCOde trouve: " + angle + " " + listQr.get(0).getTranslationVector().get(1,0));
 
                 Imgproc.putText(frame , angle, new Point((int) IMG_WIDTH/4,(int) IMG_HEIGHT/4),1,2, new Scalar(0,0,255), 6 );
                 Imgproc.putText(frame , angle, new Point((int) IMG_WIDTH/4,(int) IMG_HEIGHT/4),1,2, new Scalar(255,255,255), 2 );
+
+                Imgproc.putText(frame , ""+listQr.get(0).qrCodeTranslation.get(2,0)[0], new Point((int) IMG_WIDTH/4,(int)40+ IMG_HEIGHT/4),1,2, new Scalar(0,0,255), 6 );
+                Imgproc.putText(frame , ""+listQr.get(0).qrCodeTranslation.get(2,0)[0], new Point((int) IMG_WIDTH/4,(int) 40+IMG_HEIGHT/4),1,2, new Scalar(255,255,255), 2 );
+
             }
         } catch (Exception e) {
             e.printStackTrace();
