@@ -197,9 +197,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         //super resolution
         mSupRes = DnnSuperResImpl.create();
-        mSupRes.readModel( "/sdcard/Download/FSRCNN_x4.pb");
+        mSupRes.readModel( "/sdcard/Download/LAPSRN_x4.pb");
 //        mSupRes.readModel( "/sdcard/Download/ESPCN_x4.pb");
-        mSupRes.setModel("fsrcnn", 4);
+        mSupRes.setModel("lapsrn", 4);
 //        mSupRes.setModel("espcn", 4);
 
         mQRCodeReader = new QRCodeReader();
@@ -246,7 +246,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Log.w("Upsampling", "Resulting mat: " + supResMat.size());
 //        Imgproc.resize(resized, resized , new Size(1024,768));
 //        Imgproc.cvtColor(supResMat, frame, Imgproc.COLOR_YCrCb2RGB);
-        frame = supResMat;
+        frame = supResMat.clone();
 
         List<QrCode> listQr =  mQRCodeReader.Detect(frame, QRCodeReader.DetectionMethod.HIGH_PRECISION);
 
