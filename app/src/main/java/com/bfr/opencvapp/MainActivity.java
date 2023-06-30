@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat;
 
 import com.bfr.opencvapp.QrCodeDetector.QRCodeReader;
 import com.bfr.opencvapp.QrCodeDetector.QrCode;
+import com.bfr.opencvapp.utils.Utils;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraActivity;
@@ -26,6 +27,7 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
 import org.opencv.core.Point;
@@ -226,8 +228,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         frame = inputFrame.rgba();
 
-//        int x = 0;
-//        int y = 0;
+        int x = 0;
+        int y = 0;
 //
 //        Mat supResMat = new Mat();
 //        Mat inSuperReso = new Mat();
@@ -423,11 +425,32 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
 
 
-        List<QrCode> listQr =  mQRCodeReader.DetectAndDecode(frame);
+//        List<QrCode> listQr =  mQRCodeReader.DetectAndDecode(frame);
+        List<QrCode> listQr =  mQRCodeReader.Detect(frame);
 
         try {
             if (listQr.size() > 0) {
 //                listQr.get(0).getPose(0.125);
+                Imgproc.putText(frame, "salut "+listQr.size(), new Point(100,100), 2, 1, new Scalar(200, 255, 10));
+                for (int i=0; i<listQr.size(); i++)
+                {
+                    Log.w("sizescoucou", i + " "+ listQr.get(i).rawContent + " "+ listQr.get(i).matOfCorners.size());
+                    x = (int) (listQr.get(i).matOfCorners.get(0,0)[0]);
+                    y = (int) (listQr.get(i).matOfCorners.get(0,1)[0]);
+                    Imgproc.circle(frame, new Point(x, y), 2, new Scalar(255, 0, 0), 10);
+
+                    x = (int) (listQr.get(i).matOfCorners.get(1,0)[0]);
+                    y = (int) (listQr.get(i).matOfCorners.get(1,1)[0]);
+                    Imgproc.circle(frame, new Point(x, y), 2, new Scalar(0, 255, 0), 10);
+
+                    x = (int) (listQr.get(i).matOfCorners.get(2,0)[0]);
+                    y = (int) (listQr.get(i).matOfCorners.get(2,1)[0]);
+                    Imgproc.circle(frame, new Point(x, y), 2, new Scalar(0, 0, 255), 10);
+
+                    x = (int) (listQr.get(i).matOfCorners.get(3,0)[0]);
+                    y = (int) (listQr.get(i).matOfCorners.get(3,1)[0]);
+                    Imgproc.circle(frame, new Point(x, y), 2, new Scalar(150, 0, 150), 10);
+                }
 
                 String angle = ""+ listQr.get(0).getAngle(0.125) ;
 //                Log.w(TAG, "QRCOde trouve: " + angle + " " + listQr.get(0).getTranslationVector().get(1,0));

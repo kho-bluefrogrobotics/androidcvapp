@@ -16,7 +16,7 @@ public class QrCode {
     public Mat rotationMatrix;
     public Mat translationVector;
     public Pose pose;
-    public MatOfPoint2f corners = null;
+    public MatOfPoint2f cornersPoints = null;
     public Mat matOfCorners = null;
     public Point center;
     public double size;
@@ -106,7 +106,7 @@ public class QrCode {
         //set world model
         qrCodeDescriptor.setWorldModel(qrSize);
 
-        corners = Utils.matToMatOfPoints2f(matOfCorners);
+        cornersPoints = Utils.matToMatOfPoints2f(matOfCorners);
 
         //convert to 640x480
 ////        Log.w("coucou", "before " + corners.get(0,0)[0] +","+corners.get(0,0)[1]);
@@ -128,7 +128,7 @@ public class QrCode {
         cameraDistortionVector.fromArray(distortionCoeff);
 
         Calib3d.solvePnP(qrCodeDescriptor.worldModel,
-                    corners,
+                cornersPoints,
                     cameraCalibrationMatrix,
                     cameraDistortionVector,
                     qrCodeRotation,
@@ -138,7 +138,7 @@ public class QrCode {
 //                    Calib3d.SOLVEPNP_ITERATIVE);
 
         Utils.logMat("matofCorners", matOfCorners);
-        Utils.logMat("corners", corners);
+        Utils.logMat("corners", cornersPoints);
         Utils.logMat("qrCodeRotation", qrCodeRotation);
         Utils.logMat("qrCodeTranslation", qrCodeTranslation);
 
@@ -157,7 +157,7 @@ public class QrCode {
         //set world model
         qrCodeDescriptor.setWorldModel(qrSize);
 
-        corners = Utils.matToMatOfPoints2f(matOfCorners);
+        cornersPoints = Utils.matToMatOfPoints2f(matOfCorners);
 
         //convert to 640x480
 ////        Log.w("coucou", "before " + corners.get(0,0)[0] +","+corners.get(0,0)[1]);
@@ -179,7 +179,7 @@ public class QrCode {
         cameraDistortionVector.fromArray(distortionCoeff);
 
         Calib3d.solvePnP(qrCodeDescriptor.worldModel,
-                corners,
+                cornersPoints,
                 cameraCalibrationMatrix,
                 cameraDistortionVector,
                 qrCodeRotation,
@@ -188,7 +188,7 @@ public class QrCode {
                 Calib3d.SOLVEPNP_IPPE_SQUARE);
 
         Calib3d.Rodrigues(qrCodeRotation, rotationMatrix);
-        Log.w("coucouangle", "angle =" + -180/3.14*Math.asin(rotationMatrix.get(2, 0)[0]));
+//        Log.w("coucouangle", "angle =" + -180/3.14*Math.asin(rotationMatrix.get(2, 0)[0]));
 //        return -Math.asin(qrCodeRotation.get(2, 0)[0]);
         return (-180/3.14)*Math.asin(rotationMatrix.get(2, 0)[0]);
     }
