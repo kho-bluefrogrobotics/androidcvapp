@@ -198,9 +198,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         //super resolution
         mSupRes = DnnSuperResImpl.create();
 //        mSupRes.readModel( "/sdcard/Download/EDSR_x4.pb");
-        mSupRes.readModel( "/sdcard/Download/ESPCN_x2.pb");
+        mSupRes.readModel( "/sdcard/Download/ESPCN_x4.pb");
 //        mSupRes.setModel("edsr", 4);
-        mSupRes.setModel("espcn", 2);
+        mSupRes.setModel("espcn", 4);
 
         mQRCodeReader = new QRCodeReader();
 
@@ -233,7 +233,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         //crop image around face
 //        Rect resizeROI= new Rect(frame.cols()/4, frame.rows()/4,3*frame.cols()/4, 3*frame.rows()/4 );
-        Rect resizeROI= new Rect(0, 0,512, 384 );
+        Rect resizeROI= new Rect(frame.cols()/4, frame.rows()/4,frame.cols()/4, frame.rows()/4 );
         Mat resized = frame.submat(resizeROI);
 
         // Super resolution upsample
