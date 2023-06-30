@@ -68,7 +68,30 @@ public class QrCode {
         translationVector = new Mat();
 
         this.rawContent = rawContent;
-        this.matOfCorners = matOfCorners;
+        if(matOfCorners.size(0) == 1) { // matrix has size 1xN with two channels (corners detected by OpenCv)
+            this.matOfCorners = fromOpenCVtoWeChatCorners(matOfCorners);
+        }
+        else {
+            this.matOfCorners = matOfCorners;
+        }
+    }
+
+    public QrCode(String rawContent, Mat matOfCorners, boolean poseKnown){
+        qrCodeTranslation = new Mat();
+        qrCodeRotation = new Mat();
+
+        rotationMatrix = new Mat();
+        translationVector = new Mat();
+
+        this.poseKnown = poseKnown;
+
+        this.rawContent = rawContent;
+        if(matOfCorners.size(0) == 1) { // matrix has size 1xN with two channels (corners detected by OpenCv)
+            this.matOfCorners = fromOpenCVtoWeChatCorners(matOfCorners);
+        }
+        else {
+            this.matOfCorners = matOfCorners;
+        }
     }
 
     public QrCode(Mat matOfCorners){
@@ -79,7 +102,30 @@ public class QrCode {
         translationVector = new Mat();
 
         this.rawContent = "";
-        this.matOfCorners = matOfCorners;
+        if(matOfCorners.size(0) == 1) { // matrix has size 1xN with two channels (corners detected by OpenCv)
+            this.matOfCorners = fromOpenCVtoWeChatCorners(matOfCorners);
+        }
+        else {
+            this.matOfCorners = matOfCorners;
+        }
+    }
+
+    public QrCode(Mat matOfCorners, boolean poseKnown){
+        qrCodeTranslation = new Mat();
+        qrCodeRotation = new Mat();
+
+        rotationMatrix = new Mat();
+        translationVector = new Mat();
+
+        this.poseKnown = poseKnown;
+
+        this.rawContent = "";
+        if(matOfCorners.size(0) == 1) { // matrix has size 1xN with two channels (corners detected by OpenCv)
+            this.matOfCorners = fromOpenCVtoWeChatCorners(matOfCorners);
+        }
+        else {
+            this.matOfCorners = matOfCorners;
+        }
     }
 
 //    public QrCode(MatOfPoint2f corners, String rawContent){
@@ -96,6 +142,21 @@ public class QrCode {
 //        setPose(rotationVector, translationVector);
 //    }
 
+    private Mat fromOpenCVtoWeChatCorners(Mat wechatCorners)
+    {
+        //convert to 2xN like weChat
+        Mat refactoredCorners = new Mat(4,2, CvType.CV_32FC1);
+        refactoredCorners.put(0,0, wechatCorners.get(0,0)[0]);
+        refactoredCorners.put(0,1, wechatCorners.get(0,0)[1]);
+        refactoredCorners.put(1,0, wechatCorners.get(0,1)[0]);
+        refactoredCorners.put(1,1, wechatCorners.get(0,1)[1] );
+        refactoredCorners.put(2,0, wechatCorners.get(0,2)[0]);
+        refactoredCorners.put(2,1, wechatCorners.get(0,2)[1] );
+        refactoredCorners.put(3,0, wechatCorners.get(0,3)[0]);
+        refactoredCorners.put(3,1, wechatCorners.get(0,3)[1] );
+
+        return refactoredCorners;
+    }
     public String read()
     {
         return rawContent;

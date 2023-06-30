@@ -426,7 +426,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
 
 //        List<QrCode> listQr =  mQRCodeReader.DetectAndDecode(frame);
-        List<QrCode> listQr =  mQRCodeReader.Detect(frame);
+        List<QrCode> listQr =  mQRCodeReader.Detect(frame, QRCodeReader.DetectionMethod.HIGH_PRECISION);
 
         try {
             if (listQr.size() > 0) {
