@@ -21,6 +21,27 @@ public class Utils {
     public static String yoloQRCodeCFG = "/sdcard/Download/yolov4-tiny-custom-640.cfg";
     public static String yoloQRCodeWeights = "/sdcard/Download/yolov4-tiny-custom-640_last.weights";
 
+
+    /*** Camera calibrations ***/
+    //wideangle 640x480
+//    public static final double[][] cameraCalibrationMatrixCoeff = {{347.1784748095083 , 0       , 326.6795720628966},
+//            {0        , 345.1916479410069, 233.1696799590856},
+//            {0        , 0       , 1       }};
+//    public static final double[] distortionCoeff = {-0.27803360529321036, 0.06339702764223658, -0.000203214885858507, -0.0014783300318126165};
+
+    //    //wide angle 1024x768
+    public static final double[][] cameraCalibrationMatrixCoeff = {{614.9288 , 0       , 511.257},
+            {0        , 604.4629, 383.5352},
+            {0        , 0       , 1       }};
+    public static final double[] distortionCoeff = {-0.1024,-0.3817, -0.0044, 0.0025, 0.0247};
+
+    //zoom 640x480
+//    private final double[][] cameraCalibrationMatrixCoeff = {{622.1937 , 0       , 399.7594},
+//            {0        , 616.9286, 299.5756},
+//            {0        , 0       , 1       }};
+//    private final double[] distortionCoeff = {0.0598, -0.0309, -0.0038, -0.0033, -0.0872};
+
+
     /** transfrom matrix from type Mat to MatOfPoint2f
      *
      * @param matrix - either

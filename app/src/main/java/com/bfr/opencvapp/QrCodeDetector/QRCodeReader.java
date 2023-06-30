@@ -55,7 +55,7 @@ public class QRCodeReader {
             wechatDetector = null;
         }
         // super resolution set
-        wechatDetector.setScaleFactor(1.0f);
+        wechatDetector.setScaleFactor(2.0f);
         // init result
         qrCodesContent = new ArrayList<String>();
         qrCodesCorner = new ArrayList<Mat>();
@@ -114,11 +114,13 @@ public class QRCodeReader {
     {
         return Detect(frame, DetectionMethod.NORMAL);
     }
+
     public List<QrCode> Detect(Mat frame, DetectionMethod method)
     {
 
         List<QrCode> foundQrCodes = new ArrayList<>();
 
+        /*** Opencv detector ***/
         Thread openCVThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -127,15 +129,17 @@ public class QRCodeReader {
                 points = new Mat();
                 String data = decoder.detectAndDecode(frame, points);
                 if (!points.empty())
-                    foundQrCodes.add(new QrCode("detected by Opencv", points));
+                    // add detected QRCode to list
+                    foundQrCodes.add(new QrCode("detected by Opencv", points, true));
             }
         });
         openCVThread.start();
 
+        /*** Wechat detector ***/
         Thread wechatThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                // Wechat detector
+
                 //reset
                 qrCodesContent.clear();
                 qrCodesCorner.clear();
@@ -144,14 +148,15 @@ public class QRCodeReader {
                 int x=0, y=0;
                 for (int i=0; i<qrCodesContent.size(); i++)
                 {
-                    foundQrCodes.add(new QrCode("detected by wechat"+i, qrCodesCorner.get(i)));
+                    // add detected QRCode to list
+                    foundQrCodes.add(new QrCode("detected by wechat"+i, qrCodesCorner.get(i), true));
                 }
             }
         });
         if(method==DetectionMethod.NORMAL || method==DetectionMethod.HIGH_PRECISION)
             wechatThread.start();
 
-
+        /*** YOLO detector ***/
         Thread yoloThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -211,7 +216,7 @@ public class QRCodeReader {
                             corners.put(2,1, new double[]{bottomrightY });
                             corners.put(3,0, new double[]{bottomleftX });
                             corners.put(3,1, new double[]{bottomleftY });
-
+                            // add detected QRCode to list
                             foundQrCodes.add(new QrCode("yolo", corners, false));
                         } // end if conf
                     } // next yolo detection
@@ -222,14 +227,12 @@ public class QRCodeReader {
             yoloThread.start();
 
 
-
         try {
             openCVThread.join();
             if(method==DetectionMethod.NORMAL || method==DetectionMethod.HIGH_PRECISION)
                 wechatThread.join();
             if(method==DetectionMethod.HIGH_PRECISION)
                 yoloThread.join();
-
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -237,12 +240,11 @@ public class QRCodeReader {
         return foundQrCodes;
     }
 
+
     public List<QrCode> DetectAndDecode(Mat frame)
     {
         return DetectAndDecode(frame, DetectionMethod.NORMAL);
     }
-
-
 
     public List<QrCode> DetectAndDecode(Mat frame, DetectionMethod method)
     {
@@ -256,60 +258,19 @@ public class QRCodeReader {
             foundQrCodes.add(new QrCode(data, points, true));
 
         // Wechat detector
-        //reset
-        qrCodesContent.clear();
-        qrCodesCorner.clear();
-        // detect
-        qrCodesContent = wechatDetector.detectAndDecode(frame, qrCodesCorner);
-        // compile results
-        //
-        int x, y;
-        // compile results
-        for (int i=0; i<qrCodesContent.size(); i++)
-        {
-//            Log.w(TAG, "QRCOde trouve: " + qrCodesContent.get(i));
-
-            x = (int) (qrCodesCorner.get(i).get(0,0)[0]);
-            y = (int) (qrCodesCorner.get(i).get(0,1)[0]);
-            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(255, 0, 0), 10);
-
-            x = (int) (qrCodesCorner.get(i).get(1,0)[0]);
-            y = (int) (qrCodesCorner.get(i).get(1,1)[0]);
-            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(0, 255, 0), 10);
-
-            x = (int) (qrCodesCorner.get(i).get(2,0)[0]);
-            y = (int) (qrCodesCorner.get(i).get(2,1)[0]);
-            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(0, 0, 255), 10);
-
-            x = (int) (qrCodesCorner.get(i).get(3,0)[0]);
-            y = (int) (qrCodesCorner.get(i).get(3,1)[0]);
-            Imgproc.circle(frame, new Point(x, y), 2, new Scalar(150, 0, 150), 10);
-            if(!isOverlapping( points, qrCodesCorner.get(i),10.0))
-                foundQrCodes.add(new QrCode(qrCodesContent.get(i), qrCodesCorner.get(i), true));
+        if(method==DetectionMethod.NORMAL) {
+            //reset
+            qrCodesContent.clear();
+            qrCodesCorner.clear();
+            // detect
+            qrCodesContent = wechatDetector.detectAndDecode(frame, qrCodesCorner);
+            // compile results
+            for (int i = 0; i < qrCodesContent.size(); i++) {
+                // check if already detected by Opencv
+                if (!isOverlapping(points, qrCodesCorner.get(i), 10.0))
+                    foundQrCodes.add(new QrCode(qrCodesContent.get(i), qrCodesCorner.get(i), true));
+            }
         }
-
-
-
-        if (!points.empty()) {
-
-
-
-            Imgproc.circle(frame, new Point(points.get(0,0)[0], points.get(0,0)[1]), 10, new Scalar(255, 0, 0), 2);
-            Imgproc.circle(frame, new Point(points.get(0,3)[0], points.get(0,3)[1]), 10, new Scalar(0, 255, 0), 2);
-
-
-
-
-//            for (int i = 0; i < points.cols(); i++) {
-//                Point pt1 = new Point(points.get(0, i));
-//                Point pt2 = new Point(points.get(0, (i + 1) % 4));
-//                Imgproc.line(frame, pt1, pt2, new Scalar(150, 250, 0), 3);
-//            }
-//            foundQrCodes.add(new QrCode(data, points));
-
-        }
-
-
 
         return foundQrCodes;
     }

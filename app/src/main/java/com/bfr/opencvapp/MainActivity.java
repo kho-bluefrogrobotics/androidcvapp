@@ -426,46 +426,49 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
 
 //        List<QrCode> listQr =  mQRCodeReader.DetectAndDecode(frame);
+//        List<QrCode> listQr =  mQRCodeReader.Detect(frame, QRCodeReader.DetectionMethod.FAST);
         List<QrCode> listQr =  mQRCodeReader.Detect(frame, QRCodeReader.DetectionMethod.HIGH_PRECISION);
 
         try {
             if (listQr.size() > 0) {
-//                listQr.get(0).getPose(0.125);
-                Imgproc.putText(frame, "salut "+listQr.size(), new Point(100,100), 2, 1, new Scalar(200, 255, 10));
-                for (int i=0; i<listQr.size(); i++)
-                {
-                    Log.w("sizescoucou", i + " "+ listQr.get(i).rawContent + " "+ listQr.get(i).matOfCorners.size());
-                    x = (int) (listQr.get(i).matOfCorners.get(0,0)[0]);
-                    y = (int) (listQr.get(i).matOfCorners.get(0,1)[0]);
+                // for each QRCode
+                for (int i = 0; i < listQr.size(); i++) {
+                    Log.w("sizescoucou", i + " " + listQr.get(i).rawContent + " " + listQr.get(i).matOfCorners.size());
+                    x = (int) (listQr.get(i).matOfCorners.get(0, 0)[0]);
+                    y = (int) (listQr.get(i).matOfCorners.get(0, 1)[0]);
                     Imgproc.circle(frame, new Point(x, y), 2, new Scalar(255, 0, 0), 10);
 
-                    x = (int) (listQr.get(i).matOfCorners.get(1,0)[0]);
-                    y = (int) (listQr.get(i).matOfCorners.get(1,1)[0]);
+                    x = (int) (listQr.get(i).matOfCorners.get(1, 0)[0]);
+                    y = (int) (listQr.get(i).matOfCorners.get(1, 1)[0]);
                     Imgproc.circle(frame, new Point(x, y), 2, new Scalar(0, 255, 0), 10);
 
-                    x = (int) (listQr.get(i).matOfCorners.get(2,0)[0]);
-                    y = (int) (listQr.get(i).matOfCorners.get(2,1)[0]);
+                    x = (int) (listQr.get(i).matOfCorners.get(2, 0)[0]);
+                    y = (int) (listQr.get(i).matOfCorners.get(2, 1)[0]);
                     Imgproc.circle(frame, new Point(x, y), 2, new Scalar(0, 0, 255), 10);
 
-                    x = (int) (listQr.get(i).matOfCorners.get(3,0)[0]);
-                    y = (int) (listQr.get(i).matOfCorners.get(3,1)[0]);
+                    x = (int) (listQr.get(i).matOfCorners.get(3, 0)[0]);
+                    y = (int) (listQr.get(i).matOfCorners.get(3, 1)[0]);
                     Imgproc.circle(frame, new Point(x, y), 2, new Scalar(150, 0, 150), 10);
-                }
 
-                String angle = ""+ listQr.get(0).getAngle(0.125) ;
+
+                    if (listQr.get(i).poseKnown) {
+                        String angle = "" + listQr.get(i).getAngle(12.5);
 //                Log.w(TAG, "QRCOde trouve: " + angle + " " + listQr.get(0).getTranslationVector().get(1,0));
+                        Imgproc.putText(frame, angle, new Point(x, y+20), 1, 2, new Scalar(0, 0, 255), 6);
+                        Imgproc.putText(frame, angle, new Point(x, y+20), 1, 2, new Scalar(255, 255, 255), 2);
 
-                Imgproc.putText(frame , angle, new Point((int) IMG_WIDTH/4,(int) IMG_HEIGHT/4),1,2, new Scalar(0,0,255), 6 );
-                Imgproc.putText(frame , angle, new Point((int) IMG_WIDTH/4,(int) IMG_HEIGHT/4),1,2, new Scalar(255,255,255), 2 );
+                        Imgproc.putText(frame, "" + listQr.get(i).qrCodeTranslation.get(2, 0)[0], new Point(x, y+60), 1, 2, new Scalar(0, 0, 255), 6);
+                        Imgproc.putText(frame, "" + listQr.get(i).qrCodeTranslation.get(2, 0)[0], new Point(x, y+60), 1, 2, new Scalar(255, 255, 255), 2);
+                    } else {
+                        Imgproc.putText(frame, "POSE UNKNONW", new Point((int) IMG_WIDTH / 4, (int) IMG_HEIGHT / 4), 1, 2, new Scalar(0, 0, 255), 6);
+                        Imgproc.putText(frame, "POSE UNKNONW", new Point((int) IMG_WIDTH / 4, (int) IMG_HEIGHT / 4), 1, 2, new Scalar(255, 255, 255), 2);
+                    } //end if pose known
+                } //next qrcode
+            } //end if list of QRCode empty
 
-                Imgproc.putText(frame , ""+listQr.get(0).qrCodeTranslation.get(2,0)[0], new Point((int) IMG_WIDTH/4,(int)40+ IMG_HEIGHT/4),1,2, new Scalar(0,0,255), 6 );
-                Imgproc.putText(frame , ""+listQr.get(0).qrCodeTranslation.get(2,0)[0], new Point((int) IMG_WIDTH/4,(int) 40+IMG_HEIGHT/4),1,2, new Scalar(255,255,255), 2 );
-            }
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-
 
 //        Mat resized = new Mat();
 //        Imgproc.resize(frame, resized , new Size(1024,768));
