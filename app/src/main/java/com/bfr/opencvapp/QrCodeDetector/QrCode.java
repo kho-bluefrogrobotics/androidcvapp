@@ -71,6 +71,17 @@ public class QrCode {
         this.matOfCorners = matOfCorners;
     }
 
+    public QrCode(Mat matOfCorners){
+        qrCodeTranslation = new Mat();
+        qrCodeRotation = new Mat();
+
+        rotationMatrix = new Mat();
+        translationVector = new Mat();
+
+        this.rawContent = "";
+        this.matOfCorners = matOfCorners;
+    }
+
 //    public QrCode(MatOfPoint2f corners, String rawContent){
 //        this();
 //        setCorners(corners);
