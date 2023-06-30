@@ -189,7 +189,7 @@ public class QRCodeReader {
                         List<Float> score = detect.subList(5, output.cols());
                         int class_id = argmax(score);
                         float conf = score.get(class_id);
-                        if (conf >= 0.3) {
+                        if (conf >= 0.5) {
                             int center_x = (int) (detect.get(0) * frame_yolo.cols());
                             int center_y = (int) (detect.get(1) * frame_yolo.rows());
                             int width = (int) (detect.get(2) * frame_yolo.cols());

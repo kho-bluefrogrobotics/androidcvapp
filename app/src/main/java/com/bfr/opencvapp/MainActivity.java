@@ -231,22 +231,22 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         int x = 0;
         int y = 0;
 
-        //crop image around face
-//        Rect resizeROI= new Rect(frame.cols()/4, frame.rows()/4,3*frame.cols()/4, 3*frame.rows()/4 );
-        Rect resizeROI= new Rect(frame.cols()/4, frame.rows()/4,frame.cols()/4, frame.rows()/4 );
-        Mat resized = frame.submat(resizeROI);
-
-        // Super resolution upsample
-        Mat supResMat = new Mat();
-        Mat inSuperReso = resized.clone();
-        Imgproc.cvtColor(resized, inSuperReso, Imgproc.COLOR_RGBA2RGB);
-//        Imgproc.cvtColor(resized, inSuperReso, Imgproc.COLOR_RGB2YCrCb);
-
-        mSupRes.upsample(inSuperReso, supResMat);
-        Log.w("Upsampling", "Resulting mat: " + supResMat.size());
-//        Imgproc.resize(resized, resized , new Size(1024,768));
-//        Imgproc.cvtColor(supResMat, frame, Imgproc.COLOR_YCrCb2RGB);
-        frame = supResMat.clone();
+//        //crop image around face
+////        Rect resizeROI= new Rect(frame.cols()/4, frame.rows()/4,3*frame.cols()/4, 3*frame.rows()/4 );
+//        Rect resizeROI= new Rect(frame.cols()/4, frame.rows()/4,frame.cols()/4, frame.rows()/4 );
+//        Mat resized = frame.submat(resizeROI);
+//
+//        // Super resolution upsample
+//        Mat supResMat = new Mat();
+//        Mat inSuperReso = resized.clone();
+//        Imgproc.cvtColor(resized, inSuperReso, Imgproc.COLOR_RGBA2RGB);
+////        Imgproc.cvtColor(resized, inSuperReso, Imgproc.COLOR_RGB2YCrCb);
+//
+//        mSupRes.upsample(inSuperReso, supResMat);
+//        Log.w("Upsampling", "Resulting mat: " + supResMat.size());
+////        Imgproc.resize(resized, resized , new Size(1024,768));
+////        Imgproc.cvtColor(supResMat, frame, Imgproc.COLOR_YCrCb2RGB);
+//        frame = supResMat.clone();
 
         List<QrCode> listQr =  mQRCodeReader.Detect(frame, QRCodeReader.DetectionMethod.HIGH_PRECISION);
 
