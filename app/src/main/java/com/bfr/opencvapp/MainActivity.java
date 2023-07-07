@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat;
 
 import com.bfr.opencvapp.QrCodeDetector.QRCodeReader;
 import com.bfr.opencvapp.QrCodeDetector.QrCode;
+import com.bfr.opencvapp.QrCodeDetector.QrCodePoseEstimator;
 import com.bfr.opencvapp.utils.Utils;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -27,18 +28,14 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
 import org.opencv.core.Point;
-import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
-import org.opencv.core.Size;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.opencv.dnn_superres.*;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.objdetect.QRCodeDetector;
 import org.opencv.videoio.VideoWriter;
 import org.opencv.wechat_qrcode.WeChatQRCode;
 
@@ -175,6 +172,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     DnnSuperResImpl mSupRes = null;
 
     QRCodeReader mQRCodeReader;
+    QrCodePoseEstimator mQRCodePoseEstimator;
 
     public void onCameraViewStarted(int width, int height) {
 
@@ -203,6 +201,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        mSupRes.setModel("espcn", 4);
 
         mQRCodeReader = new QRCodeReader();
+
+        mQRCodePoseEstimator = new QrCodePoseEstimator(Utils.cameraCalibrationMatrixCoeff, Utils.distortionCoeff);
 
     }
 
@@ -248,7 +248,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 ////        Imgproc.cvtColor(supResMat, frame, Imgproc.COLOR_YCrCb2RGB);
 //        frame = supResMat.clone();
 
-        List<QrCode> listQr =  mQRCodeReader.Detect(frame, QRCodeReader.DetectionMethod.HIGH_PRECISION);
+        List<QrCode> listQr =  mQRCodeReader.DetectAndDecode(frame, QRCodeReader.DetectionMethod.NORMAL);
 
         try {
             if (listQr.size() > 0) {
@@ -273,13 +273,22 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
 
                     if (listQr.get(i).poseKnown) {
-                        String angle = "" + listQr.get(i).getAngle(12.5);
-//                Log.w(TAG, "QRCOde trouve: " + angle + " " + listQr.get(0).getTranslationVector().get(1,0));
-                        Imgproc.putText(frame, angle, new Point(x, y+20), 1, 2, new Scalar(0, 0, 255), 6);
-                        Imgproc.putText(frame, angle, new Point(x, y+20), 1, 2, new Scalar(255, 255, 255), 2);
 
-                        Imgproc.putText(frame, "" + listQr.get(i).qrCodeTranslation.get(2, 0)[0], new Point(x, y+60), 1, 2, new Scalar(0, 0, 255), 6);
-                        Imgproc.putText(frame, "" + listQr.get(i).qrCodeTranslation.get(2, 0)[0], new Point(x, y+60), 1, 2, new Scalar(255, 255, 255), 2);
+                        Double[] translation = mQRCodePoseEstimator.getTranslation( listQr.get(i), 12.5);
+                        Double[] rotation = mQRCodePoseEstimator.getRotation( listQr.get(i), 12.5);
+
+                Log.w(TAG, "QRCOde trouve: " + translation[0] + " " +
+                        + translation[1] + " "
+                        + translation[2] );
+
+                        Imgproc.putText(frame, listQr.get(i).read(), new Point(x, y-10), 1, 2, new Scalar(255, 0, 0), 6);
+                        Imgproc.putText(frame, listQr.get(i).read(), new Point(x, y-10), 1, 2, new Scalar(255, 255, 255), 2);
+
+                        Imgproc.putText(frame, ""+rotation[2], new Point(x, y+20), 1, 2, new Scalar(0, 0, 255), 6);
+                        Imgproc.putText(frame, ""+rotation[2], new Point(x, y+20), 1, 2, new Scalar(255, 255, 255), 2);
+
+                        Imgproc.putText(frame, "" + translation[2], new Point(x, y+60), 1, 2, new Scalar(0, 0, 255), 6);
+                        Imgproc.putText(frame, "" + translation[2], new Point(x, y+60), 1, 2, new Scalar(255, 255, 255), 2);
                     } else {
                         Imgproc.putText(frame, "POSE UNKNONW", new Point((int) IMG_WIDTH / 4, (int) IMG_HEIGHT / 4), 1, 2, new Scalar(0, 0, 255), 6);
                         Imgproc.putText(frame, "POSE UNKNONW", new Point((int) IMG_WIDTH / 4, (int) IMG_HEIGHT / 4), 1, 2, new Scalar(255, 255, 255), 2);
@@ -290,6 +299,30 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
         return frame ;

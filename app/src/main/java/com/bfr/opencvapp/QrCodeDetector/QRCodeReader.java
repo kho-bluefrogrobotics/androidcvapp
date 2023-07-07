@@ -110,12 +110,12 @@ public class QRCodeReader {
 
     }
 
-    public List<QrCode> Detect(Mat frame)
+    public List<QrCode> DetectAndDecode(Mat frame)
     {
-        return Detect(frame, DetectionMethod.NORMAL);
+        return DetectAndDecode(frame, DetectionMethod.NORMAL);
     }
 
-    public List<QrCode> Detect(Mat frame, DetectionMethod method)
+    public List<QrCode> DetectAndDecode(Mat frame, DetectionMethod method)
     {
 
         List<QrCode> foundQrCodes = new ArrayList<>();
@@ -130,7 +130,7 @@ public class QRCodeReader {
                 String data = decoder.detectAndDecode(frame, points);
                 if (!points.empty())
                     // add detected QRCode to list
-                    foundQrCodes.add(new QrCode("detected by Opencv", points, true));
+                    foundQrCodes.add(new QrCode(data, points, true));
             }
         });
         openCVThread.start();
@@ -149,7 +149,7 @@ public class QRCodeReader {
                 for (int i=0; i<qrCodesContent.size(); i++)
                 {
                     // add detected QRCode to list
-                    foundQrCodes.add(new QrCode("detected by wechat"+i, qrCodesCorner.get(i), true));
+                    foundQrCodes.add(new QrCode(qrCodesContent.get(i), qrCodesCorner.get(i), true));
                 }
             }
         });
@@ -217,7 +217,7 @@ public class QRCodeReader {
                             corners.put(3,0, new double[]{bottomleftX });
                             corners.put(3,1, new double[]{bottomleftY });
                             // add detected QRCode to list
-                            foundQrCodes.add(new QrCode("yolo", corners, false));
+                            foundQrCodes.add(new QrCode("", corners, false));
                         } // end if conf
                     } // next yolo detection
                 }//next output
@@ -241,38 +241,5 @@ public class QRCodeReader {
     }
 
 
-    public List<QrCode> DetectAndDecode(Mat frame)
-    {
-        return DetectAndDecode(frame, DetectionMethod.NORMAL);
-    }
-
-    public List<QrCode> DetectAndDecode(Mat frame, DetectionMethod method)
-    {
-        List<QrCode> foundQrCodes = new ArrayList<>();
-
-        // traditional opencv method for QRCode detection
-        QRCodeDetector decoder = new QRCodeDetector();
-        points = new Mat();
-        String data = decoder.detectAndDecode(frame, points);
-        if (!points.empty())
-            foundQrCodes.add(new QrCode(data, points, true));
-
-        // Wechat detector
-        if(method==DetectionMethod.NORMAL) {
-            //reset
-            qrCodesContent.clear();
-            qrCodesCorner.clear();
-            // detect
-            qrCodesContent = wechatDetector.detectAndDecode(frame, qrCodesCorner);
-            // compile results
-            for (int i = 0; i < qrCodesContent.size(); i++) {
-                // check if already detected by Opencv
-                if (!isOverlapping(points, qrCodesCorner.get(i), 10.0))
-                    foundQrCodes.add(new QrCode(qrCodesContent.get(i), qrCodesCorner.get(i), true));
-            }
-        }
-
-        return foundQrCodes;
-    }
 
 }
