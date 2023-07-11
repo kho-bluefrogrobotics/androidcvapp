@@ -45,11 +45,7 @@ import org.opencv.objdetect.FaceRecognizerSF;
 
 import org.opencv.videoio.VideoWriter;
 
-import com.bfr.opencvapp.utils.BuddyData;
-import com.bfr.opencvapp.utils.FaceRecognizer;
-import com.bfr.opencvapp.utils.FacialIdentity;
-import com.bfr.opencvapp.utils.IdentitiesDatabase;
-import com.bfr.opencvapp.utils.MLKitFaceDetector;
+
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -68,12 +64,6 @@ import com.bfr.buddysdk.sdk.BuddySDK;
 import com.bfr.opencvapp.grafcet.*;
 import com.bfr.opencvapp.utils.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteFaceRecognizer;
-import com.google.mlkit.vision.face.Face;
-
-
-import org.tensorflow.lite.Interpreter;
-import org.tensorflow.lite.gpu.CompatibilityList;
-import org.tensorflow.lite.gpu.GpuDelegate;
 
 
 
@@ -102,8 +92,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     MultiDetector multiDetector;
     ArrayList<MultiDetector.Recognition> tfliteDetections = new ArrayList<MultiDetector.Recognition>();
     int left, right, top, bottom;
-    // Neural net for detection
-    private FaceRecognizer faceRecognizerObj;
 
     // for saving face
     boolean isSavingFace = false;
@@ -116,26 +104,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     Button showAll, removeIdx;
     EditText personNameExitText, idxToRemove;
 
-    //Video writer
-    private VideoWriter videoWriter;
 
-    //grafcet
-    TrackingGrafcet mTrackingGrafcet = new TrackingGrafcet("VisualTracking");
-    TrackingYesGrafcet mTrackingYesGrafcet = new TrackingYesGrafcet("VisualTracking");
-
-    // Sensors & motor data
-    BuddyData mydata = new BuddyData();
 
     //to debug
     double elapsedTime=0.0;
     String toDisplay="";
 
-    class Countdown {
-        public int time=3;
-        public double elapsedTime = 0.0;
-        public boolean start = false;
-    }
-    Countdown countToPicture = new Countdown();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -159,162 +133,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         mOpenCvCameraView.setCvCameraViewListener(this);
 
 
-        // Pass SDK and data to grafcet
-        mTrackingGrafcet.init(context, mySDK, mydata);
-        mTrackingYesGrafcet.init(context, mySDK, mydata);
-
-
-
-        //**************** Callbacks for buttons
-
-        saveCheckbox = findViewById(R.id.saveNameCkbox);
-        personNameExitText = findViewById(R.id.personNameEditTxt);
-        preprocessCheckbox = findViewById(R.id.PreprocessCheckBox);
-        showAll = findViewById(R.id.displayAllBtn);
-        removeIdx = findViewById(R.id.removeBtn);
-        idxToRemove = findViewById(R.id.idxRemove);
-
-//        //callback show face
-//        hideFace.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-//                //if checked
-//                if (hideFace.isChecked())
-//                {   // set tranparent
-//                    BuddyFace.setAlpha(0.25F);
-//                }
-//                else // unchecked
-//                {// set opaque
-//                    BuddyFace.setAlpha(1.0F);
-//                } // end if checked
-//            } // end onchange
-//        });// end listener
-//
-
-        saveCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-
-                if (isChecked)
-                {
-                    isSavingFace = isChecked;
-                    countToPicture.start = isChecked;
-                    countToPicture.time = 3;
-                    countToPicture.elapsedTime= System.currentTimeMillis();
-                }
-
-            }
-        });
-
-        findViewById(R.id.candidatesBtn).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                // display all candidates
-                int k=5;
-                ArrayList<FacialIdentity> candidates = faceRecognizerObj.getTopKResults(k);
-                toDisplay="";
-                for (int c=0; c<k; c++)
-                {
-                    toDisplay = toDisplay + "\n" + candidates.get(c).name.split("_")[0] + " "+ String.format(java.util.Locale.US,"%.4f", candidates.get(c).recogScore);
-                }
-                //display UI
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getApplicationContext(), toDisplay , Toast.LENGTH_LONG).show();
-                    }
-                }); // end UI
-            }
-        });
-
-        preprocessCheckbox.setChecked(true);
-        preprocessCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                faceRecognizerObj.withPreprocess = isChecked;
-            }
-        });
-
-        showAll.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                // display all stored identities
-                toDisplay="";
-                for (int c=0; c<faceRecognizerObj.getSavedIdentities().size(); c+=2)
-                {
-                    try {
-                        toDisplay = toDisplay +
-                                c + " - " +faceRecognizerObj.getSavedIdentities().get(c).name.split("_")[0]
-                                + "    " + (c+1) + " - " +faceRecognizerObj.getSavedIdentities().get(c+1).name.split("_")[0] + "\n";
-                    }
-                    catch (Exception e)
-                    {
-                        Log.e(TAG, e.toString());
-                    }
-
-                }
-                // adjusting to odd number (add last one)
-                if (faceRecognizerObj.getSavedIdentities().size()%2!=0)
-                    toDisplay = toDisplay  +
-                            (faceRecognizerObj.getSavedIdentities().size()-1) + " - " +faceRecognizerObj.getSavedIdentities().get(faceRecognizerObj.getSavedIdentities().size()-1)
-                            .name.split("_")[0]+"\n";
-
-                //display UI
-                Log.i(TAG, toDisplay);
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getApplicationContext(), toDisplay , Toast.LENGTH_LONG).show();
-                    }
-                }); // end UI
-
-            } // end onClick
-        });
-
-        removeIdx.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try{
-                    faceRecognizerObj.removeSavedIdentity(Integer.parseInt(personNameExitText.getText().toString()),
-                            new FaceRecognizer.IFaceRecogRsp() {
-                                @Override
-                                public void onSuccess(String success) {
-
-                                }
-
-                                @Override
-                                public void onFailed(String error) {
-
-                                }
-                            });
-                }
-                catch(Exception e)
-                {
-                    Toast.makeText(getApplicationContext(), "ERROR: " + e.toString() , Toast.LENGTH_LONG).show();
-                }
-
-
-            } // end onClick
-        });
-
-        findViewById(R.id.loadBtn).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                faceRecognizerObj.loadFaces(new FaceRecognizer.IFaceRecogRsp() {
-                    @Override
-                    public void onSuccess(String success) {
-
-                    }
-
-                    @Override
-                    public void onFailed(String error) {
-
-                    }
-                });
-            }
-        });
 
     } // End onCreate
 
@@ -339,9 +157,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     @Override
     public void onPause() {
         super.onPause();
-        //stop grafcet
-        mTrackingGrafcet.stop();
-        mTrackingYesGrafcet.stop();
+
     }
 
     @Override
@@ -351,9 +167,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         OpenCVLoader.initDebug();
         mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
 
-        //restart grafcet
-        mTrackingGrafcet.start();
-        mTrackingYesGrafcet.start();
     }
 
 
@@ -373,247 +186,23 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             e.printStackTrace();
         }
 
-        frame_orig= new Mat();
-        frame = new Mat();
-        // init face detector
-        multiDetector = new MultiDetector(context);
-        //init face recognizer
-        faceRecognizerObj = new FaceRecognizer();
 
-//        // Init write video file
-//        videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
-//                25.0D, new Size(800, 600));
-//        videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
-//                25.0D,  new Size( 800,600));
-
-        started = true;
     }
 
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
         // cature frame from camera
-        frame_orig = inputFrame.rgba();
+        frame = inputFrame.rgba();
 
-        int cols = frame_orig.cols();
-        int rows = frame_orig.rows();
+        multiDetector.recognizeImage()
+        return frame;
 
-        // resize
-//        Imgproc.resize(frame_orig, frame, new Size(1024,768));
-
-        frame = frame_orig;
-
-
-        if (!started)
-            return frame;
-
-        try{
-
-        // color conversion
-        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
-
-        elapsedTime = System.currentTimeMillis();
-
-
-        //convert to bitmap
-        Mat resizedFrame = new Mat();
-        Imgproc.resize(frame, resizedFrame, new Size(320,320));
-        Bitmap bitmapImagefull = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(resizedFrame, bitmapImagefull);
-
-        //Face detection
-        tfliteDetections = multiDetector.recognizeImage(bitmapImagefull);
-        Log.i(TAG, "elapsed time face detect with tflite : " + (System.currentTimeMillis()-elapsedTime)  );
-            elapsedTime = System.currentTimeMillis();
-
-        for (int i = 0; i < tfliteDetections.size(); ++i) {
-        double confidence = tfliteDetections.get(i).confidence;
-        double detectedClass = tfliteDetections.get(i).getDetectedClass();
-        if (confidence > THRESHOLD && detectedClass == 1 ) {
-
-                if(isSavingFace)
-                {
-                    if(countToPicture.start)
-                    {
-                        //if  face large enough
-                        float wThres= 150f/1024f;
-                        if(tfliteDetections.get(i).right-tfliteDetections.get(i).left>wThres)
-                        {
-                            Imgproc.putText(frame_orig, "Placez-vous en face ",
-                                    new Point(150, 200),1, 3,
-                                    new Scalar(0, 0, 0), 10);
-                            Imgproc.putText(frame_orig, "Placez-vous en face",
-                                    new Point(150, 200),1, 3,
-                                    new Scalar(0, 250, 0), 4);
-                            Imgproc.putText(frame_orig, "de la camera" ,
-                                    new Point(150, 250),1, 3,
-                                    new Scalar(0, 0, 0), 10);
-                            Imgproc.putText(frame_orig, "de la camera" + " ",
-                                    new Point(150, 250),1, 3,
-                                    new Scalar(0, 250, 0), 4);
-
-                            Imgproc.putText(frame_orig, ""+countToPicture.time,
-                                    new Point(300, 400),1, 10,
-                                    new Scalar(0, 0, 0), 30);
-                            Imgproc.putText(frame_orig, ""+countToPicture.time,
-                                    new Point(300, 400),1, 10,
-                                    new Scalar(255, 0, 0), 15);
-                            if (System.currentTimeMillis()-countToPicture.elapsedTime>1000 && countToPicture.time>0) {
-                                countToPicture.time-=1;
-                                countToPicture.elapsedTime= System.currentTimeMillis();
-                            }
-                            if (countToPicture.time<=0)
-                                countToPicture.start=false;
-                            break;
-                        }
-                        else // face not big enough
-                        {
-                            Imgproc.putText(frame_orig, "Approchez vous",
-                                    new Point(150, 200),1, 3,
-                                    new Scalar(0, 0, 0), 10);
-                            Imgproc.putText(frame_orig, "Approchez vous",
-                                    new Point(150, 200),1, 3,
-                                    new Scalar(0, 250, 0), 4);
-                            Imgproc.putText(frame_orig, "du robot",
-                                    new Point(150, 250),1, 3,
-                                    new Scalar(0, 0, 0), 10);
-                            Imgproc.putText(frame_orig, "du robot",
-                                    new Point(150, 250),1, 3,
-                                    new Scalar(0, 250, 0), 4);
-                            //reset
-                            countToPicture.time = 5;
-                            break;
-                        }
-
-
-                    }
-
-                    faceRecognizerObj.saveFace(frame,
-                            tfliteDetections.get(i).left,
-                            tfliteDetections.get(i).right,
-                            tfliteDetections.get(i).top,
-                            tfliteDetections.get(i).bottom,
-                            personNameExitText.getText().toString(),
-                            new FaceRecognizer.IFaceRecogRsp() {
-                                @Override
-                                public void onSuccess(String success) {
-                                    //reset
-                                    isSavingFace=false;
-
-                                    //display UI
-                                    runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            Toast.makeText(getApplicationContext(), "*** SAVED Face: " + personNameExitText.getText().toString().toUpperCase() ,
-                                                    Toast.LENGTH_LONG).show();
-                                            saveCheckbox.setChecked(false);
-                                        }
-                                    }); // end UI
-                                }
-
-                                @Override
-                                public void onFailed(String error) {
-                                    Log.e(TAG, "coucou ERROR : " + error);
-
-                                    errorSavingFace = true;
-                                    countToPicture.time = 7;
-                                    countToPicture.elapsedTime= System.currentTimeMillis();
-
-                                    //display UI
-                                    runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            Toast.makeText(getApplicationContext(), "ERROR !!! Please try again " ,
-                                                    Toast.LENGTH_LONG).show();
-                                            saveCheckbox.setChecked(false);
-                                            isSavingFace=false;
-                                        }
-                                    }); // end UI
-                                }
-                            }
-                    );
-
-
-                }
-                else if (errorSavingFace)
-                {
-                        Imgproc.putText(frame_orig, "Erreur merci",
-                                new Point(150, 200),1, 3,
-                                new Scalar(0, 0, 0), 10);
-                        Imgproc.putText(frame_orig, "Erreur merci",
-                                new Point(150, 200),1, 3,
-                                new Scalar(0, 250, 0), 4);
-                        Imgproc.putText(frame_orig, "de ressayer",
-                                new Point(150, 250),1, 3,
-                                new Scalar(0, 0, 0), 10);
-                        Imgproc.putText(frame_orig, "de ressayer",
-                                new Point(150, 250),1, 3,
-                                new Scalar(0, 250, 0), 4);
-
-                        if (System.currentTimeMillis()-countToPicture.elapsedTime>500 && countToPicture.time>0) {
-                            countToPicture.time-=1;
-                            countToPicture.elapsedTime= System.currentTimeMillis();
-                        }
-                        if (countToPicture.time<=0)
-                            errorSavingFace=false;
-                        break;
-
-                }
-                else   // Facial recognition
-                {
-
-                   FacialIdentity identified =  faceRecognizerObj.RecognizeFace(frame,
-                            tfliteDetections.get(i).left,
-                            tfliteDetections.get(i).right,
-                            tfliteDetections.get(i).top,
-                           tfliteDetections.get(i).bottom);
-
-                    // for display only
-                    left = (int)(tfliteDetections.get(i).left * cols);
-                    top = (int)(tfliteDetections.get(i).top * rows);
-                    right = (int)(tfliteDetections.get(i).right * cols);
-                    bottom = (int)(tfliteDetections.get(i).bottom* rows);
-
-                    // Display name
-                    if(identified!=null){
-                        Imgproc.putText(frame_orig, identified.name.toUpperCase() + " "+String.format(java.util.Locale.US,"%.4f", identified.recogScore),
-                                new Point(left-2, top-12),1, 3,
-                                new Scalar(0, 0, 0), 5);
-                        Imgproc.putText(frame_orig, identified.name.toUpperCase() + " "+String.format(java.util.Locale.US,"%.4f", identified.recogScore),
-                                new Point(left-2, top-12),1, 3,
-                                new Scalar(0, 255, 0), 2);
-                    }
-                    // Draw rectangle around detected face.
-                    Imgproc.rectangle(frame_orig, new Point(left, top), new Point(right, bottom),
-                        new Scalar(0, 255, 0), 2);
-
-
-                } //end if isSavingFace
-
-                //Stop for-loop (only one face)
-                break;
-
-            }   // end if confidence OK
-
-        } // next detection
-
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-        finally {
-            // resize
-//            Imgproc.resize(frame_orig, frame, new Size(800,600));
-            return frame_orig;
-        }
     } // end function
 
     public void onCameraViewStopped() {
-        videoWriter.release();
+
     }
-
-
 
 
     private void copyAssets() throws IOException {
