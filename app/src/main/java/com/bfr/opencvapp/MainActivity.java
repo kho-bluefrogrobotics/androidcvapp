@@ -175,7 +175,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         return Collections.singletonList(mOpenCvCameraView);
     }
 
-
+    TfLiteFaceRecognizer mytfliterecog;
     public void onCameraViewStarted(int width, int height) {
 
         try {
@@ -186,6 +186,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             e.printStackTrace();
         }
 
+        mytfliterecog = new TfLiteFaceRecognizer(context);
 
     }
 
@@ -200,7 +201,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Imgproc.resize(frame, resizedFaceFrame, new Size(255,255));
         Bitmap bitmapImage = Bitmap.createBitmap(resizedFaceFrame.cols(), resizedFaceFrame.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(resizedFaceFrame, bitmapImage);
-        TfLiteFaceRecognizer mytfliterecog = new TfLiteFaceRecognizer(context);
+
         mytfliterecog.recognizeImage(bitmapImage);
         return frame;
 

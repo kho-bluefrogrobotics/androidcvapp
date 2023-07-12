@@ -37,7 +37,7 @@ public class TfLiteFaceRecognizer {
     private boolean WITH_GPU = true;
     private boolean WITH_DSP = false;
     //Face embedding
-    private float[][] embeedings;
+    private float[][][][] embeedings;
 
     //where to find the models
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
@@ -135,7 +135,7 @@ public class TfLiteFaceRecognizer {
      * @param bitmap original image in bitmap format
      * @return array of detections
      */
-    public float[][] recognizeImage(Bitmap bitmap) {
+    public float[][][][] recognizeImage(Bitmap bitmap) {
 
         ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmap);
 
@@ -144,9 +144,9 @@ public class TfLiteFaceRecognizer {
 
         // Init Face embeedings (signature)
 //        embeedings = new float[1][OUTPUT_SIZE];
-        embeedings = new float[1][OUTPUT_SIZE];
+        embeedings = new float[1][16][16][48];
         // Assign to Facenet output
-        outputMap.put(0, new float[1][16][16][48]);
+        outputMap.put(0, embeedings);
 //        outputMap.put(1, new float[1][16]);
 //        outputMap.put(2, new float[1][16]);
 //        outputMap.put(3, new float[1][48]);
@@ -154,7 +154,7 @@ public class TfLiteFaceRecognizer {
         Object[] inputArray = {byteBuffer};
         tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
 
-
+    Log.w("coucou", "runing tflite");
         return embeedings;
 
     }
