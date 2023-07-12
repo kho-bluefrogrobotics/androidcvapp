@@ -171,10 +171,13 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                         params.setRecordingHint(true);
 
                     List<String> FocusModes = params.getSupportedFocusModes();
-                    if (FocusModes != null && FocusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO))
+//                    if (FocusModes != null && FocusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO))
+                    if (FocusModes != null)
                     {
 //                        params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
-                        params.setFocusMode(Camera.Parameters.FOCUS_MODE_FIXED);
+                        Log.i("coucou", "focus " + FocusModes);
+                        params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+//                        params.setFocusMode(Camera.Parameters.FOCUS_MODE_FIXED);
                     }
 
                     params.setExposureCompensation(4);

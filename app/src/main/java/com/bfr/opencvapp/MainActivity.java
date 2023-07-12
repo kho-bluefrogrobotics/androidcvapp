@@ -195,7 +195,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // cature frame from camera
         frame = inputFrame.rgba();
 
-        multiDetector.recognizeImage()
+        //convert to bitmap
+        Mat resizedFaceFrame = new Mat();
+        Imgproc.resize(frame, resizedFaceFrame, new Size(255,255));
+        Bitmap bitmapImage = Bitmap.createBitmap(resizedFaceFrame.cols(), resizedFaceFrame.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(resizedFaceFrame, bitmapImage);
+        TfLiteFaceRecognizer mytfliterecog = new TfLiteFaceRecognizer(context);
+        mytfliterecog.recognizeImage(bitmapImage);
         return frame;
 
     } // end function
