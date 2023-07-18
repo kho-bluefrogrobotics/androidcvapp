@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.RectF;
 import android.os.Build;
+import android.os.Trace;
 import android.util.Log;
 
 import org.tensorflow.lite.HexagonDelegate;
@@ -26,22 +27,22 @@ public class TfLiteFaceRecognizer {
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
-    private final int[] INPUT_SIZE = {192,640};
-    private final int[] OUTPUT_SIZE = {192,640};
+    private final int[] INPUT_SIZE = {256,320};
+    private final int[] OUTPUT_SIZE = {256,320};
     private final int BATCH_SIZE = 1;
     private final int PIXEL_SIZE = 3;
     private final float THRES = 0.75f;
     private final String[] LABELS = {"Human", "Face", "Hand"};
     private final int NUM_THREADS = 4;
     private boolean WITH_NNAPI = false;
-    private boolean WITH_GPU = true;
+    private boolean WITH_GPU = false;
     private boolean WITH_DSP = false;
     //Face embedding
     private float[][][][] embeedings;
 
     //where to find the models
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
-    private final String MODEL_NAME = "lite-mono_192x640_float16.tflite";
+    private final String MODEL_NAME = "pyDNet__256x320_float16_quant.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
@@ -153,6 +154,7 @@ public class TfLiteFaceRecognizer {
 
         Object[] inputArray = {byteBuffer};
         tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
+
 
     Log.w("coucou", "runing tflite");
         return embeedings;
