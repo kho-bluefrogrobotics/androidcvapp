@@ -31,7 +31,9 @@ import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfFloat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
@@ -52,8 +54,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -196,6 +200,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     }
 
+
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
@@ -208,8 +213,32 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Bitmap bitmapImage = Bitmap.createBitmap(resizedFaceFrame.cols(), resizedFaceFrame.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(resizedFaceFrame, bitmapImage);
 
-        mytfliterecog.recognizeImage(bitmapImage);
-        return frame;
+        float[][][][] result=mytfliterecog.recognizeImage(bitmapImage);
+        Log.w("coucou", " length "+result[0].length + " " + result[0][0].length);
+        float[] imgArray = new float[result[0].length*result[0][0].length];
+
+        byte[] data = new byte[result[0].length*result[0][0].length];
+
+        for(int i=0; i<result[0].length; i++){
+            for(int j=0; j<result[0][i].length; j++){
+                imgArray[i*j+j]=result[0][i][j][0];
+//                data[i*j+j]=(result[0][i][j][0]);
+//                Log.w("coucou", ""+ result[0][i][j][0] + " " +data[i*j+j]);
+            }
+        }
+
+        MatOfFloat depthMat = new MatOfFloat(result[0].length, result[0][0].length);
+        depthMat.fromArray(imgArray);
+//        depthMat.put(0,0, imgArray);
+
+
+        Imgproc.resize(depthMat, depthMat, new Size(1024, 768));
+
+        Mat toDisplay = new Mat();
+
+
+
+        return depthMat;
 
     } // end function
 
