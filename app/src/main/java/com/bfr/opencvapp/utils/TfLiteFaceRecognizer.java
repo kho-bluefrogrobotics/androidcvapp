@@ -26,8 +26,8 @@ public class TfLiteFaceRecognizer {
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
-    private final int INPUT_SIZE = 255;
-    private final int OUTPUT_SIZE = 128;
+    private final int[] INPUT_SIZE = {192,640};
+    private final int[] OUTPUT_SIZE = {192,640};
     private final int BATCH_SIZE = 1;
     private final int PIXEL_SIZE = 3;
     private final float THRES = 0.75f;
@@ -41,7 +41,7 @@ public class TfLiteFaceRecognizer {
 
     //where to find the models
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
-    private final String MODEL_NAME = "nanotrack_backbone_sim_float16.tflite";
+    private final String MODEL_NAME = "lite-mono_192x640_float16.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
@@ -102,17 +102,17 @@ public class TfLiteFaceRecognizer {
     protected ByteBuffer convertBitmapToByteBuffer(Bitmap bitmap) {
         ByteBuffer byteBuffer;
         if (IS_QUANTIZED) {
-            byteBuffer = ByteBuffer.allocateDirect(BATCH_SIZE * INPUT_SIZE * INPUT_SIZE * PIXEL_SIZE);
+            byteBuffer = ByteBuffer.allocateDirect(BATCH_SIZE * INPUT_SIZE[0] * INPUT_SIZE[1] * PIXEL_SIZE);
         }
         else{
-            byteBuffer = ByteBuffer.allocateDirect(4 * BATCH_SIZE * INPUT_SIZE * INPUT_SIZE * PIXEL_SIZE);
+            byteBuffer = ByteBuffer.allocateDirect(4 * BATCH_SIZE * INPUT_SIZE[0] * INPUT_SIZE[1] * PIXEL_SIZE);
         }
         byteBuffer.order(ByteOrder.nativeOrder());
-        int[] intValues = new int[INPUT_SIZE * INPUT_SIZE];
+        int[] intValues = new int[INPUT_SIZE[0] * INPUT_SIZE[1]];
         bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
         int pixel = 0;
-        for (int i = 0; i < INPUT_SIZE; ++i) {
-            for (int j = 0; j < INPUT_SIZE; ++j) {
+        for (int i = 0; i < INPUT_SIZE[0]; ++i) {
+            for (int j = 0; j < INPUT_SIZE[1]; ++j) {
                 final int val = intValues[pixel++];
                 if (IS_QUANTIZED) {
                     byteBuffer.put((byte) ((val >> 16) & 0xFF));
@@ -143,8 +143,8 @@ public class TfLiteFaceRecognizer {
         Map<Integer, Object> outputMap = new HashMap<>();
 
         // Init Face embeedings (signature)
-//        embeedings = new float[1][OUTPUT_SIZE];
-        embeedings = new float[1][16][16][48];
+        embeedings = new float[1][OUTPUT_SIZE[0]][OUTPUT_SIZE[1]][1];
+//        embeedings = new float[1][16][16][48];
         // Assign to Facenet output
         outputMap.put(0, embeedings);
 //        outputMap.put(1, new float[1][16]);
