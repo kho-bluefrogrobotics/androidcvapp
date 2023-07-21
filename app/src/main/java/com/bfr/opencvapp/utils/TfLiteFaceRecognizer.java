@@ -27,8 +27,8 @@ public class TfLiteFaceRecognizer {
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
-    private final int[] INPUT_SIZE = {256,320};
-    private final int[] OUTPUT_SIZE = {256,320};
+    private final int[] INPUT_SIZE = {256,256};
+    private final int[] OUTPUT_SIZE = {256,256};
     private final int BATCH_SIZE = 1;
     private final int PIXEL_SIZE = 3;
     private final float THRES = 0.75f;
@@ -42,7 +42,8 @@ public class TfLiteFaceRecognizer {
 
     //where to find the models
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
-    private final String MODEL_NAME = "pyDNet__256x320_float16_quant.tflite";
+//    private final String MODEL_NAME = "pyDNet__256x320_float16_quant.tflite";
+    private final String MODEL_NAME = "fastdepth_256x256_float16_quant.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;

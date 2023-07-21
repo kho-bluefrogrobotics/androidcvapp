@@ -250,6 +250,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 + "result[0][0] "+result[0][0].length + "\n"
                 + "result[0][0][0] "+result[0][0][0].length + "\n");
 
+        double min = 10000.0;
+        double max = 0.0;
         for (int i=0; i<dheight; i++)
         {
             for (int j=0; j<dwith; j++)
@@ -257,7 +259,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 double[] newValue = gray.get(i, j); //Stores element in an array
 //                newValue[0]=155;
                 try{
-                    newValue[0]=(int)(result[0][i][j][0]*255.0);
+                    if (result[0][i][j][0]<min)
+                        min=result[0][i][j][0];
+                    if (result[0][i][j][0]>max)
+                        max=result[0][i][j][0];
+                    newValue[0]=(int)(result[0][i][j][0]*255.0/(3-min));
+
                 } catch (Exception e) {
                    Log.e("cocuouerror", "failed at "+ i + " " + j);
                    return frame;
@@ -268,6 +275,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             }
         }
 
+        Mat multpi = new Mat(dheight, dwith, CV_8UC1, new Scalar(0.5));
+        gray.mul(multpi);
+        Log.w("cocuou", "MAX VALUE "+ max + " MIN VALUE " + min);
         Imgproc.resize(gray, gray, new Size(frame.cols(), frame.rows()) );
 
         return gray;
