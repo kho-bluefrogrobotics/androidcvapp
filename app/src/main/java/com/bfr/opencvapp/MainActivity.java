@@ -220,42 +220,53 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Utils.matToBitmap(resizedFaceFrame, bitmapImage);
 
         float[][][][] result=mytfliterecog.recognizeImage(bitmapImage);
-
-
-        float[] concat = new float[result[0].length*result[0][0].length];
-
         int dwith = result[0][0].length;
         int dheight = result[0].length;
-        Log.w("coucou", " length "+dwith + " " + dheight);
+
+//        float[] concat = new float[result[0].length*result[0][0].length];
+//
+
+//        Log.w("coucou", " length "+dwith + " " + dheight);
+//
+//        for (int i=0; i<dheight; i++)
+//        {
+//            for (int j=0; j<dwith; j++)
+//            {
+//                concat[i*j+j] = result[0][i][j][0]; //Stores element in an array
+//                //Log.w("coucou", ""+ concat[i*j+j]);
+//            }
+//        }
+//
+//        Bitmap displayBitmap = arrayToBitmap(concat, 320, 256);
+//        Mat gray = new Mat();
+//        Utils.bitmapToMat(displayBitmap, gray);
+
+
+
+        Mat gray = new Mat(dheight, dwith, CV_8UC3, new Scalar(0,0,0));
+//        Mat gray = new Mat();
+        Imgproc.cvtColor(gray, gray, Imgproc.COLOR_RGB2GRAY);
+        Log.w("coucou", "result[0] "+result[0].length + "\n"
+                + "result[0][0] "+result[0][0].length + "\n"
+                + "result[0][0][0] "+result[0][0][0].length + "\n");
 
         for (int i=0; i<dheight; i++)
         {
             for (int j=0; j<dwith; j++)
             {
-                concat[i*j+j] = result[0][i][j][0]; //Stores element in an array
-                //Log.w("coucou", ""+ concat[i*j+j]);
+                double[] newValue = gray.get(i, j); //Stores element in an array
+//                newValue[0]=155;
+                try{
+                    newValue[0]=(int)(result[0][i][j][0]*255.0);
+                } catch (Exception e) {
+                   Log.e("cocuouerror", "failed at "+ i + " " + j);
+                   return frame;
+                }
+
+//                Log.w("coucou", ""+ result[0][i][j][0] + " " +newValue[0]);
+                gray.put(i, j, newValue); //Puts element back into matrix
             }
         }
-
-        Bitmap displayBitmap = arrayToBitmap(concat, 320, 256);
-        Mat gray = new Mat();
-        Utils.bitmapToMat(displayBitmap, gray);
-//        Mat gray = new Mat(result[0].length, result[0][0].length, CV_8UC3, new Scalar(0,0,0));
-//        Mat gray = new Mat();
-//        Imgproc.cvtColor(gray, gray, Imgproc.COLOR_RGB2GRAY);
-
-
-//        for (int i=0; i<gray.rows(); i++)
-//        {
-//            for (int j=0; j<gray.cols(); j++)
-//            {
-//                double[] newValue = gray.get(i, j); //Stores element in an array
-////                newValue[0]=155;
-//                newValue[0]=(int)(result[0][i][j][0]*255.0);
-////                Log.w("coucou", ""+ result[0][i][j][0] + " " +newValue[0]);
-//                gray.put(i, j, newValue); //Puts element back into matrix
-//            }
-//        }
 
         Imgproc.resize(gray, gray, new Size(frame.cols(), frame.rows()) );
 
