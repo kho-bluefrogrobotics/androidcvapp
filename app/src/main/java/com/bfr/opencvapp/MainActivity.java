@@ -215,30 +215,42 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         float[][][][] result=mytfliterecog.recognizeImage(bitmapImage);
         Log.w("coucou", " length "+result[0].length + " " + result[0][0].length);
-        float[] imgArray = new float[result[0].length*result[0][0].length];
+//        float[] imgArray = new float[result[0].length*result[0][0].length];
+//
+//        byte[] data = new byte[result[0].length*result[0][0].length];
 
-        byte[] data = new byte[result[0].length*result[0][0].length];
 
-        for(int i=0; i<result[0].length; i++){
-            for(int j=0; j<result[0][i].length; j++){
-                imgArray[i*j+j]=result[0][i][j][0];
-//                data[i*j+j]=(result[0][i][j][0]);
+
+
+//        for(int i=0; i<result[0].length; i++){
+//            for(int j=0; j<result[0][i].length; j++){
+//                imgArray[i*j+j]=result[0][i][j][0];
+////                data[i*j+j]=(result[0][i][j][0]);
 //                Log.w("coucou", ""+ result[0][i][j][0] + " " +data[i*j+j]);
+//            }
+//        }
+
+
+        Mat gray = new Mat(result[0].length, result[0][0].length, CV_8UC3, new Scalar(0,0,0));
+//        Mat gray = new Mat();
+        Imgproc.cvtColor(gray, gray, Imgproc.COLOR_RGB2GRAY);
+
+
+        for (int i=0; i<gray.rows(); i++)
+        {
+            for (int j=0; j<gray.cols(); j++)
+            {
+                double[] newValue = gray.get(i, j); //Stores element in an array
+//                newValue[0]=155;
+                newValue[0]=(int)(result[0][i][j][0]*255.0);
+//                Log.w("coucou", ""+ result[0][i][j][0] + " " +newValue[0]);
+                gray.put(i, j, newValue); //Puts element back into matrix
             }
         }
 
-        MatOfFloat depthMat = new MatOfFloat(result[0].length, result[0][0].length);
-        depthMat.fromArray(imgArray);
-//        depthMat.put(0,0, imgArray);
+        Imgproc.resize(gray, gray, new Size(frame.cols(), frame.rows()) );
 
-
-        Imgproc.resize(depthMat, depthMat, new Size(1024, 768));
-
-        Mat toDisplay = new Mat();
-
-
-
-        return depthMat;
+        return gray;
 
     } // end function
 
