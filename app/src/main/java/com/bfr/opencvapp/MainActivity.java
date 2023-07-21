@@ -9,8 +9,13 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -62,6 +67,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Stream;
 
 import com.bfr.buddysdk.sdk.BuddySDK;
 
@@ -214,39 +220,42 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Utils.matToBitmap(resizedFaceFrame, bitmapImage);
 
         float[][][][] result=mytfliterecog.recognizeImage(bitmapImage);
-        Log.w("coucou", " length "+result[0].length + " " + result[0][0].length);
-//        float[] imgArray = new float[result[0].length*result[0][0].length];
-//
-//        byte[] data = new byte[result[0].length*result[0][0].length];
 
 
+        float[] concat = new float[result[0].length*result[0][0].length];
 
+        int dwith = result[0][0].length;
+        int dheight = result[0].length;
+        Log.w("coucou", " length "+dwith + " " + dheight);
 
-//        for(int i=0; i<result[0].length; i++){
-//            for(int j=0; j<result[0][i].length; j++){
-//                imgArray[i*j+j]=result[0][i][j][0];
-////                data[i*j+j]=(result[0][i][j][0]);
-//                Log.w("coucou", ""+ result[0][i][j][0] + " " +data[i*j+j]);
-//            }
-//        }
-
-
-        Mat gray = new Mat(result[0].length, result[0][0].length, CV_8UC3, new Scalar(0,0,0));
-//        Mat gray = new Mat();
-        Imgproc.cvtColor(gray, gray, Imgproc.COLOR_RGB2GRAY);
-
-
-        for (int i=0; i<gray.rows(); i++)
+        for (int i=0; i<dheight; i++)
         {
-            for (int j=0; j<gray.cols(); j++)
+            for (int j=0; j<dwith; j++)
             {
-                double[] newValue = gray.get(i, j); //Stores element in an array
-//                newValue[0]=155;
-                newValue[0]=(int)(result[0][i][j][0]*255.0);
-//                Log.w("coucou", ""+ result[0][i][j][0] + " " +newValue[0]);
-                gray.put(i, j, newValue); //Puts element back into matrix
+                concat[i*j+j] = result[0][i][j][0]; //Stores element in an array
+                //Log.w("coucou", ""+ concat[i*j+j]);
             }
         }
+
+        Bitmap displayBitmap = arrayToBitmap(concat, 320, 256);
+        Mat gray = new Mat();
+        Utils.bitmapToMat(displayBitmap, gray);
+//        Mat gray = new Mat(result[0].length, result[0][0].length, CV_8UC3, new Scalar(0,0,0));
+//        Mat gray = new Mat();
+//        Imgproc.cvtColor(gray, gray, Imgproc.COLOR_RGB2GRAY);
+
+
+//        for (int i=0; i<gray.rows(); i++)
+//        {
+//            for (int j=0; j<gray.cols(); j++)
+//            {
+//                double[] newValue = gray.get(i, j); //Stores element in an array
+////                newValue[0]=155;
+//                newValue[0]=(int)(result[0][i][j][0]*255.0);
+////                Log.w("coucou", ""+ result[0][i][j][0] + " " +newValue[0]);
+//                gray.put(i, j, newValue); //Puts element back into matrix
+//            }
+//        }
 
         Imgproc.resize(gray, gray, new Size(frame.cols(), frame.rows()) );
 
@@ -257,6 +266,46 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     public void onCameraViewStopped() {
 
     }
+
+
+
+
+    private Bitmap arrayToBitmap(float[] img_array, int imageSizeX, int imageSizeY) {
+        float maxval = Float.NEGATIVE_INFINITY;
+        float minval = Float.POSITIVE_INFINITY;
+        for (float cur : img_array) {
+            maxval = Math.max(maxval, cur);
+            minval = Math.min(minval, cur);
+        }
+        float multiplier = 0;
+        if ((maxval - minval) > 0) multiplier = 255 / (maxval - minval);
+
+        int[] img_normalized = new int[img_array.length];
+        for (int i = 0; i < img_array.length; ++i) {
+            float val = (float) (multiplier * (img_array[i] - minval));
+            img_normalized[i] = (int) val;
+        }
+
+        int width = imageSizeX;
+        int height = imageSizeY;
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
+
+        for (int ii = 0; ii < width; ii++) //pass the screen pixels in 2 directions
+        {
+            for (int jj = 0; jj < height; jj++) {
+                //int val = img_normalized[ii + jj * width];
+                int index = (width - ii - 1) + (height - jj - 1) * width;
+                if(index < img_array.length) {
+                    int val = img_normalized[index];
+                    bitmap.setPixel(ii, jj, Color.rgb(val, val, val));
+                }
+            }
+        }
+
+        return bitmap;
+    }
+
+
 
 
     private void copyAssets() throws IOException {
