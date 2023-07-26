@@ -1,6 +1,7 @@
 package com.bfr.opencvapp.QrCodeDetector;
 
 import static org.opencv.core.CvType.CV_32F;
+import static org.opencv.dnn.Dnn.*;
 
 import android.util.Log;
 
@@ -62,6 +63,8 @@ public class QRCodeReader {
 
         //init YOLO detector
         yoloQrDetector = Dnn.readNetFromDarknet(Utils.yoloQRCodeCFG, Utils.yoloQRCodeWeights);
+//        yoloQrDetector.setPreferableBackend(DNN_BACKEND_VKCOM);
+//        yoloQrDetector.setPreferableTarget(DNN_TARGET_VULKAN);
 
     }
 
@@ -121,121 +124,101 @@ public class QRCodeReader {
         List<QrCode> foundQrCodes = new ArrayList<>();
 
         /*** Opencv detector ***/
-        Thread openCVThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                // traditional opencv method for QRCode detection
-                QRCodeDetector decoder = new QRCodeDetector();
-                points = new Mat();
-                String data = decoder.detectAndDecode(frame, points);
-                if (!points.empty())
-                    // add detected QRCode to list
-                    foundQrCodes.add(new QrCode(data, points, true));
-            }
-        });
-        openCVThread.start();
+        double dtime = System.currentTimeMillis();
+        // traditional opencv method for QRCode detection
+        QRCodeDetector decoder = new QRCodeDetector();
+        points = new Mat();
+        String data = decoder.detectAndDecode(frame, points);
+        Log.w("exectime", "opencv duration " + (System.currentTimeMillis()-dtime) );
+        if (!points.empty())
+            // add detected QRCode to list
+            foundQrCodes.add(new QrCode(data, points, true));
+
 
         /*** Wechat detector ***/
-        Thread wechatThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
 
-                //reset
-                qrCodesContent.clear();
-                qrCodesCorner.clear();
-                // detect
-                qrCodesContent = wechatDetector.detectAndDecode(frame, qrCodesCorner);
-                int x=0, y=0;
-                for (int i=0; i<qrCodesContent.size(); i++)
-                {
-                    // add detected QRCode to list
-                    foundQrCodes.add(new QrCode(qrCodesContent.get(i), qrCodesCorner.get(i), true));
-                }
-            }
-        });
-        if(method==DetectionMethod.NORMAL || method==DetectionMethod.HIGH_PRECISION)
-            wechatThread.start();
+        dtime = System.currentTimeMillis();
+        //reset
+        qrCodesContent.clear();
+        qrCodesCorner.clear();
+        // detect
+        qrCodesContent = wechatDetector.detectAndDecode(frame, qrCodesCorner);
+        Log.w("exectime", "weChat duration " + (System.currentTimeMillis()-dtime) );
+        int x=0, y=0;
+        for (int i=0; i<qrCodesContent.size(); i++)
+        {
+            // add detected QRCode to list
+            foundQrCodes.add(new QrCode(qrCodesContent.get(i), qrCodesCorner.get(i), true));
+        }
 
         /*** YOLO detector ***/
-        Thread yoloThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                yoloQrDetector.getLayerNames();
-                Mat frame_yolo = new Mat();
-                Imgproc.cvtColor(frame, frame_yolo, Imgproc.COLOR_RGBA2RGB);
-                Mat blob = Dnn.blobFromImage(frame_yolo, 1/255.0,
-                        new org.opencv.core.Size(640, 640),
-                        new Scalar(new double[]{0.0, 0.0, 0.0}), /*swapRB*/true, /*crop*/false, CV_32F);
-                yoloQrDetector.setInput(blob);
+        dtime = System.currentTimeMillis();
+        yoloQrDetector.getLayerNames();
+        Mat frame_yolo = new Mat();
+        Imgproc.cvtColor(frame, frame_yolo, Imgproc.COLOR_RGBA2RGB);
+        Mat blob = Dnn.blobFromImage(frame_yolo, 1/255.0,
+                new org.opencv.core.Size(640, 640),
+                new Scalar(new double[]{0.0, 0.0, 0.0}), /*swapRB*/true, /*crop*/false, CV_32F);
+        yoloQrDetector.setInput(blob);
 
-                //  -- determine  the output layer names that we need from YOLO
-                // The forward() function in OpenCV’s Net class needs the ending layer till which it should run in the network.
+        //  -- determine  the output layer names that we need from YOLO
+        // The forward() function in OpenCV’s Net class needs the ending layer till which it should run in the network.
 
-                List<String> layerNames = yoloQrDetector.getLayerNames();
-                List<String> outputLayers = new ArrayList<String>();
-                for (Integer i : yoloQrDetector.getUnconnectedOutLayers().toList()) {
-                    outputLayers.add(layerNames.get(i - 1));
-                }
-
-                List<Mat> outputs = new ArrayList<Mat>();
-                yoloQrDetector.forward(outputs, outputLayers);
-
-                for(Mat output : outputs) {
-                    //  loop over each of the detections. Each row is a candidate detection,
-                    System.out.println("Output.rows(): " + output.rows() + ", Output.cols(): " + output.cols());
-                    for (int i = 0; i < output.rows(); i++) {
-                        Mat row = output.row(i);
-                        List<Float> detect = new MatOfFloat(row).toList();
-                        List<Float> score = detect.subList(5, output.cols());
-                        int class_id = argmax(score);
-                        float conf = score.get(class_id);
-                        if (conf >= 0.5) {
-                            int center_x = (int) (detect.get(0) * frame_yolo.cols());
-                            int center_y = (int) (detect.get(1) * frame_yolo.rows());
-                            int width = (int) (detect.get(2) * frame_yolo.cols());
-                            int height = (int) (detect.get(3) * frame_yolo.rows());
-
-                            //Imgproc.circle(frame, new Point(center_x,center_y), width, new Scalar(255, 0, 0), 5);
-                            //Imgproc.putText(frame, String.valueOf(conf), new Point(center_x,center_y), 2, 1, new Scalar(200, 255, 10));
-
-                            //register corner
-                            int topleftX = (center_x - width / 2);
-                            int topleftY = (center_y - height / 2);
-                            int toprightX = topleftX+width;
-                            int toprightY = topleftY;
-                            int bottomleftX = topleftX;
-                            int bottomleftY = topleftY+height;
-                            int bottomrightX = toprightX;
-                            int bottomrightY = bottomleftY;
-                            Mat corners = new Mat(4,2, CvType.CV_32FC1);
-                            corners.put(0,0, new double[]{topleftX });
-                            corners.put(0,1, new double[]{topleftY });
-                            corners.put(1,0, new double[]{toprightX });
-                            corners.put(1,1, new double[]{toprightY });
-                            corners.put(2,0, new double[]{bottomrightX });
-                            corners.put(2,1, new double[]{bottomrightY });
-                            corners.put(3,0, new double[]{bottomleftX });
-                            corners.put(3,1, new double[]{bottomleftY });
-                            // add detected QRCode to list
-                            foundQrCodes.add(new QrCode("", corners, false));
-                        } // end if conf
-                    } // next yolo detection
-                }//next output
-            }
-        });
-        if(method==DetectionMethod.HIGH_PRECISION)
-            yoloThread.start();
-
-
-        try {
-            openCVThread.join();
-            if(method==DetectionMethod.NORMAL || method==DetectionMethod.HIGH_PRECISION)
-                wechatThread.join();
-            if(method==DetectionMethod.HIGH_PRECISION)
-                yoloThread.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        List<String> layerNames = yoloQrDetector.getLayerNames();
+        List<String> outputLayers = new ArrayList<String>();
+        for (Integer i : yoloQrDetector.getUnconnectedOutLayers().toList()) {
+            outputLayers.add(layerNames.get(i - 1));
         }
+
+        List<Mat> outputs = new ArrayList<Mat>();
+        yoloQrDetector.forward(outputs, outputLayers);
+
+        for(Mat output : outputs) {
+            //  loop over each of the detections. Each row is a candidate detection,
+            System.out.println("Output.rows(): " + output.rows() + ", Output.cols(): " + output.cols());
+            for (int i = 0; i < output.rows(); i++) {
+                Mat row = output.row(i);
+                List<Float> detect = new MatOfFloat(row).toList();
+                List<Float> score = detect.subList(5, output.cols());
+                int class_id = argmax(score);
+                float conf = score.get(class_id);
+                if (conf >= 0.5) {
+                    int center_x = (int) (detect.get(0) * frame_yolo.cols());
+                    int center_y = (int) (detect.get(1) * frame_yolo.rows());
+                    int width = (int) (detect.get(2) * frame_yolo.cols());
+                    int height = (int) (detect.get(3) * frame_yolo.rows());
+
+                    //Imgproc.circle(frame, new Point(center_x,center_y), width, new Scalar(255, 0, 0), 5);
+                    //Imgproc.putText(frame, String.valueOf(conf), new Point(center_x,center_y), 2, 1, new Scalar(200, 255, 10));
+
+                    //register corner
+                    int topleftX = (center_x - width / 2);
+                    int topleftY = (center_y - height / 2);
+                    int toprightX = topleftX+width;
+                    int toprightY = topleftY;
+                    int bottomleftX = topleftX;
+                    int bottomleftY = topleftY+height;
+                    int bottomrightX = toprightX;
+                    int bottomrightY = bottomleftY;
+                    Mat corners = new Mat(4,2, CvType.CV_32FC1);
+                    corners.put(0,0, new double[]{topleftX });
+                    corners.put(0,1, new double[]{topleftY });
+                    corners.put(1,0, new double[]{toprightX });
+                    corners.put(1,1, new double[]{toprightY });
+                    corners.put(2,0, new double[]{bottomrightX });
+                    corners.put(2,1, new double[]{bottomrightY });
+                    corners.put(3,0, new double[]{bottomleftX });
+                    corners.put(3,1, new double[]{bottomleftY });
+                    // add detected QRCode to list
+                    foundQrCodes.add(new QrCode("", corners, false));
+                } // end if conf
+            } // next yolo detection
+        }//next output
+
+        Log.w("exectime", "yolo duration " + (System.currentTimeMillis()-dtime) );
+
+
+
 
         return foundQrCodes;
     }
