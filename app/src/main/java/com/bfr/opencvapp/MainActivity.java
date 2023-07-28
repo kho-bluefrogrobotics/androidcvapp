@@ -248,13 +248,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 ////        Imgproc.cvtColor(supResMat, frame, Imgproc.COLOR_YCrCb2RGB);
 //        frame = supResMat.clone();
 
-        List<QrCode> listQr =  mQRCodeReader.DetectAndDecode(frame, QRCodeReader.DetectionMethod.NORMAL);
+        List<QrCode> listQr =  mQRCodeReader.DetectAndDecode(frame, QRCodeReader.DetectionMethod.HIGH_PRECISION);
 
         try {
             if (listQr.size() > 0) {
                 // for each QRCode
                 for (int i = 0; i < listQr.size(); i++) {
-                    Log.w("sizescoucou", i + " " + listQr.get(i).rawContent + " " + listQr.get(i).matOfCorners.size());
+                    //Log.w("sizescoucou", i + " " + listQr.get(i).rawContent + " " + listQr.get(i).matOfCorners.size());
                     x = (int) (listQr.get(i).matOfCorners.get(0, 0)[0]);
                     y = (int) (listQr.get(i).matOfCorners.get(0, 1)[0]);
                     Imgproc.circle(frame, new Point(x, y), 2, new Scalar(255, 0, 0), 10);
@@ -271,15 +271,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     y = (int) (listQr.get(i).matOfCorners.get(3, 1)[0]);
                     Imgproc.circle(frame, new Point(x, y), 2, new Scalar(150, 0, 150), 10);
 
-
+                    Log.w(TAG, "QRCOde trouve: " + i + " "+listQr.get(i).rawContent);
                     if (listQr.get(i).poseKnown) {
 
                         Double[] translation = mQRCodePoseEstimator.getTranslation( listQr.get(i), 12.5);
                         Double[] rotation = mQRCodePoseEstimator.getRotation( listQr.get(i), 12.5);
 
-                Log.w(TAG, "QRCOde trouve: " + translation[0] + " " +
-                        + translation[1] + " "
-                        + translation[2] );
+//                Log.w(TAG, "QRCOde trouve: " + translation[0] + " " +
+//                        + translation[1] + " "
+//                        + translation[2] );
 
                         Imgproc.putText(frame, listQr.get(i).read(), new Point(x, y-10), 1, 2, new Scalar(255, 0, 0), 6);
                         Imgproc.putText(frame, listQr.get(i).read(), new Point(x, y-10), 1, 2, new Scalar(255, 255, 255), 2);

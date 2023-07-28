@@ -119,6 +119,9 @@ public class QRCodeReader {
     {
 
         List<QrCode> foundQrCodes = new ArrayList<>();
+        List<QrCode> foundByOpenCV = new ArrayList<>();
+        List<QrCode> foundByWeChat = new ArrayList<>();
+        List<QrCode> foundByYolo = new ArrayList<>();
 
         /*** Opencv detector ***/
         Thread openCVThread = new Thread(new Runnable() {
@@ -130,7 +133,7 @@ public class QRCodeReader {
                 String data = decoder.detectAndDecode(frame, points);
                 if (!points.empty())
                     // add detected QRCode to list
-                    foundQrCodes.add(new QrCode(data, points, true));
+                    foundByOpenCV.add(new QrCode(data, points, true));
             }
         });
         openCVThread.start();
@@ -149,7 +152,7 @@ public class QRCodeReader {
                 for (int i=0; i<qrCodesContent.size(); i++)
                 {
                     // add detected QRCode to list
-                    foundQrCodes.add(new QrCode(qrCodesContent.get(i), qrCodesCorner.get(i), true));
+                    foundByWeChat.add(new QrCode(qrCodesContent.get(i), qrCodesCorner.get(i), true));
                 }
             }
         });
@@ -217,7 +220,7 @@ public class QRCodeReader {
                             corners.put(3,0, new double[]{bottomleftX });
                             corners.put(3,1, new double[]{bottomleftY });
                             // add detected QRCode to list
-                            foundQrCodes.add(new QrCode("", corners, false));
+                            foundByYolo.add(new QrCode("", corners, false));
                         } // end if conf
                     } // next yolo detection
                 }//next output
@@ -229,10 +232,37 @@ public class QRCodeReader {
 
         try {
             openCVThread.join();
+            //for each found QRCode
+            for(int i=0; i<foundByOpenCV.size(); i++)
+            {
+                Log.w("coucou", "trouve par opencv " + i + " "+ foundByOpenCV.get(i).rawContent);
+                //add QRCode to the final list
+                foundQrCodes.add(foundByOpenCV.get(i));
+            }
             if(method==DetectionMethod.NORMAL || method==DetectionMethod.HIGH_PRECISION)
+            {
                 wechatThread.join();
+                //for each found QRCode
+                for(int i=0; i<foundByWeChat.size(); i++)
+                {
+                    Log.w("coucou", "trouve par weChat " + i + " "+ foundByWeChat.get(i).rawContent);
+                    //add QRCode to the final list
+                    foundQrCodes.add(foundByWeChat.get(i));
+                }
+            }
+
             if(method==DetectionMethod.HIGH_PRECISION)
+            {
                 yoloThread.join();
+                //for each found QRCode
+                for(int i=0; i<foundByYolo.size(); i++)
+                {
+                    Log.w("coucou", "trouve par Yolo " + i + " "+ foundByYolo.get(i).rawContent);
+                    //add QRCode to the final list
+                    foundQrCodes.add(foundByYolo.get(i));
+                }
+            }
+
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
