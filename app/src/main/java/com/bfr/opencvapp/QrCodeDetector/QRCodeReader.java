@@ -1,5 +1,6 @@
 package com.bfr.opencvapp.QrCodeDetector;
 
+import static com.bfr.opencvapp.utils.Utils.matToMatOfPoints2f;
 import static org.opencv.core.CvType.CV_32F;
 
 import android.util.Log;
@@ -9,6 +10,7 @@ import com.bfr.opencvapp.utils.Utils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfFloat;
+import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.dnn.Dnn;
@@ -80,29 +82,78 @@ public class QRCodeReader {
         }
         return re;
     }
+
+    /**
+     Get the centroid of the qrcode
+     */
+    protected Point computeCentroid(MatOfPoint2f points){
+        Point centroid = new Point();
+        double xSum = 0;
+        double ySum = 0;
+        List<Point> pointList = points.toList();
+        int pointNumber = pointList.size();
+        for(Point p : pointList){
+            xSum += p.x;
+            ySum += p.y;
+        }
+
+        centroid.x = xSum / pointNumber;
+        centroid.y = ySum / pointNumber;
+
+        return centroid;
+    }
     /**
      Checks if 2 QRCodes are overlapping,
      typically to filter out a weChat detected QRCode if already detected by the traditional way
      */
-    private boolean isOverlapping(Mat openCVQRCorners, Mat weChatCorners, double thres)
+    private boolean isOverlapping(Mat firstCorners, Mat secondCorners)
     {
+        boolean horizOverlap = false;
+        boolean vertOverlap = false;
+
         try
         {
-            //horizontal overlap
-            //calc sum of horizontal distances
-            double hDiff = Math.abs(weChatCorners.get(0,0)[0]-openCVQRCorners.get(0,0)[0])
-                    + Math.abs(weChatCorners.get(1,0)[0]-openCVQRCorners.get(0,1)[0]);
+            Point firstCenter= computeCentroid(matToMatOfPoints2f(firstCorners));
+            //horizontal limits
+            double maxX =0;
+            double minX =99999999;
+            for (int i=0; i<secondCorners.rows(); i++)
+            {
+                if (maxX<=secondCorners.get(i,0)[0])
+                {   //asign max value
+                    maxX=secondCorners.get(i,0)[0];
+                }
+                if (minX>=secondCorners.get(i,0)[0])
+                {   //asign min value
+                    minX=secondCorners.get(i,0)[0];
+                }
+            }
 
-            //vertical overlap
-            //calc sum of vertical distances
-            double vDiff = Math.abs(weChatCorners.get(0,1)[0]-openCVQRCorners.get(0,0)[1])
-                    + Math.abs(weChatCorners.get(3,1)[0]-openCVQRCorners.get(0,3)[1]);
+            //if center of first QRCode between the horizontal limits
+            horizOverlap = (firstCenter.x>=minX) && (firstCenter.x<=maxX);
 
-            //Log.w("coucou", "diff " + (hDiff+vDiff) );
-            if(hDiff + vDiff <=thres)
-                return true;
-            else
-                return false;
+
+
+            //vertical limits
+            double maxY =0;
+            double minY =99999999;
+            for (int i=0; i<secondCorners.rows(); i++)
+            {
+                if (maxY<=secondCorners.get(i,1)[0])
+                {   //asign max value
+                    maxY=secondCorners.get(i,1)[0];
+                }
+                if (minY>=secondCorners.get(i,1)[0])
+                {   //asign min value
+                    minY=secondCorners.get(i,1)[0];
+                }
+            }
+
+            //if center of first QRCode between the horizontal limits
+            vertOverlap = (firstCenter.y>=minY) && (firstCenter.y<=maxY);
+
+           return (horizOverlap && vertOverlap);
+
         } catch (Exception e) {
             Log.e(TAG, Log.getStackTraceString(e));
             return false;
@@ -245,9 +296,18 @@ public class QRCodeReader {
                 //for each found QRCode
                 for(int i=0; i<foundByWeChat.size(); i++)
                 {
-                    Log.w("coucou", "trouve par weChat " + i + " "+ foundByWeChat.get(i).rawContent);
-                    //add QRCode to the final list
-                    foundQrCodes.add(foundByWeChat.get(i));
+                    Log.w("coucou", "trouve par Wechat " + i + " "+ foundByWeChat.get(i).rawContent);
+                    boolean alreadyDetected=false;
+                    // for each already registered QRCodes
+                    for (int j=0;j<foundQrCodes.size(); j++)
+                        //if overlapping with a QRCode
+                        if(isOverlapping(foundByWeChat.get(i).matOfCorners, foundQrCodes.get(j).matOfCorners))
+                            alreadyDetected = true;
+
+                    // if not overlapping with any of the registered QRCodes
+                    if (!alreadyDetected)
+                        //add QRCode to the final list
+                        foundQrCodes.add(foundByWeChat.get(i));
                 }
             }
 
@@ -258,10 +318,19 @@ public class QRCodeReader {
                 for(int i=0; i<foundByYolo.size(); i++)
                 {
                     Log.w("coucou", "trouve par Yolo " + i + " "+ foundByYolo.get(i).rawContent);
-                    //add QRCode to the final list
-                    foundQrCodes.add(foundByYolo.get(i));
-                }
-            }
+                    boolean alreadyDetected=false;
+                    // for each already registered QRCodes
+                    for (int j=0;j<foundQrCodes.size(); j++)
+                        //if overlapping with a QRCode
+                        if(isOverlapping(foundByYolo.get(i).matOfCorners, foundQrCodes.get(j).matOfCorners))
+                            alreadyDetected = true;
+
+                    // if not overlapping with any of the registered QRCodes
+                    if (!alreadyDetected)
+                        //add QRCode to the final list
+                        foundQrCodes.add(foundByYolo.get(i));
+                } //next yolo qrcode
+            } //
 
         } catch (InterruptedException e) {
             e.printStackTrace();
