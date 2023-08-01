@@ -43,7 +43,8 @@ public class TfLiteFaceRecognizer {
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
     private final String MODEL_NAME = "nanotrack_backbone_sim_float16.tflite";
 
-    private Interpreter tfLite;
+    private Interpreter tfLiteBackboneinterpreter;
+    private Interpreter tfLiteHeadinterpreter;
     private HexagonDelegate hexagonDelegate;
 
 
@@ -84,8 +85,10 @@ public class TfLiteFaceRecognizer {
             }
 
             //Init interpreter
-            File tfliteModel = new File(DIR+MODEL_NAME);
-            tfLite = new Interpreter(tfliteModel, options );
+            File tfliteModelbackbone = new File(DIR+MODEL_NAME);
+            File tfliteModelhead = new File(DIR+"nanotrack_head_sim_float16.tflite");
+            tfLiteBackboneinterpreter = new Interpreter(tfliteModelbackbone, options );
+            tfLiteHeadinterpreter = new Interpreter(tfliteModelhead, options );
         }
         catch (Exception e)
         {
@@ -151,9 +154,18 @@ public class TfLiteFaceRecognizer {
 //        outputMap.put(3, new float[1][48]);
 
         Object[] inputArray = {byteBuffer};
-        tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
+        tfLiteBackboneinterpreter.runForMultipleInputsOutputs(inputArray, outputMap);
 
-    Log.w("coucou", "runing tflite");
+        Object[] inputhead0 = {new float[1][8][8][48], embeedings};
+        Object[] inputhead1 = {embeedings};
+        Map<Integer, Object> outputMapHead = new HashMap<>();
+        float[][][][] output1head = new float[1][16][16][2];
+        float[][][][] output2head = new float[1][16][16][4];
+        // Assign to Facenet output
+        outputMapHead.put(0, output1head);
+        outputMapHead.put(1, output2head);
+        tfLiteHeadinterpreter.runForMultipleInputsOutputs(inputhead0,outputMapHead );
+
         return embeedings;
 
     }
