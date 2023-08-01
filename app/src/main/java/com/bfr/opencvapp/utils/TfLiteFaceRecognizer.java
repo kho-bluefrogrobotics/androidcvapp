@@ -26,7 +26,7 @@ public class TfLiteFaceRecognizer {
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
-    private final int[] INPUT_SIZE = {192,640};
+    private final int[] INPUT_SIZE = {255,255};
     private final int[] OUTPUT_SIZE = {192,640};
     private final int BATCH_SIZE = 1;
     private final int PIXEL_SIZE = 3;
@@ -41,7 +41,7 @@ public class TfLiteFaceRecognizer {
 
     //where to find the models
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
-    private final String MODEL_NAME = "lite-mono_192x640_float16.tflite";
+    private final String MODEL_NAME = "nanotrack_backbone_sim_float16.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
@@ -143,8 +143,7 @@ public class TfLiteFaceRecognizer {
         Map<Integer, Object> outputMap = new HashMap<>();
 
         // Init Face embeedings (signature)
-        embeedings = new float[1][OUTPUT_SIZE[0]][OUTPUT_SIZE[1]][1];
-//        embeedings = new float[1][16][16][48];
+        embeedings = new float[1][16][16][48];
         // Assign to Facenet output
         outputMap.put(0, embeedings);
 //        outputMap.put(1, new float[1][16]);

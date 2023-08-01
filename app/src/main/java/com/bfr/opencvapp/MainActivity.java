@@ -59,7 +59,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-import com.bfr.buddysdk.sdk.BuddySDK;
 
 import com.bfr.opencvapp.grafcet.*;
 import com.bfr.opencvapp.utils.MultiDetector;
@@ -76,9 +75,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     // directory where the model files are saved for face detection
 //    private String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
     private String dir = "/sdcard/Android/data/com.bfr.opencvapp/files/";
-
-    // SDK
-    BuddySDK mySDK = new BuddySDK();
 
 
     //********************  image ***************************
