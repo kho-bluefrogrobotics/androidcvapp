@@ -101,7 +101,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
         // Definition of dictionary and params
-        Dictionary arucoDict = Aruco.getPredefinedDictionary(Aruco.DICT_APRILTAG_36h11);
+        Dictionary arucoDict = Aruco.getPredefinedDictionary(Aruco.DICT_4X4_50);
         DetectorParameters arucoParams = DetectorParameters.create();
 
         // Detect Marker
@@ -126,10 +126,10 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 int x4 = (int) arucoCorners.get(k).get(0,3)[0];
                 int y4 = (int) arucoCorners.get(k).get(0,3)[1];
                 // draw corners
-                Imgproc.circle(frame, new Point(x1, y1),  1, new Scalar(0,255,0)  ,5);
-                Imgproc.circle(frame, new Point(x2, y2),  1, new Scalar(255,0,0)  ,5);
-                Imgproc.circle(frame, new Point(x3, y3),  1, new Scalar(0,0,255)  ,5);
-                Imgproc.circle(frame, new Point(x4, y4),  1, new Scalar(125,0,125)  ,5);
+                Imgproc.circle(frame, new Point(x1, y1),  1, new Scalar(0,255,0)  ,10);
+                Imgproc.circle(frame, new Point(x2, y2),  1, new Scalar(255,0,0)  ,10);
+                Imgproc.circle(frame, new Point(x3, y3),  1, new Scalar(0,0,255)  ,10);
+                Imgproc.circle(frame, new Point(x4, y4),  1, new Scalar(125,0,125)  ,10);
 
             } // next marker
 

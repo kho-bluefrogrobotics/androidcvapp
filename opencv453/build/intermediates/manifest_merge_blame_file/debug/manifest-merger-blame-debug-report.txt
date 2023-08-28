@@ -4,8 +4,8 @@
 4
 5    <uses-sdk
 6        android:minSdkVersion="28"
-6-->C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml
+6-->D:\Travail\Bluefrog\develop\IA\androidopencv_app\opencv453\java\AndroidManifest.xml
 7        android:targetSdkVersion="28" />
-7-->C:\Travail\Bluefrog\devel\IA\androidopencv_app\opencv453\java\AndroidManifest.xml
+7-->D:\Travail\Bluefrog\develop\IA\androidopencv_app\opencv453\java\AndroidManifest.xml
 8
 9</manifest>

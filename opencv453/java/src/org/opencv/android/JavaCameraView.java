@@ -143,6 +143,8 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                 List<android.hardware.Camera.Size> sizes = params.getSupportedPreviewSizes();
 
                 if (sizes != null) {
+                    width = 1024;
+                    height = 768;
                     /* Select the size that fits surface considering maximum size allowed */
                     Size frameSize = calculateCameraFrameSize(sizes, new JavaCameraSizeAccessor(), width, height);
 
