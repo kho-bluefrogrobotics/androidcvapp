@@ -248,7 +248,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 ////        Imgproc.cvtColor(supResMat, frame, Imgproc.COLOR_YCrCb2RGB);
 //        frame = supResMat.clone();
 
-        List<QrCode> listQr =  mQRCodeReader.DetectAndDecode(frame, QRCodeReader.DetectionMethod.HIGH_PRECISION);
+        List<QrCode> listQr =  mQRCodeReader.DetectAndDecode(frame, QRCodeReader.DetectionMethod.FAST);
 
         try {
             if (listQr.size() > 0) {

@@ -4,6 +4,15 @@ buildscript {
         google()
         jcenter()
     }
+
+    def gradleCredentials = "credentials.gradle"
+    if (project.file(gradleCredentials).exists()) {
+        apply from: gradleCredentials
+    } else {
+        ext.artifactory_user=""
+        ext.artifactory_password=""
+    }
+
     dependencies {
         classpath 'com.android.tools.build:gradle:4.2.2'
 
@@ -16,6 +25,12 @@ allprojects {
     repositories {
         google()
         jcenter()
+        maven { url "https://bluefrogrobotics.jfrog.io/artifactory/bluefrogrobotics-libs-snapshot-local/"
+            credentials{
+                username "${artifactory_user}"
+                password "${artifactory_password}"
+            }
+        }
     }
 }
 
