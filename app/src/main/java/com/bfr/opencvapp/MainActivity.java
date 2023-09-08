@@ -248,16 +248,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 ////        Imgproc.cvtColor(supResMat, frame, Imgproc.COLOR_YCrCb2RGB);
 //        frame = supResMat.clone();
 
-        List<QrCode> listQr =  mQRCodeReader.DetectAndDecode(frame, QRCodeReader.DetectionMethod.FAST);
+        List<QrCode> listQr =  mQRCodeReader.DetectAndDecode(frame, QRCodeReader.DetectionMethod.NORMAL);
 
         try {
             if (listQr.size() > 0) {
                 // for each QRCode
                 for (int i = 0; i < listQr.size(); i++) {
                     //Log.w("sizescoucou", i + " " + listQr.get(i).rawContent + " " + listQr.get(i).matOfCorners.size());
-                    x = (int) (listQr.get(i).matOfCorners.get(0, 0)[0]);
-                    y = (int) (listQr.get(i).matOfCorners.get(0, 1)[0]);
-                    Imgproc.circle(frame, new Point(x, y), 2, new Scalar(255, 0, 0), 10);
 
                     x = (int) (listQr.get(i).matOfCorners.get(1, 0)[0]);
                     y = (int) (listQr.get(i).matOfCorners.get(1, 1)[0]);
@@ -271,24 +268,41 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                     y = (int) (listQr.get(i).matOfCorners.get(3, 1)[0]);
                     Imgproc.circle(frame, new Point(x, y), 2, new Scalar(150, 0, 150), 10);
 
+                    x = (int) (listQr.get(i).matOfCorners.get(0, 0)[0]);
+                    y = (int) (listQr.get(i).matOfCorners.get(0, 1)[0]);
+                    Imgproc.circle(frame, new Point(x, y), 2, new Scalar(255, 0, 0), 10);
+
                     Log.w(TAG, "QRCOde trouve: " + i + " "+listQr.get(i).rawContent);
                     if (listQr.get(i).poseKnown) {
 
                         Double[] translation = mQRCodePoseEstimator.getTranslation( listQr.get(i), 12.5);
                         Double[] rotation = mQRCodePoseEstimator.getRotation( listQr.get(i), 12.5);
 
-//                Log.w(TAG, "QRCOde trouve: " + translation[0] + " " +
-//                        + translation[1] + " "
-//                        + translation[2] );
+                Log.w(TAG, "Translation trouve: " + translation[0] + " " +
+                        + translation[1] + " "
+                        + translation[2] );
+
+                        Log.w(TAG, "Rotation trouve: " + rotation[0] + " " +
+                                + rotation[1] + " "
+                                + rotation[2] );
 
                         Imgproc.putText(frame, listQr.get(i).read(), new Point(x, y-10), 1, 2, new Scalar(255, 0, 0), 6);
                         Imgproc.putText(frame, listQr.get(i).read(), new Point(x, y-10), 1, 2, new Scalar(255, 255, 255), 2);
 
-                        Imgproc.putText(frame, ""+rotation[2], new Point(x, y+20), 1, 2, new Scalar(0, 0, 255), 6);
-                        Imgproc.putText(frame, ""+rotation[2], new Point(x, y+20), 1, 2, new Scalar(255, 255, 255), 2);
+                        Imgproc.putText(frame, ""+translation[0], new Point(x, y+20), 1, 1, new Scalar(0, 0, 255), 6);
+                        Imgproc.putText(frame, ""+translation[0], new Point(x, y+20), 1, 1, new Scalar(255, 255, 255), 2);
+                        Imgproc.putText(frame, ""+translation[1], new Point(x, y+40), 1, 1, new Scalar(0, 0, 255), 6);
+                        Imgproc.putText(frame, ""+translation[1], new Point(x, y+40), 1, 1, new Scalar(255, 255, 255), 2);
+                        Imgproc.putText(frame, ""+translation[2], new Point(x, y+60), 1, 1, new Scalar(0, 0, 255), 6);
+                        Imgproc.putText(frame, ""+translation[2], new Point(x, y+60), 1, 1, new Scalar(255, 255, 255), 2);
 
-                        Imgproc.putText(frame, "" + translation[2], new Point(x, y+60), 1, 2, new Scalar(0, 0, 255), 6);
-                        Imgproc.putText(frame, "" + translation[2], new Point(x, y+60), 1, 2, new Scalar(255, 255, 255), 2);
+                        Imgproc.putText(frame, "" + rotation[0], new Point(x, y+90), 1, 1, new Scalar(0, 0, 255), 6);
+                        Imgproc.putText(frame, "" + rotation[0], new Point(x, y+90), 1, 1, new Scalar(255, 255, 255), 2);
+                        Imgproc.putText(frame, "" + rotation[1], new Point(x, y+110), 1, 1, new Scalar(0, 0, 255), 6);
+                        Imgproc.putText(frame, "" + rotation[1], new Point(x, y+110), 1, 1, new Scalar(255, 255, 255), 2);
+                        Imgproc.putText(frame, "" + rotation[2], new Point(x, y+130), 1, 1, new Scalar(0, 0, 255), 6);
+                        Imgproc.putText(frame, "" + rotation[2], new Point(x, y+130), 1, 1, new Scalar(255, 255, 255), 2);
+
                     } else {
                         Imgproc.putText(frame, "POSE UNKNONW", new Point((int) IMG_WIDTH / 4, (int) IMG_HEIGHT / 4), 1, 2, new Scalar(0, 0, 255), 6);
                         Imgproc.putText(frame, "POSE UNKNONW", new Point((int) IMG_WIDTH / 4, (int) IMG_HEIGHT / 4), 1, 2, new Scalar(255, 255, 255), 2);

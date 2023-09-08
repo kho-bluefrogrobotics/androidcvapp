@@ -1,6 +1,8 @@
 package com.bfr.opencvapp.QrCodeDetector;
 
 
+import android.util.Log;
+
 import com.bfr.opencvapp.utils.Utils;
 
 import org.opencv.calib3d.Calib3d;
@@ -141,8 +143,17 @@ public class QrCodePoseEstimator {
         QRCodePose mPose= getPose(qrCode.matOfCorners, qrSize);
 
         Mat rotationMatrix = new Mat();
-        Calib3d.Rodrigues(qrCodeRotation, rotationMatrix);
 
+        Log.d("QRCode", "mPoseRotation " + mPose.qrCodeRotation.get(0, 0)[0]
+        + " " +  mPose.qrCodeRotation.get(1, 0)[0]
+        + " " +  mPose.qrCodeRotation.get(2, 0)[0]
+        );
+
+        Calib3d.Rodrigues(mPose.qrCodeRotation, rotationMatrix);
+        Log.d("QRCode", "rotationMatrix " + rotationMatrix.get(0, 0)[0]
+                + " " +  rotationMatrix.get(1, 0)[0]
+                + " " +  rotationMatrix.get(2, 0)[0]
+        );
         for (int i =0; i<rotationMatrix.size(0);i++)
         {
             rotation[i] = (-180/3.14)*Math.asin(rotationMatrix.get(i, 0)[0]);
