@@ -74,7 +74,7 @@ import com.bfr.buddysdk.sdk.BuddySDK;
 import com.bfr.opencvapp.grafcet.*;
 import com.bfr.opencvapp.utils.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteFaceRecognizer;
-
+import com.bfr.opencvapp.utils.TfLiteMidas;
 
 
 public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -191,7 +191,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         return Collections.singletonList(mOpenCvCameraView);
     }
 
-    TfLiteFaceRecognizer mytfliterecog;
+    TfLiteMidas mytfliterecog;
     public void onCameraViewStarted(int width, int height) {
 
         try {
@@ -202,7 +202,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             e.printStackTrace();
         }
 
-        mytfliterecog = new TfLiteFaceRecognizer(context);
+        mytfliterecog = new TfLiteMidas(context);
 
     }
 
@@ -219,9 +219,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Bitmap bitmapImage = Bitmap.createBitmap(resizedFaceFrame.cols(), resizedFaceFrame.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(resizedFaceFrame, bitmapImage);
 
-        float[][][][] result=mytfliterecog.recognizeImage(bitmapImage);
-        int dwith = result[0][0].length;
-        int dheight = result[0].length;
+        float[] result=mytfliterecog.recognizeImage(bitmapImage);
+
+
+//        int dwith = result[0][0].length;
+//        int dheight = result[0].length;
 
 //        float[] concat = new float[result[0].length*result[0][0].length];
 //
@@ -243,44 +245,44 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
 
 
-        Mat gray = new Mat(dheight, dwith, CV_8UC3, new Scalar(0,0,0));
-//        Mat gray = new Mat();
-        Imgproc.cvtColor(gray, gray, Imgproc.COLOR_RGB2GRAY);
-        Log.w("coucou", "result[0] "+result[0].length + "\n"
-                + "result[0][0] "+result[0][0].length + "\n"
-                + "result[0][0][0] "+result[0][0][0].length + "\n");
+//        Mat gray = new Mat(dheight, dwith, CV_8UC3, new Scalar(0,0,0));
+////        Mat gray = new Mat();
+//        Imgproc.cvtColor(gray, gray, Imgproc.COLOR_RGB2GRAY);
+//        Log.w("coucou", "result[0] "+result[0].length + "\n"
+//                + "result[0][0] "+result[0][0].length + "\n"
+//                + "result[0][0][0] "+result[0][0][0].length + "\n");
+//
+//        double min = 10000.0;
+//        double max = 0.0;
+//        for (int i=0; i<dheight; i++)
+//        {
+//            for (int j=0; j<dwith; j++)
+//            {
+//                double[] newValue = gray.get(i, j); //Stores element in an array
+////                newValue[0]=155;
+//                try{
+//                    if (result[0][i][j][0]<min)
+//                        min=result[0][i][j][0];
+//                    if (result[0][i][j][0]>max)
+//                        max=result[0][i][j][0];
+//                    newValue[0]=(int)(result[0][i][j][0]*255.0/(3-min));
+//
+//                } catch (Exception e) {
+//                   Log.e("cocuouerror", "failed at "+ i + " " + j);
+//                   return frame;
+//                }
+//
+////                Log.w("coucou", ""+ result[0][i][j][0] + " " +newValue[0]);
+//                gray.put(i, j, newValue); //Puts element back into matrix
+//            }
+//        }
+//
+//        Mat multpi = new Mat(dheight, dwith, CV_8UC1, new Scalar(0.5));
+//        gray.mul(multpi);
+//        Log.w("cocuou", "MAX VALUE "+ max + " MIN VALUE " + min);
+//        Imgproc.resize(gray, gray, new Size(frame.cols(), frame.rows()) );
 
-        double min = 10000.0;
-        double max = 0.0;
-        for (int i=0; i<dheight; i++)
-        {
-            for (int j=0; j<dwith; j++)
-            {
-                double[] newValue = gray.get(i, j); //Stores element in an array
-//                newValue[0]=155;
-                try{
-                    if (result[0][i][j][0]<min)
-                        min=result[0][i][j][0];
-                    if (result[0][i][j][0]>max)
-                        max=result[0][i][j][0];
-                    newValue[0]=(int)(result[0][i][j][0]*255.0/(3-min));
-
-                } catch (Exception e) {
-                   Log.e("cocuouerror", "failed at "+ i + " " + j);
-                   return frame;
-                }
-
-//                Log.w("coucou", ""+ result[0][i][j][0] + " " +newValue[0]);
-                gray.put(i, j, newValue); //Puts element back into matrix
-            }
-        }
-
-        Mat multpi = new Mat(dheight, dwith, CV_8UC1, new Scalar(0.5));
-        gray.mul(multpi);
-        Log.w("cocuou", "MAX VALUE "+ max + " MIN VALUE " + min);
-        Imgproc.resize(gray, gray, new Size(frame.cols(), frame.rows()) );
-
-        return gray;
+        return frame;
 
     } // end function
 
