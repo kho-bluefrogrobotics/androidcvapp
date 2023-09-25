@@ -215,33 +215,54 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         //convert to bitmap
         Mat resizedFaceFrame = new Mat();
-        Imgproc.resize(frame, resizedFaceFrame, new Size(255,255));
-        Bitmap bitmapImage = Bitmap.createBitmap(resizedFaceFrame.cols(), resizedFaceFrame.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(resizedFaceFrame, bitmapImage);
+//        Imgproc.resize(frame, resizedFaceFrame, new Size(255,255));
+        Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(frame, bitmapImage);
 
         float[] result=mytfliterecog.recognizeImage(bitmapImage);
+
+//        for (int i=100; i<120; i++)
+//        {
+//            Log.w("coucou", " result= "+ result[i]);
+//        }
 
 
 //        int dwith = result[0][0].length;
 //        int dheight = result[0].length;
 
-//        float[] concat = new float[result[0].length*result[0][0].length];
+//        float[] concat = new float[256*256];
 //
-
-//        Log.w("coucou", " length "+dwith + " " + dheight);
 //
-//        for (int i=0; i<dheight; i++)
+//
+//        for (int i=0; i<256*256; i++)
 //        {
-//            for (int j=0; j<dwith; j++)
-//            {
-//                concat[i*j+j] = result[0][i][j][0]; //Stores element in an array
+//            concat[i] = result[i]; //Stores element in an array
 //                //Log.w("coucou", ""+ concat[i*j+j]);
-//            }
 //        }
 //
-//        Bitmap displayBitmap = arrayToBitmap(concat, 320, 256);
-//        Mat gray = new Mat();
-//        Utils.bitmapToMat(displayBitmap, gray);
+//        Bitmap displayBitmap = arrayToBitmap(result, 256, 256);
+
+        float maxval = Float.NEGATIVE_INFINITY;
+        float minval = Float.POSITIVE_INFINITY;
+        for (float cur : result) {
+            maxval = Math.max(maxval, cur);
+            minval = Math.min(minval, cur);
+        }
+
+        Log.w("coucou", "Max in result= "+ maxval + " Min val="+ minval);
+
+//        float multiplier = 0;
+//        if ((maxval - minval) > 0) multiplier = 255 / (maxval - minval);
+//
+//        int[] img_normalized = new int[img_array.length];
+//        for (int i = 0; i < img_array.length; ++i) {
+//            float val = (float) (multiplier * (img_array[i] - minval));
+//            img_normalized[i] = (int) val;
+//        }
+
+        Bitmap displayBitmap = arrayToBitmap(result, 256, 256);
+        Mat gray = new Mat();
+        Utils.bitmapToMat(displayBitmap, gray);
 
 
 
@@ -280,9 +301,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        Mat multpi = new Mat(dheight, dwith, CV_8UC1, new Scalar(0.5));
 //        gray.mul(multpi);
 //        Log.w("cocuou", "MAX VALUE "+ max + " MIN VALUE " + min);
-//        Imgproc.resize(gray, gray, new Size(frame.cols(), frame.rows()) );
 
-        return frame;
+
+        Imgproc.resize(gray, gray, new Size(frame.cols(), frame.rows()) );
+
+        return gray;
 
     } // end function
 

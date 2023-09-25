@@ -110,6 +110,15 @@ public class TfLiteMidas {
 
         // Creates the input tensor.
         inputImageBuffer = new TensorImage(DataType.FLOAT32);
+        int[] imageShape = tfLite.getInputTensor(0).shape(); // {1, height, width, 3}
+        if(imageShape[1] != imageShape[2]) {
+            imageSizeY = imageShape[2];
+            imageSizeX = imageShape[3];
+        } else {
+            imageSizeY = imageShape[1];
+            imageSizeX = imageShape[2];
+        }
+
         int[] probabilityShape =
                 tfLite.getOutputTensor(0).shape(); // {1, NUM_CLASSES}
         // Creates the output tensor and its processor.
@@ -159,9 +168,9 @@ public class TfLiteMidas {
     private static final float IMAGE_MEAN = 0.0f;
     private static final float IMAGE_STD = 1.0f;
     /** Image size along the x axis. */
-    private final int imageSizeX=256;
+    private final int imageSizeX;
     /** Image size along the y axis. */
-    private final int imageSizeY=256;
+    private final int imageSizeY;
     protected TensorOperator getPreprocessNormalizeOp() {
         return new NormalizeOp(IMAGE_MEAN, IMAGE_STD);
     }
@@ -183,7 +192,7 @@ public class TfLiteMidas {
                         .add(new ResizeOp(imageSizeX, imageSizeY, ResizeOp.ResizeMethod.NEAREST_NEIGHBOR))
                         //.add(new ResizeOp(224, 224, ResizeMethod.NEAREST_NEIGHBOR))
 //            .add(new Rot90Op(numRotation))
-                        .add(new Rot90Op(1))
+                        .add(new Rot90Op(2))
                         .add(getPreprocessNormalizeOp())
                         .build();
         return imageProcessor.process(inputImageBuffer);
