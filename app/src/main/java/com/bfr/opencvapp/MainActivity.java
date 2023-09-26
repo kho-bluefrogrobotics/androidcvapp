@@ -230,19 +230,22 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             minval = Math.min(minval, cur);
         }
 
+        //debug
+
+        Log.w("coucou", "img_normalized length: " + result.length + "\n"+"" +
+                "Max in img_normalized= "+ maxval + " Min val="+ minval
+        );
         float multiplier = 0;
-//        if ((maxval - minval) > 0) multiplier = 255 / (maxval - minval);
-        if ((maxval - minval) > 0) multiplier = 255 / (maxval);
+        if ((maxval - minval) > 0) multiplier = 255 / (maxval - minval);
+
         int[] img_normalized = new int[result.length];
         for (int i = 0; i < result.length; ++i) {
             float val = (float) (multiplier * (result[i] - minval));
             img_normalized[i] = (int) val;
         }
-
-        Log.w("coucou", "result length: " + result.length + "\n"+"" +
-                "Max in result= "+ maxval + " Min val="+ minval
-        );
         //debug
+        maxval = Float.NEGATIVE_INFINITY;
+        minval = Float.POSITIVE_INFINITY;
         for (float cur : img_normalized) {
             maxval = Math.max(maxval, cur);
             minval = Math.min(minval, cur);
@@ -283,12 +286,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        Bitmap displayBitmap = arrayToBitmap(result, 256, 256);
         Mat displaysubmat = frame.submat(faceROI);
 
-//        Mat displaysubmat = new Mat();
+
         Utils.bitmapToMat(displayBitmap, displaysubmat);
 
+        Mat newMat = new Mat();
+        Imgproc.resize(displaysubmat, newMat, new Size(1024, 768));
 
-
-        return frame;
+        return newMat;
 
     } // end function
 
