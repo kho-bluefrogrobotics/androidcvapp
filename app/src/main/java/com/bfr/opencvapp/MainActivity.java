@@ -221,26 +221,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         float[] result=mytfliterecog.recognizeImage(bitmapImage);
 
-//        for (int i=100; i<120; i++)
-//        {
-//            Log.w("coucou", " result= "+ result[i]);
-//        }
 
-
-//        int dwith = result[0][0].length;
-//        int dheight = result[0].length;
-
-//        float[] concat = new float[256*256];
-//
-//
-//
-//        for (int i=0; i<256*256; i++)
-//        {
-//            concat[i] = result[i]; //Stores element in an array
-//                //Log.w("coucou", ""+ concat[i*j+j]);
-//        }
-//
-//        Bitmap displayBitmap = arrayToBitmap(result, 256, 256);
 
         float maxval = Float.NEGATIVE_INFINITY;
         float minval = Float.POSITIVE_INFINITY;
@@ -249,63 +230,65 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             minval = Math.min(minval, cur);
         }
 
-        Log.w("coucou", "Max in result= "+ maxval + " Min val="+ minval);
-
-//        float multiplier = 0;
+        float multiplier = 0;
 //        if ((maxval - minval) > 0) multiplier = 255 / (maxval - minval);
-//
-//        int[] img_normalized = new int[img_array.length];
-//        for (int i = 0; i < img_array.length; ++i) {
-//            float val = (float) (multiplier * (img_array[i] - minval));
-//            img_normalized[i] = (int) val;
-//        }
+        if ((maxval - minval) > 0) multiplier = 255 / (maxval);
+        int[] img_normalized = new int[result.length];
+        for (int i = 0; i < result.length; ++i) {
+            float val = (float) (multiplier * (result[i] - minval));
+            img_normalized[i] = (int) val;
+        }
 
-        Bitmap displayBitmap = arrayToBitmap(result, 256, 256);
-        Mat gray = new Mat();
-        Utils.bitmapToMat(displayBitmap, gray);
+        Log.w("coucou", "result length: " + result.length + "\n"+"" +
+                "Max in result= "+ maxval + " Min val="+ minval
+        );
+        //debug
+        for (float cur : img_normalized) {
+            maxval = Math.max(maxval, cur);
+            minval = Math.min(minval, cur);
+        }
+        Log.w("coucou", "img_normalized length: " + img_normalized.length + "\n"+"" +
+                "Max in img_normalized= "+ maxval + " Min val="+ minval
+        );
 
-
-
-//        Mat gray = new Mat(dheight, dwith, CV_8UC3, new Scalar(0,0,0));
-////        Mat gray = new Mat();
-//        Imgproc.cvtColor(gray, gray, Imgproc.COLOR_RGB2GRAY);
-//        Log.w("coucou", "result[0] "+result[0].length + "\n"
-//                + "result[0][0] "+result[0][0].length + "\n"
-//                + "result[0][0][0] "+result[0][0][0].length + "\n");
-//
-//        double min = 10000.0;
-//        double max = 0.0;
-//        for (int i=0; i<dheight; i++)
-//        {
-//            for (int j=0; j<dwith; j++)
-//            {
-//                double[] newValue = gray.get(i, j); //Stores element in an array
-////                newValue[0]=155;
-//                try{
-//                    if (result[0][i][j][0]<min)
-//                        min=result[0][i][j][0];
-//                    if (result[0][i][j][0]>max)
-//                        max=result[0][i][j][0];
-//                    newValue[0]=(int)(result[0][i][j][0]*255.0/(3-min));
-//
-//                } catch (Exception e) {
-//                   Log.e("cocuouerror", "failed at "+ i + " " + j);
-//                   return frame;
-//                }
-//
-////                Log.w("coucou", ""+ result[0][i][j][0] + " " +newValue[0]);
-//                gray.put(i, j, newValue); //Puts element back into matrix
-//            }
-//        }
-//
-//        Mat multpi = new Mat(dheight, dwith, CV_8UC1, new Scalar(0.5));
-//        gray.mul(multpi);
-//        Log.w("cocuou", "MAX VALUE "+ max + " MIN VALUE " + min);
+        int resWidth = 256;
+        int resHeight = 256;
 
 
-        Imgproc.resize(gray, gray, new Size(frame.cols(), frame.rows()) );
+        Bitmap displayBitmap = Bitmap.createBitmap(resWidth, resHeight, Bitmap.Config.RGB_565);
+        for (int ii = 0; ii < resWidth; ii++) //pass the screen pixels in 2 directions
+        {
+            for (int jj = 0; jj < resHeight; jj++) {
+                //int val = img_normalized[ii + jj * width];
+                int index = (resWidth - ii - 1) + (resHeight - jj - 1) * resWidth;
+                if(index < img_normalized.length) {
+                    int val = img_normalized[index];
+//                    if (val>150)
+//                        displayBitmap.setPixel(ii, jj, Color.rgb(val, 0, 0));
+//                    else
+                        displayBitmap.setPixel(ii, jj, Color.rgb(val, val, val));
+                }
+            }
+        }
 
-        return gray;
+        //crop image
+        Rect faceROI= new Rect(
+                // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
+                0,
+                0,
+                //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
+                resWidth,
+                resHeight );
+
+//        Bitmap displayBitmap = arrayToBitmap(result, 256, 256);
+        Mat displaysubmat = frame.submat(faceROI);
+
+//        Mat displaysubmat = new Mat();
+        Utils.bitmapToMat(displayBitmap, displaysubmat);
+
+
+
+        return frame;
 
     } // end function
 

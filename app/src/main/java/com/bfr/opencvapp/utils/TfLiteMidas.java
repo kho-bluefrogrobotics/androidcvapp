@@ -46,7 +46,7 @@ public class TfLiteMidas {
     private final String[] LABELS = {"Human", "Face", "Hand"};
     private final int NUM_THREADS = 4;
     private boolean WITH_NNAPI = false;
-    private boolean WITH_GPU = true;
+    private boolean WITH_GPU = false;
     private boolean WITH_DSP = false;
     //Face embedding
     private float[] embeedings;
@@ -57,6 +57,8 @@ public class TfLiteMidas {
 //    private final String MODEL_NAME = "Midas_float32.tflite";
     private final String MODEL_NAME = "Midas_float32_opt.tflite";
 //    private final String MODEL_NAME = "Fastdepth_512x512_float32.tflite";
+//    private final String MODEL_NAME = "fastdepth_256x256_float16_quant.tflite";
+//    private final String MODEL_NAME = "pydnet_256x320.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
@@ -114,9 +116,13 @@ public class TfLiteMidas {
         if(imageShape[1] != imageShape[2]) {
             imageSizeY = imageShape[2];
             imageSizeX = imageShape[3];
+//            imageSizeY = 256;
+//            imageSizeX = 320;
         } else {
             imageSizeY = imageShape[1];
             imageSizeX = imageShape[2];
+//            imageSizeY = 256;
+//            imageSizeX = 320;
         }
 
         int[] probabilityShape =
@@ -126,40 +132,7 @@ public class TfLiteMidas {
 
     }
 
-    /**
-     * Converts a Bitmap into a BytBuffer
-     * @param bitmap original bitmap
-     * @return ByteBuffer
-     */
-    protected ByteBuffer convertBitmapToByteBuffer(Bitmap bitmap) {
-        ByteBuffer byteBuffer;
-        if (IS_QUANTIZED) {
-            byteBuffer = ByteBuffer.allocateDirect(BATCH_SIZE * INPUT_SIZE[0] * INPUT_SIZE[1] * PIXEL_SIZE);
-        }
-        else{
-            byteBuffer = ByteBuffer.allocateDirect(4 * BATCH_SIZE * INPUT_SIZE[0] * INPUT_SIZE[1] * PIXEL_SIZE);
-        }
-        byteBuffer.order(ByteOrder.nativeOrder());
-        int[] intValues = new int[INPUT_SIZE[0] * INPUT_SIZE[1]];
-        bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
-        int pixel = 0;
-        for (int i = 0; i < INPUT_SIZE[0]; ++i) {
-            for (int j = 0; j < INPUT_SIZE[1]; ++j) {
-                final int val = intValues[pixel++];
-                if (IS_QUANTIZED) {
-                    byteBuffer.put((byte) ((val >> 16) & 0xFF));
-                    byteBuffer.put((byte) ((val >> 8) & 0xFF));
-                    byteBuffer.put((byte) (val & 0xFF));
-                } else {
 
-                    byteBuffer.putFloat(((val >> 16) & 0xFF) / 255.0f);
-                    byteBuffer.putFloat(((val >> 8) & 0xFF) / 255.0f);
-                    byteBuffer.putFloat((val & 0xFF) / 255.0f);
-                }
-            }
-        }
-        return byteBuffer;
-    }
 
     /** Input image TensorBuffer. */
     private TensorImage inputImageBuffer;
