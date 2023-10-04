@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.RectF;
 import android.os.Build;
-import android.os.Trace;
 import android.util.Log;
 
 import org.tensorflow.lite.HexagonDelegate;
@@ -17,8 +16,10 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /** Face recognizer based on a Mobilenet-Facenet trained with Sigmoid loss - int8 quantized*/
 public class TfLiteFaceRecognizer {
@@ -43,7 +44,8 @@ public class TfLiteFaceRecognizer {
     //where to find the models
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
 //    private final String MODEL_NAME = "pyDNet__256x320_float16_quant.tflite";
-    private final String MODEL_NAME = "fastdepth_256x256_float16_quant.tflite";
+//    private final String MODEL_NAME = "fastdepth_256x256_float16_quant.tflite";
+        private final String MODEL_NAME = "Midas_float32_opt.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
@@ -137,7 +139,7 @@ public class TfLiteFaceRecognizer {
      * @param bitmap original image in bitmap format
      * @return array of detections
      */
-    public float[][][][] recognizeImage(Bitmap bitmap) {
+    public float[] recognizeImage(Bitmap bitmap) {
 
         ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmap);
 
@@ -158,9 +160,17 @@ public class TfLiteFaceRecognizer {
 
 
     Log.w("coucou", "runing tflite");
-        return embeedings;
+
+
+        float[] result = new float[embeedings.length * embeedings[0].length];
+        for (int i = 0; i < embeedings.length; ++i) {
+            System.arraycopy(embeedings[i], 0, result, i * embeedings[0].length, embeedings[i].length);
+        }
+            return result;
+
 
     }
+
 
 
     // return object by tflite interpreter

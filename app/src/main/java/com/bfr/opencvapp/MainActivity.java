@@ -9,6 +9,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -36,6 +37,7 @@ import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfFloat;
@@ -213,14 +215,21 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // cature frame from camera
         frame = inputFrame.rgba();
 
+        frame = Imgcodecs.imread(dir+"/imgs/01.jpg");
         //convert to bitmap
         Mat resizedFaceFrame = new Mat();
 //        Imgproc.resize(frame, resizedFaceFrame, new Size(255,255));
         Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(frame, bitmapImage);
 
+        bitmapImage = BitmapFactory.decodeFile("/storage/emulated/0/01.jpg");
+
         float[] result=mytfliterecog.recognizeImage(bitmapImage);
 
+        String toDisplay="";
+        for (int i=0; i<150; i++)
+            toDisplay = toDisplay + " "+ result[i] ;
+        Log.i("coucou", toDisplay );
 
 
         float maxval = Float.NEGATIVE_INFINITY;
@@ -232,8 +241,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         //debug
 
-        Log.w("coucou", "img_normalized length: " + result.length + "\n"+"" +
-                "Max in img_normalized= "+ maxval + " Min val="+ minval
+        Log.w("coucou", "result length: " + result.length + "\n"+"" +
+                "Max in result= "+ maxval + " Min val="+ minval
         );
         float multiplier = 0;
         if ((maxval - minval) > 0) multiplier = 255 / (maxval - minval);
@@ -266,13 +275,16 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 int index = (resWidth - ii - 1) + (resHeight - jj - 1) * resWidth;
                 if(index < img_normalized.length) {
                     int val = img_normalized[index];
-//                    if (val>150)
-//                        displayBitmap.setPixel(ii, jj, Color.rgb(val, 0, 0));
-//                    else
+                    if (val<50 && val>=20)
+                        displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, val));
+                    else if(val<20)
+                        displayBitmap.setPixel(ii, jj, Color.rgb(val, 0, 0));
+                    else
                         displayBitmap.setPixel(ii, jj, Color.rgb(val, val, val));
                 }
             }
         }
+
 
         //crop image
         Rect faceROI= new Rect(
@@ -286,7 +298,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        Bitmap displayBitmap = arrayToBitmap(result, 256, 256);
         Mat displaysubmat = frame.submat(faceROI);
 
-
+//        Core.minMaxLoc(displaysubmat).maxLoc;
         Utils.bitmapToMat(displayBitmap, displaysubmat);
 
         Mat newMat = new Mat();
