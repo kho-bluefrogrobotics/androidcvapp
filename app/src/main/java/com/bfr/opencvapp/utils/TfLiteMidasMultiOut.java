@@ -156,12 +156,16 @@ public class TfLiteMidasMultiOut {
 
 
 
-        float[] result = new float[embeedings[0][0].length * embeedings[0][0][0].length];
-        for (int i = 0; i < embeedings[0][0].length; i++) {
-            for (int j = 0; j < embeedings[0][i][0].length; j++) {
-                result[ i*j+j] = embeedings[0][i][j][0];
-                if (i*j+j<50)
-                    Log.i("coucou", ((i*j)+j)+" : "+ result[i*j+j] );
+        float[] result = new float[embeedings[0].length * embeedings[0][0].length];
+        Log.i("coucou", "i=" + embeedings[0].length + " j=" + embeedings[0][0].length);
+        for (int i = 0; i < embeedings[0].length; i++) {
+            for (int j = 0; j < embeedings[0][i].length; j++) {
+
+                result[ (i*j)+j] = embeedings[0][i][j][0];
+//                if (i*j+j<50) {
+//                    Log.i("coucou", "i=" + i + " j=" + j);
+//                    Log.i("coucou", ((i * j) + j) + " : " + result[i * j + j]);
+//                }
             }
         }
             return result;

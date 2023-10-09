@@ -217,7 +217,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // cature frame from camera
         frame = inputFrame.rgba();
 
-//        frame = Imgcodecs.imread(dir+"/imgs/01.jpg" );
+        frame = Imgcodecs.imread(dir+"/imgs/wideFrame01.jpg" );
 //        Imgproc.resize(frame, frame, new Size(1024,768));
 //
 //        Point center = new Point();
@@ -230,23 +230,23 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         //Imgproc.circle(frame, new Point(center.x, center.y), 3, new Scalar(255, 50, 0), 3 );
 
+
+        //convert to bitmap
+        Mat resizedFaceFrame = new Mat();
+        Imgproc.resize(frame, resizedFaceFrame, new Size(256,256));
+        Bitmap bitmapImage = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(resizedFaceFrame, bitmapImage);
 //
-//        //convert to bitmap
-//        Mat resizedFaceFrame = new Mat();
-//        Imgproc.resize(frame, resizedFaceFrame, new Size(256,256));
-//        Bitmap bitmapImage = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_8888);
-//        Utils.matToBitmap(resizedFaceFrame, bitmapImage);
+//        Bitmap bitmapImage = BitmapFactory.decodeFile("/storage/emulated/0/01.jpg");
+//        Matrix matrix = new Matrix();
+//
+//        matrix.postRotate(0);
+//
+//        Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmapImage, 256, 256, true);
+//
+//        Bitmap rotatedBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0, scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix, true);
 
-        Bitmap bitmapImage = BitmapFactory.decodeFile("/storage/emulated/0/01.jpg");
-        Matrix matrix = new Matrix();
-
-        matrix.postRotate(0);
-
-        Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmapImage, 256, 256, true);
-
-        Bitmap rotatedBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0, scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix, true);
-
-        float[] result=mytfliterecog.recognizeImage(rotatedBitmap);
+        float[] result=mytfliterecog.recognizeImage(bitmapImage);
 
         String toDisplay="";
         for (int i=0; i<150; i++)
@@ -323,13 +323,14 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        Core.minMaxLoc(displaysubmat).maxLoc;
         Utils.bitmapToMat(displayBitmap, displaysubmat);
 
-        Mat newMat = new Mat();
-        Imgproc.resize(displaysubmat, newMat, new Size(1024, 768));
+//        Mat newMat = new Mat();
+//        Imgproc.resize(displaysubmat, newMat, new Size(1024, 768));
 
-        Bitmap bmp32 = rotatedBitmap.copy(Bitmap.Config.ARGB_8888, true);
-        Utils.bitmapToMat(bmp32, newMat);
+//        Bitmap bmp32 = rotatedBitmap.copy(Bitmap.Config.ARGB_8888, true);
+//        Utils.bitmapToMat(bmp32, newMat);
 
-        return newMat;
+//        return displaysubmat;
+        return frame;
 
     } // end function
 
