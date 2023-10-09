@@ -78,6 +78,7 @@ import com.bfr.opencvapp.grafcet.*;
 import com.bfr.opencvapp.utils.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteFaceRecognizer;
 import com.bfr.opencvapp.utils.TfLiteMidas;
+import com.bfr.opencvapp.utils.TfLiteMidasMultiOut;
 
 
 public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -194,7 +195,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         return Collections.singletonList(mOpenCvCameraView);
     }
 
-    TfLiteMidas mytfliterecog;
+    TfLiteMidasMultiOut mytfliterecog;
     public void onCameraViewStarted(int width, int height) {
 
         try {
@@ -205,7 +206,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             e.printStackTrace();
         }
 
-        mytfliterecog = new TfLiteMidas(context);
+        mytfliterecog = new TfLiteMidasMultiOut(context);
 
     }
 
@@ -216,30 +217,30 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // cature frame from camera
         frame = inputFrame.rgba();
 
-        frame = Imgcodecs.imread(dir+"/imgs/01.jpg" );
-        Imgproc.resize(frame, frame, new Size(1024,768));
-
-        Point center = new Point();
-        Mat mapMatrix;
-        center.x = 1024/2;
-        center.y = 768/2;
-        mapMatrix = Imgproc.getRotationMatrix2D(center, 90 , 1.0);
-        Imgproc.warpAffine(frame, frame, mapMatrix, new Size(frame.cols(), frame.rows()));
+//        frame = Imgcodecs.imread(dir+"/imgs/01.jpg" );
+//        Imgproc.resize(frame, frame, new Size(1024,768));
+//
+//        Point center = new Point();
+//        Mat mapMatrix;
+//        center.x = 1024/2;
+//        center.y = 768/2;
+//        mapMatrix = Imgproc.getRotationMatrix2D(center, 90 , 1.0);
+//        Imgproc.warpAffine(frame, frame, mapMatrix, new Size(frame.cols(), frame.rows()));
 
 
         //Imgproc.circle(frame, new Point(center.x, center.y), 3, new Scalar(255, 50, 0), 3 );
 
+//
+//        //convert to bitmap
+//        Mat resizedFaceFrame = new Mat();
+//        Imgproc.resize(frame, resizedFaceFrame, new Size(256,256));
+//        Bitmap bitmapImage = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_8888);
+//        Utils.matToBitmap(resizedFaceFrame, bitmapImage);
 
-        //convert to bitmap
-        Mat resizedFaceFrame = new Mat();
-        Imgproc.resize(frame, resizedFaceFrame, new Size(256,256));
-        Bitmap bitmapImage = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(resizedFaceFrame, bitmapImage);
-
-        bitmapImage = BitmapFactory.decodeFile("/storage/emulated/0/01.jpg");
+        Bitmap bitmapImage = BitmapFactory.decodeFile("/storage/emulated/0/01.jpg");
         Matrix matrix = new Matrix();
 
-        matrix.postRotate(180);
+        matrix.postRotate(0);
 
         Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmapImage, 256, 256, true);
 
