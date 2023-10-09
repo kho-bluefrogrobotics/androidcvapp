@@ -195,7 +195,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         return Collections.singletonList(mOpenCvCameraView);
     }
 
-    TfLiteMidasMultiOut mytfliterecog;
+    TfLiteMidas mytfliterecog;
     public void onCameraViewStarted(int width, int height) {
 
         try {
@@ -206,7 +206,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             e.printStackTrace();
         }
 
-        mytfliterecog = new TfLiteMidasMultiOut(context);
+        mytfliterecog = new TfLiteMidas(context);
 
     }
 
@@ -232,19 +232,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
 
         //convert to bitmap
-        Mat resizedFaceFrame = new Mat();
-        Imgproc.resize(frame, resizedFaceFrame, new Size(256,256));
-        Bitmap bitmapImage = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(resizedFaceFrame, bitmapImage);
-//
-//        Bitmap bitmapImage = BitmapFactory.decodeFile("/storage/emulated/0/01.jpg");
-//        Matrix matrix = new Matrix();
-//
-//        matrix.postRotate(0);
-//
-//        Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmapImage, 256, 256, true);
-//
-//        Bitmap rotatedBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0, scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix, true);
+//        Mat resizedFaceFrame = new Mat();
+//        Imgproc.resize(frame, resizedFaceFrame, new Size(256,256));
+//        Bitmap bitmapImage = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_8888);
+//        Utils.matToBitmap(resizedFaceFrame, bitmapImage);
+
+        Bitmap bitmapImage = BitmapFactory.decodeFile("/storage/emulated/0/Documents/wideFrame01.jpg");
 
         float[] result=mytfliterecog.recognizeImage(bitmapImage);
 
@@ -274,16 +267,16 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             float val = (float) (multiplier * (result[i] - minval));
             img_normalized[i] = (int) val;
         }
-        //debug
-        maxval = Float.NEGATIVE_INFINITY;
-        minval = Float.POSITIVE_INFINITY;
-        for (float cur : img_normalized) {
-            maxval = Math.max(maxval, cur);
-            minval = Math.min(minval, cur);
-        }
-        Log.w("coucou", "img_normalized length: " + img_normalized.length + "\n"+"" +
-                "Max in img_normalized= "+ maxval + " Min val="+ minval
-        );
+//        //debug
+//        maxval = Float.NEGATIVE_INFINITY;
+//        minval = Float.POSITIVE_INFINITY;
+//        for (float cur : img_normalized) {
+//            maxval = Math.max(maxval, cur);
+//            minval = Math.min(minval, cur);
+//        }
+//        Log.w("coucou", "img_normalized length: " + img_normalized.length + "\n"+"" +
+//                "Max in img_normalized= "+ maxval + " Min val="+ minval
+//        );
 
         int resWidth = 256;
         int resHeight = 256;
@@ -329,8 +322,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        Bitmap bmp32 = rotatedBitmap.copy(Bitmap.Config.ARGB_8888, true);
 //        Utils.bitmapToMat(bmp32, newMat);
 
-//        return displaysubmat;
-        return frame;
+        return displaysubmat;
+//        return frame;
 
     } // end function
 

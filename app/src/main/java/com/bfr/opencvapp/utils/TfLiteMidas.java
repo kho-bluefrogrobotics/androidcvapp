@@ -161,7 +161,7 @@ public class TfLiteMidas {
                         // Library, use ResizeMethod.BILINEAR.
                         .add(new ResizeOp(imageSizeX, imageSizeY, ResizeOp.ResizeMethod.NEAREST_NEIGHBOR))
 //            .add(new Rot90Op(numRotation))
-                        .add(new Rot90Op(1))
+                        .add(new Rot90Op(0))
                         .add(getPreprocessNormalizeOp())
                         .build();
         return imageProcessor.process(inputImageBuffer);
