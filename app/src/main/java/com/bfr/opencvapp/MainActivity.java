@@ -12,6 +12,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.os.Bundle;
@@ -215,16 +216,36 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // cature frame from camera
         frame = inputFrame.rgba();
 
-        frame = Imgcodecs.imread(dir+"/imgs/01.jpg");
+        frame = Imgcodecs.imread(dir+"/imgs/01.jpg" );
+        Imgproc.resize(frame, frame, new Size(1024,768));
+
+        Point center = new Point();
+        Mat mapMatrix;
+        center.x = 1024/2;
+        center.y = 768/2;
+        mapMatrix = Imgproc.getRotationMatrix2D(center, 90 , 1.0);
+        Imgproc.warpAffine(frame, frame, mapMatrix, new Size(frame.cols(), frame.rows()));
+
+
+        //Imgproc.circle(frame, new Point(center.x, center.y), 3, new Scalar(255, 50, 0), 3 );
+
+
         //convert to bitmap
         Mat resizedFaceFrame = new Mat();
-//        Imgproc.resize(frame, resizedFaceFrame, new Size(255,255));
-        Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(frame, bitmapImage);
+        Imgproc.resize(frame, resizedFaceFrame, new Size(256,256));
+        Bitmap bitmapImage = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(resizedFaceFrame, bitmapImage);
 
         bitmapImage = BitmapFactory.decodeFile("/storage/emulated/0/01.jpg");
+        Matrix matrix = new Matrix();
 
-        float[] result=mytfliterecog.recognizeImage(bitmapImage);
+        matrix.postRotate(180);
+
+        Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmapImage, 256, 256, true);
+
+        Bitmap rotatedBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0, scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix, true);
+
+        float[] result=mytfliterecog.recognizeImage(rotatedBitmap);
 
         String toDisplay="";
         for (int i=0; i<150; i++)
@@ -303,6 +324,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         Mat newMat = new Mat();
         Imgproc.resize(displaysubmat, newMat, new Size(1024, 768));
+
+        Bitmap bmp32 = rotatedBitmap.copy(Bitmap.Config.ARGB_8888, true);
+        Utils.bitmapToMat(bmp32, newMat);
 
         return newMat;
 
