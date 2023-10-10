@@ -9,10 +9,8 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.os.Bundle;
@@ -78,7 +76,6 @@ import com.bfr.opencvapp.grafcet.*;
 import com.bfr.opencvapp.utils.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteFaceRecognizer;
 import com.bfr.opencvapp.utils.TfLiteMidas;
-import com.bfr.opencvapp.utils.TfLiteMidasMultiOut;
 
 
 public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -217,34 +214,14 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // cature frame from camera
         frame = inputFrame.rgba();
 
-        frame = Imgcodecs.imread(dir+"/imgs/wideFrame01.jpg" );
-//        Imgproc.resize(frame, frame, new Size(1024,768));
-//
-//        Point center = new Point();
-//        Mat mapMatrix;
-//        center.x = 1024/2;
-//        center.y = 768/2;
-//        mapMatrix = Imgproc.getRotationMatrix2D(center, 90 , 1.0);
-//        Imgproc.warpAffine(frame, frame, mapMatrix, new Size(frame.cols(), frame.rows()));
-
-
-        //Imgproc.circle(frame, new Point(center.x, center.y), 3, new Scalar(255, 50, 0), 3 );
-
-
         //convert to bitmap
-//        Mat resizedFaceFrame = new Mat();
-//        Imgproc.resize(frame, resizedFaceFrame, new Size(256,256));
-//        Bitmap bitmapImage = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_8888);
-//        Utils.matToBitmap(resizedFaceFrame, bitmapImage);
-
-        Bitmap bitmapImage = BitmapFactory.decodeFile("/storage/emulated/0/Documents/wideFrame01.jpg");
+        Mat resizedFaceFrame = new Mat();
+//        Imgproc.resize(frame, resizedFaceFrame, new Size(255,255));
+        Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(frame, bitmapImage);
 
         float[] result=mytfliterecog.recognizeImage(bitmapImage);
 
-        String toDisplay="";
-        for (int i=0; i<150; i++)
-            toDisplay = toDisplay + " "+ result[i] ;
-        Log.i("coucou", toDisplay );
 
 
         float maxval = Float.NEGATIVE_INFINITY;
@@ -254,29 +231,26 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             minval = Math.min(minval, cur);
         }
 
-        //debug
-
-        Log.w("coucou", "result length: " + result.length + "\n"+"" +
-                "Max in result= "+ maxval + " Min val="+ minval
-        );
         float multiplier = 0;
-        if ((maxval - minval) > 0) multiplier = 255 / (maxval - minval);
-
+//        if ((maxval - minval) > 0) multiplier = 255 / (maxval - minval);
+        if ((maxval - minval) > 0) multiplier = 255 / (maxval);
         int[] img_normalized = new int[result.length];
         for (int i = 0; i < result.length; ++i) {
             float val = (float) (multiplier * (result[i] - minval));
             img_normalized[i] = (int) val;
         }
-//        //debug
-//        maxval = Float.NEGATIVE_INFINITY;
-//        minval = Float.POSITIVE_INFINITY;
-//        for (float cur : img_normalized) {
-//            maxval = Math.max(maxval, cur);
-//            minval = Math.min(minval, cur);
-//        }
-//        Log.w("coucou", "img_normalized length: " + img_normalized.length + "\n"+"" +
-//                "Max in img_normalized= "+ maxval + " Min val="+ minval
-//        );
+
+        Log.w("coucou", "result length: " + result.length + "\n"+"" +
+                "Max in result= "+ maxval + " Min val="+ minval
+        );
+        //debug
+        for (float cur : img_normalized) {
+            maxval = Math.max(maxval, cur);
+            minval = Math.min(minval, cur);
+        }
+        Log.w("coucou", "img_normalized length: " + img_normalized.length + "\n"+"" +
+                "Max in img_normalized= "+ maxval + " Min val="+ minval
+        );
 
         int resWidth = 256;
         int resHeight = 256;
@@ -290,16 +264,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 int index = (resWidth - ii - 1) + (resHeight - jj - 1) * resWidth;
                 if(index < img_normalized.length) {
                     int val = img_normalized[index];
-                    if (val<50 && val>=20)
-                        displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, val));
-                    else if(val<20)
-                        displayBitmap.setPixel(ii, jj, Color.rgb(val, 0, 0));
-                    else
+//                    if (val>150)
+//                        displayBitmap.setPixel(ii, jj, Color.rgb(val, 0, 0));
+//                    else
                         displayBitmap.setPixel(ii, jj, Color.rgb(val, val, val));
                 }
             }
         }
-
 
         //crop image
         Rect faceROI= new Rect(
@@ -313,17 +284,38 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        Bitmap displayBitmap = arrayToBitmap(result, 256, 256);
         Mat displaysubmat = frame.submat(faceROI);
 
-//        Core.minMaxLoc(displaysubmat).maxLoc;
+//        Mat displaysubmat = new Mat();
         Utils.bitmapToMat(displayBitmap, displaysubmat);
 
-//        Mat newMat = new Mat();
-//        Imgproc.resize(displaysubmat, newMat, new Size(1024, 768));
 
-//        Bitmap bmp32 = rotatedBitmap.copy(Bitmap.Config.ARGB_8888, true);
-//        Utils.bitmapToMat(bmp32, newMat);
 
-        return displaysubmat;
-//        return frame;
+        /*****
+         * Sub mat as a strip above the ground
+         * */
+
+        //crop image
+        Rect stripROI= new Rect(
+                // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
+                0,
+                150,
+                //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
+                resWidth,
+                10 );
+//        displaysubmat
+
+        Mat stripMat = displaysubmat.clone().submat(stripROI);
+
+        Imgproc.cvtColor(stripMat, stripMat, Imgproc.COLOR_RGB2GRAY);
+
+        Imgproc.resize(stripMat, stripMat, new Size(256, 1));
+
+        Log.w("maxcoucou", ""+Core.minMaxLoc(stripMat).minLoc.x);
+
+        Imgproc.circle(displaysubmat, new Point(
+                Core.minMaxLoc(stripMat).minLoc.x
+                , 150), 5,new Scalar(0,255,0), 10 );
+
+        return frame;
 
     } // end function
 

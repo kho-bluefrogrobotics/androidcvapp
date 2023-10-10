@@ -46,7 +46,7 @@ public class TfLiteMidas {
     private final String[] LABELS = {"Human", "Face", "Hand"};
     private final int NUM_THREADS = 4;
     private boolean WITH_NNAPI = false;
-    private boolean WITH_GPU = true;
+    private boolean WITH_GPU = false;
     private boolean WITH_DSP = false;
     //Face embedding
     private float[] embeedings;
@@ -57,9 +57,8 @@ public class TfLiteMidas {
 //    private final String MODEL_NAME = "Midas_float32.tflite";
     private final String MODEL_NAME = "Midas_float32_opt.tflite";
 //    private final String MODEL_NAME = "Fastdepth_512x512_float32.tflite";
-//    private final String MODEL_NAME = "fastdepth_256x256_float32.tflite";
+//    private final String MODEL_NAME = "fastdepth_256x256_float16_quant.tflite";
 //    private final String MODEL_NAME = "pydnet_256x320.tflite";
-//    private final String MODEL_NAME = "MegaDepth_384x512_float32.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
@@ -117,9 +116,13 @@ public class TfLiteMidas {
         if(imageShape[1] != imageShape[2]) {
             imageSizeY = imageShape[2];
             imageSizeX = imageShape[3];
+//            imageSizeY = 256;
+//            imageSizeX = 320;
         } else {
             imageSizeY = imageShape[1];
             imageSizeX = imageShape[2];
+//            imageSizeY = 256;
+//            imageSizeX = 320;
         }
 
         int[] probabilityShape =
@@ -160,8 +163,9 @@ public class TfLiteMidas {
                         // To get the same inference results as lib_task_api, which is built on top of the Task
                         // Library, use ResizeMethod.BILINEAR.
                         .add(new ResizeOp(imageSizeX, imageSizeY, ResizeOp.ResizeMethod.NEAREST_NEIGHBOR))
+                        //.add(new ResizeOp(224, 224, ResizeMethod.NEAREST_NEIGHBOR))
 //            .add(new Rot90Op(numRotation))
-                        .add(new Rot90Op(0))
+                        .add(new Rot90Op(2))
                         .add(getPreprocessNormalizeOp())
                         .build();
         return imageProcessor.process(inputImageBuffer);
@@ -194,7 +198,6 @@ public class TfLiteMidas {
 
 
         inputImageBuffer = loadImage(bitmap, 0);
-
         tfLite.run(inputImageBuffer.getBuffer(), outputProbabilityBuffer.getBuffer().rewind());
 
 
