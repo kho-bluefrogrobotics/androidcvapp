@@ -12,7 +12,8 @@
         android:theme="@style/Theme.AppCompat.NoActionBar">  <!--Full screen mode-->
         <activity
             android:name=".MainActivity"
-            android:screenOrientation="landscape">  <!--Screen orientation-->
+            android:screenOrientation="landscape"
+            android:exported="true">  <!--Screen orientation-->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -27,8 +28,18 @@
         android:anyDensity="true" />
 
     <!--Camera usage configuration-->
-    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="com.bfr.buddy.resource.SPEECH" />
+    <uses-permission android:name="com.bfr.buddy.resource.LISTEN" />
+    <uses-permission android:name="com.bfr.buddy.resource.WHEELS" />
+    <uses-permission android:name="com.bfr.buddy.resource.HEAD" />
+    <uses-permission android:name="com.bfr.buddy.resource.LEDS" />
+    <uses-permission android:name="com.bfr.buddy.resource.SENSOR_MODULE" />
+    <uses-permission android:name="com.bfr.buddy.resource.FACE" />
+    <uses-permission android:name="com.bfr.buddy.resource.GUI" />
+    <uses-permission android:name="com.bfr.buddy.resource.VISION" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <uses-feature
         android:name="android.hardware.camera"

@@ -200,8 +200,6 @@ public class TfLiteMidas {
         inputImageBuffer = loadImage(bitmap, 0);
         tfLite.run(inputImageBuffer.getBuffer(), outputProbabilityBuffer.getBuffer().rewind());
 
-
-    Log.w("coucou", "runing tflite");
         return outputProbabilityBuffer.getFloatArray();
 
     }

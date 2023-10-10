@@ -1,5 +1,7 @@
 package com.bfr.opencvapp;
 
+import static com.bfr.opencvapp.grafcet.AlignGrafcet.RESIZE_RATIO;
+import static com.bfr.opencvapp.grafcet.AlignGrafcet.xCenter;
 import static org.opencv.core.CvType.*;
 
 import android.Manifest;
@@ -22,6 +24,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.Toast;
@@ -70,7 +73,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
 
-import com.bfr.buddysdk.sdk.BuddySDK;
+import com.bfr.buddysdk.BuddySDK;
 
 import com.bfr.opencvapp.grafcet.*;
 import com.bfr.opencvapp.utils.MultiDetector;
@@ -88,8 +91,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //    private String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
     private String dir = "/sdcard/Android/data/com.bfr.opencvapp/files/";
 
-    // SDK
-    BuddySDK mySDK = new BuddySDK();
 
 
     //********************  image ***************************
@@ -111,15 +112,15 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     // context
     Context context = this;
-    CheckBox saveCheckbox, preprocessCheckbox;
-    Button showAll, removeIdx;
-    EditText personNameExitText, idxToRemove;
+    CheckBox alignCheckbox;
+    Button initButton;
+
+    private ImageView cameraImageView;
+    private CameraBridgeViewBase cameraBridgeViewBase;
+    private CameraBridgeViewBase.CvCameraViewListener2 cameraListener;
 
 
-
-    //to debug
-    double elapsedTime=0.0;
-    String toDisplay="";
+    public AlignGrafcet alignGrafcet = new AlignGrafcet("AlignGrafcet");
 
 
     @Override
@@ -130,6 +131,16 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // run only in Landscape mode
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(R.layout.activity_main);
+
+        // link with UI
+        alignCheckbox = findViewById(R.id.alignBox);
+        initButton= findViewById(R.id.initButton);
+        cameraBridgeViewBase = findViewById(R.id.CameraView);
+
+        cameraBridgeViewBase.setVisibility(View.VISIBLE);
+        cameraBridgeViewBase.setCameraPermissionGranted();
+        
+
 
         // Check permissions
         if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -150,6 +161,22 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         mOpenCvCameraView.setCvCameraViewListener(this);
 
 
+        /*** Listeners*/
+
+        alignCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                alignGrafcet.go=b;
+            }
+        });
+
+        initButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                alignGrafcet.go = false;
+                alignGrafcet.step_num = 0;
+            }
+        });
 
     } // End onCreate
 
@@ -175,6 +202,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     public void onPause() {
         super.onPause();
 
+        alignGrafcet.stop();
+
     }
 
     @Override
@@ -183,6 +212,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // OpenCV manager initialization
         OpenCVLoader.initDebug();
         mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
+
+        alignGrafcet.start();
 
     }
 
@@ -240,17 +271,16 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             img_normalized[i] = (int) val;
         }
 
-        Log.w("coucou", "result length: " + result.length + "\n"+"" +
-                "Max in result= "+ maxval + " Min val="+ minval
-        );
+//        Log.w("coucou", "result length: " + result.length + "\n"+"" +
+//                "Max in result= "+ maxval + " Min val="+ minval        );
+
         //debug
         for (float cur : img_normalized) {
             maxval = Math.max(maxval, cur);
             minval = Math.min(minval, cur);
         }
-        Log.w("coucou", "img_normalized length: " + img_normalized.length + "\n"+"" +
-                "Max in img_normalized= "+ maxval + " Min val="+ minval
-        );
+//        Log.w("coucou", "img_normalized length: " + img_normalized.length + "\n"+"" +
+//                "Max in img_normalized= "+ maxval + " Min val="+ minval        );
 
         int resWidth = 256;
         int resHeight = 256;
@@ -288,7 +318,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Utils.bitmapToMat(displayBitmap, displaysubmat);
 
 
-
         /*****
          * Sub mat as a strip above the ground
          * */
@@ -307,12 +336,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
         Imgproc.cvtColor(stripMat, stripMat, Imgproc.COLOR_RGB2GRAY);
 
-        Imgproc.resize(stripMat, stripMat, new Size(256, 1));
+        Imgproc.resize(stripMat, stripMat, new Size(RESIZE_RATIO, 1));
 
-        Log.w("maxcoucou", ""+Core.minMaxLoc(stripMat).minLoc.x);
+        xCenter = Core.minMaxLoc(stripMat).minLoc.x;
+//        Log.w("maxcoucou", ""+xCenter);
 
         Imgproc.circle(displaysubmat, new Point(
-                Core.minMaxLoc(stripMat).minLoc.x
+                Core.minMaxLoc(stripMat).minLoc.x*256/RESIZE_RATIO
                 , 150), 5,new Scalar(0,255,0), 10 );
 
         return frame;

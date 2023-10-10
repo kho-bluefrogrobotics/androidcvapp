@@ -10,10 +10,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.bfr.buddy.utils.values.FloatingWidgetVisibility;
+import com.bfr.buddysdk.BuddyActivity;
+import com.bfr.buddysdk.BuddyCompatActivity;
+import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.utils.BuddyData;
-import com.bfr.buddysdk.sdk.BuddySDK;
 
-public class bfr_Grafcet
+public class bfr_Grafcet extends BuddyCompatActivity
 {
     private final String TAG = "BFR_GRAFCET";
 
@@ -188,4 +191,12 @@ public class bfr_Grafcet
         // update state
         started = false;
     }
+
+    @Override
+    //This function is called when the SDK is ready
+    public void onSDKReady() {
+
+        Log.w(name, "SDK Ready!!!");
+    }
+
 } // end of class bfr_grafcet

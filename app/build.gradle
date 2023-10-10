@@ -9,13 +9,13 @@ android {
             keyPassword 'android'
         }
     }
-    compileSdkVersion 30
+    compileSdk 31
     buildToolsVersion "30.0.2"
 
     defaultConfig {
         applicationId "com.bfr.opencvapp"
-        minSdkVersion 28
-        targetSdkVersion 28
+        minSdk 28
+        targetSdk 31
         versionCode 1
         versionName "1.0"
 
@@ -61,4 +61,5 @@ dependencies {
     implementation 'com.google.mlkit:face-detection:16+'
     implementation 'com.google.mlkit:face-mesh-detection:16+'
 
+    implementation 'com.bluefrogrobotics.buddy:BuddySDK:2+'
 }
