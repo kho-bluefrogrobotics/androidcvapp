@@ -73,6 +73,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
 
+import com.bfr.buddysdk.BuddyActivity;
 import com.bfr.buddysdk.BuddySDK;
 
 import com.bfr.opencvapp.grafcet.*;
@@ -81,7 +82,7 @@ import com.bfr.opencvapp.utils.TfLiteFaceRecognizer;
 import com.bfr.opencvapp.utils.TfLiteMidas;
 
 
-public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
+public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
     private static final String TAG = "FaceRecognizerSface_app";
 
@@ -120,7 +121,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     private CameraBridgeViewBase.CvCameraViewListener2 cameraListener;
 
 
-    public AlignGrafcet alignGrafcet = new AlignGrafcet("AlignGrafcet");
+    public AlignGrafcet alignGrafcet ;
 
 
     @Override
@@ -135,11 +136,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // link with UI
         alignCheckbox = findViewById(R.id.alignBox);
         initButton= findViewById(R.id.initButton);
-        cameraBridgeViewBase = findViewById(R.id.CameraView);
+//        cameraBridgeViewBase = findViewById(R.id.CameraView);
 
-        cameraBridgeViewBase.setVisibility(View.VISIBLE);
-        cameraBridgeViewBase.setCameraPermissionGranted();
-        
+//        cameraBridgeViewBase.setVisibility(View.VISIBLE);
+//        cameraBridgeViewBase.setCameraPermissionGranted();
+
 
 
         // Check permissions
@@ -158,6 +159,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // configure camera listener
         mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.CameraView);
         mOpenCvCameraView.setVisibility(CameraBridgeViewBase.VISIBLE);
+        mOpenCvCameraView.setCameraPermissionGranted();
         mOpenCvCameraView.setCvCameraViewListener(this);
 
 
@@ -201,8 +203,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     @Override
     public void onPause() {
         super.onPause();
+        try{
+            alignGrafcet.stop();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        alignGrafcet.stop();
 
     }
 
@@ -212,16 +218,16 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // OpenCV manager initialization
         OpenCVLoader.initDebug();
         mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
+        Log.w("coucou", "coucou onResume");
 
-        alignGrafcet.start();
 
     }
 
 
-    @Override
-    protected List<? extends CameraBridgeViewBase> getCameraViewList() {
-        return Collections.singletonList(mOpenCvCameraView);
-    }
+//    @Override
+//    protected List<? extends CameraBridgeViewBase> getCameraViewList() {
+//        return Collections.singletonList(mOpenCvCameraView);
+//    }
 
     TfLiteMidas mytfliterecog;
     public void onCameraViewStarted(int width, int height) {
@@ -235,6 +241,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         }
 
         mytfliterecog = new TfLiteMidas(context);
+        Log.w("coucou", "coucou started");
 
     }
 
@@ -242,6 +249,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
+//        Log.w("coucou", "coucou camera frame");
         // cature frame from camera
         frame = inputFrame.rgba();
 
@@ -391,7 +399,14 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         return bitmap;
     }
 
+    @Override
+    public void onSDKReady() {
 
+        Log.w("coucou","coucou onSDKReady");
+
+        alignGrafcet = new AlignGrafcet("AlignGrafcet");
+        alignGrafcet.start();
+    }
 
 
     private void copyAssets() throws IOException {

@@ -16,7 +16,7 @@ import com.bfr.buddysdk.BuddyCompatActivity;
 import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.utils.BuddyData;
 
-public class bfr_Grafcet extends BuddyCompatActivity
+public class bfr_Grafcet
 {
     private final String TAG = "BFR_GRAFCET";
 
@@ -92,7 +92,7 @@ public class bfr_Grafcet extends BuddyCompatActivity
         if (myscheduler == null || myscheduler.isShutdown())
         {
             //Log.i(TAG, "Grafcet " + name + " starting \n" + Log.getStackTraceString(new Exception()));
-            Log.i(TAG, "\n********* GRAFCET **********\nGrafcet " + name + " starting \n" + Log.getStackTraceString(new Exception()));
+            Log.i(TAG, "\n********* GRAFCET **********\nGrafcet " + name + " starting \n" );
             //init thread
             myscheduler = Executors.newScheduledThreadPool(1);
             // start scheduled task
@@ -101,7 +101,7 @@ public class bfr_Grafcet extends BuddyCompatActivity
         else // grafcet already started
         {
             //Log.i(TAG, "Grafcet "+ name+ " already started. Skipping \n" + Log.getStackTraceString(new Exception()));
-            Log.i(TAG, "\n********* GRAFCET **********\nGrafcet "+ name+ " already started. Skipping \n" + Log.getStackTraceString(new Exception()));
+            Log.i(TAG, "\n********* GRAFCET **********\nGrafcet "+ name+ " already started. Skipping \n" );
         }
 
         // update state
@@ -126,7 +126,7 @@ public class bfr_Grafcet extends BuddyCompatActivity
         {
             Log.i(TAG, "\n********* GRAFCET **********\nGrafcet " + name + " starting \n");
             // log the stack strace in verbose mode
-            Log.v(TAG, "Grafcet " + name + " called at " + Log.getStackTraceString(new Exception()));
+            Log.v(TAG, "Grafcet " + name + " called at " );
             //init thread
             myscheduler = Executors.newScheduledThreadPool(1);
             // start scheduled task
@@ -137,7 +137,7 @@ public class bfr_Grafcet extends BuddyCompatActivity
         {
             Log.i(TAG, "\n********* GRAFCET **********\nGrafcet "+ name+ " already started. Skipping \n" );
             // log the stack strace in verbose mode
-            Log.v(TAG, "Grafcet " + name + " called at " + Log.getStackTraceString(new Exception()));
+            Log.v(TAG, "Grafcet " + name + " called at " );
         }
 
         // update state
@@ -192,11 +192,5 @@ public class bfr_Grafcet extends BuddyCompatActivity
         started = false;
     }
 
-    @Override
-    //This function is called when the SDK is ready
-    public void onSDKReady() {
-
-        Log.w(name, "SDK Ready!!!");
-    }
 
 } // end of class bfr_grafcet
