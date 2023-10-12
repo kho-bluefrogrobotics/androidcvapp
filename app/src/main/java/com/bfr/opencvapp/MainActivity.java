@@ -11,6 +11,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -115,7 +116,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
     // context
     Context context = this;
-    CheckBox alignCheckbox;
+    public static CheckBox alignCheckbox;
     Button initButton;
 
     private ImageView cameraImageView;
@@ -138,12 +139,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         // link with UI
         alignCheckbox = findViewById(R.id.alignBox);
         initButton= findViewById(R.id.initButton);
-//        cameraBridgeViewBase = findViewById(R.id.CameraView);
-
-//        cameraBridgeViewBase.setVisibility(View.VISIBLE);
-//        cameraBridgeViewBase.setCameraPermissionGranted();
-
-
 
         // Check permissions
         if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -214,6 +209,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         initButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Log.i("AlignGrafcet", "init all");
                 alignGrafcet.go = false;
                 alignGrafcet.step_num = 0;
             }
@@ -283,14 +279,14 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
-//        Log.w("coucou", "coucou camera frame");
         // cature frame from camera
         frame = inputFrame.rgba();
 
+//        frame = Imgcodecs.imread("/storage/emulated/0/Documents/wideFrame01.jpg");
+
         //convert to bitmap
-        Mat resizedFaceFrame = new Mat();
-//        Imgproc.resize(frame, resizedFaceFrame, new Size(255,255));
         Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
+
         Utils.matToBitmap(frame, bitmapImage);
 
         float[] result=mytfliterecog.recognizeImage(bitmapImage);
@@ -371,7 +367,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 150,
                 //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
                 resWidth,
-                10 );
+                5 );
 //        displaysubmat
 
         Mat stripMat = displaysubmat.clone().submat(stripROI);

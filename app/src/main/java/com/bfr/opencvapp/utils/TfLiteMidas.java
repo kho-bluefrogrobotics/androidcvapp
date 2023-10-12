@@ -138,8 +138,8 @@ public class TfLiteMidas {
     private TensorImage inputImageBuffer;
     /** Output probability TensorBuffer. */
     private TensorBuffer outputProbabilityBuffer;
-    private static final float IMAGE_MEAN = 0.0f;
-    private static final float IMAGE_STD = 1.0f;
+    private static final float IMAGE_MEAN = 115.0f;
+    private static final float IMAGE_STD = 58.0f;
     /** Image size along the x axis. */
     private final int imageSizeX;
     /** Image size along the y axis. */

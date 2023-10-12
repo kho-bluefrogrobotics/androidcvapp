@@ -1,6 +1,8 @@
 package com.bfr.opencvapp.grafcet;
 
 
+import static com.bfr.opencvapp.MainActivity.alignCheckbox;
+
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -33,7 +35,7 @@ public class AlignGrafcet extends bfr_Grafcet {
     private double time_in_curr_step = 0;
     private boolean bypass = false;
 
-    public static int RESIZE_RATIO =25;
+    public static int RESIZE_RATIO =20;
     public static double xCenter =0.0;
     private double xorig=0.0;
     private double deltaPixel=0.0;
@@ -251,11 +253,14 @@ public class AlignGrafcet extends bfr_Grafcet {
 
                     case 40: // wait
                         try {
-                            Thread.sleep(2000);
+                            Thread.sleep(500);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        step_num = 30;
+                        if (alignCheckbox.isChecked())
+                            step_num = 30;
+                        else
+                            step_num = 0;
                         break;
 
                     default:
