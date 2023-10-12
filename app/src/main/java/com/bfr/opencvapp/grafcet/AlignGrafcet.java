@@ -166,7 +166,7 @@ public class AlignGrafcet extends bfr_Grafcet {
 
                     case 20: // reset head Yes position
                         ackYes = "";
-                        BuddySDK.USB.buddySayYes(40.0f, 0.0f, new IUsbCommadRsp.Stub() {
+                        BuddySDK.USB.buddySayYes(20.0f, -20.0f, new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String s) throws RemoteException {
                                 ackYes = s;
@@ -189,7 +189,7 @@ public class AlignGrafcet extends bfr_Grafcet {
 
                     case 25: // reset head Yes position
                         ackNo = "";
-                        BuddySDK.USB.buddySayNo(60.0f, 0.0f, new IUsbCommadRsp.Stub() {
+                        BuddySDK.USB.buddySayNo(40.0f, 0.0f, new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String s) throws RemoteException {
                                 ackNo = s;
@@ -219,12 +219,16 @@ public class AlignGrafcet extends bfr_Grafcet {
                         xorig = xCenter * 256 / RESIZE_RATIO;
                         deltaPixel = xorig - (256 / 2);
                         angleToRotate = (float) (deltaPixel * 0.3314563036);
-                        step_num = 31;
+                        Log.w(name, "Angle to rotate=" + angleToRotate);
+                        if(Math.abs(angleToRotate)<10)
+                            step_num = 40;
+                        else
+                            step_num = 31;
                         break;
 
                     case 31: // rotate
                         ackWheels = "";
-                        BuddySDK.USB.rotateBuddy(60.0f, angleToRotate, new IUsbCommadRsp.Stub() {
+                        BuddySDK.USB.rotateBuddy(60.0f, -angleToRotate, new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String s) throws RemoteException {
                                 ackWheels = s;
@@ -247,7 +251,7 @@ public class AlignGrafcet extends bfr_Grafcet {
 
                     case 40: // wait
                         try {
-                            Thread.sleep(1000);
+                            Thread.sleep(2000);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }

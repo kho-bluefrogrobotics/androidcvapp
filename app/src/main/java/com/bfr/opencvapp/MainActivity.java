@@ -16,6 +16,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
@@ -73,6 +74,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
 
+import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddyActivity;
 import com.bfr.buddysdk.BuddySDK;
 
@@ -169,6 +171,43 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 alignGrafcet.go=b;
+
+                if(!b)
+                {
+                    BuddySDK.USB.enableWheels(0, 0, new IUsbCommadRsp.Stub() {
+                        @Override
+                        public void onSuccess(String s) throws RemoteException {
+
+                        }
+
+                        @Override
+                        public void onFailed(String s) throws RemoteException {
+
+                        }
+                    });
+                    BuddySDK.USB.enableYesMove(0, new IUsbCommadRsp.Stub() {
+                        @Override
+                        public void onSuccess(String s) throws RemoteException {
+
+                        }
+
+                        @Override
+                        public void onFailed(String s) throws RemoteException {
+
+                        }
+                    });
+                    BuddySDK.USB.enableNoMove(0, new IUsbCommadRsp.Stub() {
+                        @Override
+                        public void onSuccess(String s) throws RemoteException {
+
+                        }
+
+                        @Override
+                        public void onFailed(String s) throws RemoteException {
+
+                        }
+                    });
+                }
             }
         });
 
@@ -223,11 +262,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
     }
 
-
-//    @Override
-//    protected List<? extends CameraBridgeViewBase> getCameraViewList() {
-//        return Collections.singletonList(mOpenCvCameraView);
-//    }
 
     TfLiteMidas mytfliterecog;
     public void onCameraViewStarted(int width, int height) {
