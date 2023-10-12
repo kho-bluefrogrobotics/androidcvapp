@@ -168,7 +168,7 @@ public class AlignGrafcet extends bfr_Grafcet {
 
                     case 20: // reset head Yes position
                         ackYes = "";
-                        BuddySDK.USB.buddySayYes(20.0f, -20.0f, new IUsbCommadRsp.Stub() {
+                        BuddySDK.USB.buddySayYes(20.0f, -15.0f, new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String s) throws RemoteException {
                                 ackYes = s;
@@ -253,7 +253,7 @@ public class AlignGrafcet extends bfr_Grafcet {
 
                     case 40: // wait
                         try {
-                            Thread.sleep(500);
+                            Thread.sleep(2000);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
