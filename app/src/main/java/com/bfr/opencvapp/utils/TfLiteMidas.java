@@ -46,7 +46,7 @@ public class TfLiteMidas {
     private final String[] LABELS = {"Human", "Face", "Hand"};
     private final int NUM_THREADS = 4;
     private boolean WITH_NNAPI = false;
-    private boolean WITH_GPU = false;
+    private boolean WITH_GPU = true;
     private boolean WITH_DSP = false;
     //Face embedding
     private float[] embeedings;
@@ -138,8 +138,8 @@ public class TfLiteMidas {
     private TensorImage inputImageBuffer;
     /** Output probability TensorBuffer. */
     private TensorBuffer outputProbabilityBuffer;
-    private static final float IMAGE_MEAN = 115.0f;
-    private static final float IMAGE_STD = 58.0f;
+    private static final float IMAGE_MEAN = 127.0f;
+    private static final float IMAGE_STD = 128.0f;
     /** Image size along the x axis. */
     private final int imageSizeX;
     /** Image size along the y axis. */

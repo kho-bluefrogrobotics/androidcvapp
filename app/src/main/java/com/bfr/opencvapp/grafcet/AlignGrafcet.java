@@ -221,7 +221,7 @@ public class AlignGrafcet extends bfr_Grafcet {
                         xorig = xCenter * 256 / RESIZE_RATIO;
                         deltaPixel = xorig - (256 / 2);
                         angleToRotate = (float) (deltaPixel * 0.3314563036);
-                        Log.w(name, "Angle to rotate=" + angleToRotate);
+//                        Log.w(name, "Angle to rotate=" + angleToRotate);
                         if(Math.abs(angleToRotate)<10)
                             step_num = 40;
                         else
@@ -230,7 +230,7 @@ public class AlignGrafcet extends bfr_Grafcet {
 
                     case 31: // rotate
                         ackWheels = "";
-                        BuddySDK.USB.rotateBuddy(60.0f, -angleToRotate, new IUsbCommadRsp.Stub() {
+                        BuddySDK.USB.rotateBuddy(90.0f, -angleToRotate, new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String s) throws RemoteException {
                                 ackWheels = s;

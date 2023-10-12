@@ -383,6 +383,14 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 Core.minMaxLoc(stripMat).minLoc.x*256/RESIZE_RATIO
                 , 150), 5,new Scalar(0,255,0), 10 );
 
+        //
+        Imgproc.circle(frame, new Point(
+                Core.minMaxLoc(stripMat).minLoc.x*1024/RESIZE_RATIO
+                , (int)(150*768/256)), 30,new Scalar(0,0,255), 10 );
+        Imgproc.circle(frame, new Point(
+                Core.minMaxLoc(stripMat).minLoc.x*1024/RESIZE_RATIO
+                , (int)(150*768/256)), 5,new Scalar(255,0,0), 20 );
+
         return frame;
 
     } // end function
