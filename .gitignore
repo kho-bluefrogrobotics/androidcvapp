@@ -13,3 +13,4 @@
 .externalNativeBuild
 .cxx
 /opencv470/build
+/.idea
