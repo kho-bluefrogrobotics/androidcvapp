@@ -275,33 +275,56 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         model = Dnn.readNet(dir +"/nnmodels/TopFormer-S_512x512_2x8_160k.onnx");
 
+
     }
 
     Net model ;
+    Mat results;
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
         // cature frame from camera
         frame = inputFrame.rgba();
 
-//        Mat blob = Dnn.blobFromImage(frame, 1.0,
-//                new Size(512,512),
-//                new Scalar(150, 150, 150), /*swapRB*/false, /*crop*/false);
+//        frame = Imgcodecs.imread(dir+"/imgs/01.jpg");
+        //convert to bitmap
+        Mat resizedFaceFrame = new Mat();
 
-        Mat frameInput = new Mat();
-        Imgproc.cvtColor(frame, frameInput, Imgproc.COLOR_RGBA2RGB);
-//        Mat blob = Dnn.blobFromImage(frameInput, 1/255.0,
-//                new org.opencv.core.Size(512, 512),
-//                new Scalar(new double[]{150.0, 150.0, 150.0}), /*swapRB*/true, /*crop*/false, CV_32F);
+//        Imgproc.resize(frame, resizedFaceFrame, new Size(255,255));
 
-        Mat blob = Dnn.blobFromImage(frameInput);
+        Scalar scalar = new Scalar(255); // the specific constant
+        Core.divide(frame, scalar, frame);
+        Scalar mean = new Scalar(-0.450); // the specific constant
+        Scalar std = new Scalar(0.225); // the specific constant
+        Core.add(frame, mean, frame);
+        Core.multiply(frame, std, frame);
+
+        Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(frame, bitmapImage);
+
+//        bitmapImage = BitmapFactory.decodeFile("/storage/emulated/0/01.jpg");
+
+        float[] result=mytfliterecog.recognizeImage(bitmapImage);
+
+        String toDisplay="";
+        for (int i=0; i<150; i++)
+            toDisplay = toDisplay + " "+ result[i] ;
+        Log.i("coucou", toDisplay );
 
 
-        model.setInput(blob);
+        float maxval = Float.NEGATIVE_INFINITY;
+        float minval = Float.POSITIVE_INFINITY;
+        for (float cur : result) {
+            maxval = Math.max(maxval, cur);
+            minval = Math.min(minval, cur);
+        }
 
-        Mat results = model.forward();
+        //debug
 
-        Log.w("coucou", "result size:" + results.size());
+        Log.w("coucou", "result length: " + result.length + "\n"+"" +
+                "Max in result= "+ maxval + " Min val="+ minval
+        );
+
         return frame;
 
     } // end function

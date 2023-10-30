@@ -38,8 +38,12 @@ public class TfLiteMidas {
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
-    private final int[] INPUT_SIZE = {256,256};
-    private final int[] OUTPUT_SIZE = {256,256};
+    private final int[] INPUT_SIZE = {512,512};
+    private final int[] OUTPUT_SIZE = {64,64};
+//    private static final float IMAGE_MEAN = 0.450f;
+//    private static final float IMAGE_STD = 0.225f;
+    private static final float[] IMAGE_MEAN = {0.485f, 0.456f, 0.406f};
+    private static final float[] IMAGE_STD = {0.229f, 0.224f, 0.225f};
     private final int BATCH_SIZE = 1;
     private final int PIXEL_SIZE = 3;
     private final float THRES = 0.75f;
@@ -55,7 +59,7 @@ public class TfLiteMidas {
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
 //    private final String MODEL_NAME = "pyDNet__256x320_float16_quant.tflite";
 //    private final String MODEL_NAME = "Midas_float32.tflite";
-    private final String MODEL_NAME = "Midas_float32_opt.tflite";
+    private final String MODEL_NAME = "TopFormer-S_512x512_2x8_160k.tflite";
 //    private final String MODEL_NAME = "Fastdepth_512x512_float32.tflite";
 //    private final String MODEL_NAME = "fastdepth_256x256_float16_quant.tflite";
 //    private final String MODEL_NAME = "pydnet_256x320.tflite";
@@ -138,8 +142,7 @@ public class TfLiteMidas {
     private TensorImage inputImageBuffer;
     /** Output probability TensorBuffer. */
     private TensorBuffer outputProbabilityBuffer;
-    private static final float IMAGE_MEAN = 127.0f;
-    private static final float IMAGE_STD = 128.0f;
+
     /** Image size along the x axis. */
     private final int imageSizeX;
     /** Image size along the y axis. */
@@ -166,7 +169,7 @@ public class TfLiteMidas {
                         //.add(new ResizeOp(224, 224, ResizeMethod.NEAREST_NEIGHBOR))
 //            .add(new Rot90Op(numRotation))
                         .add(new Rot90Op(2))
-                        .add(getPreprocessNormalizeOp())
+//                        .add(getPreprocessNormalizeOp())
                         .build();
         return imageProcessor.process(inputImageBuffer);
     }
