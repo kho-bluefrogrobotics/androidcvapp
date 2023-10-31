@@ -84,6 +84,7 @@ import com.bfr.opencvapp.grafcet.*;
 import com.bfr.opencvapp.utils.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteFaceRecognizer;
 import com.bfr.opencvapp.utils.TfLiteMidas;
+import com.bfr.opencvapp.utils.TfLiteMidasMultiOut;
 
 
 public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -262,7 +263,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     }
 
 
-    TfLiteMidas mytfliterecog;
+    TfLiteMidasMultiOut mytfliterecog;
+
     public void onCameraViewStarted(int width, int height) {
 
         try {
@@ -273,7 +275,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             e.printStackTrace();
         }
 
-        mytfliterecog = new TfLiteMidas(context);
+        mytfliterecog = new TfLiteMidasMultiOut(context);
         Log.w("coucou", "coucou started");
 
         model = Dnn.readNet(dir +"/nnmodels/TopFormer-S_512x512_2x8_160k.onnx");
@@ -290,72 +292,27 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         int outWidth =64;
         int outHeight = 64;
+        Imgproc.resize(frame, frame, new Size(512, 512));
+        //convert to bitmap
+        Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(frame, bitmapImage);
 
-        Mat frameInput = new Mat();
-        Imgproc.cvtColor(frame, frameInput, Imgproc.COLOR_RGBA2RGB);
-        Mat blob = Dnn.blobFromImage(frameInput, 58,
-                new org.opencv.core.Size(512, 512),
-                new Scalar(new double[]{117.0, 117.0, 117.0}), /*swapRB*/true, /*crop*/false, CV_32F);
-        //cf https://github.com/ibaiGorordo/ONNX-TopFormer-Semantic-Segmentation/blob/main/topformer/topformer.py#L50
+        float[] result=mytfliterecog.recognizeImage(bitmapImage);
 
-        model.setInput(blob);
+        float maxval = Float.NEGATIVE_INFINITY;
+        float minval = Float.POSITIVE_INFINITY;
+        for (float cur : result) {
+            maxval = Math.max(maxval, cur);
+            minval = Math.min(minval, cur);
+        }
 
-        Mat results = new Mat();
-        results = model.forward();
+        String todisplay = "";
+        for (int i=0; i<50; i++)
+            todisplay = todisplay+ " " + String.valueOf(result[i]);
 
-        results = results.reshape(1, (int)results.total()/150);
+        Log.w("coucou", "value of result= " + todisplay);
 
-        Log.w("coucou", "result total:" + results.total());
-        Log.w("coucou", "result size:" + results.size());
-        Log.w("coucou", "result result:" + results.get(100, 0)[0]);
-
-
-        // crop just one col
-        //crop image
-        Rect colROI= new Rect(
-                // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
-                1,
-                0,
-                //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
-                1,
-                outHeight );
-        Mat colInResult = results.submat(colROI);
-
-
-        Bitmap displayBitmap = Bitmap.createBitmap(outWidth, outHeight, Bitmap.Config.RGB_565);
-        for (int ii = 0; ii < outWidth; ii++) //pass the screen pixels in 2 directions
-        {
-            for (int jj = 0; jj < outHeight; jj++) {
-                //int val = img_normalized[ii + jj * width];
-                //if class == floor
-                int pixelClass = classOfPixel(results, ii*jj + jj );
-                if (pixelClass == 3 //floor
-                 || pixelClass == 6 //road
-                 || pixelClass == 11 //sidewalk
-                 || pixelClass == 13 // earth
-                 || pixelClass == 28 // rug, carpet
-                 || pixelClass == 52 // path
-                 || pixelClass == 54 // runway
-                 || pixelClass == 94 // land
-                )
-                {
-                    //colorize image in red
-                    displayBitmap.setPixel(ii, jj, Color.rgb(255, 0, 0));
-                } //end if class is floor
-                else// not the floor
-                {
-                    displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 255));
-                } // end if floor
-            }// next jj
-        }//next ii
-
-        Mat displaymat = new Mat();
-        Utils.bitmapToMat(displayBitmap, displaymat);
-        Imgproc.resize(displaymat, displaymat, new Size(1024, 768));
-
-
-//        return frame;
-        return displaymat;
+        return frame;
 
     } // end function
 

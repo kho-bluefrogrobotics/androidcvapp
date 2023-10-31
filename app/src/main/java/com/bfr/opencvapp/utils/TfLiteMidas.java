@@ -48,9 +48,9 @@ public class TfLiteMidas {
     private final int PIXEL_SIZE = 3;
     private final float THRES = 0.75f;
     private final String[] LABELS = {"Human", "Face", "Hand"};
-    private final int NUM_THREADS = 4;
+    private final int NUM_THREADS = 6;
     private boolean WITH_NNAPI = false;
-    private boolean WITH_GPU = true;
+    private boolean WITH_GPU = false;
     private boolean WITH_DSP = false;
     //Face embedding
     private float[] embeedings;
@@ -74,8 +74,6 @@ public class TfLiteMidas {
             Interpreter.Options options = (new Interpreter.Options());
             CompatibilityList compatList = new CompatibilityList();
 
-            options.setNumThreads(NUM_THREADS);
-
             if (WITH_GPU) {
                 GpuDelegate.Options delegateOptions = compatList.getBestOptionsForThisDevice();
                 delegateOptions.setQuantizedModelsAllowed(false);
@@ -88,21 +86,34 @@ public class TfLiteMidas {
                 options.addDelegate(hexagonDelegate);
                 Log.i(TAG, "Interpreter on HEXAGONE");
             }
-            else{
-                options.setUseXNNPACK(true);
-                WITH_NNAPI = false;
-                Log.i(TAG, "Interpreter on CPU");
-            }
-
-            if (WITH_NNAPI) {
+            else if (WITH_NNAPI) {
+                options.setUseXNNPACK(false);
                 NnApiDelegate nnApiDelegate = null;
                 // Initialize interpreter with NNAPI delegate for Android Pie or above
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                if (true) {
                     nnApiDelegate = new NnApiDelegate();
                     options.addDelegate(nnApiDelegate);
                     options.setUseNNAPI(true);
                 }
             }
+            else{
+                options.setNumThreads(NUM_THREADS);
+                options.setUseXNNPACK(true);
+                WITH_NNAPI = false;
+                Log.i(TAG, "Interpreter on CPU");
+            }
+
+//            if (WITH_NNAPI) {
+//                options.setUseXNNPACK(false);
+//                NnApiDelegate nnApiDelegate = null;
+//                // Initialize interpreter with NNAPI delegate for Android Pie or above
+//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+//                    nnApiDelegate = new NnApiDelegate();
+//                    options.addDelegate(nnApiDelegate);
+//                    options.setUseNNAPI(true);
+//                }
+//            }
 
             //Init interpreter
             File tfliteModel = new File(DIR+MODEL_NAME);
@@ -132,7 +143,7 @@ public class TfLiteMidas {
         int[] probabilityShape =
                 tfLite.getOutputTensor(0).shape(); // {1, NUM_CLASSES}
         // Creates the output tensor and its processor.
-        outputProbabilityBuffer = TensorBuffer.createFixedSize(probabilityShape, DataType.FLOAT32);
+        outputProbabilityBuffer = TensorBuffer.createFixedSize(probabilityShape, DataType.INT32);
 
     }
 
@@ -179,7 +190,7 @@ public class TfLiteMidas {
      * @param bitmap original image in bitmap format
      * @return array of detections
      */
-    public float[] recognizeImage(Bitmap bitmap) {
+    public int[] recognizeImage(Bitmap bitmap) {
 
 //        ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmap);
 
@@ -203,7 +214,7 @@ public class TfLiteMidas {
         inputImageBuffer = loadImage(bitmap, 0);
         tfLite.run(inputImageBuffer.getBuffer(), outputProbabilityBuffer.getBuffer().rewind());
 
-        return outputProbabilityBuffer.getFloatArray();
+        return outputProbabilityBuffer.getIntArray();
 
     }
 

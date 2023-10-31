@@ -26,8 +26,8 @@ public class TfLiteMidasMultiOut {
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
-    private final int[] INPUT_SIZE = {256,256};
-    private final int[] OUTPUT_SIZE = {256,256};
+    private final int[] INPUT_SIZE = {512,512};
+    private final int[] OUTPUT_SIZE = {64,64};
     private final int BATCH_SIZE = 1;
     private final int PIXEL_SIZE = 3;
     private final int NUM_THREADS = 4;
@@ -35,13 +35,13 @@ public class TfLiteMidasMultiOut {
     private boolean WITH_GPU = true;
     private boolean WITH_DSP = false;
     //Face embedding
-    private float[][][][] embeedings;
+    private int[][][][] embeedings;
 
     //where to find the models
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
 //    private final String MODEL_NAME = "pyDNet__256x320_float16_quant.tflite";
 //    private final String MODEL_NAME = "fastdepth_256x256_float16_quant.tflite";
-        private final String MODEL_NAME = "Midas_float32_opt.tflite";
+        private final String MODEL_NAME = "TopFormer-S_512x512_2x8_160k.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
@@ -143,7 +143,7 @@ public class TfLiteMidasMultiOut {
         Map<Integer, Object> outputMap = new HashMap<>();
 
         // Init Face embeedings (signature)
-        embeedings = new float[1][OUTPUT_SIZE[0]][OUTPUT_SIZE[1]][1];
+        embeedings = new int[1][OUTPUT_SIZE[0]][OUTPUT_SIZE[1]][1];
 //        embeedings = new float[1][16][16][48];
         // Assign to Facenet output
         outputMap.put(0, embeedings);
@@ -162,10 +162,10 @@ public class TfLiteMidasMultiOut {
             for (int j = 0; j < embeedings[0][i].length; j++) {
 
                 result[ (i*j)+j] = embeedings[0][i][j][0];
-//                if (i*j+j<50) {
+                if (i*j+j<50) {
 //                    Log.i("coucou", "i=" + i + " j=" + j);
-//                    Log.i("coucou", ((i * j) + j) + " : " + result[i * j + j]);
-//                }
+//                    Log.i("coucou", ((i * j) + j) + " : " + embeedings[0][i][j][0] + "-> "+result[i * j + j]);
+                }
             }
         }
             return result;
