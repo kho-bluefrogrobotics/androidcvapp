@@ -288,11 +288,15 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         // cature frame from camera
         frame = inputFrame.rgba();
 
+        int outWidth =64;
+        int outHeight = 64;
+
         Mat frameInput = new Mat();
         Imgproc.cvtColor(frame, frameInput, Imgproc.COLOR_RGBA2RGB);
-        Mat blob = Dnn.blobFromImage(frameInput, 255.0,
+        Mat blob = Dnn.blobFromImage(frameInput, 58,
                 new org.opencv.core.Size(512, 512),
-                new Scalar(new double[]{0.0, 0.0, 0.0}), /*swapRB*/true, /*crop*/false, CV_32F);
+                new Scalar(new double[]{117.0, 117.0, 117.0}), /*swapRB*/true, /*crop*/false, CV_32F);
+        //cf https://github.com/ibaiGorordo/ONNX-TopFormer-Semantic-Segmentation/blob/main/topformer/topformer.py#L50
 
         model.setInput(blob);
 
@@ -303,12 +307,75 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         Log.w("coucou", "result total:" + results.total());
         Log.w("coucou", "result size:" + results.size());
-        Log.w("coucou", "result result:" + results.get(0, 0)[0]);
+        Log.w("coucou", "result result:" + results.get(100, 0)[0]);
 
-        return frame;
+
+        // crop just one col
+        //crop image
+        Rect colROI= new Rect(
+                // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
+                1,
+                0,
+                //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
+                1,
+                outHeight );
+        Mat colInResult = results.submat(colROI);
+
+
+        Bitmap displayBitmap = Bitmap.createBitmap(outWidth, outHeight, Bitmap.Config.RGB_565);
+        for (int ii = 0; ii < outWidth; ii++) //pass the screen pixels in 2 directions
+        {
+            for (int jj = 0; jj < outHeight; jj++) {
+                //int val = img_normalized[ii + jj * width];
+                //if class == floor
+                int pixelClass = classOfPixel(results, ii*jj + jj );
+                if (pixelClass == 3 //floor
+                 || pixelClass == 6 //road
+                 || pixelClass == 11 //sidewalk
+                 || pixelClass == 13 // earth
+                 || pixelClass == 28 // rug, carpet
+                 || pixelClass == 52 // path
+                 || pixelClass == 54 // runway
+                 || pixelClass == 94 // land
+                )
+                {
+                    //colorize image in red
+                    displayBitmap.setPixel(ii, jj, Color.rgb(255, 0, 0));
+                } //end if class is floor
+                else// not the floor
+                {
+                    displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 255));
+                } // end if floor
+            }// next jj
+        }//next ii
+
+        Mat displaymat = new Mat();
+        Utils.bitmapToMat(displayBitmap, displaymat);
+        Imgproc.resize(displaymat, displaymat, new Size(1024, 768));
+
+
+//        return frame;
+        return displaymat;
 
     } // end function
 
+
+    private int classOfPixel(Mat result, int pixIdx)
+    {
+        // crop just one col
+        //crop image
+        Rect colROI= new Rect(
+                // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
+                0,
+                pixIdx,
+                //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
+                1,
+                64 );
+
+        Mat colInResult = result.submat(colROI);
+
+        return (int) Core.minMaxLoc(colInResult).maxLoc.y;
+    }
 
     public void onCameraViewStopped() {
 
