@@ -51,6 +51,7 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
+import org.opencv.dnn.SegmentationModel;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
@@ -108,6 +109,9 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     MultiDetector multiDetector;
     ArrayList<MultiDetector.Recognition> tfliteDetections = new ArrayList<MultiDetector.Recognition>();
     int left, right, top, bottom;
+
+    Net model ;
+    SegmentationModel segmentationModeldel;
 
     // for saving face
     boolean isSavingFace = false;
@@ -275,59 +279,47 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         model = Dnn.readNet(dir +"/nnmodels/TopFormer-S_512x512_2x8_160k.onnx");
 
-
+        segmentationModeldel = new SegmentationModel(dir+"/nnmodels/opt_deeplabv3_mnv2_513.pb");
     }
 
-    Net model ;
-    Mat results;
+
+
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
         // cature frame from camera
         frame = inputFrame.rgba();
 
-//        frame = Imgcodecs.imread(dir+"/imgs/01.jpg");
-        //convert to bitmap
-        Mat resizedFaceFrame = new Mat();
+        Mat toSegment = frame.clone();
 
-//        Imgproc.resize(frame, resizedFaceFrame, new Size(255,255));
+//        Mat frameInput = new Mat();
+//        Imgproc.cvtColor(frame, frameInput, Imgproc.COLOR_RGBA2RGB);
+//        Mat blob = Dnn.blobFromImage(frameInput, 255.0,
+//                new org.opencv.core.Size(512, 512),
+//                new Scalar(new double[]{0.0, 0.0, 0.0}), /*swapRB*/true, /*crop*/false, CV_32F);
+//
+////        Mat blob = Dnn.blobFromImage(frameInput);
+//
+//
+//        model.setInput(blob);
+//
+//        Mat results = new Mat();
+//        results = model.forward();
+//
+//        Log.w("coucou", "result size:" + results.size());
+//        Log.w("coucou", "result value:" + results.cols());
 
-        Scalar scalar = new Scalar(255); // the specific constant
-        Core.divide(frame, scalar, frame);
-        Scalar mean = new Scalar(-0.450); // the specific constant
-        Scalar std = new Scalar(0.225); // the specific constant
-        Core.add(frame, mean, frame);
-        Core.multiply(frame, std, frame);
-
-        Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(frame, bitmapImage);
-
-//        bitmapImage = BitmapFactory.decodeFile("/storage/emulated/0/01.jpg");
-
-        float[] result=mytfliterecog.recognizeImage(bitmapImage);
-
-        String toDisplay="";
-        for (int i=0; i<150; i++)
-            toDisplay = toDisplay + " "+ result[i] ;
-        Log.i("coucou", toDisplay );
-
-
-        float maxval = Float.NEGATIVE_INFINITY;
-        float minval = Float.POSITIVE_INFINITY;
-        for (float cur : result) {
-            maxval = Math.max(maxval, cur);
-            minval = Math.min(minval, cur);
-        }
-
-        //debug
-
-        Log.w("coucou", "result length: " + result.length + "\n"+"" +
-                "Max in result= "+ maxval + " Min val="+ minval
-        );
-
+        Imgproc.resize(toSegment, toSegment, new Size(513, 513));
+        Imgproc.cvtColor(toSegment, toSegment, Imgproc.COLOR_RGBA2RGB);
+        Mat mask = new Mat();
+        segmentationModeldel.setInputSize(513,513);
+        segmentationModeldel.segment(toSegment, mask);
         return frame;
 
+
+
     } // end function
+
 
     public void onCameraViewStopped() {
 
