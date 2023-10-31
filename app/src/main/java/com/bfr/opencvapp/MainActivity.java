@@ -299,7 +299,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         Bitmap bitmapImage = Bitmap.createBitmap(resized.cols(), resized.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(resized, bitmapImage);
 
-        float[] result=mytfliterecog.recognizeImage(bitmapImage);
+        int[] result=mytfliterecog.recognizeImage(bitmapImage);
 
         float maxval = Float.NEGATIVE_INFINITY;
         float minval = Float.POSITIVE_INFINITY;
@@ -314,7 +314,43 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         Log.w("coucou", "value of result= " + todisplay);
 
-        return frame;
+
+
+        Bitmap displayBitmap = Bitmap.createBitmap(outWidth, outHeight, Bitmap.Config.RGB_565);
+        for (int ii = 0; ii < outWidth; ii++) //pass the screen pixels in 2 directions
+        {
+            for (int jj = 0; jj < outHeight; jj++) {
+                //int val = img_normalized[ii + jj * width];
+                //if class == floor
+
+                if (result[ii*jj + jj] == 3 //floor
+                        || result[ii*jj + jj] == 6 //road
+                        || result[ii*jj + jj] == 11 //sidewalk
+                        || result[ii*jj + jj] == 13 // earth
+                        || result[ii*jj + jj] == 28 // rug, carpet
+                        || result[ii*jj + jj] == 52 // path
+                        || result[ii*jj + jj] == 54 // runway
+                        || result[ii*jj + jj] == 94 // land
+                )
+                {
+                    //colorize image in red
+                    displayBitmap.setPixel(ii, jj, Color.rgb(255, 0, 0));
+                } //end if class is floor
+                else// not the floor
+                {
+                    displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 255));
+                } // end if floor
+            }// next jj
+        }//next ii
+
+        Mat displaymat = new Mat();
+        Utils.bitmapToMat(displayBitmap, displaymat);
+        Imgproc.resize(displaymat, displaymat, new Size(1024, 768));
+
+
+//        return frame;
+        return displaymat;
+
 
     } // end function
 
