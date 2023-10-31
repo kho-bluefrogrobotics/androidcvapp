@@ -111,7 +111,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     int left, right, top, bottom;
 
     Net model ;
-    SegmentationModel segmentationModeldel;
 
     // for saving face
     boolean isSavingFace = false;
@@ -279,7 +278,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         model = Dnn.readNet(dir +"/nnmodels/TopFormer-S_512x512_2x8_160k.onnx");
 
-        segmentationModeldel = new SegmentationModel(dir+"/nnmodels/opt_deeplabv3_mnv2_513.pb");
     }
 
 
@@ -290,33 +288,24 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         // cature frame from camera
         frame = inputFrame.rgba();
 
-        Mat toSegment = frame.clone();
+        Mat frameInput = new Mat();
+        Imgproc.cvtColor(frame, frameInput, Imgproc.COLOR_RGBA2RGB);
+        Mat blob = Dnn.blobFromImage(frameInput, 255.0,
+                new org.opencv.core.Size(512, 512),
+                new Scalar(new double[]{0.0, 0.0, 0.0}), /*swapRB*/true, /*crop*/false, CV_32F);
 
-//        Mat frameInput = new Mat();
-//        Imgproc.cvtColor(frame, frameInput, Imgproc.COLOR_RGBA2RGB);
-//        Mat blob = Dnn.blobFromImage(frameInput, 255.0,
-//                new org.opencv.core.Size(512, 512),
-//                new Scalar(new double[]{0.0, 0.0, 0.0}), /*swapRB*/true, /*crop*/false, CV_32F);
-//
-////        Mat blob = Dnn.blobFromImage(frameInput);
-//
-//
-//        model.setInput(blob);
-//
-//        Mat results = new Mat();
-//        results = model.forward();
-//
-//        Log.w("coucou", "result size:" + results.size());
-//        Log.w("coucou", "result value:" + results.cols());
+        model.setInput(blob);
 
-        Imgproc.resize(toSegment, toSegment, new Size(513, 513));
-        Imgproc.cvtColor(toSegment, toSegment, Imgproc.COLOR_RGBA2RGB);
-        Mat mask = new Mat();
-        segmentationModeldel.setInputSize(513,513);
-        segmentationModeldel.segment(toSegment, mask);
+        Mat results = new Mat();
+        results = model.forward();
+
+        results = results.reshape(1, (int)results.total()/150);
+
+        Log.w("coucou", "result total:" + results.total());
+        Log.w("coucou", "result size:" + results.size());
+        Log.w("coucou", "result result:" + results.get(0, 0)[0]);
+
         return frame;
-
-
 
     } // end function
 
