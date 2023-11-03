@@ -84,7 +84,6 @@ import com.bfr.opencvapp.grafcet.*;
 import com.bfr.opencvapp.utils.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteFaceRecognizer;
 import com.bfr.opencvapp.utils.TfLiteMidas;
-import com.bfr.opencvapp.utils.TfLiteMidasMultiOut;
 
 
 public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -263,8 +262,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     }
 
 
-    TfLiteMidasMultiOut mytfliterecog;
-
+    TfLiteMidas mytfliterecog;
     public void onCameraViewStarted(int width, int height) {
 
         try {
@@ -275,7 +273,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             e.printStackTrace();
         }
 
-        mytfliterecog = new TfLiteMidasMultiOut(context);
+//        mytfliterecog = new TfLiteMidas(context);
         Log.w("coucou", "coucou started");
 
         model = Dnn.readNet(dir +"/nnmodels/TopFormer-S_512x512_2x8_160k.onnx");
@@ -290,30 +288,38 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         // cature frame from camera
         frame = inputFrame.rgba();
 
+        frame = Imgcodecs.imread("/sdcard/Download/inputdepthimage.jpg");
         int outWidth =64;
         int outHeight = 64;
-        Mat resized = frame.clone();
-        Imgproc.resize(frame, resized, new Size(512, 512));
 
-        //convert to bitmap
-        Bitmap bitmapImage = Bitmap.createBitmap(resized.cols(), resized.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(resized, bitmapImage);
+        Mat frameInput = frame.clone();
+//        Imgproc.cvtColor(frame, frameInput, Imgproc.COLOR_RGBA2RGB);
+        Mat blob = Dnn.blobFromImage(frameInput, 0.05,
+                new org.opencv.core.Size(512, 512),
+                new Scalar(new double[]{0.0, 0.0, 0.0}), /*swapRB*/false, /*crop*/false, CV_32F);
+        //cf https://github.com/ibaiGorordo/ONNX-TopFormer-Semantic-Segmentation/blob/main/topformer/topformer.py#L50
 
-        int[] result=mytfliterecog.recognizeImage(bitmapImage);
+        model.setInput(blob);
 
-        float maxval = Float.NEGATIVE_INFINITY;
-        float minval = Float.POSITIVE_INFINITY;
-        for (float cur : result) {
-            maxval = Math.max(maxval, cur);
-            minval = Math.min(minval, cur);
-        }
+        Mat results = new Mat();
+        results = model.forward();
 
-        String todisplay = "";
-        for (int i=0; i<50; i++)
-            todisplay = todisplay+ " " + String.valueOf(result[i]);
+        results = results.reshape(1, (int)results.total()/150);
 
-        Log.w("coucou", "value of result= " + todisplay);
+//        Log.w("coucou", "result total:" + results.total());
+//        Log.w("coucou", "result size:" + results.size());
+//        Log.w("coucou", "result result:" + results.get(100, 0)[0]);
 
+        // crop just one col
+        //crop image
+        Rect colROI= new Rect(
+                // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
+                1,
+                0,
+                //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
+                1,
+                outHeight );
+        Mat colInResult = results.submat(colROI);
 
 
         Bitmap displayBitmap = Bitmap.createBitmap(outWidth, outHeight, Bitmap.Config.RGB_565);
@@ -322,15 +328,15 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             for (int jj = 0; jj < outHeight; jj++) {
                 //int val = img_normalized[ii + jj * width];
                 //if class == floor
-
-                if (result[ii*jj + jj] == 3 //floor
-                        || result[ii*jj + jj] == 6 //road
-                        || result[ii*jj + jj] == 11 //sidewalk
-                        || result[ii*jj + jj] == 13 // earth
-                        || result[ii*jj + jj] == 28 // rug, carpet
-                        || result[ii*jj + jj] == 52 // path
-                        || result[ii*jj + jj] == 54 // runway
-                        || result[ii*jj + jj] == 94 // land
+                int pixelClass = classOfPixel(results, ii*jj + jj );
+                if (pixelClass == 3 //floor
+                        || pixelClass == 6 //road
+                        || pixelClass == 11 //sidewalk
+                        || pixelClass == 13 // earth
+                        || pixelClass == 28 // rug, carpet
+                        || pixelClass == 52 // path
+                        || pixelClass == 54 // runway
+                        || pixelClass == 94 // land
                 )
                 {
                     //colorize image in red
@@ -351,25 +357,62 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //        return frame;
         return displaymat;
 
-
     } // end function
 
 
     private int classOfPixel(Mat result, int pixIdx)
     {
-        // crop just one col
-        //crop image
-        Rect colROI= new Rect(
-                // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
-                0,
-                pixIdx,
-                //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
-                1,
-                64 );
+//        Log.w("coucou", "result total:" + result.total());
+//        Log.w("coucou", "result size:" + result.size());
+//        Log.w("coucou", "result result:" + result.get(100, 0)[0]);
 
-        Mat colInResult = result.submat(colROI);
+//        // crop just one col
+//        //crop image
+//        Rect colROI= new Rect(
+//                // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
+//                0,
+//                pixIdx,
+//                //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
+//                1,
+//                64 );
+//
+//        Mat colInResult = result.submat(colROI);
+//
+//        return (int) Core.minMaxLoc(colInResult).maxLoc.y;
 
-        return (int) Core.minMaxLoc(colInResult).maxLoc.y;
+
+
+//        Log.w("coucou", "Ready to display:" + result.size());
+//        //DEBUG
+//        //for each class
+//        for (int i=0; i<15; i++)
+//        {
+//          String todisplay="";
+//          for(int px=0; px< 60; px++)
+//              todisplay=todisplay+String.valueOf(result.get(i, px)[0]+" ");
+//          Log.w("coucou", "class="+i + " "+ todisplay);
+//        }
+
+
+        // argmax
+        //input mat is numOfClasses x [64x64] = 150x4096
+        double maxvalue=-99999;
+        int maxId=999999;
+        //for each class
+        for (int i=0; i<150; i++)
+        {
+//            Log.w("coucou", "i:"+i+ " pixIdx:"+pixIdx+" result="+result.get(pixIdx, i)[0]);
+            try {
+                if (result.get(i, pixIdx)[0] > maxvalue) {
+                    maxvalue = result.get(i, pixIdx)[0];
+                    maxId = i;
+                }
+            } catch (Exception e) {
+                Log.e("coucou", "ERROR: " + i + "," + pixIdx + " " + Log.getStackTraceString(e));
+            }
+        }
+        Log.w("coucou", "FOUND MAX="+maxId);
+        return maxId;
     }
 
     public void onCameraViewStopped() {
