@@ -280,7 +280,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
     }
 
-
+    Mat results;
 
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
@@ -294,16 +294,16 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         Mat frameInput = frame.clone();
 //        Imgproc.cvtColor(frame, frameInput, Imgproc.COLOR_RGBA2RGB);
-        Mat blob = Dnn.blobFromImage(frameInput, 0.05,
+        Mat blob = Dnn.blobFromImage(frameInput, 57.375,
                 new org.opencv.core.Size(512, 512),
-                new Scalar(new double[]{0.0, 0.0, 0.0}), /*swapRB*/false, /*crop*/false, CV_32F);
+                new Scalar(new double[]{114.75, 114.75, 114.75}), /*swapRB*/false, /*crop*/false, CV_32F);
         //cf https://github.com/ibaiGorordo/ONNX-TopFormer-Semantic-Segmentation/blob/main/topformer/topformer.py#L50
 
         model.setInput(blob);
 
-        Mat results = new Mat();
-        results = model.forward();
-
+        Mat firstresults = new Mat();
+        firstresults = model.forward();
+        results = firstresults.clone();
         results = results.reshape(1, (int)results.total()/150);
 
 //        Log.w("coucou", "result total:" + results.total());
@@ -408,7 +408,9 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                     maxId = i;
                 }
             } catch (Exception e) {
-                Log.e("coucou", "ERROR: " + i + "," + pixIdx + " " + Log.getStackTraceString(e));
+                Log.e("coucou", "ERROR: " + i + "," + pixIdx + " "
+                        + "while result:" + result.size() + " "
+                        + Log.getStackTraceString(e));
             }
         }
         Log.w("coucou", "FOUND MAX="+maxId);
