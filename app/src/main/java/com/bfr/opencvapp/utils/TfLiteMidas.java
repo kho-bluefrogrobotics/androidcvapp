@@ -140,8 +140,10 @@ public class TfLiteMidas {
 //            imageSizeX = 320;
         }
 
-        int[] probabilityShape =
-                tfLite.getOutputTensor(0).shape(); // {1, NUM_CLASSES}
+        int[] probabilityShape = {1,64,64,1};
+//                tfLite.getOutputTensor(0).shape(); // {1, NUM_CLASSES}
+
+        Log.w("coucou", "init output size: " + probabilityShape[0] + " " + probabilityShape[1] + " " + probabilityShape[2] );
         // Creates the output tensor and its processor.
         outputProbabilityBuffer = TensorBuffer.createFixedSize(probabilityShape, DataType.INT32);
 
