@@ -13,9 +13,9 @@ import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.CompatibilityList;
 import org.tensorflow.lite.gpu.GpuDelegate;
 import org.tensorflow.lite.nnapi.NnApiDelegate;
-import org.tensorflow.lite.support.common.TensorOperator;
-import org.tensorflow.lite.support.common.ops.NormalizeOp;
-import org.tensorflow.lite.support.image.TensorImage;
+//import org.tensorflow.lite.support.common.TensorOperator;
+//import org.tensorflow.lite.support.common.ops.NormalizeOp;
+//import org.tensorflow.lite.support.image.TensorImage;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -41,7 +41,7 @@ public class TfLiteTopFormer {
     private final String[] LABELS = {"Human", "Face", "Hand"};
     private final int NUM_THREADS = 6;
     private boolean WITH_NNAPI = false;
-    private boolean WITH_GPU = true;
+    private boolean WITH_GPU = false;
     private boolean WITH_DSP = false;
     //Face embedding
     private float[] embeedings;
@@ -117,7 +117,7 @@ public class TfLiteTopFormer {
 
 
         // Creates the input tensor.
-        inputImageBuffer = new TensorImage(DataType.FLOAT32);
+//        inputImageBuffer = new TensorImage(DataType.FLOAT32);
 //        int[] imageShape = tfLite.getInputTensor(0).shape(); // {1, height, width, 3}
 //        if(imageShape[1] != imageShape[2]) {
 //            imageSizeY = imageShape[2];
@@ -147,7 +147,7 @@ public class TfLiteTopFormer {
 
 
     /** Input image TensorBuffer. */
-    private TensorImage inputImageBuffer;
+//    private TensorImage inputImageBuffer;
     /** Output probability TensorBuffer. */
     private ByteBuffer outputBuffer;
 
@@ -155,9 +155,9 @@ public class TfLiteTopFormer {
     private final int imageSizeX;
     /** Image size along the y axis. */
     private final int imageSizeY;
-    protected TensorOperator getPreprocessNormalizeOp() {
-        return new NormalizeOp(IMAGE_MEAN, IMAGE_STD);
-    }
+//    protected TensorOperator getPreprocessNormalizeOp() {
+//        return new NormalizeOp(IMAGE_MEAN, IMAGE_STD);
+//    }
 
 
     /**
@@ -177,21 +177,24 @@ public class TfLiteTopFormer {
         int[] intValues = new int[INPUT_SIZE[0] * INPUT_SIZE[1]];
         bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
         int pixel = 0;
+        float mean = 127.5F;
+        float std = 127.5F;
         for (int i = 0; i < INPUT_SIZE[0]; ++i) {
             for (int j = 0; j < INPUT_SIZE[1]; ++j) {
                 final int val = intValues[pixel++];
+//                Log.w("coucou", "i,j:" +i + ","+j + " :"  +val);
                 if (IS_QUANTIZED) {
                     byteBuffer.put((byte) ((val >> 16) & 0xFF));
                     byteBuffer.put((byte) ((val >> 8) & 0xFF));
                     byteBuffer.put((byte) (val & 0xFF));
                 } else {
-
-                    byteBuffer.putFloat( (((val >> 16) & 0xFF) - IMAGE_MEAN[0]) / IMAGE_STD[0]);
-                    byteBuffer.putFloat( (((val >> 8) & 0xFF) - IMAGE_MEAN[1]) / IMAGE_STD[1]);
-                    byteBuffer.putFloat( ((val & 0xFF) - IMAGE_MEAN[2]) / IMAGE_STD[2]);
+                    byteBuffer.putFloat( ( (float)(val >> 16 & 0xFF) - 127.5f) / IMAGE_STD[0]);
+                    byteBuffer.putFloat( ((float)(val >> 8 & 0xFF) - IMAGE_MEAN[1]) / IMAGE_STD[1]);
+                    byteBuffer.putFloat( ((float)(val & 0xFF) - IMAGE_MEAN[2]) / IMAGE_STD[2]);
                 }
             }
         }
+        byteBuffer.rewind();
         return byteBuffer;
     }
 
@@ -220,18 +223,18 @@ public class TfLiteTopFormer {
 //        outputMap.put(3, new float[1][48]);
 
         Object[] inputArray = {byteBuffer};
-
-        tfLite.run(byteBuffer.rewind(), outputBuffer.rewind());
+        outputBuffer.rewind();
+        tfLite.run(byteBuffer, outputBuffer);
 
         int width = OUTPUT_SIZE[0];
         int height = OUTPUT_SIZE[1];
         int outArray[] = new int[width*height];
         //
-
+        outputBuffer.rewind();
         for (int y =0; y<height; y++) {
             for (int x = 0; x < width; x++) {
-                Log.w("coucou", (y * width  + x) +": value = " + outputBuffer.getInt((y * width  + x) *4));
-                outArray[(y * width  + x)] =  outputBuffer.getInt((y * width  + x) *4); //*4 because the output are INT32
+//                Log.w("coucou", (y * width  + x) +": outbytebuffer value = " + outputBuffer.get((y * width  + x)*4 ));
+                outArray[(y * width  + x)] =  outputBuffer.get((y * width  + x)*4); //*4 because the output are INT32
             }
         }
 

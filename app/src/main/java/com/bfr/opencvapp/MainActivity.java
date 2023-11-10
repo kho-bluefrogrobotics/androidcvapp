@@ -83,7 +83,7 @@ import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.grafcet.*;
 import com.bfr.opencvapp.utils.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteFaceRecognizer;
-import com.bfr.opencvapp.utils.TfLiteMidas;
+//import com.bfr.opencvapp.utils.TfLiteMidas;
 import com.bfr.opencvapp.utils.TfLiteMidasMultiOut;
 import com.bfr.opencvapp.utils.TfLiteTopFormer;
 
@@ -217,6 +217,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 Log.i("AlignGrafcet", "init all");
                 alignGrafcet.go = false;
                 alignGrafcet.step_num = 0;
+
+                takephoto = true;
             }
         });
 
@@ -239,7 +241,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         }
     };
 
-
+    boolean takephoto = false;
     @Override
     public void onPause() {
         super.onPause();
@@ -291,6 +293,15 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         // cature frame from camera
         frame = inputFrame.rgba();
 
+//        if (takephoto){
+//            Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2RGB);
+//            Imgcodecs.imwrite("/storage/emulated/0/" + System.currentTimeMillis() + ".jpg", frame);
+//            takephoto = false;
+//
+//        }
+
+
+
         int outWidth =64;
         int outHeight = 64;
         Mat resized = frame.clone();
@@ -302,36 +313,37 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         int[] result=mytfliterecog.recognizeImage(bitmapImage);
 
-        float maxval = Float.NEGATIVE_INFINITY;
-        float minval = Float.POSITIVE_INFINITY;
-        for (float cur : result) {
-            maxval = Math.max(maxval, cur);
-            minval = Math.min(minval, cur);
-        }
-
-        String todisplay = "";
-        for (int i=0; i<50; i++)
-            todisplay = todisplay+ " " + String.valueOf(result[i]);
-
-        Log.w("coucou", "value of result= " + todisplay);
+//        float maxval = Float.NEGATIVE_INFINITY;
+//        float minval = Float.POSITIVE_INFINITY;
+//        for (float cur : result) {
+//            maxval = Math.max(maxval, cur);
+//            minval = Math.min(minval, cur);
+//        }
+//
+//        String todisplay = "";
+//        for (int i=0; i<50; i++)
+//            todisplay = todisplay+ " " + String.valueOf(result[i]);
+//
+//        Log.w("coucou", "value of result= " + todisplay);
 
 
 
         Bitmap displayBitmap = Bitmap.createBitmap(outWidth, outHeight, Bitmap.Config.RGB_565);
-        for (int ii = 0; ii < outWidth; ii++) //pass the screen pixels in 2 directions
+        for (int jj = 0; jj < outHeight; jj++)//pass the screen pixels in 2 directions
         {
-            for (int jj = 0; jj < outHeight; jj++) {
+            for (int ii = 0; ii < outWidth; ii++)
+            {
                 //int val = img_normalized[ii + jj * width];
                 //if class == floor
-
-                if (result[ii*jj + jj] == 3 //floor
-                        || result[ii*jj + jj] == 6 //road
-                        || result[ii*jj + jj] == 11 //sidewalk
-                        || result[ii*jj + jj] == 13 // earth
-                        || result[ii*jj + jj] == 28 // rug, carpet
-                        || result[ii*jj + jj] == 52 // path
-                        || result[ii*jj + jj] == 54 // runway
-                        || result[ii*jj + jj] == 94 // land
+//                Log.w("coucou", (jj*outWidth + ii) +": value = " + result[jj*outWidth + ii]);
+                if (result[jj*outWidth + ii] == 3 //floor
+                        || result[jj*outWidth + ii] == 6 //road
+                        || result[jj*outWidth + ii] == 11 //sidewalk
+                        || result[jj*outWidth + ii] == 13 // earth
+                        || result[jj*outWidth + ii] == 28 // rug, carpet
+                        || result[jj*outWidth + ii] == 52 // path
+                        || result[jj*outWidth + ii] == 54 // runway
+                        || result[jj*outWidth + ii] == 94 // land
                 )
                 {
                     //colorize image in red
@@ -339,7 +351,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 } //end if class is floor
                 else// not the floor
                 {
-                    displayBitmap.setPixel(ii, jj, Color.rgb(100, 100, 100));
+                    displayBitmap.setPixel(ii, jj, Color.rgb(20, 20, 20));
                 } // end if floor
             }// next jj
         }//next ii
