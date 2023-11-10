@@ -50,7 +50,7 @@ public class TfLiteTopFormer {
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
 //    private final String MODEL_NAME = "pyDNet__256x320_float16_quant.tflite";
 //    private final String MODEL_NAME = "Midas_float32.tflite";
-    private final String MODEL_NAME = "TopFormer-S_512x512_2x8_160k_argmax.tflite";
+    private final String MODEL_NAME = "TopFormer-T_512x512_2x8_160k_float16_quant_argmax.tflite";
 //    private final String MODEL_NAME = "Fastdepth_512x512_float32.tflite";
 //    private final String MODEL_NAME = "fastdepth_256x256_float16_quant.tflite";
 //    private final String MODEL_NAME = "pydnet_256x320.tflite";

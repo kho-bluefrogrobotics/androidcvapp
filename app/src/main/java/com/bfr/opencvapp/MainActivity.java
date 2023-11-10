@@ -316,7 +316,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 } //end if class is floor
                 else// not the floor
                 {
-                    Log.w("coucou", ii + "," + jj +": value = " + result[jj*outWidth + ii]);
+//                    Log.w("coucou", ii + "," + jj +": value = " + result[jj*outWidth + ii]);
                     maskBitmap.setPixel(0, 0, 0);
                 } // end if floor
             }// next jj
