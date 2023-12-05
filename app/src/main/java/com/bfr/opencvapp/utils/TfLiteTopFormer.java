@@ -1,5 +1,6 @@
 package com.bfr.opencvapp.utils;
 
+import static com.bfr.opencvapp.utils.Utils.modelsDir;
 import static java.lang.Math.min;
 
 import android.content.Context;
@@ -10,6 +11,10 @@ import android.graphics.Matrix;
 import android.os.Build;
 import android.util.Log;
 
+import org.opencv.android.Utils;
+import org.opencv.core.Mat;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
 import org.tensorflow.lite.HexagonDelegate;
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.CompatibilityList;
@@ -40,11 +45,7 @@ public class TfLiteTopFormer {
     private final int PIXEL_SIZE = 3;
     private final int NUM_THREADS = 4;
 
-    public int _BLACK = Color.rgb(0, 0, 0);
-    public int _WHITE = Color.rgb(255, 255, 255);
-    public int _RED = Color.rgb(255, 0, 0);
-    public int _BLUE = Color.rgb(0, 0, 255);
-    public int _GREEN = Color.rgb(0, 255, 0);
+
 
     /**
      * NB: Topformer doesn't work well with GPU (some actually is executed on the CPU)
@@ -53,13 +54,9 @@ public class TfLiteTopFormer {
      * Topformer doesn't support the NNAPI delegate
      */
     private boolean WITH_NNAPI = false;
-    private boolean WITH_GPU = false;
+    private boolean WITH_GPU = true;
     private boolean WITH_DSP = false;
 
-    //where to find the models
-    private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
-
-//    private final String MODEL_NAME = "TopFormer-T_512x512_2x8_160k_float16_quant_argmax.tflite";
     private final String MODEL_NAME = "TopFormer-T_512x512_2x8_160k_float16_quant_argmax.tflite";
 //    private final String MODEL_NAME = "TopFormer-S_512x512_2x8_160k_argmax.tflite";
 
@@ -105,7 +102,7 @@ public class TfLiteTopFormer {
             }
             
             //Init interpreter
-            File tfliteModel = new File(DIR+MODEL_NAME);
+            File tfliteModel = new File(modelsDir+MODEL_NAME);
             tfLite = new Interpreter(tfliteModel, options );
         }
         catch (Exception e)
@@ -165,20 +162,50 @@ public class TfLiteTopFormer {
 
     /**
      * Get a 64x64 flatten array of semantic segmentations
-     * @param bitmap original image to process
+     * @param frame original image to process in OpenCV Mat format
      * @return array of detections
      */
-    public int[] recognizeImage(Bitmap bitmap) {
+    public int[] segmentFloorFromMat(Mat frame) {
 
-        ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmap);
+//        Mat resized = frame.clone();
+
+        //convert to bitmap
+        Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(frame.clone(), bitmapImage);
+
+        return segmentFloorFromBitmap(bitmapImage);
+    }
+
+
+    /**
+     * Get a 64x64 flatten array of semantic segmentations
+     * @param bitmap original image to process in bitmap
+     * @return array of detections
+     */
+    public int[] segmentFloorFromBitmap(Bitmap bitmap) {
+
+        ByteBuffer byteBuffer;
+
+        //Check size
+        if (bitmap.getWidth() == INPUT_SIZE[0] && bitmap.getHeight() == INPUT_SIZE[1]) // if correct input size
+        {
+            byteBuffer = convertBitmapToByteBuffer(bitmap);
+        }
+        else // resize
+        {
+            byteBuffer = convertBitmapToByteBuffer(
+                    Bitmap.createScaledBitmap(bitmap, INPUT_SIZE[0], INPUT_SIZE[1], false));
+        }
 
         outputBuffer.rewind();
+        //inference
         tfLite.run(byteBuffer, outputBuffer);
 
+        // local vars for more readibility
         int width = OUTPUT_SIZE[0];
         int height = OUTPUT_SIZE[1];
-        int outArray[] = new int[width*height];
-        //
+        int outArray[] = new int[ width* height];
+
         outputBuffer.rewind();
         //for each dimension
         for (int y =0; y<height; y++) {

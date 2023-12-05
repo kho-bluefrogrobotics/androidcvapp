@@ -1,5 +1,8 @@
 package com.bfr.opencvapp;
 
+import static com.bfr.opencvapp.utils.Utils.ANDROID_GREEN;
+import static org.opencv.imgproc.Imgproc.COLOR_RGBA2RGB;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -46,7 +49,7 @@ import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.grafcet.*;
 //import com.bfr.opencvapp.utils.TfLiteMidas;
 import com.bfr.opencvapp.utils.TfLiteTopFormer;
-
+import com.bfr.opencvapp.utils.Utils.*;
 
 public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -236,19 +239,12 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         // cature frame from camera
         frame = inputFrame.rgba();
 
-
-        Mat resized = frame.clone();
-        Imgproc.resize(frame, resized, new Size(512, 512));
-
-        //convert to bitmap
-        Bitmap bitmapImage = Bitmap.createBitmap(resized.cols(), resized.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(resized, bitmapImage);
-
+//        Imgproc.resize(frame, frame, new Size(800,600));
         // segment floor
-        int[] result= topFormer.recognizeImage(bitmapImage);
+        int[] result= topFormer.segmentFloorFromMat(frame);
 
         // get bitmap of resulting mask image
-        Bitmap maskBitmap = topFormer.getFloorMaskBitmap(result, topFormer._GREEN, 1024, 768);
+        Bitmap maskBitmap = topFormer.getFloorMaskBitmap(result, ANDROID_GREEN, 1024, 768);
 
         // display fusiion with original image
         Mat maskMat = new Mat();
@@ -256,6 +252,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         Mat displayMat = new Mat();
 
+//        Imgproc.resize(frame, frame, new Size(1024,768));
         //superposition of original image and mask
         Core.add(frame, maskMat, displayMat);
 
