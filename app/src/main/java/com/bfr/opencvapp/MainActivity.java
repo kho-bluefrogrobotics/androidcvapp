@@ -30,8 +30,6 @@ import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Rect;
 import org.opencv.core.Size;
-import org.opencv.dnn.Dnn;
-import org.opencv.dnn.Net;
 import org.opencv.imgproc.Imgproc;
 
 
@@ -40,14 +38,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddyActivity;
 import com.bfr.buddysdk.BuddySDK;
 
 import com.bfr.opencvapp.grafcet.*;
-import com.bfr.opencvapp.utils.MultiDetector;
 //import com.bfr.opencvapp.utils.TfLiteMidas;
 import com.bfr.opencvapp.utils.TfLiteTopFormer;
 
@@ -68,20 +64,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
     //Video capture
     Mat frame_orig, frame;
-    // Parameters for Base facial detection
-    final double THRESHOLD = 0.6;
-
-    //Tflite Multidetector
-    MultiDetector multiDetector;
-    ArrayList<MultiDetector.Recognition> tfliteDetections = new ArrayList<MultiDetector.Recognition>();
-    int left, right, top, bottom;
-
-    Net model ;
-
-    // for saving face
-    boolean isSavingFace = false;
-    boolean errorSavingFace = false;
-    boolean started = false;
 
     // context
     Context context = this;
@@ -230,7 +212,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     }
 
 
-    TfLiteTopFormer mytfliterecog;
+    TfLiteTopFormer topFormer;
 
     public void onCameraViewStarted(int width, int height) {
 
@@ -242,10 +224,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             e.printStackTrace();
         }
 
-        mytfliterecog = new TfLiteTopFormer(context);
-        Log.w("coucou", "coucou started");
-
-        model = Dnn.readNet(dir +"/nnmodels/TopFormer-S_512x512_2x8_160k.onnx");
+        topFormer = new TfLiteTopFormer(context);
 
     }
 
@@ -257,15 +236,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         // cature frame from camera
         frame = inputFrame.rgba();
 
-//        if (takephoto){
-//            Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2RGB);
-//            Imgcodecs.imwrite("/storage/emulated/0/" + System.currentTimeMillis() + ".jpg", frame);
-//            takephoto = false;
-//
-//        }
-
-
-
 
         Mat resized = frame.clone();
         Imgproc.resize(frame, resized, new Size(512, 512));
@@ -274,62 +244,21 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         Bitmap bitmapImage = Bitmap.createBitmap(resized.cols(), resized.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(resized, bitmapImage);
 
-        int[] result=mytfliterecog.recognizeImage(bitmapImage);
+        // segment floor
+        int[] result= topFormer.recognizeImage(bitmapImage);
 
-//        float maxval = Float.NEGATIVE_INFINITY;
-//        float minval = Float.POSITIVE_INFINITY;
-//        for (float cur : result) {
-//            maxval = Math.max(maxval, cur);
-//            minval = Math.min(minval, cur);
-//        }
-//
-//        String todisplay = "";
-//        for (int i=0; i<50; i++)
-//            todisplay = todisplay+ " " + String.valueOf(result[i]);
-//
-//        Log.w("coucou", "value of result= " + todisplay);
+        // get bitmap of resulting mask image
+        Bitmap maskBitmap = topFormer.getFloorMaskBitmap(result, topFormer._GREEN, 1024, 768);
 
-
-
-        int outWidth =64;
-        int outHeight = 64;
-        Bitmap maskBitmap = Bitmap.createBitmap(outWidth, outHeight, Bitmap.Config.RGB_565);
-        for (int jj = 0; jj < outHeight; jj++)//pass the screen pixels in 2 directions
-        {
-            for (int ii = 0; ii < outWidth; ii++)
-            {
-                //int val = img_normalized[ii + jj * width];
-                //if class == floor
-//                Log.w("coucou", (jj*outWidth + ii) +": value = " + result[jj*outWidth + ii]);
-                if (result[jj*outWidth + ii] == 3 //floor
-                        || result[jj*outWidth + ii] == 6 //road
-                        || result[jj*outWidth + ii] == 11 //sidewalk
-                        || result[jj*outWidth + ii] == 13 // earth
-                        || result[jj*outWidth + ii] == 28 // rug, carpet
-                        || result[jj*outWidth + ii] == 52 // path
-                        || result[jj*outWidth + ii] == 54 // runway
-                        || result[jj*outWidth + ii] == 94 // land
-                )
-                {
-                    //colorize image in red
-                    maskBitmap.setPixel(ii, jj, Color.rgb(0, 255, 0));
-                } //end if class is floor
-                else// not the floor
-                {
-//                    Log.w("coucou", ii + "," + jj +": value = " + result[jj*outWidth + ii]);
-                    maskBitmap.setPixel(0, 0, 0);
-                } // end if floor
-            }// next jj
-        }//next ii
-
+        // display fusiion with original image
         Mat maskMat = new Mat();
         Utils.bitmapToMat(maskBitmap, maskMat);
-        Imgproc.resize(maskMat, maskMat, new Size(1024, 768));
 
         Mat displayMat = new Mat();
 
+        //superposition of original image and mask
         Core.add(frame, maskMat, displayMat);
-//        return frame;
+
         return displayMat;
 
 

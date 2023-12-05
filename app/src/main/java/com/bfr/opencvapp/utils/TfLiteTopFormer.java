@@ -4,11 +4,12 @@ import static java.lang.Math.min;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.RectF;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Matrix;
 import android.os.Build;
 import android.util.Log;
 
-import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.HexagonDelegate;
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.CompatibilityList;
@@ -38,6 +39,13 @@ public class TfLiteTopFormer {
     private final int BATCH_SIZE = 1;
     private final int PIXEL_SIZE = 3;
     private final int NUM_THREADS = 4;
+
+    public int _BLACK = Color.rgb(0, 0, 0);
+    public int _WHITE = Color.rgb(255, 255, 255);
+    public int _RED = Color.rgb(255, 0, 0);
+    public int _BLUE = Color.rgb(0, 0, 255);
+    public int _GREEN = Color.rgb(0, 255, 0);
+
     /**
      * NB: Topformer doesn't work well with GPU (some actually is executed on the CPU)
      * Also the values differ from GPU to CPU (more robust on CPU)
@@ -60,7 +68,6 @@ public class TfLiteTopFormer {
 
     /** Output */
     private ByteBuffer outputBuffer;
-
 
     public TfLiteTopFormer(Context context){
 
@@ -157,8 +164,8 @@ public class TfLiteTopFormer {
 
 
     /**
-     * get the detected objects in the image
-     * @param bitmap original image in bitmap format
+     * Get a 64x64 flatten array of semantic segmentations
+     * @param bitmap original image to process
      * @return array of detections
      */
     public int[] recognizeImage(Bitmap bitmap) {
@@ -173,6 +180,7 @@ public class TfLiteTopFormer {
         int outArray[] = new int[width*height];
         //
         outputBuffer.rewind();
+        //for each dimension
         for (int y =0; y<height; y++) {
             for (int x = 0; x < width; x++) {
               outArray[(y * width  + x)] =  outputBuffer.get((y * width  + x)*4); //*4 because the output are INT32,
@@ -182,8 +190,63 @@ public class TfLiteTopFormer {
 
         return outArray;
 
-    }
+    } // end recognizeImage
 
+
+    /**
+     * Get a WidthxHeight mask image of the floor (in bitmap format). typically from the result of recognizeImage()
+     * @param array the array containing the segmented objects
+     * @param color the color to display the floor : should be _GREEN, _RED, _BLUE, _WHITE or any declinaison using  Color.rgb()
+     * @param width the desired width of the image
+     * @param height the desired height of the image
+     * @return bitmap of the mask image
+     */
+    public Bitmap getFloorMaskBitmap(int array[], int color, int width, int height)
+    {
+
+        Bitmap maskBitmap = Bitmap.createBitmap(OUTPUT_SIZE[0], OUTPUT_SIZE[1], Bitmap.Config.RGB_565);
+        // for each pixel
+        for (int jj = 0; jj < OUTPUT_SIZE[1]; jj++)//pass the screen pixels in 2 directions
+        {
+            for (int ii = 0; ii < OUTPUT_SIZE[0]; ii++)
+            {
+                // if class is something floor-like
+                if (array[jj*OUTPUT_SIZE[0] + ii] == 3 //floor
+                        || array[jj*OUTPUT_SIZE[0] + ii] == 6 //road
+                        || array[jj*OUTPUT_SIZE[0] + ii] == 11 //sidewalk
+                        || array[jj*OUTPUT_SIZE[0] + ii] == 13 // earth
+                        || array[jj*OUTPUT_SIZE[0] + ii] == 28 // rug, carpet
+                        || array[jj*OUTPUT_SIZE[0] + ii] == 52 // path
+                        || array[jj*OUTPUT_SIZE[0] + ii] == 54 // runway
+                        || array[jj*OUTPUT_SIZE[0] + ii] == 94 // land
+                )
+                {
+                    //colorize pixel in white
+                    maskBitmap.setPixel(ii, jj, color);
+                } //end if class is floor
+                else// not the floor
+                {
+                    //colorize pixel in black
+                    maskBitmap.setPixel(0, 0, 0);
+                } // end if floor
+
+            }// next jj
+        }//next ii
+
+        return  Bitmap.createScaledBitmap(maskBitmap, width, height, false);
+    } // end getFloorMaskBitmap
+
+
+
+    public static Bitmap overlay(Bitmap bmp1, Bitmap bmp2) {
+        Bitmap bmOverlay = Bitmap.createBitmap(bmp1.getWidth(), bmp1.getHeight(), bmp1.getConfig());
+        Canvas canvas = new Canvas(bmOverlay);
+        canvas.drawBitmap(bmp1, new Matrix(), null);
+        canvas.drawBitmap(bmp2, 0, 0, null);
+        bmp1.recycle();
+        bmp2.recycle();
+        return bmOverlay;
+    }
 
 }
 
