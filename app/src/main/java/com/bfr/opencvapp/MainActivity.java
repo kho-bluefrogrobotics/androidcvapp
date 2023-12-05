@@ -243,19 +243,22 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         // segment floor
         int[] result= topFormer.segmentFloorFromMat(frame);
 
-        // get bitmap of resulting mask image
-        Bitmap maskBitmap = topFormer.getFloorMaskBitmap(result, ANDROID_GREEN, 1024, 768);
+//        // get bitmap of resulting mask image
+//        Bitmap maskBitmap = topFormer.getFloorMaskBitmap(result, ANDROID_GREEN, 1024, 768);
+//
+//        // display fusiion with original image
+//        Mat maskMat = new Mat();
+//        Utils.bitmapToMat(maskBitmap, maskMat);
+//
+//        Mat displayMat = new Mat();
+//
+////        Imgproc.resize(frame, frame, new Size(1024,768));
+//        //superposition of original image and mask
+//        Core.add(frame, maskMat, displayMat);
 
-        // display fusiion with original image
-        Mat maskMat = new Mat();
-        Utils.bitmapToMat(maskBitmap, maskMat);
-
+        Bitmap overlay = topFormer.getOverlayBitmap(result, ANDROID_GREEN, 1024, 768);
         Mat displayMat = new Mat();
-
-//        Imgproc.resize(frame, frame, new Size(1024,768));
-        //superposition of original image and mask
-        Core.add(frame, maskMat, displayMat);
-
+        Utils.bitmapToMat(overlay, displayMat);
         return displayMat;
 
 

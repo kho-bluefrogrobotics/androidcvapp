@@ -1,6 +1,7 @@
 package com.bfr.opencvapp.utils;
 
 import static com.bfr.opencvapp.utils.Utils.modelsDir;
+import static org.opencv.core.CvType.CV_8UC3;
 import static java.lang.Math.min;
 
 import android.content.Context;
@@ -8,11 +9,15 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Xfermode;
 import android.os.Build;
 import android.util.Log;
 
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.tensorflow.lite.HexagonDelegate;
@@ -54,7 +59,7 @@ public class TfLiteTopFormer {
      * Topformer doesn't support the NNAPI delegate
      */
     private boolean WITH_NNAPI = false;
-    private boolean WITH_GPU = true;
+    private boolean WITH_GPU = false;
     private boolean WITH_DSP = false;
 
     private final String MODEL_NAME = "TopFormer-T_512x512_2x8_160k_float16_quant_argmax.tflite";
@@ -63,44 +68,60 @@ public class TfLiteTopFormer {
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
 
-    /** Output */
+
+    // Input
+    private Bitmap inputBitmap;
+    // Output
     private ByteBuffer outputBuffer;
 
     public TfLiteTopFormer(Context context){
 
         try{
             Interpreter.Options options = (new Interpreter.Options());
-            CompatibilityList compatList = new CompatibilityList();
 
-            if (WITH_GPU) {
-                GpuDelegate.Options delegateOptions = compatList.getBestOptionsForThisDevice();
-                delegateOptions.setQuantizedModelsAllowed(false);
-                GpuDelegate gpuDelegate = new GpuDelegate(delegateOptions);
-                options.addDelegate(gpuDelegate);
-                Log.i(TAG, "Interpreter on GPU");
-            }
-            else if (WITH_DSP){
-                hexagonDelegate = new HexagonDelegate(context);
-                options.addDelegate(hexagonDelegate);
-                Log.i(TAG, "Interpreter on HEXAGONE");
-            }
-            else if (WITH_NNAPI) {
-                options.setUseXNNPACK(false);
-                NnApiDelegate nnApiDelegate = null;
-                // Initialize interpreter with NNAPI delegate for Android Pie or above
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    nnApiDelegate = new NnApiDelegate();
-                    options.addDelegate(nnApiDelegate);
-                    options.setUseNNAPI(true);
-                }
-            }
-            else{
-                options.setNumThreads(NUM_THREADS);
-                options.setUseXNNPACK(true);
-                WITH_NNAPI = false;
-                Log.i(TAG, "Interpreter on CPU");
-            }
-            
+
+            /**
+             * The following commented code is for experiment only.
+             * Topformer doesn't work well with GPU (some actually is executed on the CPU)
+             * Also the values differ from GPU to CPU (more robust on CPU)
+             *
+             * Topformer doesn't support the NNAPI delegate
+             */
+//            CompatibilityList compatList = new CompatibilityList();
+//            if (WITH_GPU) {
+//                GpuDelegate.Options delegateOptions = compatList.getBestOptionsForThisDevice();
+//                delegateOptions.setQuantizedModelsAllowed(false);
+//                GpuDelegate gpuDelegate = new GpuDelegate(delegateOptions);
+//                options.addDelegate(gpuDelegate);
+//                Log.i(TAG, "Interpreter on GPU");
+//            }
+//            else if (WITH_DSP){
+//                hexagonDelegate = new HexagonDelegate(context);
+//                options.addDelegate(hexagonDelegate);
+//                Log.i(TAG, "Interpreter on HEXAGONE");
+//            }
+//            else if (WITH_NNAPI) {
+//                options.setUseXNNPACK(false);
+//                NnApiDelegate nnApiDelegate = null;
+//                // Initialize interpreter with NNAPI delegate for Android Pie or above
+//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+//                    nnApiDelegate = new NnApiDelegate();
+//                    options.addDelegate(nnApiDelegate);
+//                    options.setUseNNAPI(true);
+//                }
+//            }
+//            else{
+//                options.setNumThreads(NUM_THREADS);
+//                options.setUseXNNPACK(true);
+//                WITH_NNAPI = false;
+//                Log.i(TAG, "Interpreter on CPU");
+//            }
+
+            options.setNumThreads(NUM_THREADS);
+            options.setUseXNNPACK(true);
+            WITH_NNAPI = false;
+            Log.i(TAG, "Interpreter on CPU");
+
             //Init interpreter
             File tfliteModel = new File(modelsDir+MODEL_NAME);
             tfLite = new Interpreter(tfliteModel, options );
@@ -167,12 +188,11 @@ public class TfLiteTopFormer {
      */
     public int[] segmentFloorFromMat(Mat frame) {
 
-//        Mat resized = frame.clone();
-
         //convert to bitmap
         Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(frame.clone(), bitmapImage);
 
+        // inference
         return segmentFloorFromBitmap(bitmapImage);
     }
 
@@ -183,6 +203,9 @@ public class TfLiteTopFormer {
      * @return array of detections
      */
     public int[] segmentFloorFromBitmap(Bitmap bitmap) {
+
+        // save for display
+        this.inputBitmap = bitmap.copy(bitmap.getConfig(), true);
 
         ByteBuffer byteBuffer;
 
@@ -264,16 +287,72 @@ public class TfLiteTopFormer {
     } // end getFloorMaskBitmap
 
 
+    /**
+     * Get a WidthxHeight image of the original image, blended with the masked floor (in bitmap format). typically from the result of recognizeImage()
+     * @param array the array containing the segmented objects
+     * @param color the color to display the floor : should be _GREEN, _RED, _BLUE, _WHITE or any declinaison using  Color.rgb()
+     * @param width the desired width of the image
+     * @param height the desired height of the image
+     * @return bitmap of the mask image
+     */
+    public Bitmap getOverlayBitmap(int array[], int color, int width, int height) {
+        Bitmap maskBitmap = Bitmap.createBitmap(OUTPUT_SIZE[0], OUTPUT_SIZE[1], Bitmap.Config.RGB_565);
+        // for each pixel
+        for (int jj = 0; jj < OUTPUT_SIZE[1]; jj++)//pass the screen pixels in 2 directions
+        {
+            for (int ii = 0; ii < OUTPUT_SIZE[0]; ii++)
+            {
+                // if class is something floor-like
+                if (array[jj*OUTPUT_SIZE[0] + ii] == 3 //floor
+                        || array[jj*OUTPUT_SIZE[0] + ii] == 6 //road
+                        || array[jj*OUTPUT_SIZE[0] + ii] == 11 //sidewalk
+                        || array[jj*OUTPUT_SIZE[0] + ii] == 13 // earth
+                        || array[jj*OUTPUT_SIZE[0] + ii] == 28 // rug, carpet
+                        || array[jj*OUTPUT_SIZE[0] + ii] == 52 // path
+                        || array[jj*OUTPUT_SIZE[0] + ii] == 54 // runway
+                        || array[jj*OUTPUT_SIZE[0] + ii] == 94 // land
+                )
+                {
+                    //colorize pixel in white
+                    maskBitmap.setPixel(ii, jj, color);
+                } //end if class is floor
+                else// not the floor
+                {
+                    //colorize pixel in black
+                    maskBitmap.setPixel(0, 0, 0);
+                } // end if floor
 
-    public static Bitmap overlay(Bitmap bmp1, Bitmap bmp2) {
-        Bitmap bmOverlay = Bitmap.createBitmap(bmp1.getWidth(), bmp1.getHeight(), bmp1.getConfig());
-        Canvas canvas = new Canvas(bmOverlay);
-        canvas.drawBitmap(bmp1, new Matrix(), null);
-        canvas.drawBitmap(bmp2, 0, 0, null);
-        bmp1.recycle();
-        bmp2.recycle();
-        return bmOverlay;
-    }
+            }// next jj
+        }//next ii
+
+        /**** To OpenCV for easier matrix operations **/
+        // display fusion with original image
+
+        //Mask
+        Mat maskMat = new Mat();
+        Utils.bitmapToMat(maskBitmap, maskMat);
+        //resize
+        Imgproc.resize(maskMat, maskMat, new Size(width,height));
+
+        //original image
+        Mat origImage = new Mat();
+        if (this.inputBitmap==null) // null object management
+            //init to black image
+            origImage = new Mat(height,width, CV_8UC3, new Scalar(0, 0, 0));
+        else
+            Utils.bitmapToMat(this.inputBitmap, origImage);
+
+        //superposition of original image and mask
+        Mat blendedMat = new Mat();
+        Core.add(origImage, maskMat, blendedMat);
+
+        //convert to bitmap
+        Bitmap blendedBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(blendedMat, blendedBitmap);
+
+        return blendedBitmap;
+
+    } // end getOverlayBitmap
 
 }
 
