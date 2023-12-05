@@ -246,7 +246,7 @@ public class TfLiteTopFormer {
     /**
      * Get a WidthxHeight mask image of the floor (in bitmap format). typically from the result of recognizeImage()
      * @param array the array containing the segmented objects
-     * @param color the color to display the floor : should be _GREEN, _RED, _BLUE, _WHITE or any declinaison using  Color.rgb()
+     * @param color the color to display the floor : should be ANDROID_GREEN, ANDROID_RED, ANDROID_BLUE, ANDROID_WHITE or any declinaison using  Color.rgb()
      * @param width the desired width of the image
      * @param height the desired height of the image
      * @return bitmap of the mask image
@@ -289,11 +289,12 @@ public class TfLiteTopFormer {
 
     /**
      * Get a WidthxHeight image of the original image, blended with the masked floor (in bitmap format). typically from the result of recognizeImage()
+     * Obviously this function is to be called AFTER segmentFloorFromBitmap()
      * @param array the array containing the segmented objects
-     * @param color the color to display the floor : should be _GREEN, _RED, _BLUE, _WHITE or any declinaison using  Color.rgb()
+     * @param color the color to display the floor : should be ANDROID_GREEN, ANDROID_RED, ANDROID_BLUE, ANDROID_WHITE or any declinaison using  Color.rgb()
      * @param width the desired width of the image
      * @param height the desired height of the image
-     * @return bitmap of the mask image
+     * @return bitmap of the blended image
      */
     public Bitmap getOverlayBitmap(int array[], int color, int width, int height) {
         Bitmap maskBitmap = Bitmap.createBitmap(OUTPUT_SIZE[0], OUTPUT_SIZE[1], Bitmap.Config.RGB_565);
