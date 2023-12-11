@@ -60,9 +60,9 @@ public class MultiDetector {
 
             if (WITH_GPU) {
                 GpuDelegate.Options delegateOptions = compatList.getBestOptionsForThisDevice();
-                delegateOptions.setQuantizedModelsAllowed(false);
-                GpuDelegate gpuDelegate = new GpuDelegate(delegateOptions);
-                options.addDelegate(gpuDelegate);
+//                delegateOptions.setQuantizedModelsAllowed(false);
+//                GpuDelegate gpuDelegate = new GpuDelegate(delegateOptions);
+//                options.addDelegate(gpuDelegate);
                 Log.i(TAG, "Interpreter on GPU");
             }
             else if (WITH_DSP){

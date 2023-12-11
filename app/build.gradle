@@ -49,8 +49,9 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 
     // tflite
-    implementation 'org.tensorflow:tensorflow-lite:2.5.0'
-    implementation 'org.tensorflow:tensorflow-lite-gpu:2.5.0'
+    implementation 'org.tensorflow:tensorflow-lite:2+'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2+'
+    implementation 'org.tensorflow:tensorflow-lite-gpu-api:2+'
     implementation 'org.tensorflow:tensorflow-lite-hexagon:2.5.0'
 
     // added MLKit dependencies for face detector
