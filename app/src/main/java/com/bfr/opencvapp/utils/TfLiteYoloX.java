@@ -5,6 +5,7 @@ import static org.opencv.core.CvType.CV_8UC3;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.RectF;
 import android.os.Build;
 import android.util.Log;
 
@@ -22,6 +23,9 @@ import org.tensorflow.lite.gpu.GpuDelegate;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.tensorflow.lite.DelegateFactory;
 import org.tensorflow.lite.Delegate;
@@ -37,7 +41,8 @@ public class TfLiteYoloX {
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
     private final int[] INPUT_SIZE = {256,320};
-    private final int[] OUTPUT_SIZE = {60,7};
+    private final int[] OUTPUT_SIZE = {60,7}; // 20 bounding box max per class -> 20x3 = 60,
+                                            // where each bbox is batch_no, class_id, score, w1, y1, x2, y2 -> 7 floats
     private static final float[] IMAGE_MEAN = {127.5f, 127.5f, 127.5f};
     private static final float[] IMAGE_STD = {127.5f, 127.5f, 127.5f};
     private final int NUM_CLASSES = 1;
@@ -194,21 +199,21 @@ public class TfLiteYoloX {
      * @param frame original image to process in OpenCV Mat format
      * @return array of detections
      */
-    public void runInference(Mat frame) {
+    public ArrayList<TfLiteYoloX.Recognition> runInference(Mat frame) {
 
         //convert to bitmap
         Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(frame.clone(), bitmapImage);
 
         // inference
-        runInference(bitmapImage);
+        return runInference(bitmapImage);
     }
     /**
      * Get a 64x64 flatten array of semantic segmentations
      * @param bitmap original image to process in bitmap
      * @return array of detections
      */
-    public void runInference(Bitmap bitmap) {
+    public ArrayList<TfLiteYoloX.Recognition> runInference(Bitmap bitmap) {
 
         // save for display
         this.inputBitmap = bitmap.copy(bitmap.getConfig(), true);
@@ -226,9 +231,48 @@ public class TfLiteYoloX {
                     Bitmap.createScaledBitmap(bitmap, INPUT_SIZE[0], INPUT_SIZE[1], false));
         }
 
-        outputBuffer.rewind();
-        //inference
-        tfLite.run(byteBuffer, outputBuffer);
+        // Input
+        Object[] inputArray = {byteBuffer.rewind()};
+        // Output
+//        outputBuffer.rewind();
+//        //inference
+//        tfLite.run(byteBuffer, outputBuffer);
+
+        // local vars for more readibility
+        int width = OUTPUT_SIZE[0];
+        int height = OUTPUT_SIZE[1];
+        float outArray[] = new float[ width* height];
+        Map<Integer, Object> outputMap = new HashMap<>();
+
+        outputMap.put(0, new float[width][height]);
+//        outputMap.put(1, new float[height]);
+
+        tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
+
+        float[][] detection = (float[][]) outputMap.get(0);
+
+        ArrayList<TfLiteYoloX.Recognition> listOfDetections = new ArrayList<TfLiteYoloX.Recognition>();
+
+        String[] LABELS = {"Human", "Face", "Hand"};
+
+        for (int i = 0; i < OUTPUT_SIZE[0];i++){
+            int detectedClass = (int) detection[i][1];
+            float score = detection[i][2];
+            if ( score > 0.1){
+                // position in % of the image
+                final float x1 = detection[i][3];
+                final float y1 = detection[i][4];
+                final float x2 = detection[i][5];
+                final float y2 = detection[i][6];
+
+                if( y1 < y2 && x1 < x2){
+                    listOfDetections.add(new TfLiteYoloX.Recognition("" + i, LABELS[detectedClass], score, x1, x2, y1, y2, detectedClass));
+                }
+
+            }
+        }
+
+        return listOfDetections;
 
 
     } // end recognizeImage
@@ -391,7 +435,117 @@ public class TfLiteYoloX {
 
     } // end getOverlayBitmap
 
+
+    // return object by tflite interpreter
+    public class Recognition {
+        /**
+         * A unique identifier for what has been recognized. Specific to the class, not the instance of
+         * the object.
+         */
+        private final String id;
+
+        /**
+         * Display name for the recognition.
+         */
+        private final String title;
+
+        /**
+         * A sortable score for how good the recognition is relative to others. Higher should be better.
+         */
+        public final Float confidence;
+
+        /**
+         * Optional location within the source image for the location of the recognized object.
+         */
+        private RectF location;
+
+        private int detectedClass;
+
+        public Recognition(
+                final String id, final String title, final Float confidence, final RectF location) {
+            this.id = id;
+            this.title = title;
+            this.confidence = confidence;
+            this.location = location;
+        }
+
+        public Recognition(final String id, final String title, final Float confidence, final RectF location, int detectedClass) {
+            this.id = id;
+            this.title = title;
+            this.confidence = confidence;
+            this.location = location;
+            this.detectedClass = detectedClass;
+        }
+
+        public Recognition(final String id, final String title, final Float confidence, float left, float right, float top, float bottom, int detectedClass) {
+            this.id = id;
+            this.title = title;
+            this.confidence = confidence;
+            this.location = location;
+            this.detectedClass = detectedClass;
+
+            this.left= left;
+            this.right=right;
+            this.top=top;
+            this.bottom=bottom;
+        }
+
+        public float left, right, top, bottom=0;
+
+        public String getId() {
+            return id;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public Float getConfidence() {
+            return confidence;
+        }
+
+        public RectF getLocation() {
+            return new RectF(location);
+        }
+
+        public void setLocation(RectF location) {
+            this.location = location;
+        }
+
+        public int getDetectedClass() {
+            return detectedClass;
+        }
+
+        public void setDetectedClass(int detectedClass) {
+            this.detectedClass = detectedClass;
+        }
+
+        @Override
+        public String toString() {
+            String resultString = "";
+            if (id != null) {
+                resultString += "[" + id + "] ";
+            }
+
+            if (title != null) {
+                resultString += title + " ";
+            }
+
+            if (confidence != null) {
+                resultString += String.format("(%.1f%%) ", confidence * 100.0f);
+            }
+
+            if (location != null) {
+                resultString += location + " ";
+            }
+
+            return resultString.trim();
+        }
+    }
+
+
 }
+
 
 /*  List of recognized classes
 wall,0,0,255
