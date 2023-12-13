@@ -267,6 +267,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                     break;
             }
             Imgproc.rectangle(frame, new Point(x1, y1), new Point(x2, y2), color, 4);
+            Imgproc.putText(frame, String.valueOf(score), new Point(x1, y1-10), 1, 2, new Scalar(0,0,0), 5 );
+            Imgproc.putText(frame, String.valueOf(score), new Point(x1, y1-10), 1, 2, color, 2 );
 
         }
 
