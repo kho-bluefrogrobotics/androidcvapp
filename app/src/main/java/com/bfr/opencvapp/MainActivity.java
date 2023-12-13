@@ -1,8 +1,5 @@
 package com.bfr.opencvapp;
 
-import static com.bfr.opencvapp.utils.Utils.ANDROID_GREEN;
-import static org.opencv.imgproc.Imgproc.COLOR_RGBA2RGB;
-
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -28,11 +25,11 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
-import org.opencv.core.Size;
+import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 
@@ -41,6 +38,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddyActivity;
@@ -48,9 +46,7 @@ import com.bfr.buddysdk.BuddySDK;
 
 import com.bfr.opencvapp.grafcet.*;
 //import com.bfr.opencvapp.utils.TfLiteMidas;
-import com.bfr.opencvapp.utils.TfLiteTopFormer;
 import com.bfr.opencvapp.utils.TfLiteYoloX;
-import com.bfr.opencvapp.utils.Utils.*;
 
 public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -216,7 +212,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     }
 
 
-    TfLiteYoloX topFormer;
+    TfLiteYoloX yoloX;
 
     public void onCameraViewStarted(int width, int height) {
 
@@ -228,7 +224,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             e.printStackTrace();
         }
 
-        topFormer = new TfLiteYoloX(context);
+        yoloX = new TfLiteYoloX(context);
 
     }
 
@@ -239,11 +235,40 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         // cature frame from camera
         frame = inputFrame.rgba();
+        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
 //        Imgproc.resize(frame, frame, new Size(800,600));
-        // segment floor
-        topFormer.runInference(frame);
 
+        // segment floor
+        ArrayList<TfLiteYoloX.Recognition> listOfDetections = yoloX.runInference(frame);
+
+        for (int i = 0; i< listOfDetections.size(); i++)
+        {
+            float score= listOfDetections.get(i).confidence;
+            int x1 = (int) (listOfDetections.get(i).left * frame.cols());
+            int y1 = (int) (listOfDetections.get(i).top * frame.rows());
+            int x2 = (int) (listOfDetections.get(i).right * frame.cols());
+            int y2 = (int) (listOfDetections.get(i).bottom * frame.rows());
+            int classId = listOfDetections.get(i).getDetectedClass();
+
+//            Log.w(TAG, i + " " + classId + " " + score + " coords=" + x1 + "," + y1 + "," + x2 + "," + y2);
+
+            Scalar color = null;
+            switch (classId){
+                case 0:
+                    color = new Scalar(255,0,0);
+                    break;
+                case 1:
+                    color = new Scalar(0,255,0);
+                    break;
+
+                case 2:
+                    color = new Scalar(0,0,255);
+                    break;
+            }
+            Imgproc.rectangle(frame, new Point(x1, y1), new Point(x2, y2), color, 4);
+
+        }
 
 
 

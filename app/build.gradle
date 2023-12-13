@@ -53,10 +53,17 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-lite-gpu:2+'
     implementation 'org.tensorflow:tensorflow-lite-gpu-api:2+'
     implementation 'org.tensorflow:tensorflow-lite-hexagon:2.5.0'
+    implementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.3.0'
+    implementation('org.tensorflow:tensorflow-lite-metadata:0.0.0-nightly') { changing = true }
+    implementation 'org.tensorflow:tensorflow-lite-support:+'
 
     // added MLKit dependencies for face detector
     implementation 'com.google.mlkit:face-detection:16+'
     implementation 'com.google.mlkit:face-mesh-detection:16+'
 
     implementation 'com.bluefrogrobotics.buddy:BuddySDK:2+'
+}
+
+configurations.implementation {
+    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
 }

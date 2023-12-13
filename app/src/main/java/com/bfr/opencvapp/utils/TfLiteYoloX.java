@@ -64,8 +64,8 @@ public class TfLiteYoloX {
     private boolean WITH_GPU = false;
     private boolean WITH_DSP = false;
 
-//    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float32.tflite";
-    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float16.tflite";
+    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float32.tflite";
+//    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float16.tflite";
 //    private final String MODEL_NAME = "TopFormer-S_512x512_2x8_160k_argmax.tflite";
 
     private Interpreter tfLite;
@@ -268,12 +268,15 @@ public class TfLiteYoloX {
             int detectedClass = (int) floatOutput[i+1];
             float score = floatOutput[i+2];
 
-            if ( score > 0.1){
+            if (  (detectedClass == 0 && score > 0.6)  // human
+            || (detectedClass == 1 && score > 0.5) // head
+            || (detectedClass == 2 && score > 0.1) // hands
+        ){
                 // position in % of the image
-                final float x1 = floatOutput[i+3];
-                final float y1 = floatOutput[i+4];
-                final float x2 = floatOutput[i+5];
-                final float y2 = floatOutput[i+6];
+                final float x1 = floatOutput[i+3]/INPUT_SIZE[0];
+                final float y1 = floatOutput[i+4]/INPUT_SIZE[1];
+                final float x2 = floatOutput[i+5]/INPUT_SIZE[0];
+                final float y2 = floatOutput[i+6]/INPUT_SIZE[1];
                 Log.w(TAG, (i) + " " + floatOutput[i+0] + " " + detectedClass + " " + score );
 //                        + " " + x1 + "," + y1 + "," + x2 + "," + y2);
                 if( y1 < y2 && x1 < x2){
