@@ -15,6 +15,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.HexagonDelegate;
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.CompatibilityList;
@@ -31,6 +32,7 @@ import org.tensorflow.lite.DelegateFactory;
 import org.tensorflow.lite.Delegate;
 import org.tensorflow.lite.gpu.GpuDelegateFactory;
 import org.tensorflow.lite.nnapi.NnApiDelegate;
+import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
 /** TFLite implementation of TopFormer trained on ADE20k
  * See the complete list of classes at the end of the file*/
@@ -43,7 +45,7 @@ public class TfLiteYoloX {
     private final int[] INPUT_SIZE = {256,320};
     private final int[] OUTPUT_SIZE = {60,7}; // 20 bounding box max per class -> 20x3 = 60,
                                             // where each bbox is batch_no, class_id, score, w1, y1, x2, y2 -> 7 floats
-    private static final float[] IMAGE_MEAN = {127.5f, 127.5f, 127.5f};
+    private static final float[] IMAGE_MEAN = {127.f, 127.0f, 127.0f};
     private static final float[] IMAGE_STD = {127.5f, 127.5f, 127.5f};
     private final int NUM_CLASSES = 1;
     private final int BATCH_SIZE = 1;
@@ -62,7 +64,8 @@ public class TfLiteYoloX {
     private boolean WITH_GPU = true;
     private boolean WITH_DSP = false;
 
-    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float32.tflite";
+//    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float32.tflite";
+    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float16.tflite";
 //    private final String MODEL_NAME = "TopFormer-S_512x512_2x8_160k_argmax.tflite";
 
     private Interpreter tfLite;
@@ -72,6 +75,8 @@ public class TfLiteYoloX {
     // Input
     private Bitmap inputBitmap;
     // Output
+    /** Output probability TensorBuffer. */
+    private TensorBuffer outputProbabilityBuffer;
     private ByteBuffer outputBuffer;
 
     public TfLiteYoloX(Context context){
@@ -130,6 +135,10 @@ public class TfLiteYoloX {
 
         // allocating memory for output
         outputBuffer = ByteBuffer.allocateDirect(1 * OUTPUT_SIZE[0] * OUTPUT_SIZE[1] * NUM_CLASSES * 4);
+        // Creates the output tensor and its processor.
+        int[] probabilityShape =
+                tfLite.getOutputTensor(0).shape();
+        outputProbabilityBuffer = TensorBuffer.createFixedSize(probabilityShape, DataType.FLOAT32);
 
     }
 
@@ -208,6 +217,9 @@ public class TfLiteYoloX {
         // inference
         return runInference(bitmapImage);
     }
+
+
+
     /**
      * Get a 64x64 flatten array of semantic segmentations
      * @param bitmap original image to process in bitmap
@@ -234,45 +246,86 @@ public class TfLiteYoloX {
         // Input
         Object[] inputArray = {byteBuffer.rewind()};
         // Output
-//        outputBuffer.rewind();
-//        //inference
+        outputBuffer.rewind();
+        //inference
 //        tfLite.run(byteBuffer, outputBuffer);
+        tfLite.run(byteBuffer, outputProbabilityBuffer.getBuffer().rewind());
 
         // local vars for more readibility
         int width = OUTPUT_SIZE[0];
         int height = OUTPUT_SIZE[1];
-        float outArray[] = new float[ width* height];
-        Map<Integer, Object> outputMap = new HashMap<>();
+        int outArray[] = new int[ width* height];
 
-        outputMap.put(0, new float[width][height]);
-//        outputMap.put(1, new float[height]);
-
-        tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
-
-        float[][] detection = (float[][]) outputMap.get(0);
+        outputBuffer.rewind();
 
         ArrayList<TfLiteYoloX.Recognition> listOfDetections = new ArrayList<TfLiteYoloX.Recognition>();
-
         String[] LABELS = {"Human", "Face", "Hand"};
 
-        for (int i = 0; i < OUTPUT_SIZE[0];i++){
-            int detectedClass = (int) detection[i][1];
-            float score = detection[i][2];
-            if ( score > 0.1){
-                // position in % of the image
-                final float x1 = detection[i][3];
-                final float y1 = detection[i][4];
-                final float x2 = detection[i][5];
-                final float y2 = detection[i][6];
+        float[] floatOutput = outputProbabilityBuffer.getFloatArray();
+        //for each dimension
+        for (int i =0; i<floatOutput.length; i+=7) {
+            int detectedClass = (int) floatOutput[i+1];
+            float score = floatOutput[i+2];
 
+            if ( score > 0.0){
+                // position in % of the image
+                final float x1 = floatOutput[i+3];
+                final float y1 = floatOutput[i+4];
+                final float x2 = floatOutput[i+5];
+                final float y2 = floatOutput[i+6];
+                Log.w(TAG, (i) + " " + floatOutput[i+0] + " " + detectedClass + " " + score ); // + " " + x1 + "," + y1 + "," + x2 + "," + y2);
                 if( y1 < y2 && x1 < x2){
                     listOfDetections.add(new TfLiteYoloX.Recognition("" + i, LABELS[detectedClass], score, x1, x2, y1, y2, detectedClass));
-                }
+                } //end check
 
-            }
-        }
+            } //end check score
+        } //next detection
 
-        return listOfDetections;
+
+
+        return  listOfDetections;
+
+
+
+
+
+
+//        // local vars for more readibility
+//        int width = OUTPUT_SIZE[0];
+//        int height = OUTPUT_SIZE[1];
+//        float outArray[] = new float[ width* height];
+//        Map<Integer, Object> outputMap = new HashMap<>();
+//
+//        outputMap.put(0, new float[width][height]);
+////        outputMap.put(1, new float[height]);
+//
+//        tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
+//
+//        float[][] detection = (float[][]) outputMap.get(0);
+//
+//        ArrayList<TfLiteYoloX.Recognition> listOfDetections = new ArrayList<TfLiteYoloX.Recognition>();
+//
+//        String[] LABELS = {"Human", "Face", "Hand"};
+//
+//        for (int i = 0; i < OUTPUT_SIZE[0];i++){
+//            int detectedClass = (int) detection[i][1];
+//            float score = detection[i][2];
+////            Log.w(TAG, i + " " + detectedClass + " " + score ); // + " " + x1 + "," + y1 + "," + x2 + "," + y2);
+//            if ( score > 0.0){
+//                // position in % of the image
+//                final float x1 = detection[i][3];
+//                final float y1 = detection[i][4];
+//                final float x2 = detection[i][5];
+//                final float y2 = detection[i][6];
+//
+//                if( y1 < y2 && x1 < x2){
+//                    listOfDetections.add(new TfLiteYoloX.Recognition("" + i, LABELS[detectedClass], score, x1, x2, y1, y2, detectedClass));
+//                }
+//
+//            }
+//        }
+//
+//        return listOfDetections;
 
 
     } // end recognizeImage
