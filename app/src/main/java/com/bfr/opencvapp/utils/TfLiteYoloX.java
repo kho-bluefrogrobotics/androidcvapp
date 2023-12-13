@@ -42,11 +42,11 @@ public class TfLiteYoloX {
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
-    private final int[] INPUT_SIZE = {256,320};
+    private final int[] INPUT_SIZE = {320,256};
     private final int[] OUTPUT_SIZE = {60,7}; // 20 bounding box max per class -> 20x3 = 60,
                                             // where each bbox is batch_no, class_id, score, w1, y1, x2, y2 -> 7 floats
-    private static final float[] IMAGE_MEAN = {127.f, 127.0f, 127.0f};
-    private static final float[] IMAGE_STD = {127.5f, 127.5f, 127.5f};
+    private static final float[] IMAGE_MEAN = {0, 0, 0};
+    private static final float[] IMAGE_STD = {1, 1, 1};
     private final int NUM_CLASSES = 1;
     private final int BATCH_SIZE = 1;
     private final int PIXEL_SIZE = 3;
@@ -61,7 +61,7 @@ public class TfLiteYoloX {
      * Topformer doesn't support the NNAPI delegate
      */
     private boolean WITH_NNAPI = false;
-    private boolean WITH_GPU = true;
+    private boolean WITH_GPU = false;
     private boolean WITH_DSP = false;
 
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float32.tflite";
@@ -249,7 +249,8 @@ public class TfLiteYoloX {
         outputBuffer.rewind();
         //inference
 //        tfLite.run(byteBuffer, outputBuffer);
-        tfLite.run(byteBuffer, outputProbabilityBuffer.getBuffer().rewind());
+
+        tfLite.run(byteBuffer.rewind(), outputProbabilityBuffer.getBuffer().rewind());
 
         // local vars for more readibility
         int width = OUTPUT_SIZE[0];
@@ -267,13 +268,14 @@ public class TfLiteYoloX {
             int detectedClass = (int) floatOutput[i+1];
             float score = floatOutput[i+2];
 
-            if ( score > 0.0){
+            if ( score > 0.1){
                 // position in % of the image
                 final float x1 = floatOutput[i+3];
                 final float y1 = floatOutput[i+4];
                 final float x2 = floatOutput[i+5];
                 final float y2 = floatOutput[i+6];
-                Log.w(TAG, (i) + " " + floatOutput[i+0] + " " + detectedClass + " " + score ); // + " " + x1 + "," + y1 + "," + x2 + "," + y2);
+                Log.w(TAG, (i) + " " + floatOutput[i+0] + " " + detectedClass + " " + score );
+//                        + " " + x1 + "," + y1 + "," + x2 + "," + y2);
                 if( y1 < y2 && x1 < x2){
                     listOfDetections.add(new TfLiteYoloX.Recognition("" + i, LABELS[detectedClass], score, x1, x2, y1, y2, detectedClass));
                 } //end check
