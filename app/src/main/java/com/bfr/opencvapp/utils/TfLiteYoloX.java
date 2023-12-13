@@ -42,7 +42,7 @@ public class TfLiteYoloX {
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
-    private final int[] INPUT_SIZE = {640,480};
+    private final int[] INPUT_SIZE = {1024,576};
     private final int[] OUTPUT_SIZE = {60,7}; // 20 bounding box max per class -> 20x3 = 60,
                                             // where each bbox is batch_no, class_id, score, w1, y1, x2, y2 -> 7 floats
     private static final float[] IMAGE_MEAN = {0, 0, 0};
@@ -69,7 +69,8 @@ public class TfLiteYoloX {
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float32.tflite";
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float32.tflite";
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x288x480_float32.tflite";
-    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x480x640_float32.tflite";
+//    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x480x640_float16.tflite";
+    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x576x1024_float32.tflite";
 //    private final String MODEL_NAME = "TopFormer-S_512x512_2x8_160k_argmax.tflite";
 
     private Interpreter tfLite;
