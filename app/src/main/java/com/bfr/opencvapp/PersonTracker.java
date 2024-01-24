@@ -136,7 +136,8 @@ public class PersonTracker {
             if(frameCount == 0)
             {
                 if(debugLog)
-                    Log.d(TAG, "Init tracker " ) ;
+                    Log.d(TAG, "\n\n****************************************************\n" +
+                            "Init tracker " ) ;
 
                 // Detection
                 detections = detector.recognizeImage(
@@ -190,7 +191,8 @@ public class PersonTracker {
 
 
                     if(debugLog)
-                        Log.d(TAG, "Checking if need to reset  trackingsucess =" + trackingSuccess + " frameNum="+frameCount ) ;
+                        Log.d(TAG, "\n\n****************************************************\n" +
+                                "Checking if need to reset  trackingsucess =" + trackingSuccess + " frameNum="+frameCount ) ;
 
                     //reset in any case
                     frameCount = 1;
@@ -584,9 +586,9 @@ public class PersonTracker {
         || tracked.box.y+tracked.box.height>smallFrame.rows() )
             return;
 
-            /**** Todebug*/
+            /**** Todebug: record images of tracked and where to reset*/
             Mat trackMat = smallFrame.submat(tracked.box);
-            Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"0Tracked.jpg", trackMat);
+//            Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"0Tracked.jpg", trackMat);
 
             // If detected something
             if (detections.size() > 0) {
