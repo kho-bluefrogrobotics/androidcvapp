@@ -142,8 +142,7 @@ public class PersonTracker {
                 // Detection
                 detections = detector.recognizeImage(
                         matToBitmapAndResize(frame, 320, 320),
-//                        0.7f, 0.6f, 99.0f, frame);
-                        0.7f, 99.0f, 99.0f, frame);
+                        0.7f, 0.6f, 99.0f, frame);
 
                 if (detections.size() > 0) {
                     /*** Look for first detected face */
@@ -201,7 +200,7 @@ public class PersonTracker {
                     // Detection
                     detections = detector.recognizeImage(
                             matToBitmapAndResize(frame, 320, 320),
-                            0.7f, 0.6f, 99.0f, frame);
+                            0.7f, 0.4f, 99.0f, frame);
 
                    //
                     checkAndResetTracking(vitTracker, tracked, detections);
@@ -587,7 +586,7 @@ public class PersonTracker {
             return;
 
             /**** Todebug: record images of tracked and where to reset*/
-            Mat trackMat = smallFrame.submat(tracked.box);
+//            Mat trackMat = smallFrame.submat(tracked.box);
 //            Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"0Tracked.jpg", trackMat);
 
             // If detected something
@@ -644,6 +643,16 @@ public class PersonTracker {
                                 //   NB: we do not reset on the detected face as there is a possibility to be another occluding face
 
                             } // end if IoU OK
+                            else
+                            {
+                                Mat currTracked = smallFrame.submat(tracked.box);
+                                Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_currTracking.jpg",
+                                        currTracked);
+                                Mat candidate = smallFrame.submat(detectionBbox);
+                                Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_faceCandidate.jpg",
+                                        candidate);
+
+                            }
                         } // end if detected object is a face
 
                         else // object detected is a human
