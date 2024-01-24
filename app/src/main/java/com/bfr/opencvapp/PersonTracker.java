@@ -712,9 +712,9 @@ public class PersonTracker {
                             if (overlapRatio>OVERLAPRATIO_THRES)
                             {
                                 if(debugLog)
-                                    Log.d(TAG, "Overlap Ratio OK!  Reseting on that face");
+                                    Log.w(TAG, "Overlap Ratio OK!  Reseting on that face");
                                 // reset on that face
-                                vitTracker.init(smallFrame, detectionBbox);
+                                resetTracker(vitTracker, detectionBbox, 1 );
                                 if(debugLog)
                                     Log.d(TAG, "reset done: returning");
                                 return; //exit once it is done
@@ -794,7 +794,7 @@ public class PersonTracker {
                 if (detectionBboxToReset != null)
                 {
                     if (BuildConfig.DEBUG)
-                        Log.d("coucou", "Reset ViTTracker on Human \n"
+                        Log.w("coucou", "Reset ViTTracker on Human \n"
                                 +  detectionBboxToReset.x
                                 + " " + detectionBboxToReset.y
                                 + " " + detectionBboxToReset.height
@@ -816,7 +816,7 @@ public class PersonTracker {
                             (int) ((detections.get(idClosest).bottom - detections.get(idClosest).top) * frameRows) );
 
                     if (BuildConfig.DEBUG)
-                        Log.d("coucou", "Reset ViTTracker on closest detection ["
+                        Log.w("coucou", "Reset ViTTracker on closest detection ["
                                 + detections.get(idClosest).getDetectedClass() + "]\n"
                                 +  detectionBboxToReset.x
                                 + " " + detectionBboxToReset.y
