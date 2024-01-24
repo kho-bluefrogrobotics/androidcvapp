@@ -129,8 +129,8 @@ public class PersonTracker {
             }
 
 
-            if(debugLog)
-                Log.d(TAG, "\n \n                   FRAME NUMBER: " + frameCount ) ;
+//            if(debugLog)
+//                Log.d(TAG, "\n \n                   FRAME NUMBER: " + frameCount ) ;
 
             /*** First,  init on object detection*/
             if(frameCount == 0)
@@ -224,8 +224,9 @@ public class PersonTracker {
                             }
 
 
-                        if(debugLog)
-                            Log.d("Tracking", "Tracker updated " + tracked.box.x + " " + tracked.box.y + "score=" + tracked.score );
+//                        if(debugLog)
+//                            Log.d("Tracking", "Tracker updated " + tracked.box.x + " " + tracked.box.y + "score=" + tracked.score );
+//
                         // if tracking successfull
                         if (trackingSuccess)
                         {
@@ -243,10 +244,11 @@ public class PersonTracker {
 //                                targetBottomPos =  Math.min(1.0f,(float)(tracked.box.y + tracked.box.height)/smallFrame.height());
 //                            }
 
-                            if(debugLog)
-                                Log.d(TAG, "opencv Tracking result:  " +  trackingSuccess
-                                        +" "+tracked.box.x +"," + tracked.box.y
-                                        + " " + tracked.box.height + "x"+ tracked.box.width );
+//                            if(debugLog)
+//                                Log.d(TAG, "opencv Tracking result:  " +  trackingSuccess
+//                                        +" "+tracked.box.x +"," + tracked.box.y
+//                                        + " " + tracked.box.height + "x"+ tracked.box.width );
+
 //                                        + "\n" +  targetLeftPos + " "+ targetRightPos +" "+ targetTopPos+ " "+targetBottomPos
 //                                        + "\n" + (float) tracked.box.x/frame.width()
 //                                        + " "+ (float)(tracked.box.x + tracked.box.width)/frame.width()
@@ -295,8 +297,8 @@ public class PersonTracker {
     {
         try
         {
-            if (debugLog)
-                Log.d(TAG, "preparing display mat ");
+//            if (debugLog)
+//                Log.d(TAG, "preparing display mat ");
             Mat displayMat = frame.clone();
 
             // draw a rectangle around Target

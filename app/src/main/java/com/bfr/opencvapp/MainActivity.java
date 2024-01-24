@@ -86,7 +86,7 @@ import com.bfr.opencvapp.utils.TfLiteMidas;
 
 public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
-    private static final String TAG = "FaceRecognizerSface_app";
+    private static final String TAG = "opencvApp";
 
     private CameraBridgeViewBase mOpenCvCameraView;
 
@@ -290,9 +290,9 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         personTracker.visualTracking(frame, false, true);
         personTracker.readyToDisplay =false;
-        Log.d(TAG, "returning display frame: " + personTracker.displayMat.size() );
-
-        Log.w("fps", "elapsed time=" +(System.currentTimeMillis()-elpasedtime) );
+//        Log.d(TAG, "returning display frame: " + personTracker.displayMat.size() );
+//
+//        Log.w("fps", "elapsed time=" +(System.currentTimeMillis()-elpasedtime) );
         elpasedtime = System.currentTimeMillis();
 
         return personTracker.displayMat;
