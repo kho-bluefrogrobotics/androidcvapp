@@ -118,6 +118,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     // context
     Context context = this;
     public static CheckBox alignCheckbox;
+    public CheckBox recordCkbx;
     Button initButton;
 
     private ImageView cameraImageView;
@@ -128,6 +129,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     public AlignGrafcet alignGrafcet ;
 
     //todebug
+    boolean recording=false;
     VideoWriter videoWriter;
 
 
@@ -143,6 +145,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         // link with UI
         alignCheckbox = findViewById(R.id.alignBox);
         initButton= findViewById(R.id.initButton);
+        recordCkbx = findViewById(R.id.recordCkbx);
 
         // Check permissions
         if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -219,6 +222,33 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             }
         });
 
+
+        recordCkbx.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+
+                if (b)
+                {
+                    int fourcc = VideoWriter.fourcc('M','J','P','G');
+
+                    LocalDateTime myDateObj = LocalDateTime.now();
+                    DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyMMddHHmmss");
+
+                    String formattedDate = myDateObj.format(myFormatObj);
+                    String debugFileName = "/storage/emulated/0/Download/" + formattedDate + "_trackingDebug.avi" ;
+                    videoWriter = new VideoWriter(debugFileName, fourcc,
+                            13, new Size(1024, 768));
+                    videoWriter.open(debugFileName, fourcc,
+                            13, new Size(1024, 768));
+                    recording = true;
+                }
+                else {
+                    videoWriter.release();
+                    recording = false;
+                }
+            }
+        });
+
     } // End onCreate
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
@@ -290,18 +320,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         tracked = new Rect();
 
-        int fourcc = VideoWriter.fourcc('M','J','P','G');
-
-        LocalDateTime myDateObj = LocalDateTime.now();
-        DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyMMddHHmmss");
-
-        String formattedDate = myDateObj.format(myFormatObj);
-        String debugFileName = "/storage/emulated/0/Download/" + formattedDate + "_trackingDebug.avi" ;
-        videoWriter = new VideoWriter(debugFileName, fourcc,
-                13, new Size(1024, 768));
-        videoWriter.open(debugFileName, fourcc,
-                13, new Size(1024, 768));
-
     }
 
 
@@ -312,7 +330,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         frame = inputFrame.rgba();
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2BGR);
 
-        videoWriter.write(frame);
+        if (recording)
+            videoWriter.write(frame);
 
         personTracker.visualTracking(frame, false, true);
         personTracker.readyToDisplay =false;

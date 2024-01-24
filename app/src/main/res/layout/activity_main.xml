@@ -28,27 +28,15 @@
             opencv:camera_id="0"
             opencv:show_fps="false" />
 
-        <Button
-            android:id="@+id/candidatesBtn"
-            android:visibility="gone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_marginStart="275dp"
-            android:layout_marginTop="303dp"
-            android:layout_toEndOf="@+id/personNameEditTxt"
-            android:text="Display Candidates" />
 
         <CheckBox
-            android:id="@+id/PreprocessCheckBox"
+            android:id="@+id/recordCkbx"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
-            android:layout_marginStart="250dp"
-            android:layout_marginTop="15dp"
-            android:layout_toEndOf="@+id/personNameEditTxt"
-            android:text="w/o preprocess" />
-
+            android:layout_marginStart="19dp"
+            android:layout_marginTop="179dp"
+            android:text="record" />
 
         <Button
             android:id="@+id/initButton"
@@ -74,65 +62,6 @@
             android:textColor="#000000"
             android:textSize="20sp" />
 
-        <EditText
-            android:id="@+id/personNameEditTxt"
-            android:visibility="gone"
-            android:layout_width="150dp"
-            android:layout_height="49dp"
-            android:layout_alignParentStart="true"
-            android:layout_marginStart="13dp"
-            android:layout_marginTop="34dp"
-            android:background="#F3EDED"
-            android:text="Name?"
-            android:textColor="#000000" />
-
-        <Button
-            android:id="@+id/displayAllBtn"
-            android:visibility="gone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentTop="true"
-            android:layout_marginStart="520dp"
-            android:layout_marginTop="55dp"
-            android:text="all?" />
-
-        <Button
-            android:id="@+id/loadBtn"
-            android:visibility="gone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/idxRemove"
-            android:layout_alignStart="@+id/idxRemove"
-            android:layout_marginStart="-20dp"
-            android:layout_marginTop="5dp"
-            android:text="load" />
-
-        <Button
-            android:id="@+id/removeBtn"
-            android:visibility="gone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/displayAllBtn"
-            android:layout_alignParentStart="true"
-            android:layout_marginStart="514dp"
-            android:layout_marginTop="13dp"
-            android:text="remove"
-            android:textSize="10sp" />
-
-        <EditText
-            android:id="@+id/idxRemove"
-            android:layout_width="58dp"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/removeBtn"
-            android:layout_alignStart="@+id/removeBtn"
-            android:layout_marginStart="36dp"
-            android:layout_marginTop="13dp"
-            android:ems="10"
-            android:inputType="number"
-            android:text="0"
-            android:visibility="gone"
-            tools:text="0" />
 
 
     </RelativeLayout>
