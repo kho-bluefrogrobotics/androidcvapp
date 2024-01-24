@@ -67,6 +67,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -124,6 +126,9 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
 
     public AlignGrafcet alignGrafcet ;
+
+    //todebug
+    VideoWriter videoWriter;
 
 
     @Override
@@ -258,7 +263,14 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     }
 
 
-    TfLiteMidas mytfliterecog;
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+    }
+
+
+        TfLiteMidas mytfliterecog;
     public void onCameraViewStarted(int width, int height) {
 
         try {
@@ -278,6 +290,18 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         tracked = new Rect();
 
+        int fourcc = VideoWriter.fourcc('M','J','P','G');
+
+        LocalDateTime myDateObj = LocalDateTime.now();
+        DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyMMddHHmmss");
+
+        String formattedDate = myDateObj.format(myFormatObj);
+        String debugFileName = "/storage/emulated/0/Download/" + formattedDate + "_trackingDebug.avi" ;
+        videoWriter = new VideoWriter(debugFileName, fourcc,
+                13, new Size(1024, 768));
+        videoWriter.open(debugFileName, fourcc,
+                13, new Size(1024, 768));
+
     }
 
 
@@ -286,7 +310,9 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         // cature frame from camera
         frame = inputFrame.rgba();
-        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
+        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2BGR);
+
+        videoWriter.write(frame);
 
         personTracker.visualTracking(frame, false, true);
         personTracker.readyToDisplay =false;
@@ -295,13 +321,14 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //        Log.w("fps", "elapsed time=" +(System.currentTimeMillis()-elpasedtime) );
         elpasedtime = System.currentTimeMillis();
 
+        Imgproc.cvtColor( personTracker.displayMat,  personTracker.displayMat, Imgproc.COLOR_RGB2BGR);
         return personTracker.displayMat;
 //        return frame;
 
     } // end function
 
     public void onCameraViewStopped() {
-
+        videoWriter.release();
     }
 
 
