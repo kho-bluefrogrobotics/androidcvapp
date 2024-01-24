@@ -594,6 +594,9 @@ public class PersonTracker {
 
                 if(debugLog)
                     Log.d(TAG, "Total of detected object = " + detections.size());
+                if(detections.size()<=1)
+                    Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_baddetection.jpg",
+                        smallFrame);
 
                 Rect detectionBboxToReset = null;
 
@@ -620,11 +623,18 @@ public class PersonTracker {
                         // if detection is a face
                         if (detections.get(i).getDetectedClass() == 1) {
 
-                            // check IoU
-                            float iou = getIOU(tracked.box, detectionBbox);
+//                            // check IoU
+//                            float iou = getIOU(tracked.box, detectionBbox);
+
+                            // calculating the area of the current tracked face
+                            double faceArea = tracked.box.height*tracked.box.width;
+
+                            // ratio between the area of the face included in the human bbox and the total face area
+                            float overlapRatio = (float)(getAreaOfOverlap(detectionBbox, tracked.box) / faceArea);
 
                             if(debugLog)
-                                Log.d(TAG, "Tracking a face and found a face with IoU="+iou+"\n"
+//                                Log.d(TAG, "Tracking a face and found a face with IoU="+iou+"\n"
+                                Log.d(TAG, "Tracking a face and found a face with overlapratio="+overlapRatio+"\n"
                                         +  detectionBbox.x
                                         + " " + detectionBbox.y
                                         + " " + detectionBbox.height
@@ -632,7 +642,7 @@ public class PersonTracker {
                                         + " frame size =(" + smallFrame.size()+")");
 
                             // if IoU good enough
-                            if (iou >= IOU_THRES)
+                            if (overlapRatio >= IOU_THRES)
                             {
                                 if(debugLog)
                                     Log.d(TAG, "IoU OK!");
