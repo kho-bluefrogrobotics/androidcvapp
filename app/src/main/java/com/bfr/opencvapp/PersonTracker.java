@@ -18,6 +18,7 @@ import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.pose.Pose;
 import com.google.mlkit.vision.pose.PoseDetection;
 import com.google.mlkit.vision.pose.PoseDetector;
+import com.google.mlkit.vision.pose.PoseLandmark;
 import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions;
 
 import org.opencv.android.Utils;
@@ -35,6 +36,7 @@ import org.opencv.video.TrackerVit;
 import org.opencv.video.TrackerVit_Params;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class PersonTracker {
 
@@ -104,7 +106,7 @@ public class PersonTracker {
 
     PoseDetectorOptions poseDetectoptions;
     PoseDetector poseDetector;
-
+    Pose mypose;
 
     public PersonTracker(MultiDetector personDetector){
         // Load model for human detector
@@ -243,6 +245,7 @@ public class PersonTracker {
 
                     InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
 
+
                     Task<Pose> result =
                             poseDetector.process(inputImage)
                                     .addOnSuccessListener(
@@ -251,6 +254,8 @@ public class PersonTracker {
                                                 public void onSuccess(Pose pose) {
                                                     // Task completed successfully
                                                     // ...
+
+                                                    mypose = pose;
                                                 }
                                             })
                                     .addOnFailureListener(
@@ -268,7 +273,15 @@ public class PersonTracker {
                         e.printStackTrace();
                     }
 
-                    Log.w("coucouMLKit", "MLKit elapsed time : "+ (System.currentTimeMillis()-mlkitTime));
+                    // Get all PoseLandmarks. If no person was detected, the list will be empty
+                    List<PoseLandmark> allPoseLandmarks = mypose.getAllPoseLandmarks();
+
+                    PoseLandmark nose = mypose.getPoseLandmark(PoseLandmark.NOSE);
+                    PoseLandmark leftEyeInner = mypose.getPoseLandmark(PoseLandmark.LEFT_EYE_INNER);
+
+                    Log.w("coucouMLKit", "MLKit elapsed time : "+ (System.currentTimeMillis()-mlkitTime)
+                    // display position in pixels
+                            +"\n Position=" + nose.getPosition().x + "," + nose.getPosition().y );
 
 
                     //
