@@ -1,4 +1,7 @@
-package com.bfr.opencvapp.utils;
+package com.bfr.opencvapp;
+
+
+import static com.bfr.opencvapp.utils.Utils.Color.*;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -7,17 +10,18 @@ import android.os.Build;
 import android.util.Log;
 
 import org.opencv.core.Mat;
+import org.opencv.core.Point;
+import org.opencv.imgproc.Imgproc;
+import org.tensorflow.lite.HexagonDelegate;
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.CompatibilityList;
 import org.tensorflow.lite.gpu.GpuDelegate;
 import org.tensorflow.lite.nnapi.NnApiDelegate;
-import org.tensorflow.lite.HexagonDelegate;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,18 +37,26 @@ public class MultiDetector {
     private final int BATCH_SIZE = 1;
     private final int PIXEL_SIZE = 3;
     //Empiric valules for Thres of acceptance
-    private final float THRES_FACE = 0.5f;
+    private final float THRES_FACE = 0.7f;
     private final float THRES_HUMAN = 0.6f;
     private final float THRES_HAND = 0.3f;
     private final String[] LABELS = {"Human", "Face", "Hand"};
-    private final int NUM_THREADS = 4;
+    private final int NUM_THREADS =4;
     private boolean WITH_NNAPI = true;
     private boolean WITH_GPU = false;
     private boolean WITH_DSP = false;
 
+    // for display
+    public Mat displayMat;
+    public boolean readyToDisplay=false;
+    Point pt1 = new Point();
+    Point pt2 = new Point();
+
+    private int objId = 0;
+
     //where to find the models
-    private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
-    private final String MODEL_NAME = "ssd_3output.tflite";
+    private final String DIR = "/sdcard/Android/data/com.bfr.buddy.vision/files/nn_models/";
+    private final String MODEL_NAME = "MobileNetSSD_3classes.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
@@ -53,6 +65,8 @@ public class MultiDetector {
     public MultiDetector(Context context){
 
         try{
+            displayMat = new Mat();
+
             Interpreter.Options options = (new Interpreter.Options());
             CompatibilityList compatList = new CompatibilityList();
 
@@ -132,13 +146,20 @@ public class MultiDetector {
         return byteBuffer;
     }
 
-
     /**
      * get the detected objects in the image
      * @param bitmap original image in bitmap format
+     * @param humanThres Threshold for human detection. Set very high >1.0 to exclude detection
+     * @param faceThres Threshold for face detection. Set very high >1.0 to exclude detection
+     * @param handThres Threshold for hand detection. Set very high >1.0 to exclude detection
+     * @param originalMat the input image
      * @return array of detections
      */
-    public ArrayList<Recognition> recognizeImage(Bitmap bitmap) {
+    public ArrayList<Recognition> recognizeImage(Bitmap bitmap, float humanThres, float faceThres, float handThres, Mat originalMat) {
+
+        Log.i(TAG, "starting detection ");
+
+        displayMat = originalMat.clone();
 
         ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmap);
 
@@ -158,13 +179,21 @@ public class MultiDetector {
         float[] nb_labels = (float[]) outputMap.get(2);
         float[][] out_labels = (float[][]) outputMap.get(3);
 
+        //init
+        objId = 0;
+
         for (int i = 0; i < OUTPUT_WIDTH_SSD[0];i++){
             int maxClass = (int) nb_labels[0];
             int detectedClass = (int) out_labels[0][i];
             final float score = out_score[0][i];
-            if ( (score > THRES_HUMAN &&  detectedClass == 0)
-            || (score > THRES_FACE &&  detectedClass == 1)
-            || (score > THRES_HAND &&  detectedClass == 2)){
+
+            Log.i(TAG, "Object detected : class=" + detectedClass + " score=" + score);
+
+            // filter by class
+            if ( (detectedClass == 0 &&  score > humanThres)  // human detection
+                    || (detectedClass == 1 &&  score > faceThres) //face detection
+                    || (detectedClass == 2 &&  score > handThres) ) // hand detection
+                  {
                 // position in % of the image
                 final float ymin = bboxes[0][i][0];
                 final float xmin = bboxes[0][i][1];
@@ -172,8 +201,36 @@ public class MultiDetector {
                 final float xmax = bboxes[0][i][3];
 
                 if( ymin < ymax && xmin < xmax){
+
+
                     detections.add(new Recognition("" + i, LABELS[detectedClass], score, xmin, xmax, ymin, ymax, detectedClass));
-                }
+
+                    // display
+                    //left
+                    pt1.x = (int) (xmin* displayMat.cols());
+                    //top
+                    pt1.y = (int) (ymin * displayMat.rows());
+                    //right
+                    pt2.x = (int) (xmax * displayMat.cols());
+                    //bottom
+                    pt2.y = (int) (ymax * displayMat.rows());
+                    // Draw rectangle around detected object.
+                    Imgproc.rectangle(displayMat, pt1, pt2,
+                            _GREEN, 2);
+                    // Write class name or confidence.
+                    Imgproc.putText(displayMat, "id:" + String.valueOf(objId)+ " [" + String.format(java.util.Locale.US,"%.3f", score)+"]" , pt1,
+                            1, 4, _BLACK, 7);
+                    Imgproc.putText(displayMat, "id:" + String.valueOf(objId) + " [" + String.format(java.util.Locale.US,"%.3f", score)+"]", pt1,
+                            1, 4, _GREEN, 3);
+
+                    readyToDisplay = true;
+                    objId = objId+1;
+
+//                    Log.i(TAG, "display frame created");
+
+
+                } //end if ymin < ymax && xmin < xmax
+
 
             }
         }

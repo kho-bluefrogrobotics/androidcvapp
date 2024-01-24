@@ -80,8 +80,7 @@ import com.bfr.buddysdk.BuddyActivity;
 import com.bfr.buddysdk.BuddySDK;
 
 import com.bfr.opencvapp.grafcet.*;
-import com.bfr.opencvapp.utils.MultiDetector;
-import com.bfr.opencvapp.utils.TfLiteFaceRecognizer;
+import com.bfr.opencvapp.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteMidas;
 
 
