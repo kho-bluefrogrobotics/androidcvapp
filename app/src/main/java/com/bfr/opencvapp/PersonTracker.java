@@ -4,9 +4,23 @@ import static com.bfr.opencvapp.utils.Utils.Color.*;
 import static com.bfr.opencvapp.utils.Utils.matToBitmapAndResize;
 import static com.bfr.opencvapp.utils.Utils.modelsDir;
 
+import android.graphics.Bitmap;
 import android.util.Log;
 
 
+import androidx.annotation.NonNull;
+
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.pose.Pose;
+import com.google.mlkit.vision.pose.PoseDetection;
+import com.google.mlkit.vision.pose.PoseDetector;
+import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions;
+
+import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
@@ -87,6 +101,11 @@ public class PersonTracker {
     // log debug
     private boolean debugLog =true;
 
+
+    PoseDetectorOptions poseDetectoptions;
+    PoseDetector poseDetector;
+
+
     public PersonTracker(MultiDetector personDetector){
         // Load model for human detector
         detector = personDetector;
@@ -100,6 +119,15 @@ public class PersonTracker {
         vitTrackerparams = new TrackerVit_Params();
         vitTrackerparams.set_net(VITTRACKMODEL);
         vitTracker = TrackerVit.create(vitTrackerparams);
+
+        // Base pose detector with streaming frames, when depending on the pose-detection sdk
+        poseDetectoptions =
+                new PoseDetectorOptions.Builder()
+                        .setDetectorMode(PoseDetectorOptions.SINGLE_IMAGE_MODE)
+                        .setPreferredHardwareConfigs(PoseDetectorOptions.CPU_GPU)
+                        .build();
+
+        poseDetector = PoseDetection.getClient(poseDetectoptions);
 
     }
 
@@ -196,13 +224,54 @@ public class PersonTracker {
                     //reset in any case
                     frameCount = 1;
 //                    trackingSuccess = false;
-
+                    long mlkitTime = System.currentTimeMillis();
                     // Detection
                     detections = detector.recognizeImage(
                             matToBitmapAndResize(frame, 320, 320),
                             0.7f, 0.4f, 99.0f, frame);
 
-                   //
+                    Log.w("coucouMLKit", "Multidetector elapsed time : "+ (System.currentTimeMillis()-mlkitTime));
+
+
+
+
+
+
+                    //convert to bitmap
+                    Bitmap bitmapImage = Bitmap.createBitmap(smallFrame.cols(), smallFrame.rows(), Bitmap.Config.ARGB_8888);
+                    Utils.matToBitmap(smallFrame, bitmapImage);
+
+                    InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
+
+                    Task<Pose> result =
+                            poseDetector.process(inputImage)
+                                    .addOnSuccessListener(
+                                            new OnSuccessListener<Pose>() {
+                                                @Override
+                                                public void onSuccess(Pose pose) {
+                                                    // Task completed successfully
+                                                    // ...
+                                                }
+                                            })
+                                    .addOnFailureListener(
+                                            new OnFailureListener() {
+                                                @Override
+                                                public void onFailure(@NonNull Exception e) {
+                                                    // Task failed with an exception
+                                                    // ...
+                                                }
+                                            });
+
+                    try {
+                        Tasks.await(result);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    Log.w("coucouMLKit", "MLKit elapsed time : "+ (System.currentTimeMillis()-mlkitTime));
+
+
+                    //
                     checkAndResetTracking(vitTracker, tracked, detections);
 
                 }
