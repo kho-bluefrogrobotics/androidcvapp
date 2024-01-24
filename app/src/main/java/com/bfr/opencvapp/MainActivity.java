@@ -103,15 +103,15 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     // Parameters for Base facial detection
     final double THRESHOLD = 0.6;
 
+    double elpasedtime = 0.0;
+
     //Tflite Multidetector
-    MultiDetector multiDetector;
+    MultiDetector detector;
     ArrayList<MultiDetector.Recognition> tfliteDetections = new ArrayList<MultiDetector.Recognition>();
     int left, right, top, bottom;
 
-    // for saving face
-    boolean isSavingFace = false;
-    boolean errorSavingFace = false;
-    boolean started = false;
+    PersonTracker personTracker;
+    Rect tracked;
 
     // context
     Context context = this;
@@ -272,6 +272,12 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         mytfliterecog = new TfLiteMidas(context);
         Log.w("coucou", "coucou started");
 
+        detector = new MultiDetector(this);
+
+        personTracker = new PersonTracker(detector);
+
+        tracked = new Rect();
+
     }
 
 
@@ -280,117 +286,17 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         // cature frame from camera
         frame = inputFrame.rgba();
+        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
-//        frame = Imgcodecs.imread("/storage/emulated/0/Documents/wideFrame01.jpg");
+        personTracker.visualTracking(frame, false, true);
+        personTracker.readyToDisplay =false;
+        Log.d(TAG, "returning display frame: " + personTracker.displayMat.size() );
 
-        //convert to bitmap
-        Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
+        Log.w("fps", "elapsed time=" +(System.currentTimeMillis()-elpasedtime) );
+        elpasedtime = System.currentTimeMillis();
 
-        Utils.matToBitmap(frame, bitmapImage);
-
-        float[] result=mytfliterecog.recognizeImage(bitmapImage);
-
-
-
-        float maxval = Float.NEGATIVE_INFINITY;
-        float minval = Float.POSITIVE_INFINITY;
-        for (float cur : result) {
-            maxval = Math.max(maxval, cur);
-            minval = Math.min(minval, cur);
-        }
-
-        float multiplier = 0;
-//        if ((maxval - minval) > 0) multiplier = 255 / (maxval - minval);
-        if ((maxval - minval) > 0) multiplier = 255 / (maxval);
-        int[] img_normalized = new int[result.length];
-        for (int i = 0; i < result.length; ++i) {
-            float val = (float) (multiplier * (result[i] - minval));
-            img_normalized[i] = (int) val;
-        }
-
-//        Log.w("coucou", "result length: " + result.length + "\n"+"" +
-//                "Max in result= "+ maxval + " Min val="+ minval        );
-
-        //debug
-        for (float cur : img_normalized) {
-            maxval = Math.max(maxval, cur);
-            minval = Math.min(minval, cur);
-        }
-//        Log.w("coucou", "img_normalized length: " + img_normalized.length + "\n"+"" +
-//                "Max in img_normalized= "+ maxval + " Min val="+ minval        );
-
-        int resWidth = 256;
-        int resHeight = 256;
-
-
-        Bitmap displayBitmap = Bitmap.createBitmap(resWidth, resHeight, Bitmap.Config.RGB_565);
-        for (int ii = 0; ii < resWidth; ii++) //pass the screen pixels in 2 directions
-        {
-            for (int jj = 0; jj < resHeight; jj++) {
-                //int val = img_normalized[ii + jj * width];
-                int index = (resWidth - ii - 1) + (resHeight - jj - 1) * resWidth;
-                if(index < img_normalized.length) {
-                    int val = img_normalized[index];
-//                    if (val>150)
-//                        displayBitmap.setPixel(ii, jj, Color.rgb(val, 0, 0));
-//                    else
-                        displayBitmap.setPixel(ii, jj, Color.rgb(val, val, val));
-                }
-            }
-        }
-
-        //crop image
-        Rect faceROI= new Rect(
-                // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
-                0,
-                0,
-                //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
-                resWidth,
-                resHeight );
-
-//        Bitmap displayBitmap = arrayToBitmap(result, 256, 256);
-        Mat displaysubmat = frame.submat(faceROI);
-
-//        Mat displaysubmat = new Mat();
-        Utils.bitmapToMat(displayBitmap, displaysubmat);
-
-
-        /*****
-         * Sub mat as a strip above the ground
-         * */
-
-        //crop image
-        Rect stripROI= new Rect(
-                // alternative to crop more: Math.max(left, (int)(left- MARGIN_FACTOR *(right-left)) ),
-                0,
-                150,
-                //alternative to crop more: (int)(right-left)+(int)(MARGIN_FACTOR *(right-left)),
-                resWidth,
-                5 );
-//        displaysubmat
-
-        Mat stripMat = displaysubmat.clone().submat(stripROI);
-
-        Imgproc.cvtColor(stripMat, stripMat, Imgproc.COLOR_RGB2GRAY);
-
-        Imgproc.resize(stripMat, stripMat, new Size(RESIZE_RATIO, 1));
-
-        xCenter = Core.minMaxLoc(stripMat).minLoc.x;
-//        Log.w("maxcoucou", ""+xCenter);
-
-        Imgproc.circle(displaysubmat, new Point(
-                Core.minMaxLoc(stripMat).minLoc.x*256/RESIZE_RATIO
-                , 150), 5,new Scalar(0,255,0), 10 );
-
-        //
-        Imgproc.circle(frame, new Point(
-                Core.minMaxLoc(stripMat).minLoc.x*1024/RESIZE_RATIO
-                , (int)(150*768/256)), 30,new Scalar(0,0,255), 10 );
-        Imgproc.circle(frame, new Point(
-                Core.minMaxLoc(stripMat).minLoc.x*1024/RESIZE_RATIO
-                , (int)(150*768/256)), 5,new Scalar(255,0,0), 20 );
-
-        return frame;
+        return personTracker.displayMat;
+//        return frame;
 
     } // end function
 
