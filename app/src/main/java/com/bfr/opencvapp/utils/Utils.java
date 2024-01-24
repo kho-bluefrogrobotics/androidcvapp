@@ -54,7 +54,7 @@ public class Utils {
 
     /**
     /*** Path for models (should be automatically copied at startup from the assets)***/
-    public static String modelsDir = "/storage/emulated/0/Android/data/com.bfr.buddy.vision/files/nn_models/";
+    public static String modelsDir = "/storage/emulated/0/Android/data/com.bfr.opencvapp/files/nn_models/";
     // QRCode
     public static String wechatDetectorPrototxtPath = modelsDir + "detect_2021nov.prototxt";
     public static String wechatDetectorCaffeModelPath = modelsDir + "detect_2021nov.caffemodel";
