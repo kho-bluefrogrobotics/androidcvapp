@@ -2,6 +2,7 @@ package com.bfr.opencvapp;
 
 
 import static com.bfr.opencvapp.utils.Utils.Color.*;
+import static com.bfr.opencvapp.utils.Utils.modelsDir;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -55,8 +56,7 @@ public class MultiDetector {
     private int objId = 0;
 
     //where to find the models
-    private final String DIR = "/sdcard/Android/data/com.bfr.buddy.vision/files/nn_models/";
-    private final String MODEL_NAME = "MobileNetSSD_3classes.tflite";
+    final String MODEL_NAME = "MobileNetSSD_3classes.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
@@ -101,7 +101,7 @@ public class MultiDetector {
             }
 
             //Init interpreter
-            File tfliteModel = new File(DIR+MODEL_NAME);
+            File tfliteModel = new File(modelsDir+MODEL_NAME);
             tfLite = new Interpreter(tfliteModel, options );
         }
         catch (Exception e)

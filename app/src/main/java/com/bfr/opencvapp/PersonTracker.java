@@ -2,11 +2,10 @@ package com.bfr.opencvapp;
 
 import static com.bfr.opencvapp.utils.Utils.Color.*;
 import static com.bfr.opencvapp.utils.Utils.matToBitmapAndResize;
+import static com.bfr.opencvapp.utils.Utils.modelsDir;
 
 import android.util.Log;
 
-
-import com.bfr.opencvapp.utils.Utils;
 
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
@@ -55,6 +54,8 @@ public class PersonTracker {
     // Tracker
     TrackerVit vitTracker;
     TrackerVit_Params vitTrackerparams ;
+    // Human Tracking
+    final String VITTRACKMODEL = modelsDir + "object_tracking_vittrack_2023sep.onnx";
     //Mosse Tracker
     legacy_TrackerMOSSE mosseTracker;
     Rect2d mosseTracked=new Rect2d();
@@ -97,7 +98,7 @@ public class PersonTracker {
 
         //init ViT Tracker
         vitTrackerparams = new TrackerVit_Params();
-        vitTrackerparams.set_net(Utils.vitTrackerModel);
+        vitTrackerparams.set_net(VITTRACKMODEL);
         vitTracker = TrackerVit.create(vitTrackerparams);
 
     }
