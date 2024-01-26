@@ -42,7 +42,7 @@ public class TfLiteYoloX {
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
-    private final int[] INPUT_SIZE = {1024,576};
+    private final int[] INPUT_SIZE = {320,320};
     private final int[] OUTPUT_SIZE = {60,7}; // 20 bounding box max per class -> 20x3 = 60,
                                             // where each bbox is batch_no, class_id, score, w1, y1, x2, y2 -> 7 floats
     private static final float[] IMAGE_MEAN = {0, 0, 0};
@@ -70,7 +70,7 @@ public class TfLiteYoloX {
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float32.tflite";
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x288x480_float32.tflite";
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x480x640_float16.tflite";
-    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x576x1024_float32.tflite";
+    private final String MODEL_NAME = "yolox_s_body_head_hand_post_0299_0.4983_1x3x320x320_float32.tflite";
 //    private final String MODEL_NAME = "TopFormer-S_512x512_2x8_160k_argmax.tflite";
 
     private Interpreter tfLite;
@@ -273,9 +273,9 @@ public class TfLiteYoloX {
             int detectedClass = (int) floatOutput[i+1];
             float score = floatOutput[i+2];
 
-            if (  (detectedClass == 0 && score > 0.6)  // human
-            || (detectedClass == 1 && score > 0.5) // head
-            || (detectedClass == 2 && score > 0.5) // hands
+            if (  (detectedClass == 0 && score > 0.3)  // human
+            || (detectedClass == 1 && score > 0.3) // head
+            || (detectedClass == 2 && score > 0.3) // hands
         ){
                 // position in % of the image
                 final float x1 = floatOutput[i+3]/INPUT_SIZE[0];
