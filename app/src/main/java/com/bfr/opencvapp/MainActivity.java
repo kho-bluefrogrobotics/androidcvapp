@@ -56,6 +56,7 @@ import org.opencv.imgproc.Imgproc;
 
 import org.opencv.objdetect.FaceRecognizerSF;
 
+import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.VideoWriter;
 
 
@@ -112,6 +113,9 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     ArrayList<MultiDetector.Recognition> tfliteDetections = new ArrayList<MultiDetector.Recognition>();
     int left, right, top, bottom;
 
+    // BlazePose
+    TfLiteBlazePose blazePose;
+
     PersonTracker personTracker;
     Rect tracked;
 
@@ -131,6 +135,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     //todebug
     boolean recording=false;
     VideoWriter videoWriter;
+    VideoCapture videoCapture;
 
 
     @Override
@@ -320,6 +325,11 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         tracked = new Rect();
 
+        videoCapture = new VideoCapture("/sdcard/Download/240124174252_trackingDebug.avi");
+        frame = new Mat();
+
+        blazePose = new TfLiteBlazePose(this);
+
     }
 
 
@@ -328,22 +338,73 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         // cature frame from camera
         frame = inputFrame.rgba();
-        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2BGR);
+        // color conversion
+        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
-        if (recording)
-            videoWriter.write(frame);
+        //convert to bitmap
+        Mat resizedFrame = new Mat();
+        Imgproc.resize(frame, resizedFrame, new Size(320,320));
+        Bitmap bitmapImagefull = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(resizedFrame, bitmapImagefull);
 
-        personTracker.visualTracking(frame, false, true);
-        personTracker.readyToDisplay =false;
-//        Log.d(TAG, "returning display frame: " + personTracker.displayMat.size() );
-//
-//        Log.w("fps", "elapsed time=" +(System.currentTimeMillis()-elpasedtime) );
-        elpasedtime = System.currentTimeMillis();
+        //Human detection
+        tfliteDetections = detector.recognizeImage(bitmapImagefull, 0.6f, 0.6f, 0.5f, frame);
 
-        Imgproc.cvtColor( personTracker.displayMat,  personTracker.displayMat, Imgproc.COLOR_RGB2BGR);
-        return personTracker.displayMat;
-//        return frame;
+        for (int i = 0; i < tfliteDetections.size(); ++i) {
 
+            double confidence = tfliteDetections.get(i).confidence;
+            double detectedClass = tfliteDetections.get(i).getDetectedClass();
+
+            // for display only
+            int cols = frame.cols();
+            int rows = frame.rows();
+
+            left = (int)(tfliteDetections.get(i).left * cols);
+            top = (int)(tfliteDetections.get(i).top * rows);
+            right = (int)(tfliteDetections.get(i).right * cols);
+            bottom = (int)(tfliteDetections.get(i).bottom* rows);
+
+            Scalar color = new Scalar(0,0,0);
+            if (detectedClass==0)
+            {
+                // Draw rectangle around detected face.
+                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                        new Scalar(0, 255, 0), 3);
+
+
+//            else if (detectedClass==1)// Draw rectangle around detected face.
+//                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+//                        new Scalar(0, 0, 255), 3);
+//            else if (detectedClass==2)// Draw rectangle around detected face.
+//                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+//                        new Scalar(255, 0, 0), 3);
+
+                Imgproc.putText(frame, String.format(java.util.Locale.US, "%.4f", confidence),
+                        new Point(left - 2, top - 12), 1, 2,
+                        new Scalar(0, 0, 0), 5);
+                Imgproc.putText(frame, String.format(java.util.Locale.US, "%.4f", confidence),
+                        new Point(left - 2, top - 12), 1, 2,
+                        new Scalar(0, 255, 0), 2);
+
+                Rect toCrop = new Rect(
+                        left,
+                        top,
+                       right-left,
+                        bottom-top
+                );
+
+                Mat croppedTargetMat = frame.submat(toCrop);
+                Imgproc.resize(croppedTargetMat, croppedTargetMat, new Size(256,256));
+                Bitmap bitmapImage = Bitmap.createBitmap(croppedTargetMat.cols(), croppedTargetMat.rows(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(croppedTargetMat, bitmapImage);
+
+                float[][] result = blazePose.recognizeImage(bitmapImage);
+
+            }
+
+        } // next detection
+
+        return frame;
     } // end function
 
     public void onCameraViewStopped() {

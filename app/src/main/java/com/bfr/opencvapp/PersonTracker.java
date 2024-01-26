@@ -236,8 +236,21 @@ public class PersonTracker {
 
 
                     //convert to bitmap
-                    Bitmap bitmapImage = Bitmap.createBitmap(smallFrame.cols(), smallFrame.rows(), Bitmap.Config.ARGB_8888);
-                    Utils.matToBitmap(smallFrame, bitmapImage);
+                    int cropX = Math.max(1,tracked.box.x-50);
+                    int cropY = Math.max(1,tracked.box.y-50);
+                    int cropHeight = tracked.box.height+50;
+                    int cropWidth = tracked.box.width+50;
+                    Rect toCrop = new Rect(
+                            cropX,
+                            cropY,
+                            cropWidth,
+                            cropHeight
+                    );
+                    Mat croppedTargetMat = smallFrame.submat(toCrop);
+//            Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"0Tracked.jpg", trackMat);
+
+                    Bitmap bitmapImage = Bitmap.createBitmap(croppedTargetMat.cols(), croppedTargetMat.rows(), Bitmap.Config.ARGB_8888);
+                    Utils.matToBitmap(croppedTargetMat, bitmapImage);
 
                     InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
 
@@ -284,10 +297,10 @@ public class PersonTracker {
                     // display position in pixels
                             +"\n Position=" + nose.getPosition().x + "," + nose.getPosition().y );
 
-                    int left = (int) Math.min (leftShoulder.getPosition().x, rightShoulder.getPosition().x);
-                    int right = (int) Math.max(leftShoulder.getPosition().x, rightShoulder.getPosition().x);
-                    int top = (int) leftShoulder.getPosition().y;
-                    int bottom = (int) leftHip.getPosition().y;
+                    int left = cropX + (int) Math.min (leftShoulder.getPosition().x, rightShoulder.getPosition().x);
+                    int right = cropX+ (int) Math.max(leftShoulder.getPosition().x, rightShoulder.getPosition().x);
+                    int top = cropY + (int) leftShoulder.getPosition().y;
+                    int bottom = cropY + (int) leftHip.getPosition().y;
                     int height = Math.abs(bottom-top);
                     int width = Math.abs(right-left);
 
@@ -341,8 +354,20 @@ public class PersonTracker {
 
 
                         //convert to bitmap
-                        Bitmap bitmapImage = Bitmap.createBitmap(smallFrame.cols(), smallFrame.rows(), Bitmap.Config.ARGB_8888);
-                        Utils.matToBitmap(smallFrame, bitmapImage);
+                        //convert to bitmap
+                        int cropX = Math.max(1,tracked.box.x-50);
+                        int cropY = Math.max(1,tracked.box.y-50);
+                        int cropHeight = tracked.box.height+50;
+                        int cropWidth = tracked.box.width+50;
+                        Rect toCrop = new Rect(
+                                cropX,
+                                cropY,
+                                cropWidth,
+                                cropHeight
+                        );
+                        Mat croppedTargetMat = smallFrame.submat(toCrop);
+                        Bitmap bitmapImage = Bitmap.createBitmap(croppedTargetMat.cols(), croppedTargetMat.rows(), Bitmap.Config.ARGB_8888);
+                        Utils.matToBitmap(croppedTargetMat, bitmapImage);
 
                         InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
 
@@ -386,13 +411,13 @@ public class PersonTracker {
                         PoseLandmark rightHip = mypose.getPoseLandmark(PoseLandmark.RIGHT_HIP);
 
                         Imgproc.circle(frame, new Point(
-                                        (int)leftShoulder.getPosition().x,
-                                (int)leftShoulder.getPosition().y),
+                                cropX+(int)leftShoulder.getPosition().x,
+                                cropY + (int)leftShoulder.getPosition().y),
                                 5, new Scalar(0,255,0), 10);
 
                         Imgproc.circle(frame, new Point(
-                                        (int)rightShoulder.getPosition().x,
-                                (int)rightShoulder.getPosition().y),
+                                cropX + (int)rightShoulder.getPosition().x,
+                                cropY + (int)rightShoulder.getPosition().y),
                                 5, new Scalar(255,0,0), 10);
 
 
@@ -586,7 +611,7 @@ public class PersonTracker {
             if(BuildConfig.DEBUG)
                 Log.d("coucou", "Init ViTTracker");
 
-            vitTracker.init(smallFrame, tracked);
+            vitTracker.init(smallFrame, detectionBbox);
         }
         else if(tracker instanceof KAZE) // if the tracking method is VisualTransformer-based (fast & accurate)
         {
