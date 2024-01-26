@@ -341,35 +341,37 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         // color conversion
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
-        //convert to bitmap
-        Mat resizedFrame = new Mat();
-        Imgproc.resize(frame, resizedFrame, new Size(320,320));
-        Bitmap bitmapImagefull = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(resizedFrame, bitmapImagefull);
+        try
+        {
+            //convert to bitmap
+            Mat resizedFrame = new Mat();
+            Imgproc.resize(frame, resizedFrame, new Size(320,320));
+            Bitmap bitmapImagefull = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(resizedFrame, bitmapImagefull);
 
-        //Human detection
-        tfliteDetections = detector.recognizeImage(bitmapImagefull, 0.6f, 0.6f, 0.5f, frame);
+            //Human detection
+            tfliteDetections = detector.recognizeImage(bitmapImagefull, 0.6f, 0.6f, 0.5f, frame);
 
-        for (int i = 0; i < tfliteDetections.size(); ++i) {
+            for (int i = 0; i < tfliteDetections.size(); ++i) {
 
-            double confidence = tfliteDetections.get(i).confidence;
-            double detectedClass = tfliteDetections.get(i).getDetectedClass();
+                double confidence = tfliteDetections.get(i).confidence;
+                double detectedClass = tfliteDetections.get(i).getDetectedClass();
 
-            // for display only
-            int cols = frame.cols();
-            int rows = frame.rows();
+                // for display only
+                int cols = frame.cols();
+                int rows = frame.rows();
 
-            left = (int)(tfliteDetections.get(i).left * cols);
-            top = (int)(tfliteDetections.get(i).top * rows);
-            right = (int)(tfliteDetections.get(i).right * cols);
-            bottom = (int)(tfliteDetections.get(i).bottom* rows);
+                left = (int)(tfliteDetections.get(i).left * cols);
+                top = (int)(tfliteDetections.get(i).top * rows);
+                right = (int)(tfliteDetections.get(i).right * cols);
+                bottom = (int)(tfliteDetections.get(i).bottom* rows);
 
-            Scalar color = new Scalar(0,0,0);
-            if (detectedClass==0)
-            {
-                // Draw rectangle around detected face.
-                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                        new Scalar(0, 255, 0), 3);
+                Scalar color = new Scalar(0,0,0);
+                if (detectedClass==0)
+                {
+                    // Draw rectangle around detected face.
+                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                            new Scalar(0, 255, 0), 3);
 
 
 //            else if (detectedClass==1)// Draw rectangle around detected face.
@@ -379,30 +381,38 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
 //                        new Scalar(255, 0, 0), 3);
 
-                Imgproc.putText(frame, String.format(java.util.Locale.US, "%.4f", confidence),
-                        new Point(left - 2, top - 12), 1, 2,
-                        new Scalar(0, 0, 0), 5);
-                Imgproc.putText(frame, String.format(java.util.Locale.US, "%.4f", confidence),
-                        new Point(left - 2, top - 12), 1, 2,
-                        new Scalar(0, 255, 0), 2);
+                    Imgproc.putText(frame, String.format(java.util.Locale.US, "%.4f", confidence),
+                            new Point(left - 2, top - 12), 1, 2,
+                            new Scalar(0, 0, 0), 5);
+                    Imgproc.putText(frame, String.format(java.util.Locale.US, "%.4f", confidence),
+                            new Point(left - 2, top - 12), 1, 2,
+                            new Scalar(0, 255, 0), 2);
 
-                Rect toCrop = new Rect(
-                        left,
-                        top,
-                       right-left,
-                        bottom-top
-                );
+                    Rect toCrop = new Rect(
+                            left,
+                            top,
+                            right-left-5,
+                            bottom-top-10
+                    );
+                    Log.i(TAG, "To crop "+left + " " + top + " " + (right-left) + " " + (bottom-top) );
+                    Mat croppedTargetMat = frame.submat(toCrop);
+                    Imgproc.resize(croppedTargetMat, croppedTargetMat, new Size(256,256));
+                    Bitmap bitmapImage = Bitmap.createBitmap(croppedTargetMat.cols(), croppedTargetMat.rows(), Bitmap.Config.ARGB_8888);
+                    Utils.matToBitmap(croppedTargetMat, bitmapImage);
 
-                Mat croppedTargetMat = frame.submat(toCrop);
-                Imgproc.resize(croppedTargetMat, croppedTargetMat, new Size(256,256));
-                Bitmap bitmapImage = Bitmap.createBitmap(croppedTargetMat.cols(), croppedTargetMat.rows(), Bitmap.Config.ARGB_8888);
-                Utils.matToBitmap(croppedTargetMat, bitmapImage);
+                    float[][] result = blazePose.recognizeImage(bitmapImage);
 
-                float[][] result = blazePose.recognizeImage(bitmapImage);
+                    Log.w(TAG, ""+ result[0][11*5] + " " +  result[0][11*5 +1] );
+                    Imgproc.circle(frame, new Point(
+                                    left + (int) result[0][11*5], top + (int) result[0][11*5+1]),
+                            5, new Scalar(0,255,0), 10);
+                }
 
-            }
+            } // next detection
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        } // next detection
 
         return frame;
     } // end function
