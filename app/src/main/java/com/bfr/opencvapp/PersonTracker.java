@@ -143,7 +143,7 @@ public class PersonTracker {
 
             // Resize for better performances
 //            Imgproc.resize(frame, smallFrame, smallSize);
-            smallFrame = frame;
+            smallFrame = frame.clone();
             // scale coeff reduction
 
             double xScale = (double)frame.width() / smallFrame.width();
@@ -227,12 +227,12 @@ public class PersonTracker {
                     frameCount = 1;
 //                    trackingSuccess = false;
                     long mlkitTime = System.currentTimeMillis();
-                    // Detection
-                    detections = detector.recognizeImage(
-                            matToBitmapAndResize(frame, 320, 320),
-                            0.7f, 0.4f, 99.0f, frame);
-
-                    Log.w("coucouMLKit", "Multidetector elapsed time : "+ (System.currentTimeMillis()-mlkitTime));
+//                    // Detection
+//                    detections = detector.recognizeImage(
+//                            matToBitmapAndResize(frame, 320, 320),
+//                            0.7f, 0.4f, 99.0f, frame);
+//
+//                    Log.w("coucouMLKit", "Multidetector elapsed time : "+ (System.currentTimeMillis()-mlkitTime));
 
 
                     //convert to bitmap
@@ -276,7 +276,7 @@ public class PersonTracker {
                     PoseLandmark leftEar = mypose.getPoseLandmark(PoseLandmark.LEFT_EAR);
                     PoseLandmark rightEar = mypose.getPoseLandmark(PoseLandmark.RIGHT_EAR);
                     PoseLandmark leftShoulder = mypose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER);
-                    PoseLandmark rightShoulder = mypose.getPoseLandmark(PoseLandmark.RIGHT_EAR);
+                    PoseLandmark rightShoulder = mypose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER);
                     PoseLandmark leftHip = mypose.getPoseLandmark(PoseLandmark.LEFT_HIP);
                     PoseLandmark rightHip = mypose.getPoseLandmark(PoseLandmark.RIGHT_HIP);
 
@@ -307,6 +307,8 @@ public class PersonTracker {
 
 
                     checkAndResetTracking(vitTracker, tracked, targetBox);
+                    trackingSuccess = true;
+                    frameCount +=1;
 
                 }
                 else  // other frames -> only tracking
@@ -323,9 +325,80 @@ public class PersonTracker {
 //                            Log.w(TAG, "UPDATE VIT tracker ") ;
                                 vitTracker.update(smallFrame, tracked.box);
                                 tracked.score = vitTracker.getTrackingScore();
-                                if(tracked.score>=0.3)
+                                if(tracked.score>=0.4)
                                     trackingSuccess=true;
+                                else
+                                    trackingSuccess = false;
                             }
+
+
+
+
+
+
+
+
+
+
+                        //convert to bitmap
+                        Bitmap bitmapImage = Bitmap.createBitmap(smallFrame.cols(), smallFrame.rows(), Bitmap.Config.ARGB_8888);
+                        Utils.matToBitmap(smallFrame, bitmapImage);
+
+                        InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
+
+
+                        Task<Pose> result =
+                                poseDetector.process(inputImage)
+                                        .addOnSuccessListener(
+                                                new OnSuccessListener<Pose>() {
+                                                    @Override
+                                                    public void onSuccess(Pose pose) {
+                                                        // Task completed successfully
+                                                        // ...
+
+                                                        mypose = pose;
+                                                    }
+                                                })
+                                        .addOnFailureListener(
+                                                new OnFailureListener() {
+                                                    @Override
+                                                    public void onFailure(@NonNull Exception e) {
+                                                        // Task failed with an exception
+                                                        // ...
+                                                    }
+                                                });
+
+                        try {
+                            Tasks.await(result);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                        // Get all PoseLandmarks. If no person was detected, the list will be empty
+                        List<PoseLandmark> allPoseLandmarks = mypose.getAllPoseLandmarks();
+
+                        PoseLandmark nose = mypose.getPoseLandmark(PoseLandmark.NOSE);
+                        PoseLandmark leftEar = mypose.getPoseLandmark(PoseLandmark.LEFT_EAR);
+                        PoseLandmark rightEar = mypose.getPoseLandmark(PoseLandmark.RIGHT_EAR);
+                        PoseLandmark leftShoulder = mypose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER);
+                        PoseLandmark rightShoulder = mypose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER);
+                        PoseLandmark leftHip = mypose.getPoseLandmark(PoseLandmark.LEFT_HIP);
+                        PoseLandmark rightHip = mypose.getPoseLandmark(PoseLandmark.RIGHT_HIP);
+
+                        Imgproc.circle(frame, new Point(
+                                        (int)leftShoulder.getPosition().x,
+                                (int)leftShoulder.getPosition().y),
+                                5, new Scalar(0,255,0), 10);
+
+                        Imgproc.circle(frame, new Point(
+                                        (int)rightShoulder.getPosition().x,
+                                (int)rightShoulder.getPosition().y),
+                                5, new Scalar(255,0,0), 10);
+
+
+
+
+
 
 
 //                        if(debugLog)
@@ -382,7 +455,8 @@ public class PersonTracker {
 
         }
         catch (Exception e) {
-            Log.d(TAG, "tracking ERROR"+ Log.getStackTraceString(e) ) ;
+            Log.d(TAG, "tracking ERROR "+ Log.getStackTraceString(e) ) ;
+            trackingSuccess = false;
         }
 
 
@@ -683,7 +757,7 @@ public class PersonTracker {
                         + " " + tracked.box.width);
 
         // dimension check
-        if(tracked.box.x<=0
+            if(tracked.box.x<=0
         || tracked.box.y<=0
         || tracked.box.x+tracked.box.width>smallFrame.cols()
         || tracked.box.y+tracked.box.height>smallFrame.rows() )
