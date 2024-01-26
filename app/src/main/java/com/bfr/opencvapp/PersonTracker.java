@@ -235,10 +235,6 @@ public class PersonTracker {
                     Log.w("coucouMLKit", "Multidetector elapsed time : "+ (System.currentTimeMillis()-mlkitTime));
 
 
-
-
-
-
                     //convert to bitmap
                     Bitmap bitmapImage = Bitmap.createBitmap(smallFrame.cols(), smallFrame.rows(), Bitmap.Config.ARGB_8888);
                     Utils.matToBitmap(smallFrame, bitmapImage);
@@ -277,15 +273,40 @@ public class PersonTracker {
                     List<PoseLandmark> allPoseLandmarks = mypose.getAllPoseLandmarks();
 
                     PoseLandmark nose = mypose.getPoseLandmark(PoseLandmark.NOSE);
-                    PoseLandmark leftEyeInner = mypose.getPoseLandmark(PoseLandmark.LEFT_EYE_INNER);
+                    PoseLandmark leftEar = mypose.getPoseLandmark(PoseLandmark.LEFT_EAR);
+                    PoseLandmark rightEar = mypose.getPoseLandmark(PoseLandmark.RIGHT_EAR);
+                    PoseLandmark leftShoulder = mypose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER);
+                    PoseLandmark rightShoulder = mypose.getPoseLandmark(PoseLandmark.RIGHT_EAR);
+                    PoseLandmark leftHip = mypose.getPoseLandmark(PoseLandmark.LEFT_HIP);
+                    PoseLandmark rightHip = mypose.getPoseLandmark(PoseLandmark.RIGHT_HIP);
 
                     Log.w("coucouMLKit", "MLKit elapsed time : "+ (System.currentTimeMillis()-mlkitTime)
                     // display position in pixels
                             +"\n Position=" + nose.getPosition().x + "," + nose.getPosition().y );
 
+                    int left = (int) Math.min (leftShoulder.getPosition().x, rightShoulder.getPosition().x);
+                    int right = (int) Math.max(leftShoulder.getPosition().x, rightShoulder.getPosition().x);
+                    int top = (int) leftShoulder.getPosition().y;
+                    int bottom = (int) leftHip.getPosition().y;
+                    int height = Math.abs(bottom-top);
+                    int width = Math.abs(right-left);
+
+                    Log.i(TAG, "Target : " + left + " " + top + " "+
+                            Math.max(1,
+                                    top - (int)(height/4)) + " " + width + " " + height);
+                    top = Math.max(1,
+                            top - (int)(height/2));
 
                     //
-                    checkAndResetTracking(vitTracker, tracked, detections);
+
+                    Rect targetBox = new Rect(
+                            left,
+                            top,
+                            width , // width
+                            height); // height
+
+
+                    checkAndResetTracking(vitTracker, tracked, targetBox);
 
                 }
                 else  // other frames -> only tracking
@@ -650,9 +671,10 @@ public class PersonTracker {
      @params : tracked:  the current tracked object
      @params : detections
      */
-    private void checkAndResetTracking(Object tracker, TrackedObject tracked, ArrayList<MultiDetector.Recognition> detections)
+    private void checkAndResetTracking(Object tracker, TrackedObject tracked, Rect target)
     {
         try{
+
             if(debugLog)
                 Log.d(TAG, "Current tracked Bbox:  "
                         +  tracked.box.x
@@ -667,274 +689,15 @@ public class PersonTracker {
         || tracked.box.y+tracked.box.height>smallFrame.rows() )
             return;
 
+
+
             /**** Todebug: record images of tracked and where to reset*/
 //            Mat trackMat = smallFrame.submat(tracked.box);
 //            Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"0Tracked.jpg", trackMat);
 
-            // If detected something
-            if (detections.size() > 0) {
 
-                if(debugLog)
-                    Log.d(TAG, "Total of detected object = " + detections.size());
-                if(detections.size()<=1)
-                    Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_baddetection.jpg",
-                        smallFrame);
+            vitTracker.init(smallFrame, target);
 
-                Rect detectionBboxToReset = null;
-
-                Double dist = 0.0;
-                Double maxDist = Double.POSITIVE_INFINITY;
-                int idClosest = 0;
-                float bestOverlapRatio = 0.0f;
-                float bestIou = 0.0f;
-
-                // scan all detections
-                for (int i = 0; i < detections.size(); ++i) {
-
-                    // Bbox of the detection
-                    Rect detectionBbox = new Rect((int) (detections.get(i).left * frameCols), (int)(detections.get(i).top*frameRows),
-                            (int) ((detections.get(i).right-detections.get(i).left) * frameCols) , // width
-                            (int) ((detections.get(i).bottom-detections.get(i).top) * frameRows)); // height
-
-
-                    /**If currently tracking a face
-                     // we'll try to stay on it (checking if the IoU with a face is OK)
-                     // if a face is not available, we reset the tracker on the human with the best overlap*/
-                    if(tracked.objectClass==1) //0:human, 1:face
-                    {
-                        // if detection is a face
-                        if (detections.get(i).getDetectedClass() == 1) {
-
-//                            // check IoU
-//                            float iou = getIOU(tracked.box, detectionBbox);
-
-                            // calculating the area of the current tracked face
-                            double faceArea = tracked.box.height*tracked.box.width;
-
-                            // ratio between the area of the face included in the human bbox and the total face area
-                            float overlapRatio = (float)(getAreaOfOverlap(detectionBbox, tracked.box) / faceArea);
-
-                            if(debugLog)
-//                                Log.d(TAG, "Tracking a face and found a face with IoU="+iou+"\n"
-                                Log.d(TAG, "Tracking a face and found a face with overlapratio="+overlapRatio+"\n"
-                                        +  detectionBbox.x
-                                        + " " + detectionBbox.y
-                                        + " " + detectionBbox.height
-                                        + " " + detectionBbox.width
-                                        + " frame size =(" + smallFrame.size()+")");
-
-                            // if IoU good enough
-                            if (overlapRatio >= IOU_THRES)
-                            {
-                                if(debugLog)
-                                    Log.d(TAG, "IoU OK!");
-
-                                // declare tracking as OK
-                                trackingSuccess = true;
-                                return; // do nothing -> Exit the function to keep the current tracking object
-                                //   NB: we do not reset on the detected face as there is a possibility to be another occluding face
-
-                            } // end if IoU OK
-                            else
-                            {
-                                Mat currTracked = smallFrame.submat(tracked.box);
-                                Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_currTracking.jpg",
-                                        currTracked);
-                                Mat candidate = smallFrame.submat(detectionBbox);
-                                Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_faceCandidate.jpg",
-                                        candidate);
-
-                            }
-                        } // end if detected object is a face
-
-                        else // object detected is a human
-                        {
-                            // calculating the area of the face
-                            double faceArea = tracked.box.height*tracked.box.width;
-
-                            // ratio between the area of the face included in the human bbox and the total face area
-                            float overlapRatio = (float)(getAreaOfOverlap(detectionBbox, tracked.box) / faceArea);
-
-                            if(debugLog)
-                                Log.d(TAG, "Tracking a face but found a human " +
-                                        " with overlap="+getAreaOfOverlap(detectionBbox, tracked.box)
-                                        + " facearea=" + faceArea
-                                        + " overlapRatio="+ overlapRatio
-                                        +"\n"
-                                        +  detectionBbox.x
-                                        + " " + detectionBbox.y
-                                        + " " + detectionBbox.height
-                                        + " " + detectionBbox.width
-                                        + " frame size =(" + smallFrame.size()+")");
-
-                            if (overlapRatio>OVERLAPRATIO_THRES)
-                            {
-                                if(debugLog)
-                                    Log.d(TAG, "Overlap Ratio OK!");
-                                // if best overlap ratio so far
-                                if (overlapRatio> bestOverlapRatio)
-                                {
-                                    // remember this detection
-                                    detectionBboxToReset = detectionBbox;
-                                    bestOverlapRatio = overlapRatio;
-                                }
-
-                            } //end if overlap ratio good enough
-
-                        } //end if object detected is a human
-                    } //end if is currently tracking a face
-
-
-                    else /** is currently tracking a human
-                     // we'll try to find the respective face and reset the tracker on it
-                     // if a face is not available, we reset the tracker on the human with the best IoU*/
-                    {
-                        // if detection is a face
-                        if (detections.get(i).getDetectedClass() == 1) {
-
-                            // calculating the area of the face
-                            double faceArea = detectionBbox.height*detectionBbox.width;
-
-                            // ratio between the area of the face included in the human bbox and the total face area
-                            float overlapRatio = (float)(getAreaOfOverlap(detectionBbox, tracked.box) / faceArea);
-
-                            if(debugLog)
-                                Log.d(TAG, "Tracking a human but found a face " +
-                                        " with overlap="+getAreaOfOverlap(detectionBbox, tracked.box)
-                                        + " facearea=" + faceArea
-                                        + " overlapRatio="+ overlapRatio
-                                        +"\n"
-                                        +  detectionBbox.x
-                                        + " " + detectionBbox.y
-                                        + " " + detectionBbox.height
-                                        + " " + detectionBbox.width
-                                        + " frame size =(" + smallFrame.size()+")");
-
-                            if (overlapRatio>OVERLAPRATIO_THRES)
-                            {
-                                if(debugLog)
-                                    Log.w(TAG, "Overlap Ratio OK!  Reseting on that face");
-                                // reset on that face
-                                resetTracker(vitTracker, detectionBbox, 1 );
-                                if(debugLog)
-                                    Log.d(TAG, "reset done: returning");
-                                return; //exit once it is done
-
-                            } //end if overlap ratio good enough
-
-                        } // end if detected a face
-                        else // detected a human
-                        {
-
-                            double trackedArea = tracked.box.height*tracked.box.width;
-                            // ratio between the area of the face included in the human bbox and the total face area
-                            float overlapRatio = (float)(getAreaOfOverlap(detectionBbox, tracked.box) / trackedArea);
-
-                            // check IoU
-                            float iou = getIOU(tracked.box, detectionBbox);
-
-                            if(debugLog)
-                                Log.d(TAG, "Tracking a human and found a human with IoU="+iou+" "
-                                        +  "and overlapRatio=" + overlapRatio +"\n"
-                                        +  detectionBbox.x
-                                        + " " + detectionBbox.y
-                                        + " " + detectionBbox.height
-                                        + " " + detectionBbox.width
-                                        + " frame size =(" + smallFrame.size()+")");
-
-                            // if overlap good enough
-//                            if (iou >= IOU_THRES)
-                            if (overlapRatio >= OVERLAPRATIO_THRES)
-                            {
-                                if(debugLog)
-                                    Log.d(TAG, "Overlap OK!");
-
-                                // if best overlap ratio so far
-                                if (iou> bestIou)
-                                {
-                                    // remember this detection
-                                    detectionBboxToReset = detectionBbox;
-                                    bestIou = iou;
-                                }
-                            } // end if IoU OK
-                        } //end if detected a human
-
-                    } //end if is currently tracking a human
-
-
-                    //
-                    // ********* in parallel, look for the closest object
-                    //
-                    Point trackedCentroid = getCentroid(tracked.box.x, // upper left corner x
-                            tracked.box.y, // upper left corner y
-                            tracked.box.height, // height
-                            tracked.box.width); // width
-                    Point detectionCentroid = getCentroid((int) (detections.get(i).left * frameCols), // upper left corner x
-                            (int) (detections.get(i).top * frameCols), // upper left corner y
-                            (int) ((detections.get(i).right-detections.get(i).left) * frameCols) , // width
-                            (int) ((detections.get(i).bottom-detections.get(i).top) * frameRows)); // height
-
-                    // find the closest detection to the tracking position
-                    // L1 distance to optimize computing time
-                    dist =  (Math.abs(detectionCentroid.x - trackedCentroid.x) + Math.abs(detectionCentroid.y - trackedCentroid.y));
-                    if (dist < maxDist) {
-                        // update
-                        maxDist = dist;
-                        idClosest = i;
-                    }
-
-                } //next detection
-
-                /** ******** After scanning through all the detections : we have 3 possibilities
-                 // 1) we're tracking a face but don't see it anymore and detect a human -> we reset on the best over overlapping human
-                 // 2) we're tracking a human -> we reset on the best intersecting human
-                 // 3)  we couldn't find an overlapping object -> we reset on the closest object
-                 */
-
-                // >>> reset on human
-                if (detectionBboxToReset != null)
-                {
-                    if (BuildConfig.DEBUG)
-                        Log.w("coucou", "Reset ViTTracker on Human \n"
-                                +  detectionBboxToReset.x
-                                + " " + detectionBboxToReset.y
-                                + " " + detectionBboxToReset.height
-                                + " " + detectionBboxToReset.width
-                        );
-
-                    // Adjusting on a human silhouette
-                    // crop extra area
-                    detectionBboxToReset = cropExtraArea(detectionBboxToReset, 0);
-
-                    resetTracker(tracker, detectionBboxToReset, 0 );
-                }
-                else // >>> else init on closest object
-                {
-
-                    // reset on the bbox of the closest detection
-                    detectionBboxToReset = new Rect((int) (detections.get(idClosest).left * frameCols), (int)(detections.get(idClosest).top*frameRows),
-                            (int) ((detections.get(idClosest).right - detections.get(idClosest).left) * frameCols),
-                            (int) ((detections.get(idClosest).bottom - detections.get(idClosest).top) * frameRows) );
-
-                    if (BuildConfig.DEBUG)
-                        Log.w("coucou", "Reset ViTTracker on closest detection ["
-                                + detections.get(idClosest).getDetectedClass() + "]\n"
-                                +  detectionBboxToReset.x
-                                + " " + detectionBboxToReset.y
-                                + " " + detectionBboxToReset.height
-                                + " " + detectionBboxToReset.width
-                        );
-
-                    resetTracker(tracker, detectionBboxToReset, detections.get(idClosest).getDetectedClass() );
-
-                } // end if found a human or reset on closest object
-
-
-                //coucou todelete
-                trackingSuccess = true;
-
-
-            } //end if detection size >0
 
         } catch (Exception e) {
             Log.e(TAG, "ERROR During CheckReset " + Log.getStackTraceString(e));
