@@ -402,9 +402,12 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
                     float[][] result = blazePose.recognizeImage(bitmapImage);
 
-                    Log.w(TAG, ""+ result[0][11*5] + " " +  result[0][11*5 +1] );
+                    int shoulderX = (int) (result[0][11*5] * (right-left)/255);
+                    int shoulderY = (int) (result[0][11*5+1] * (bottom-top)/255);
+                    Log.w(TAG, "Coords : "+ shoulderX + " " +  shoulderY );
+
                     Imgproc.circle(frame, new Point(
-                                    left + (int) result[0][11*5], top + (int) result[0][11*5+1]),
+                                    left + shoulderX, top + shoulderY),
                             5, new Scalar(0,255,0), 10);
                 }
 
