@@ -396,28 +396,32 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                     );
                     Log.i(TAG, "To crop "+left + " " + top + " " + (right-left) + " " + (bottom-top) );
                     Mat croppedTargetMat = frame.submat(toCrop);
+                    Imgproc.cvtColor(croppedTargetMat, croppedTargetMat, Imgproc.COLOR_BGR2RGB);
                     Imgproc.resize(croppedTargetMat, croppedTargetMat, new Size(256,256));
                     Bitmap bitmapImage = Bitmap.createBitmap(croppedTargetMat.cols(), croppedTargetMat.rows(), Bitmap.Config.ARGB_8888);
                     Utils.matToBitmap(croppedTargetMat, bitmapImage);
 
-                    float[][] result = blazePose.recognizeImage(bitmapImage);
+                    float[][][][] result = blazePose.recognizeImage(bitmapImage);
 
-                    // Blaze pose returns the x, y coords as values [0:255] independent from the input resolution
-                    int noseX = (int) (result[0][0*5] * (right-left)/255);
-                    int noseY = (int) (result[0][0*5+1] * (bottom-top)/255);
-                    int leftEyeX = (int) (result[0][2*5] * (right-left)/255);
-                    int leftEyeY = (int) (result[0][2*5+1] * (bottom-top)/255);
-                    int rightEyeX = (int) (result[0][5*5] * (right-left)/255);
-                    int rightEyeY = (int) (result[0][5*5+1] * (bottom-top)/255);
-                    int leftShoulderX = (int) (result[0][11*5] * (right-left)/255);
-                    int leftShoulderY = (int) (result[0][11*5+1] * (bottom-top)/255);
-                    int rightShoulderX = (int) (result[0][12*5] * (right-left)/255);
-                    int rightShoulderY = (int) (result[0][12*5+1] * (bottom-top)/255);
-                    int leftHipX = (int) (result[0][23*5] * (right-left)/255);
-                    int leftHipY = (int) (result[0][23*5+1] * (bottom-top)/255);
-                    int rightHipX = (int) (result[0][24*5] * (right-left)/255);
-                    int rightHipY = (int) (result[0][24*5+1] * (bottom-top)/255);
-                    //Log.w(TAG, "Coords : "+ shoulderX + " " +  shoulderY );
+
+
+//                    // Blaze pose returns the x, y coords as values [0:255] independent from the input resolution
+                    int noseX = (int) (result[0][0][0][1] * (right-left));
+                    int noseY = (int) (result[0][0][0][0] * (bottom-top));
+                    int leftEyeX = (int) (result[0][0][1][1] * (right-left));
+                    int leftEyeY = (int) (result[0][0][1][0] * (bottom-top));
+                    int rightEyeX = (int) (result[0][0][2][1] * (right-left));
+                    int rightEyeY = (int) (result[0][0][2][0] * (bottom-top));
+                    int leftShoulderX = (int) (result[0][0][5][1] * (right-left));
+                    int leftShoulderY = (int) (result[0][0][5][0] * (bottom-top));
+                    int rightShoulderX = (int) (result[0][0][6][1] * (right-left));
+                    int rightShoulderY = (int) (result[0][0][6][0] * (bottom-top));
+                    int leftHipX = (int) (result[0][0][11][1] * (right-left));
+                    int leftHipY = (int) (result[0][0][11][0] * (bottom-top));
+                    int rightHipX = (int) (result[0][0][12][1] * (right-left));
+                    int rightHipY = (int) (result[0][0][12][0] * (bottom-top));
+
+                    Log.w(TAG, "Coords : "+ noseX + " " +  noseY );
 
                     Imgproc.circle(frame, new Point(
                                     left + noseX, top + noseY), 5, new Scalar(0,255,0), 10);
@@ -425,16 +429,16 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                             left + leftEyeX, top + leftEyeY), 5, new Scalar(0,255,0), 10);
                     Imgproc.circle(frame, new Point(
                             left + rightEyeX, top + rightEyeY), 5, new Scalar(0,255,0), 10);
-
-                    Imgproc.circle(frame, new Point(
-                            left + leftShoulderX, top + leftShoulderY), 5, new Scalar(0,255,0), 10);
-                    Imgproc.circle(frame, new Point(
-                            left + rightShoulderX, top + rightShoulderY), 5, new Scalar(0,255,0), 10);
-
-                    Imgproc.circle(frame, new Point(
-                            left + leftHipX, top + leftHipY), 5, new Scalar(0,255,0), 10);
-                    Imgproc.circle(frame, new Point(
-                            left + rightHipX, top + rightHipY), 5, new Scalar(0,255,0), 10);
+//
+//                    Imgproc.circle(frame, new Point(
+//                            left + leftShoulderX, top + leftShoulderY), 5, new Scalar(0,255,0), 10);
+//                    Imgproc.circle(frame, new Point(
+//                            left + rightShoulderX, top + rightShoulderY), 5, new Scalar(0,255,0), 10);
+//
+//                    Imgproc.circle(frame, new Point(
+//                            left + leftHipX, top + leftHipY), 5, new Scalar(0,255,0), 10);
+//                    Imgproc.circle(frame, new Point(
+//                            left + rightHipX, top + rightHipY), 5, new Scalar(0,255,0), 10);
                 }
 
             } // next detection
