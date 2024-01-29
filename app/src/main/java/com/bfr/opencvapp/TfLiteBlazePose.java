@@ -19,7 +19,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Face recognizer based on a Mobilenet-Facenet trained with Sigmoid loss - int8 quantized*/
+/** Blazepose tflite implementation from official models https://github.com/google/mediapipe/blob/master/docs/solutions/models.md#pose
+ * The models output a first map of 1,195 = 1,  33 keypoints x (x, y, z, visibility, presence)
+ * the list of keypoints can be found here https://developers.google.com/ml-kit/vision/pose-detection
+ * */
 public class TfLiteBlazePose {
 
     private final String TAG = "TfLiteBlazePose";
@@ -41,7 +44,7 @@ public class TfLiteBlazePose {
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nn_models/";
 //    private final String MODEL_NAME = "pyDNet__256x320_float16_quant.tflite";
 //    private final String MODEL_NAME = "fastdepth_256x256_float16_quant.tflite";
-        private final String MODEL_NAME = "newBlazePose_float32.tflite";
+        private final String MODEL_NAME = "pose_landmark_heavy.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
