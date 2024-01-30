@@ -56,6 +56,7 @@ import org.opencv.imgproc.Imgproc;
 
 import org.opencv.objdetect.FaceRecognizerSF;
 
+import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.VideoWriter;
 
 
@@ -102,6 +103,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
     //Video capture
     Mat frame_orig, frame;
+    VideoCapture videoCapture;
     // Parameters for Base facial detection
     final double THRESHOLD = 0.6;
 
@@ -111,6 +113,9 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     MultiDetector detector;
     ArrayList<MultiDetector.Recognition> tfliteDetections = new ArrayList<MultiDetector.Recognition>();
     int left, right, top, bottom;
+
+    // Pose estimator
+    TfLiteBlazePose blazePose;
 
     PersonTracker personTracker;
     Rect tracked;
@@ -311,14 +316,18 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             e.printStackTrace();
         }
 
-        mytfliterecog = new TfLiteMidas(context);
         Log.w("coucou", "coucou started");
 
         detector = new MultiDetector(this);
+        blazePose = new TfLiteBlazePose(context);
 
-        personTracker = new PersonTracker(detector);
+        personTracker = new PersonTracker(detector, blazePose);
 
         tracked = new Rect();
+
+        videoCapture = new VideoCapture("/sdcard/Download/240124174157_trackingDebug.avi");
+        frame = new Mat();
+
 
     }
 
@@ -327,8 +336,11 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
         // cature frame from camera
-        frame = inputFrame.rgba();
-        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2BGR);
+//        frame = inputFrame.rgba();
+//        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2BGR);
+
+
+        videoCapture.read(frame);
 
         if (recording)
             videoWriter.write(frame);
