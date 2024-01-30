@@ -102,7 +102,9 @@ public class PersonTracker {
 
     // log debug
     private boolean debugLog =true;
-
+    ArrayList<Float> scoreHistory = new ArrayList<Float>();
+    final float NUM_OF_SCORE_HISTORY = 5;
+    float avscore = 0.0f;
 
     PoseDetectorOptions poseDetectoptions;
     PoseDetector poseDetector;
@@ -325,19 +327,11 @@ public class PersonTracker {
 //                            Log.w(TAG, "UPDATE VIT tracker ") ;
                                 vitTracker.update(smallFrame, tracked.box);
                                 tracked.score = vitTracker.getTrackingScore();
-                                if(tracked.score>=0.4)
+                                if(computeTrackingScore(scoreHistory)>=0.4f)
                                     trackingSuccess=true;
                                 else
                                     trackingSuccess = false;
                             }
-
-
-
-
-
-
-
-
 
 
                         //convert to bitmap
@@ -490,9 +484,9 @@ public class PersonTracker {
                     _WHITE, 4);
             Imgproc.rectangle(displayMat, pt1, pt2,
                     _RED, 2);
-            Imgproc.putText(displayMat, "Tracking [" + String.format(java.util.Locale.US, "%.3f", tracked.score) + "]", pt1,
+            Imgproc.putText(displayMat, "Tracking [" + String.format(java.util.Locale.US, "%.3f", avscore) + "]", pt1,
                     2, 1, _BLACK, 5);
-            Imgproc.putText(displayMat, "Tracking [" + String.format(java.util.Locale.US, "%.3f", tracked.score) + "]", pt1,
+            Imgproc.putText(displayMat, "Tracking [" + String.format(java.util.Locale.US, "%.3f", avscore) + "]", pt1,
                     2, 1, _GREEN, 2);
 
             Imgcodecs.imwrite("/sdcard/Download/00tracking.jpg", displayMat);
@@ -670,7 +664,7 @@ public class PersonTracker {
      */
     private Rect cropExtraArea(Rect tracked, int detectedClass)
     {
-        Rect croppedArea = new Rect();
+        Rect croppedArea = tracked;
 
 
         // if we deal with a human silhouette
@@ -788,6 +782,32 @@ public class PersonTracker {
         trackingSuccess = true;
 
     } // end of rest Tracker
+
+    private float computeTrackingScore(ArrayList<Float> array)
+    {
+        //init to OK value
+        float averageScore = 1.0f;
+
+        // add last tracking score
+        array.add(vitTracker.getTrackingScore());
+
+        // wait to fill the array
+        if (array.size()>NUM_OF_SCORE_HISTORY) {
+            //remove oldest entry
+            array.remove(0);
+
+            // compute average
+            float sum = 0.0f;
+            for (int i = 0; i < NUM_OF_SCORE_HISTORY; i++) {
+                sum += array.get(i);
+            }
+
+            averageScore = sum / array.size();
+        }
+
+        avscore = averageScore;
+        return averageScore;
+    }
 
 
     public class TrackedObject
