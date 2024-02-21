@@ -316,7 +316,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             e.printStackTrace();
         }
 
-        mytfliterecog = new TfLiteMidas(context);
         Log.w("coucou", "coucou started");
 
         detector = new MultiDetector(this);
@@ -340,6 +339,10 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         frame = inputFrame.rgba();
         // color conversion
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
+
+//        videoCapture.read(frame);
+
+
 
         try
         {
