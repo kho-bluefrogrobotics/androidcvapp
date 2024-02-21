@@ -35,6 +35,8 @@ import org.opencv.tracking.legacy_TrackerMOSSE;
 import org.opencv.video.TrackerVit;
 import org.opencv.video.TrackerVit_Params;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -163,7 +165,7 @@ public class PersonTracker {
             }
             else
             {// dectect every xxx frame
-                _FRAME_DETECT = 30;
+                _FRAME_DETECT = 30000000;
             }
 
 
@@ -180,7 +182,7 @@ public class PersonTracker {
                 // Detection
                 detections = detector.recognizeImage(
                         matToBitmapAndResize(frame, 320, 320),
-                        0.7f, 0.6f, 99.0f, frame);
+                        0.5f, 0.999f, 99.0f, frame);
 
                 if (detections.size() > 0) {
                     /*** Look for first detected face */
@@ -188,7 +190,7 @@ public class PersonTracker {
                     // for each detection
                     for (int i = 0; i < detections.size(); ++i) {
 
-                        if ((detections.get(i).getDetectedClass()==1 && detections.get(i).getConfidence()>=0.5)) { // if is a face, so that we lower the confidence
+                        if ((detections.get(i).getDetectedClass()==0)) { // if is a face
                             // save index
                             detectedFaceId = i;
                             break;
@@ -199,7 +201,7 @@ public class PersonTracker {
                     if(detectedFaceId>=0) {
                         Log.w(TAG, "Init on first face: " + detectedFaceId ) ;
                         tracked.box = initTracker(vitTracker, detections.get(detectedFaceId));
-                        tracked.objectClass = 1; // 0:human, 1:face
+                        tracked.objectClass = detections.get(detectedFaceId).getDetectedClass(); // 0:human, 1:face
                         tracked.score = vitTracker.getTrackingScore();
                     }
                     else // no face found -> init on first detection, hopefully a human silouhette
@@ -224,8 +226,8 @@ public class PersonTracker {
             else
             {
                 // Reset tracking only every xxx frames of in case of tracking lost
-                if (frameCount %_FRAME_DETECT == 0 || !trackingSuccess ) {
-
+//                if (frameCount %_FRAME_DETECT == 0 || !trackingSuccess ) {
+                if (false ) {
 
                     if(debugLog)
                         Log.d(TAG, "\n\n****************************************************\n" +
@@ -237,78 +239,79 @@ public class PersonTracker {
                     long mlkitTime = System.currentTimeMillis();
 
 
-                    //convert to bitmap
-                    Bitmap bitmapImage = Bitmap.createBitmap(smallFrame.cols(), smallFrame.rows(), Bitmap.Config.ARGB_8888);
-                    Utils.matToBitmap(smallFrame, bitmapImage);
+//                    //convert to bitmap
+//                    Bitmap bitmapImage = Bitmap.createBitmap(smallFrame.cols(), smallFrame.rows(), Bitmap.Config.ARGB_8888);
+//                    Utils.matToBitmap(smallFrame, bitmapImage);
+//
+//                    InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
+//
+//
+//                    Task<Pose> result =
+//                            poseDetector.process(inputImage)
+//                                    .addOnSuccessListener(
+//                                            new OnSuccessListener<Pose>() {
+//                                                @Override
+//                                                public void onSuccess(Pose pose) {
+//                                                    // Task completed successfully
+//                                                    // ...
+//
+//                                                    mypose = pose;
+//                                                }
+//                                            })
+//                                    .addOnFailureListener(
+//                                            new OnFailureListener() {
+//                                                @Override
+//                                                public void onFailure(@NonNull Exception e) {
+//                                                    // Task failed with an exception
+//                                                    // ...
+//                                                }
+//                                            });
+//
+//                    try {
+//                        Tasks.await(result);
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+//
+//                    // Get all PoseLandmarks. If no person was detected, the list will be empty
+//                    List<PoseLandmark> allPoseLandmarks = mypose.getAllPoseLandmarks();
+//
+//                    PoseLandmark nose = mypose.getPoseLandmark(PoseLandmark.NOSE);
+//                    PoseLandmark leftEar = mypose.getPoseLandmark(PoseLandmark.LEFT_EAR);
+//                    PoseLandmark rightEar = mypose.getPoseLandmark(PoseLandmark.RIGHT_EAR);
+//                    PoseLandmark leftShoulder = mypose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER);
+//                    PoseLandmark rightShoulder = mypose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER);
+//                    PoseLandmark leftHip = mypose.getPoseLandmark(PoseLandmark.LEFT_HIP);
+//                    PoseLandmark rightHip = mypose.getPoseLandmark(PoseLandmark.RIGHT_HIP);
+//
+//                    Log.w("coucouMLKit", "MLKit elapsed time : "+ (System.currentTimeMillis()-mlkitTime)
+//                    // display position in pixels
+//                            +"\n Position=" + nose.getPosition().x + "," + nose.getPosition().y );
+//
+//                    int left = (int) Math.min (leftShoulder.getPosition().x, rightShoulder.getPosition().x);
+//                    int right = (int) Math.max(leftShoulder.getPosition().x, rightShoulder.getPosition().x);
+//                    int top = (int) leftShoulder.getPosition().y;
+//                    int bottom = (int) leftHip.getPosition().y;
+//                    int height = Math.abs(bottom-top);
+//                    int width = Math.abs(right-left);
+//
+//                    Log.i(TAG, "Target : " + left + " " + top + " "+
+//                            Math.max(1,
+//                                    top - (int)(height/4)) + " " + width + " " + height);
+//                    top = Math.max(1,
+//                            top - (int)(height/2));
+//
+//                    //
+//
+//                    Rect targetBox = new Rect(
+//                            left,
+//                            top,
+//                            width , // width
+//                            height); // height
 
-                    InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
 
-
-                    Task<Pose> result =
-                            poseDetector.process(inputImage)
-                                    .addOnSuccessListener(
-                                            new OnSuccessListener<Pose>() {
-                                                @Override
-                                                public void onSuccess(Pose pose) {
-                                                    // Task completed successfully
-                                                    // ...
-
-                                                    mypose = pose;
-                                                }
-                                            })
-                                    .addOnFailureListener(
-                                            new OnFailureListener() {
-                                                @Override
-                                                public void onFailure(@NonNull Exception e) {
-                                                    // Task failed with an exception
-                                                    // ...
-                                                }
-                                            });
-
-                    try {
-                        Tasks.await(result);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                    // Get all PoseLandmarks. If no person was detected, the list will be empty
-                    List<PoseLandmark> allPoseLandmarks = mypose.getAllPoseLandmarks();
-
-                    PoseLandmark nose = mypose.getPoseLandmark(PoseLandmark.NOSE);
-                    PoseLandmark leftEar = mypose.getPoseLandmark(PoseLandmark.LEFT_EAR);
-                    PoseLandmark rightEar = mypose.getPoseLandmark(PoseLandmark.RIGHT_EAR);
-                    PoseLandmark leftShoulder = mypose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER);
-                    PoseLandmark rightShoulder = mypose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER);
-                    PoseLandmark leftHip = mypose.getPoseLandmark(PoseLandmark.LEFT_HIP);
-                    PoseLandmark rightHip = mypose.getPoseLandmark(PoseLandmark.RIGHT_HIP);
-
-                    Log.w("coucouMLKit", "MLKit elapsed time : "+ (System.currentTimeMillis()-mlkitTime)
-                    // display position in pixels
-                            +"\n Position=" + nose.getPosition().x + "," + nose.getPosition().y );
-
-                    int left = (int) Math.min (leftShoulder.getPosition().x, rightShoulder.getPosition().x);
-                    int right = (int) Math.max(leftShoulder.getPosition().x, rightShoulder.getPosition().x);
-                    int top = (int) leftShoulder.getPosition().y;
-                    int bottom = (int) leftHip.getPosition().y;
-                    int height = Math.abs(bottom-top);
-                    int width = Math.abs(right-left);
-
-                    Log.i(TAG, "Target : " + left + " " + top + " "+
-                            Math.max(1,
-                                    top - (int)(height/4)) + " " + width + " " + height);
-                    top = Math.max(1,
-                            top - (int)(height/2));
-
-                    //
-
-                    Rect targetBox = new Rect(
-                            left,
-                            top,
-                            width , // width
-                            height); // height
-
-
-                    checkAndResetTracking(vitTracker, tracked, targetBox);
+//                    checkAndResetTracking(vitTracker, tracked, targetBox);
+                    checkAndResetTracking(vitTracker, tracked, null);
                     trackingSuccess = true;
                     frameCount +=1;
 
@@ -346,27 +349,82 @@ public class PersonTracker {
                             );
                             //convert to bitmap
                             Mat croppedTargetMat = frame.submat(toCrop);
-                            Imgproc.resize(croppedTargetMat, croppedTargetMat, new Size(256,256));
+//                            Imgproc.resize(croppedTargetMat, croppedTargetMat, new Size(256,256));
                             Bitmap bitmapImage = Bitmap.createBitmap(croppedTargetMat.cols(), croppedTargetMat.rows(), Bitmap.Config.ARGB_8888);
                             Utils.matToBitmap(croppedTargetMat, bitmapImage);
 
-                            float[][] result =poseEstimator.recognizeImage(bitmapImage);
 
-                            // Blaze pose returns the x, y coords as values [0:255] independent from the input resolution
-                            int noseX = (int) (result[0][0*5] * (right-left)/255);
-                            int noseY = (int) (result[0][0*5+1] * (bottom-top)/255);
-                            int leftEyeX = (int) (result[0][2*5] * (right-left)/255);
-                            int leftEyeY = (int) (result[0][2*5+1] * (bottom-top)/255);
-                            int rightEyeX = (int) (result[0][5*5] * (right-left)/255);
-                            int rightEyeY = (int) (result[0][5*5+1] * (bottom-top)/255);
-                            int leftShoulderX = (int) (result[0][11*5] * (right-left)/255);
-                            int leftShoulderY = (int) (result[0][11*5+1] * (bottom-top)/255);
-                            int rightShoulderX = (int) (result[0][12*5] * (right-left)/255);
-                            int rightShoulderY = (int) (result[0][12*5+1] * (bottom-top)/255);
-                            int leftHipX = (int) (result[0][23*5] * (right-left)/255);
-                            int leftHipY = (int) (result[0][23*5+1] * (bottom-top)/255);
-                            int rightHipX = (int) (result[0][24*5] * (right-left)/255);
-                            int rightHipY = (int) (result[0][24*5+1] * (bottom-top)/255);
+
+
+                        try (FileOutputStream out = new FileOutputStream("/sdcard/Download/coucou.jpg")) {
+                            bitmapImage.compress(Bitmap.CompressFormat.JPEG, 100, out); // bmp is your Bitmap instance
+                            Imgcodecs.imwrite("/sdcard/Download/coucoumat.jpg", croppedTargetMat);
+                            // PNG is a lossless format, the compression factor (100) is ignored
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+
+                        /*** MLKit for pose*/
+                    InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
+                    Task<Pose> result =
+                            poseDetector.process(inputImage)
+                                    .addOnSuccessListener(
+                                            new OnSuccessListener<Pose>() {
+                                                @Override
+                                                public void onSuccess(Pose pose) {
+                                                    // Task completed successfully
+                                                    // ...
+
+                                                    mypose = pose;
+                                                }
+                                            })
+                                    .addOnFailureListener(
+                                            new OnFailureListener() {
+                                                @Override
+                                                public void onFailure(@NonNull Exception e) {
+                                                    // Task failed with an exception
+                                                    // ...
+                                                }
+                                            });
+
+                    try {
+                        Tasks.await(result);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    // Get all PoseLandmarks. If no person was detected, the list will be empty
+                    List<PoseLandmark> allPoseLandmarks = mypose.getAllPoseLandmarks();
+
+                    PoseLandmark nose = mypose.getPoseLandmark(PoseLandmark.NOSE);
+                    PoseLandmark leftEye = mypose.getPoseLandmark(PoseLandmark.LEFT_EYE);
+                    PoseLandmark rightEye = mypose.getPoseLandmark(PoseLandmark.RIGHT_EYE);
+                    PoseLandmark leftEar = mypose.getPoseLandmark(PoseLandmark.LEFT_EAR);
+                    PoseLandmark rightEar = mypose.getPoseLandmark(PoseLandmark.RIGHT_EAR);
+                    PoseLandmark leftShoulder = mypose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER);
+                    PoseLandmark rightShoulder = mypose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER);
+                    PoseLandmark leftHip = mypose.getPoseLandmark(PoseLandmark.LEFT_HIP);
+                    PoseLandmark rightHip = mypose.getPoseLandmark(PoseLandmark.RIGHT_HIP);
+
+                    Log.w("coucouMLKit", "MLKit elapsed time : "+ (System.currentTimeMillis())
+                    // display position in pixels
+                            +"\n Position=" + nose.getPosition().x + "," + nose.getPosition().y );
+
+                            int noseX = (int) nose.getPosition().x;
+                            int noseY = (int) nose.getPosition().x;
+                            int leftEyeX = (int) leftEye.getPosition().x;
+                            int leftEyeY = (int) leftEye.getPosition().y;
+                            int rightEyeX = (int) rightEye.getPosition().x;
+                            int rightEyeY = (int) rightEye.getPosition().y;
+                            int leftShoulderX = (int) leftShoulder.getPosition().x;
+                            int leftShoulderY = (int) leftShoulder.getPosition().y;
+                            int rightShoulderX = (int) rightShoulder.getPosition().x;
+                            int rightShoulderY = (int) rightShoulder.getPosition().y;
+                            int leftHipX = (int) leftHip.getPosition().x;
+                            int leftHipY = (int) leftHip.getPosition().y;
+                            int rightHipX = (int) rightHip.getPosition().x;
+                            int rightHipY = (int) rightHip.getPosition().y;
                             //Log.w(TAG, "Coords : "+ shoulderX + " " +  shoulderY );
 
                             Imgproc.circle(frame, new Point(
@@ -385,6 +443,44 @@ public class PersonTracker {
                                     left + leftHipX, top + leftHipY), 5, new Scalar(0,255,0), 10);
                             Imgproc.circle(frame, new Point(
                                     left + rightHipX, top + rightHipY), 5, new Scalar(0,255,0), 10);
+
+
+
+//                            float[][] result =poseEstimator.recognizeImage(bitmapImage);
+//
+//                            // Blaze pose returns the x, y coords as values [0:255] independent from the input resolution
+//                            int noseX = (int) (result[0][0*5] * (right-left)/255);
+//                            int noseY = (int) (result[0][0*5+1] * (bottom-top)/255);
+//                            int leftEyeX = (int) (result[0][2*5] * (right-left)/255);
+//                            int leftEyeY = (int) (result[0][2*5+1] * (bottom-top)/255);
+//                            int rightEyeX = (int) (result[0][5*5] * (right-left)/255);
+//                            int rightEyeY = (int) (result[0][5*5+1] * (bottom-top)/255);
+//                            int leftShoulderX = (int) (result[0][11*5] * (right-left)/255);
+//                            int leftShoulderY = (int) (result[0][11*5+1] * (bottom-top)/255);
+//                            int rightShoulderX = (int) (result[0][12*5] * (right-left)/255);
+//                            int rightShoulderY = (int) (result[0][12*5+1] * (bottom-top)/255);
+//                            int leftHipX = (int) (result[0][23*5] * (right-left)/255);
+//                            int leftHipY = (int) (result[0][23*5+1] * (bottom-top)/255);
+//                            int rightHipX = (int) (result[0][24*5] * (right-left)/255);
+//                            int rightHipY = (int) (result[0][24*5+1] * (bottom-top)/255);
+//                            //Log.w(TAG, "Coords : "+ shoulderX + " " +  shoulderY );
+//
+//                            Imgproc.circle(frame, new Point(
+//                                    left + noseX, top + noseY), 5, new Scalar(0,255,0), 10);
+//                            Imgproc.circle(frame, new Point(
+//                                    left + leftEyeX, top + leftEyeY), 5, new Scalar(0,255,0), 10);
+//                            Imgproc.circle(frame, new Point(
+//                                    left + rightEyeX, top + rightEyeY), 5, new Scalar(0,255,0), 10);
+//
+//                            Imgproc.circle(frame, new Point(
+//                                    left + leftShoulderX, top + leftShoulderY), 5, new Scalar(0,255,0), 10);
+//                            Imgproc.circle(frame, new Point(
+//                                    left + rightShoulderX, top + rightShoulderY), 5, new Scalar(0,255,0), 10);
+//
+//                            Imgproc.circle(frame, new Point(
+//                                    left + leftHipX, top + leftHipY), 5, new Scalar(0,255,0), 10);
+//                            Imgproc.circle(frame, new Point(
+//                                    left + rightHipX, top + rightHipY), 5, new Scalar(0,255,0), 10);
 
 
 //                        if(debugLog)
@@ -662,11 +758,12 @@ public class PersonTracker {
         if (detectedClass == 0) // Human
         {
             // crop extra area
-            croppedArea.x = (int) (tracked.x + tracked.width/4 );
-            croppedArea.width = (int)(tracked.width- (tracked.width/2) );
-            croppedArea.y= (int) (tracked.y + tracked.height/16);
-            // track the 2/3 upper part  or minimum arbitrary value
-            croppedArea.height = Math.max( (int) (0.5 * tracked.height), MIN_HUMAN_HEIGHT  );
+//            croppedArea.x = (int) (tracked.x + tracked.width/4 );
+//            croppedArea.width = (int)(tracked.width- (tracked.width/2) );
+//            croppedArea.y= (int) (tracked.y + tracked.height/16);
+//            // track the 2/3 upper part  or minimum arbitrary value
+//            croppedArea.height = Math.max( (int) (0.5 * tracked.height), MIN_HUMAN_HEIGHT  );
+
         }
         else if (detectedClass == 1) // Face
         {

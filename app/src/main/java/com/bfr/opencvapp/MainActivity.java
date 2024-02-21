@@ -17,6 +17,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.RemoteException;
 import android.util.Log;
 import android.view.TextureView;
@@ -364,7 +365,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
 
 
-
     private Bitmap arrayToBitmap(float[] img_array, int imageSizeX, int imageSizeY) {
         float maxval = Float.NEGATIVE_INFINITY;
         float minval = Float.POSITIVE_INFINITY;
@@ -426,6 +426,14 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         // for each folder
         if (folders != null) for (String foldername : folders) {
             Log.i(TAG, "Found folder: " + foldername  );
+
+            if (foldername.contains("images") || foldername.contains("imgs") ||
+                    foldername.contains("mlkit_") || foldername.contains("mobile_") ||
+                    foldername.contains("_bundled") || foldername.contains("shaders")||
+                    foldername.contains("webkit")
+            )
+                continue;
+
             // list of comportemental
             try {
                 files = assetManager.list(foldername);
