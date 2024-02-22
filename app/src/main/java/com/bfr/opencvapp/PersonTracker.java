@@ -100,7 +100,7 @@ public class PersonTracker {
     String saveFolder="";
 
     float IOU_THRES = 0.7f;
-    float OVERLAPRATIO_THRES = 0.8f;
+    float OVERLAPRATIO_THRES = 0.5f;
 
     // hard limit for human height to track (in pixel)
     int MIN_HUMAN_HEIGHT = 120;
@@ -108,7 +108,7 @@ public class PersonTracker {
     // log debug
     private boolean debugLog =true;
     ArrayList<Float> scoreHistory = new ArrayList<Float>();
-    final float NUM_OF_SCORE_HISTORY = 5;
+    final float NUM_OF_SCORE_HISTORY = 10;
     float avscore = 0.0f;
 
     PoseDetectorOptions poseDetectoptions;
@@ -331,7 +331,7 @@ public class PersonTracker {
 //                            Log.w(TAG, "UPDATE VIT tracker ") ;
                                 vitTracker.update(smallFrame, tracked.box);
                                 tracked.score = vitTracker.getTrackingScore();
-                                if(computeTrackingScore(scoreHistory)>=0.4f)
+                                if(computeTrackingScore(scoreHistory)>=0.6f)
                                     trackingSuccess=true;
                                 else
                                     trackingSuccess = false;
@@ -573,9 +573,17 @@ public class PersonTracker {
                     _WHITE, 4);
             Imgproc.rectangle(displayMat, pt1, pt2,
                     _RED, 2);
-            Imgproc.putText(displayMat, "Tracking [" + String.format(java.util.Locale.US, "%.3f", avscore) + "]", pt1,
+            Imgproc.putText(displayMat, "Tracking",
+                    new Point(pt1.x, pt1.y-30),
                     2, 1, _BLACK, 5);
-            Imgproc.putText(displayMat, "Tracking [" + String.format(java.util.Locale.US, "%.3f", avscore) + "]", pt1,
+            Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.3f", avscore) + "]",
+                    new Point(pt1.x, pt1.y),
+                    2, 1, _BLACK, 5);
+            Imgproc.putText(displayMat, "Tracking",
+                    new Point(pt1.x, pt1.y-30),
+                    2, 1, _GREEN, 2);
+            Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.3f", avscore) + "]",
+                    new Point(pt1.x, pt1.y),
                     2, 1, _GREEN, 2);
 
 
@@ -887,9 +895,11 @@ public class PersonTracker {
                 for (int i = 0; i < detections.size(); ++i) {
 
                     // Bbox of the detection
-                    Rect detectionBbox = new Rect((int) (detections.get(i).left * frameCols), (int)(detections.get(i).top*frameRows),
-                            (int) ((detections.get(i).right-detections.get(i).left) * frameCols) , // width
-                            (int) ((detections.get(i).bottom-detections.get(i).top) * frameRows)); // height
+                    Rect detectionBbox = new Rect((int) (detections.get(i).left * frameCols),
+                            (int)(detections.get(i).top*frameRows),
+                            Math.min((int) ((detections.get(i).right-detections.get(i).left) * frameCols), frameCols -(int) (detections.get(i).left * frameCols) ) , // width
+                            Math.min( (int) ((detections.get(i).bottom-detections.get(i).top) * frameRows), (int) frameRows - (int)(detections.get(i).top*frameRows))
+                    ); // height
 
 
                     /**If currently tracking a face
@@ -913,7 +923,7 @@ public class PersonTracker {
 
 
                             Mat candidate = smallFrame.submat(detectionBbox);
-                            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_faceCandidate_"+i+".jpg",
+                            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_faceCandidate_"+iou+".jpg",
                                     candidate);
 
                             // if IoU good enough
@@ -957,7 +967,7 @@ public class PersonTracker {
 
 
                             Mat candidate = smallFrame.submat(detectionBbox);
-                            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_HumanCandidate_"+i+".jpg",
+                            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_HumanCandidate_"+overlapRatio+".jpg",
                                     candidate);
 
                             if (overlapRatio>OVERLAPRATIO_THRES)
@@ -1004,7 +1014,7 @@ public class PersonTracker {
                                         + " frame size =(" + smallFrame.size()+")");
 
                             Mat candidate = smallFrame.submat(detectionBbox);
-                            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_faceCandidate_"+i+".jpg",
+                            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_faceCandidate_"+overlapRatio+".jpg",
                                     candidate);
 
                             if (overlapRatio>OVERLAPRATIO_THRES)
@@ -1040,7 +1050,7 @@ public class PersonTracker {
                                         + " frame size =(" + smallFrame.size()+")");
 
                             Mat candidate = smallFrame.submat(detectionBbox);
-                            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_humanCandidate_"+i+".jpg",
+                            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_humanCandidate_"+overlapRatio+".jpg",
                                     candidate);
 
                             // if overlap good enough
