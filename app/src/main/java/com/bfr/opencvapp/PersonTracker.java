@@ -182,7 +182,7 @@ public class PersonTracker {
                 // Detection
                 detections = detector.recognizeImage(
                         matToBitmapAndResize(frame, 320, 320),
-                        0.5f, 0.999f, 99.0f, frame);
+                        0.5f, 0.6f, 99.0f, frame);
 
                 if (detections.size() > 0) {
                     /*** Look for first detected face */
@@ -190,7 +190,7 @@ public class PersonTracker {
                     // for each detection
                     for (int i = 0; i < detections.size(); ++i) {
 
-                        if ((detections.get(i).getDetectedClass()==0)) { // if is a face
+                        if ((detections.get(i).getDetectedClass()==1)) { // if is a face
                             // save index
                             detectedFaceId = i;
                             break;
@@ -364,85 +364,85 @@ public class PersonTracker {
                             e.printStackTrace();
                         }
 
-
-                        /*** MLKit for pose*/
-                    InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
-                    Task<Pose> result =
-                            poseDetector.process(inputImage)
-                                    .addOnSuccessListener(
-                                            new OnSuccessListener<Pose>() {
-                                                @Override
-                                                public void onSuccess(Pose pose) {
-                                                    // Task completed successfully
-                                                    // ...
-
-                                                    mypose = pose;
-                                                }
-                                            })
-                                    .addOnFailureListener(
-                                            new OnFailureListener() {
-                                                @Override
-                                                public void onFailure(@NonNull Exception e) {
-                                                    // Task failed with an exception
-                                                    // ...
-                                                }
-                                            });
-
-                    try {
-                        Tasks.await(result);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                    // Get all PoseLandmarks. If no person was detected, the list will be empty
-                    List<PoseLandmark> allPoseLandmarks = mypose.getAllPoseLandmarks();
-
-                    PoseLandmark nose = mypose.getPoseLandmark(PoseLandmark.NOSE);
-                    PoseLandmark leftEye = mypose.getPoseLandmark(PoseLandmark.LEFT_EYE);
-                    PoseLandmark rightEye = mypose.getPoseLandmark(PoseLandmark.RIGHT_EYE);
-                    PoseLandmark leftEar = mypose.getPoseLandmark(PoseLandmark.LEFT_EAR);
-                    PoseLandmark rightEar = mypose.getPoseLandmark(PoseLandmark.RIGHT_EAR);
-                    PoseLandmark leftShoulder = mypose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER);
-                    PoseLandmark rightShoulder = mypose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER);
-                    PoseLandmark leftHip = mypose.getPoseLandmark(PoseLandmark.LEFT_HIP);
-                    PoseLandmark rightHip = mypose.getPoseLandmark(PoseLandmark.RIGHT_HIP);
-
-                    Log.w("coucouMLKit", "MLKit elapsed time : "+ (System.currentTimeMillis())
-                    // display position in pixels
-                            +"\n Position=" + nose.getPosition().x + "," + nose.getPosition().y );
-
-                            int noseX = (int) nose.getPosition().x;
-                            int noseY = (int) nose.getPosition().x;
-                            int leftEyeX = (int) leftEye.getPosition().x;
-                            int leftEyeY = (int) leftEye.getPosition().y;
-                            int rightEyeX = (int) rightEye.getPosition().x;
-                            int rightEyeY = (int) rightEye.getPosition().y;
-                            int leftShoulderX = (int) leftShoulder.getPosition().x;
-                            int leftShoulderY = (int) leftShoulder.getPosition().y;
-                            int rightShoulderX = (int) rightShoulder.getPosition().x;
-                            int rightShoulderY = (int) rightShoulder.getPosition().y;
-                            int leftHipX = (int) leftHip.getPosition().x;
-                            int leftHipY = (int) leftHip.getPosition().y;
-                            int rightHipX = (int) rightHip.getPosition().x;
-                            int rightHipY = (int) rightHip.getPosition().y;
-                            //Log.w(TAG, "Coords : "+ shoulderX + " " +  shoulderY );
-
-                            Imgproc.circle(frame, new Point(
-                                    left + noseX, top + noseY), 5, new Scalar(0,255,0), 10);
-                            Imgproc.circle(frame, new Point(
-                                    left + leftEyeX, top + leftEyeY), 5, new Scalar(0,255,0), 10);
-                            Imgproc.circle(frame, new Point(
-                                    left + rightEyeX, top + rightEyeY), 5, new Scalar(0,255,0), 10);
-
-                            Imgproc.circle(frame, new Point(
-                                    left + leftShoulderX, top + leftShoulderY), 5, new Scalar(0,255,0), 10);
-                            Imgproc.circle(frame, new Point(
-                                    left + rightShoulderX, top + rightShoulderY), 5, new Scalar(0,255,0), 10);
-
-                            Imgproc.circle(frame, new Point(
-                                    left + leftHipX, top + leftHipY), 5, new Scalar(0,255,0), 10);
-                            Imgproc.circle(frame, new Point(
-                                    left + rightHipX, top + rightHipY), 5, new Scalar(0,255,0), 10);
+//
+//                        /*** MLKit for pose*/
+//                    InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
+//                    Task<Pose> result =
+//                            poseDetector.process(inputImage)
+//                                    .addOnSuccessListener(
+//                                            new OnSuccessListener<Pose>() {
+//                                                @Override
+//                                                public void onSuccess(Pose pose) {
+//                                                    // Task completed successfully
+//                                                    // ...
+//
+//                                                    mypose = pose;
+//                                                }
+//                                            })
+//                                    .addOnFailureListener(
+//                                            new OnFailureListener() {
+//                                                @Override
+//                                                public void onFailure(@NonNull Exception e) {
+//                                                    // Task failed with an exception
+//                                                    // ...
+//                                                }
+//                                            });
+//
+//                    try {
+//                        Tasks.await(result);
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+//
+//                    // Get all PoseLandmarks. If no person was detected, the list will be empty
+//                    List<PoseLandmark> allPoseLandmarks = mypose.getAllPoseLandmarks();
+//
+//                    PoseLandmark nose = mypose.getPoseLandmark(PoseLandmark.NOSE);
+//                    PoseLandmark leftEye = mypose.getPoseLandmark(PoseLandmark.LEFT_EYE);
+//                    PoseLandmark rightEye = mypose.getPoseLandmark(PoseLandmark.RIGHT_EYE);
+//                    PoseLandmark leftEar = mypose.getPoseLandmark(PoseLandmark.LEFT_EAR);
+//                    PoseLandmark rightEar = mypose.getPoseLandmark(PoseLandmark.RIGHT_EAR);
+//                    PoseLandmark leftShoulder = mypose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER);
+//                    PoseLandmark rightShoulder = mypose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER);
+//                    PoseLandmark leftHip = mypose.getPoseLandmark(PoseLandmark.LEFT_HIP);
+//                    PoseLandmark rightHip = mypose.getPoseLandmark(PoseLandmark.RIGHT_HIP);
+//
+//                    Log.w("coucouMLKit", "MLKit elapsed time : "+ (System.currentTimeMillis())
+//                    // display position in pixels
+//                            +"\n Position=" + nose.getPosition().x + "," + nose.getPosition().y );
+//
+//                            int noseX = (int) nose.getPosition().x;
+//                            int noseY = (int) nose.getPosition().x;
+//                            int leftEyeX = (int) leftEye.getPosition().x;
+//                            int leftEyeY = (int) leftEye.getPosition().y;
+//                            int rightEyeX = (int) rightEye.getPosition().x;
+//                            int rightEyeY = (int) rightEye.getPosition().y;
+//                            int leftShoulderX = (int) leftShoulder.getPosition().x;
+//                            int leftShoulderY = (int) leftShoulder.getPosition().y;
+//                            int rightShoulderX = (int) rightShoulder.getPosition().x;
+//                            int rightShoulderY = (int) rightShoulder.getPosition().y;
+//                            int leftHipX = (int) leftHip.getPosition().x;
+//                            int leftHipY = (int) leftHip.getPosition().y;
+//                            int rightHipX = (int) rightHip.getPosition().x;
+//                            int rightHipY = (int) rightHip.getPosition().y;
+//                            //Log.w(TAG, "Coords : "+ shoulderX + " " +  shoulderY );
+//
+//                            Imgproc.circle(frame, new Point(
+//                                    left + noseX, top + noseY), 5, new Scalar(0,255,0), 10);
+//                            Imgproc.circle(frame, new Point(
+//                                    left + leftEyeX, top + leftEyeY), 5, new Scalar(0,255,0), 10);
+//                            Imgproc.circle(frame, new Point(
+//                                    left + rightEyeX, top + rightEyeY), 5, new Scalar(0,255,0), 10);
+//
+//                            Imgproc.circle(frame, new Point(
+//                                    left + leftShoulderX, top + leftShoulderY), 5, new Scalar(0,255,0), 10);
+//                            Imgproc.circle(frame, new Point(
+//                                    left + rightShoulderX, top + rightShoulderY), 5, new Scalar(0,255,0), 10);
+//
+//                            Imgproc.circle(frame, new Point(
+//                                    left + leftHipX, top + leftHipY), 5, new Scalar(0,255,0), 10);
+//                            Imgproc.circle(frame, new Point(
+//                                    left + rightHipX, top + rightHipY), 5, new Scalar(0,255,0), 10);
 
 
 
@@ -800,10 +800,27 @@ public class PersonTracker {
     private double getAreaOfOverlap(Rect a, Rect b)
     {
         double areaOfOverlap = 0;
-        // only if there is actually an overlap
-        if (  ((a.x+a.width > b.x ) || (b.x+b.width > a.x ) ) && ( (a.y+a.height>b.y) || (b.y+b.height>a.y) ) )
-            areaOfOverlap = Math.abs(Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x , b.x)) * //width
-                Math.abs(Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y , b.y)); // height
+//        // only if there is actually an overlap
+//        if (  ((a.x+a.width > b.x ) || (b.x+b.width > a.x ) ) && ( (a.y+a.height>b.y) || (b.y+b.height>a.y) ) )
+//            areaOfOverlap = Math.abs(Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x , b.x)) * //width
+//                Math.abs(Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y , b.y)); // height
+
+        // Length of intersecting part i.e
+        // start from max(l1.x, l2.x) of
+        // x-coordinate and end at min(r1.x,
+        // r2.x) x-coordinate by subtracting
+        // start from end we get required
+        // lengths
+
+        int x_dist = (Math.min(a.x+a.width, b.x+b.width)
+                - Math.max(a.x, b.x));
+        int y_dist = (Math.min(a.y+a.height, b.y+b.height)
+                - Math.max(a.y, b.y));
+
+        if( x_dist > 0 && y_dist > 0 )
+        {
+            areaOfOverlap = x_dist * y_dist;
+        }
 
         return areaOfOverlap;
     }
