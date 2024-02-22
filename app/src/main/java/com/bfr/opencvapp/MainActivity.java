@@ -3,6 +3,8 @@ package com.bfr.opencvapp;
 import static com.bfr.opencvapp.grafcet.AlignGrafcet.RESIZE_RATIO;
 import static com.bfr.opencvapp.grafcet.AlignGrafcet.xCenter;
 import static org.opencv.core.CvType.*;
+import static org.opencv.videoio.Videoio.CAP_PROP_FPS;
+import static org.opencv.videoio.Videoio.CAP_PROP_POS_FRAMES;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -327,11 +329,11 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         tracked = new Rect();
 
         videoCapture = new VideoCapture("/sdcard/Download/240124174157_trackingDebug.avi");
+        videoCapture.set(CAP_PROP_POS_FRAMES, 120);
         frame = new Mat();
 
 
     }
-
 
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
@@ -346,16 +348,24 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         if (recording)
             videoWriter.write(frame);
 
-        personTracker.visualTracking(frame, false, true);
-        personTracker.readyToDisplay =false;
+        try
+        {
+            personTracker.visualTracking(frame, false, true);
+            personTracker.readyToDisplay =false;
 //        Log.d(TAG, "returning display frame: " + personTracker.displayMat.size() );
 //
 //        Log.w("fps", "elapsed time=" +(System.currentTimeMillis()-elpasedtime) );
-        elpasedtime = System.currentTimeMillis();
+            elpasedtime = System.currentTimeMillis();
 
-        Imgproc.cvtColor( personTracker.displayMat,  personTracker.displayMat, Imgproc.COLOR_RGB2BGR);
-        return personTracker.displayMat;
-//        return frame;
+            Imgproc.cvtColor( personTracker.displayMat,  personTracker.displayMat, Imgproc.COLOR_RGB2BGR);
+            return personTracker.displayMat;
+        }
+        catch (Exception e)
+        {
+            return new Mat(768,1024, CV_8UC3, new Scalar(0, 0, 0));
+
+        }
+
 
     } // end function
 

@@ -283,6 +283,7 @@ public class Utils {
     public static  Bitmap matToBitmapAndResize(Mat mat, int sizeX, int sizeY)
     {
         Mat resizedFrame = new Mat();
+        Log.d(TAG, "resizing: " + mat.size() + " to " + sizeX + "," + sizeY );
         Imgproc.resize(mat, resizedFrame, new Size(sizeX,sizeY));
         Bitmap bitmapImagefull = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
         org.opencv.android.Utils.matToBitmap(resizedFrame, bitmapImagefull);

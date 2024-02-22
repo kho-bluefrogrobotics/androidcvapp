@@ -165,7 +165,7 @@ public class PersonTracker {
             }
             else
             {// dectect every xxx frame
-                _FRAME_DETECT = 30000000;
+                _FRAME_DETECT = 300000;
             }
 
 
@@ -226,9 +226,7 @@ public class PersonTracker {
             else
             {
                 // Reset tracking only every xxx frames of in case of tracking lost
-//                if (frameCount %_FRAME_DETECT == 0 || !trackingSuccess ) {
-                if (false ) {
-
+                if (frameCount %_FRAME_DETECT == 0 || !trackingSuccess ) {
                     if(debugLog)
                         Log.d(TAG, "\n\n****************************************************\n" +
                                 "Checking if need to reset  trackingsucess =" + trackingSuccess + " frameNum="+frameCount ) ;
@@ -309,8 +307,11 @@ public class PersonTracker {
 //                            width , // width
 //                            height); // height
 
+                    // Detection
+                    detections = detector.recognizeImage(
+                            matToBitmapAndResize(frame, 320, 320),
+                            0.5f, 0.6f, 99.0f, frame);
 
-//                    checkAndResetTracking(vitTracker, tracked, targetBox);
                     checkAndResetTracking(vitTracker, tracked, null);
                     trackingSuccess = true;
                     frameCount +=1;
@@ -758,11 +759,11 @@ public class PersonTracker {
         if (detectedClass == 0) // Human
         {
             // crop extra area
-//            croppedArea.x = (int) (tracked.x + tracked.width/4 );
-//            croppedArea.width = (int)(tracked.width- (tracked.width/2) );
-//            croppedArea.y= (int) (tracked.y + tracked.height/16);
-//            // track the 2/3 upper part  or minimum arbitrary value
-//            croppedArea.height = Math.max( (int) (0.5 * tracked.height), MIN_HUMAN_HEIGHT  );
+            croppedArea.x = (int) (tracked.x + tracked.width/4 );
+            croppedArea.width = (int)(tracked.width- (tracked.width/2) );
+            croppedArea.y= (int) (tracked.y + tracked.height/16);
+            // track the 2/3 upper part  or minimum arbitrary value
+            croppedArea.height = Math.max( (int) (0.5 * tracked.height), MIN_HUMAN_HEIGHT  );
 
         }
         else if (detectedClass == 1) // Face
@@ -860,156 +861,25 @@ public class PersonTracker {
                     || tracked.box.y+tracked.box.height>smallFrame.rows() )
                 return;
 
+            Mat currTracked = smallFrame.submat(tracked.box);
+            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_currTracking.jpg",
+                    currTracked);
+
             /**** Todebug: record images of tracked and where to reset*/
 //            Mat trackMat = smallFrame.submat(tracked.box);
 //            Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"0Tracked.jpg", trackMat);
-
-            // Human-face Detection
-            detections = detector.recognizeImage(
-                            matToBitmapAndResize(smallFrame, 320, 320),
-                            0.7f, 0.4f, 99.0f, smallFrame);
-
 
             // If detected something
             if (detections.size() > 0) {
 
                 if(debugLog)
                     Log.d(TAG, "Total of detected object = " + detections.size());
-                if(detections.size()<=1)
-                    Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_baddetection.jpg",
-                            smallFrame);
-
-
-                //get closest human
-                Point trackedCentroid = getCentroid(tracked.box.x, // upper left corner x
-                        tracked.box.y, // upper left corner y
-                        tracked.box.height, // height
-                        tracked.box.width); // width
-
-                // init
-                int numOfDetectedHumans = 0;
-                Double dist = 0.0;
-                Double maxDist = Double.POSITIVE_INFINITY;
-                int idClosest = -1;
-                // for each detection
-                for (int i=0; i<detections.size(); i++)
-                {
-                    // only if human
-                    if(detections.get(i).getDetectedClass()==0)
-                    {
-
-                        // todeleteafterdebug
-                        int left = (int) (detections.get(i).left * frameCols);
-                        int top =  (int) (detections.get(i).top * frameCols);
-                        int right = (int) ((detections.get(i).right-detections.get(i).left) * frameCols);
-                        int bottom = (int) ((detections.get(i).bottom-detections.get(i).top) * frameRows);
-
-                        Imgproc.rectangle(smallFrame, new Point(left, top ), new Point(right, bottom),
-                                _WHITE, 4);
-                        //end todeleteafterdebug
-                        numOfDetectedHumans+=1;
-
-                        Point detectionCentroid = getCentroid((int) (detections.get(i).left * frameCols), // upper left corner x
-                                (int) (detections.get(i).top * frameCols), // upper left corner y
-                                (int) ((detections.get(i).right-detections.get(i).left) * frameCols) , // width
-                                (int) ((detections.get(i).bottom-detections.get(i).top) * frameRows)); // height
-
-                        // find the closest detection to the tracking position
-                        // L1 distance to optimize computing time
-                        dist =  (Math.abs(detectionCentroid.x - trackedCentroid.x) + Math.abs(detectionCentroid.y - trackedCentroid.y));
-                        if (dist < maxDist) {
-                            // update
-                            maxDist = dist;
-                            idClosest = i;
-                        }
-                    } //end if
-                } //next detection
-
-                if (numOfDetectedHumans==0)
-                {
-                    Log.w(TAG, "Tried to check and reset but found 0 human");
-                }
-
-                // if found a closest
-                if (idClosest>=0)
-                {
-                    int left = (int)(detections.get(idClosest).left * smallFrame.cols());
-                    int top = (int)(detections.get(idClosest).top * smallFrame.rows());
-                    int right = (int)(detections.get(idClosest).right * smallFrame.cols());
-                    int bottom = (int)(detections.get(idClosest).bottom* smallFrame.rows());
-
-                    // todeleteafterdebug
-                    Imgproc.rectangle(smallFrame, new Point(left, top ), new Point(right, bottom),
-                            _RED, 3);
-                    //end todeleteafterdebug
-
-                    // pose estimation
-                    Rect toCrop = new Rect(
-                            left,
-                            top,
-                            right-left-5,
-                            bottom-top-10
-                    );
-                    Log.i(TAG, "To crop "+left + " " + top + " " + (right-left) + " " + (bottom-top) );
-                    Mat croppedTargetMat = smallFrame.submat(toCrop);
-                    Imgproc.resize(croppedTargetMat, croppedTargetMat, new Size(256,256));
-                    Bitmap bitmapImage = Bitmap.createBitmap(croppedTargetMat.cols(), croppedTargetMat.rows(), Bitmap.Config.ARGB_8888);
-                    Utils.matToBitmap(croppedTargetMat, bitmapImage);
-
-                    float[][] result = poseEstimator.recognizeImage(bitmapImage);
-
-                    // Blaze pose returns the x, y coords as values [0:255] independent from the input resolution
-                    int noseX = (int) (result[0][0*5] * (right-left)/255);
-                    int noseY = (int) (result[0][0*5+1] * (bottom-top)/255);
-                    int leftEyeX = (int) (result[0][2*5] * (right-left)/255);
-                    int leftEyeY = (int) (result[0][2*5+1] * (bottom-top)/255);
-                    int rightEyeX = (int) (result[0][5*5] * (right-left)/255);
-                    int rightEyeY = (int) (result[0][5*5+1] * (bottom-top)/255);
-                    int leftShoulderX = (int) (result[0][11*5] * (right-left)/255);
-                    int leftShoulderY = (int) (result[0][11*5+1] * (bottom-top)/255);
-                    int rightShoulderX = (int) (result[0][12*5] * (right-left)/255);
-                    int rightShoulderY = (int) (result[0][12*5+1] * (bottom-top)/255);
-                    int leftHipX = (int) (result[0][23*5] * (right-left)/255);
-                    int leftHipY = (int) (result[0][23*5+1] * (bottom-top)/255);
-                    int rightHipX = (int) (result[0][24*5] * (right-left)/255);
-                    int rightHipY = (int) (result[0][24*5+1] * (bottom-top)/255);
-                    //Log.w(TAG, "Coords : "+ shoulderX + " " +  shoulderY );
-
-                    Imgproc.circle(smallFrame, new Point(
-                            left + noseX, top + noseY), 5, new Scalar(0,255,0), 10);
-                    Imgproc.circle(smallFrame, new Point(
-                            left + leftEyeX, top + leftEyeY), 5, new Scalar(0,255,0), 10);
-                    Imgproc.circle(smallFrame, new Point(
-                            left + rightEyeX, top + rightEyeY), 5, new Scalar(0,255,0), 10);
-
-                    Imgproc.circle(smallFrame, new Point(
-                            left + leftShoulderX, top + leftShoulderY), 5, new Scalar(0,255,0), 10);
-                    Imgproc.circle(smallFrame, new Point(
-                            left + rightShoulderX, top + rightShoulderY), 5, new Scalar(0,255,0), 10);
-
-                    Imgproc.circle(smallFrame, new Point(
-                            left + leftHipX, top + leftHipY), 5, new Scalar(0,255,0), 10);
-                    Imgproc.circle(smallFrame, new Point(
-                            left + rightHipX, top + rightHipY), 5, new Scalar(0,255,0), 10);
-
-                    Imgcodecs.imwrite("sdcard/Download/" + System.currentTimeMillis() + "_poseest.jpg", smallFrame);
-
-                    /** check if need to reset**/
-
-                    //check if skeleton intersects with current tracked
-                    // nose, eyes, ears shoulders are in the current tracked
-
-
-                } // end if found a closest
-
-
-
-
-
-                // if not do nothing
 
                 Rect detectionBboxToReset = null;
 
+                Double dist = 0.0;
+                Double maxDist = Double.POSITIVE_INFINITY;
+                int idClosest = 0;
                 float bestOverlapRatio = 0.0f;
                 float bestIou = 0.0f;
 
@@ -1030,26 +900,24 @@ public class PersonTracker {
                         // if detection is a face
                         if (detections.get(i).getDetectedClass() == 1) {
 
-//                            // check IoU
-//                            float iou = getIOU(tracked.box, detectionBbox);
-
-                            // calculating the area of the current tracked face
-                            double faceArea = tracked.box.height*tracked.box.width;
-
-                            // ratio between the area of the face included in the human bbox and the total face area
-                            float overlapRatio = (float)(getAreaOfOverlap(detectionBbox, tracked.box) / faceArea);
+                            // check IoU
+                            float iou = getIOU(tracked.box, detectionBbox);
 
                             if(debugLog)
-//                                Log.d(TAG, "Tracking a face and found a face with IoU="+iou+"\n"
-                                Log.d(TAG, "Tracking a face and found a face with overlapratio="+overlapRatio+"\n"
+                                Log.d(TAG, "Tracking a face and found a face with IoU="+iou+"\n"
                                         +  detectionBbox.x
                                         + " " + detectionBbox.y
                                         + " " + detectionBbox.height
                                         + " " + detectionBbox.width
                                         + " frame size =(" + smallFrame.size()+")");
 
+
+                            Mat candidate = smallFrame.submat(detectionBbox);
+                            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_faceCandidate_"+i+".jpg",
+                                    candidate);
+
                             // if IoU good enough
-                            if (overlapRatio >= IOU_THRES)
+                            if (iou >= IOU_THRES)
                             {
                                 if(debugLog)
                                     Log.d(TAG, "IoU OK!");
@@ -1062,13 +930,7 @@ public class PersonTracker {
                             } // end if IoU OK
                             else
                             {
-                                Log.d(TAG, "IoU NOK :( ");
-                                Mat currTracked = smallFrame.submat(tracked.box);
-                                Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_currTracking.jpg",
-                                        currTracked);
-                                Mat candidate = smallFrame.submat(detectionBbox);
-                                Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_faceCandidate.jpg",
-                                        candidate);
+
 
                             }
                         } // end if detected object is a face
@@ -1092,6 +954,11 @@ public class PersonTracker {
                                         + " " + detectionBbox.height
                                         + " " + detectionBbox.width
                                         + " frame size =(" + smallFrame.size()+")");
+
+
+                            Mat candidate = smallFrame.submat(detectionBbox);
+                            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_HumanCandidate_"+i+".jpg",
+                                    candidate);
 
                             if (overlapRatio>OVERLAPRATIO_THRES)
                             {
@@ -1136,6 +1003,10 @@ public class PersonTracker {
                                         + " " + detectionBbox.width
                                         + " frame size =(" + smallFrame.size()+")");
 
+                            Mat candidate = smallFrame.submat(detectionBbox);
+                            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_faceCandidate_"+i+".jpg",
+                                    candidate);
+
                             if (overlapRatio>OVERLAPRATIO_THRES)
                             {
                                 if(debugLog)
@@ -1168,6 +1039,10 @@ public class PersonTracker {
                                         + " " + detectionBbox.width
                                         + " frame size =(" + smallFrame.size()+")");
 
+                            Mat candidate = smallFrame.submat(detectionBbox);
+                            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_humanCandidate_"+i+".jpg",
+                                    candidate);
+
                             // if overlap good enough
 //                            if (iou >= IOU_THRES)
                             if (overlapRatio >= OVERLAPRATIO_THRES)
@@ -1191,7 +1066,7 @@ public class PersonTracker {
                     //
                     // ********* in parallel, look for the closest object
                     //
-                    trackedCentroid = getCentroid(tracked.box.x, // upper left corner x
+                    Point trackedCentroid = getCentroid(tracked.box.x, // upper left corner x
                             tracked.box.y, // upper left corner y
                             tracked.box.height, // height
                             tracked.box.width); // width
@@ -1265,7 +1140,6 @@ public class PersonTracker {
         } catch (Exception e) {
             Log.e(TAG, "ERROR During CheckReset " + Log.getStackTraceString(e));
         }
-
 
     }
 
