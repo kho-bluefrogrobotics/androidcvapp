@@ -1,9 +1,7 @@
 package com.bfr.opencvapp;
 
-import static com.bfr.opencvapp.grafcet.AlignGrafcet.RESIZE_RATIO;
-import static com.bfr.opencvapp.grafcet.AlignGrafcet.xCenter;
+
 import static org.opencv.core.CvType.*;
-import static org.opencv.videoio.Videoio.CAP_PROP_FPS;
 import static org.opencv.videoio.Videoio.CAP_PROP_POS_FRAMES;
 
 import android.Manifest;
@@ -88,6 +86,7 @@ import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.grafcet.*;
 import com.bfr.opencvapp.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteMidas;
+import com.bfr.opencvapp.utils.TfLiteYoloXHumanHeadHands;
 
 
 public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -101,7 +100,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     private String dir = "/sdcard/Android/data/com.bfr.opencvapp/files/";
 
 
-
+TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNo");
     //********************  image ***************************
 
     //Video capture
@@ -120,12 +119,14 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     // Pose estimator
     TfLiteBlazePose blazePose;
 
-    PersonTracker personTracker;
+    public static PersonTracker personTracker;
     Rect tracked;
+
+    TfLiteYoloXHumanHeadHands humanHeadHandsDetector;
 
     // context
     Context context = this;
-    public static CheckBox alignCheckbox;
+    public CheckBox alignCheckbox;
     public CheckBox recordCkbx;
     Button initButton;
 
@@ -180,7 +181,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         alignCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                alignGrafcet.go=b;
+                trackingNoGrafcet.go=b;
 
                 if(!b)
                 {
@@ -218,15 +219,34 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                         }
                     });
                 }
+
             }
         });
 
         initButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Log.i("AlignGrafcet", "init all");
-                alignGrafcet.go = false;
-                alignGrafcet.step_num = 0;
+
+                trackingNoGrafcet.go = false;
+                trackingNoGrafcet.step_num = 0;
+
+//                int targetX = (int) (personTracker.tracked.box.x + personTracker.tracked.box.width/2);
+//
+//                float noAngle = (targetX-(1024/2))*0.09375f;
+//                Log.i("trackingNo", "Rotating to " + noAngle);
+//                BuddySDK.USB.buddySayNo(45.0f, noAngle, new IUsbCommadRsp.Stub() {
+//                    @Override
+//                    public void onSuccess(String s) throws RemoteException {
+//
+//                    }
+//
+//                    @Override
+//                    public void onFailed(String s) throws RemoteException {
+//
+//                    }
+//                });//end moveNo
+
+
             }
         });
 
@@ -323,27 +343,29 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         detector = new MultiDetector(this);
         blazePose = new TfLiteBlazePose(context);
+        humanHeadHandsDetector = new TfLiteYoloXHumanHeadHands(context);
 
-        personTracker = new PersonTracker(detector, blazePose);
+        personTracker = new PersonTracker(detector, blazePose, humanHeadHandsDetector);
 
         tracked = new Rect();
 
         videoCapture = new VideoCapture("/sdcard/Download/240124174252_trackingDebug.avi");
-        videoCapture.set(CAP_PROP_POS_FRAMES, 40);
+        videoCapture.set(CAP_PROP_POS_FRAMES, 10);
         frame = new Mat();
 
 
+        trackingNoGrafcet.start();
     }
 
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
         // cature frame from camera
-//        frame = inputFrame.rgba();
-//        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2BGR);
+        frame = inputFrame.rgba();
+        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2BGR);
 
 
-        videoCapture.read(frame);
+//        videoCapture.read(frame);
 
         if (recording)
             videoWriter.write(frame);
@@ -352,10 +374,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         {
             personTracker.visualTracking(frame, false, true);
             personTracker.readyToDisplay =false;
-//        Log.d(TAG, "returning display frame: " + personTracker.displayMat.size() );
-//
-//        Log.w("fps", "elapsed time=" +(System.currentTimeMillis()-elpasedtime) );
-            elpasedtime = System.currentTimeMillis();
 
             Imgproc.cvtColor( personTracker.displayMat,  personTracker.displayMat, Imgproc.COLOR_RGB2BGR);
             return personTracker.displayMat;
@@ -415,8 +433,18 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         Log.w("coucou","coucou onSDKReady");
 
-        alignGrafcet = new AlignGrafcet("AlignGrafcet");
-        alignGrafcet.start();
+        BuddySDK.USB.enableNoMove(true, new IUsbCommadRsp.Stub() {
+            @Override
+            public void onSuccess(String s) throws RemoteException {
+
+            }
+
+            @Override
+            public void onFailed(String s) throws RemoteException {
+
+            }
+        });
+
     }
 
 

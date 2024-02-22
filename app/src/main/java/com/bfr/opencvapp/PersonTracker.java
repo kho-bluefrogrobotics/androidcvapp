@@ -10,6 +10,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.bfr.opencvapp.utils.TfLiteYoloXHumanHeadHands;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -51,6 +52,7 @@ public class PersonTracker {
 
     // List of detected person or faces or hands
     ArrayList<MultiDetector.Recognition> detections = new ArrayList<MultiDetector.Recognition>();
+    ArrayList<TfLiteYoloXHumanHeadHands.Recognition> hhhDetections = new ArrayList<TfLiteYoloXHumanHeadHands.Recognition>();
     // Blob
     Mat blob;
     Size frameResize = new Size(250,250);
@@ -99,7 +101,7 @@ public class PersonTracker {
 
     String saveFolder="";
 
-    float IOU_THRES = 0.7f;
+    float IOU_THRES = 0.5f;
     float OVERLAPRATIO_THRES = 0.5f;
 
     // hard limit for human height to track (in pixel)
@@ -115,11 +117,15 @@ public class PersonTracker {
     PoseDetector poseDetector;
     Pose mypose;
 
-    public PersonTracker(MultiDetector personDetector, TfLiteBlazePose blazePose){
+    TfLiteYoloXHumanHeadHands humanHeadHandsDetector;
+
+    public PersonTracker(MultiDetector personDetector, TfLiteBlazePose blazePose,TfLiteYoloXHumanHeadHands hhhdetector ){
         // Load model for human detector
         detector = personDetector;
 
         poseEstimator = blazePose;
+
+        humanHeadHandsDetector = hhhdetector;
 
         Log.d(TAG, "Person detector model created"  ) ;
         displayMat = new Mat();
@@ -308,11 +314,14 @@ public class PersonTracker {
 //                            height); // height
 
                     // Detection
-                    detections = detector.recognizeImage(
-                            matToBitmapAndResize(frame, 320, 320),
-                            0.5f, 0.6f, 99.0f, frame);
+//                    detections = detector.recognizeImage(
+//                            matToBitmapAndResize(frame, 320, 320),
+//                            0.5f, 0.6f, 99.0f, frame);
 
-                    checkAndResetTracking(vitTracker, tracked, null);
+                    hhhDetections = humanHeadHandsDetector.recognizeImage(
+                            smallFrame, 0.5f, 0.5f, 99.0f );
+
+                    checkAndResetTracking(vitTracker, tracked, null, hhhDetections);
                     trackingSuccess = true;
                     frameCount +=1;
 
@@ -328,8 +337,9 @@ public class PersonTracker {
                                 trackingSuccess = mosseTracker.update(smallFrame, mosseTracked);
                             }
                             else{
-//                            Log.w(TAG, "UPDATE VIT tracker ") ;
+
                                 vitTracker.update(smallFrame, tracked.box);
+//                                Log.w(TAG, "UPDATE VIT tracker " + tracked.box.x+","+tracked.box.y);
                                 tracked.score = vitTracker.getTrackingScore();
                                 if(computeTrackingScore(scoreHistory)>=0.6f)
                                     trackingSuccess=true;
@@ -353,8 +363,6 @@ public class PersonTracker {
 //                            Imgproc.resize(croppedTargetMat, croppedTargetMat, new Size(256,256));
                             Bitmap bitmapImage = Bitmap.createBitmap(croppedTargetMat.cols(), croppedTargetMat.rows(), Bitmap.Config.ARGB_8888);
                             Utils.matToBitmap(croppedTargetMat, bitmapImage);
-
-
 
 
                         try (FileOutputStream out = new FileOutputStream("/sdcard/Download/coucou.jpg")) {
@@ -585,6 +593,11 @@ public class PersonTracker {
             Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.3f", avscore) + "]",
                     new Point(pt1.x, pt1.y),
                     2, 1, _GREEN, 2);
+
+            int targetX = (int) (tracked.box.x + tracked.box.width/2);
+            Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.1f", (targetX-(1024/2))*0.09375f) + "]",
+                    new Point(pt1.x+30, pt1.y),
+                    2, 1, _BLACK, 5);
 
 
 //            Imgproc.putText(displayMat, "COUCOU", new Point(300, 300),
@@ -852,7 +865,7 @@ public class PersonTracker {
      @params : tracked:  the current tracked object
      @params : detections
      */
-    private void checkAndResetTracking(Object tracker, TrackedObject tracked, Rect target)
+    private void checkAndResetTracking(Object tracker, TrackedObject tracked, Rect target, ArrayList<TfLiteYoloXHumanHeadHands.Recognition> detections)
     {
         try{
             if(debugLog)
@@ -934,6 +947,15 @@ public class PersonTracker {
 
                                 // declare tracking as OK
                                 trackingSuccess = true;
+
+                                // reset score
+                                scoreHistory.clear();
+                                for(int id=0; id<NUM_OF_SCORE_HISTORY; id++)
+                                {
+                                    scoreHistory.add(1.0f);
+                                }
+
+
                                 return; // do nothing -> Exit the function to keep the current tracking object
                                 //   NB: we do not reset on the detected face as there is a possibility to be another occluding face
 
@@ -1159,6 +1181,12 @@ public class PersonTracker {
         vitTracker.init(smallFrame, bbox);
         tracked.objectClass = classOfTrack;
         trackingSuccess = true;
+
+        scoreHistory.clear();
+        for(int i=0; i<NUM_OF_SCORE_HISTORY; i++)
+        {
+            scoreHistory.add(1.0f);
+        }
 
     } // end of rest Tracker
 

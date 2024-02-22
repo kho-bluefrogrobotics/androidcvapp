@@ -49,10 +49,11 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     implementation (platform("org.jetbrains.kotlin:kotlin-bom:1.8.0"))
     // tflite
-    implementation 'org.tensorflow:tensorflow-lite:2.5.0'
-    implementation 'org.tensorflow:tensorflow-lite-gpu:2.5.0'
-    implementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.3.0'
+    implementation 'org.tensorflow:tensorflow-lite:2+'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2+'
+    implementation 'org.tensorflow:tensorflow-lite-gpu-api:2+'
     implementation 'org.tensorflow:tensorflow-lite-hexagon:2.5.0'
+    implementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.3.0'
     // Build off of nightly TensorFlow Lite Task Library
     implementation('org.tensorflow:tensorflow-lite-task-vision:0.0.0-nightly') { changing = true }
     implementation('org.tensorflow:tensorflow-lite-metadata:0.0.0-nightly') { changing = true }
