@@ -1,13 +1,16 @@
 package com.bfr.opencvapp.grafcet;
 
 
-import android.os.IBinder;
+import static com.bfr.opencvapp.MainActivity.personTracker;
+
 import android.os.RemoteException;
 import android.util.Log;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
+import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 
 
@@ -33,7 +36,7 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
     private int mIntervalleHist = INTERVAL_MIN;
     private float speed = 10F;
 
-    private int previous_step = 0;
+    private int previous_step = -1;
     private double time_in_curr_step = 0;
     private boolean bypass = false;
 
@@ -47,6 +50,19 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
     //motor response
     private boolean isMoving = false;
     private float mMiddleRect;
+
+
+    Point target;
+    int targetX, targetY;
+
+    String motorAck = "";
+
+    float noOffset=0.0f;
+    float previousOffset=0.0f;
+    float noAngle=0.0f;
+    float noSpeed = 30.0f;
+    float BASE_SPEED = 15.0f;
+    float accFactor = 1.0f;
 
     private IUsbCommadRsp iUsbCommadRsp = new IUsbCommadRsp.Stub(){
 
@@ -84,7 +100,7 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
             // if step changed
             if( !(step_num == previous_step)) {
                 // display current step
-                Log.i("GRAFCET YES", "current step: " + step_num + "  ");
+                Log.i(name, "current step: " + step_num + "  ");
                 // update
                 previous_step = step_num;
             } // end if step = same
@@ -101,13 +117,175 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
                     }*/
                     //wait until check box
                     if (go) {
+
                         // go to next step
-                        step_num = 1;
+                        step_num = 5;
+                    }
+                    break;
+
+                case 5: // enable wheels
+                    BuddySDK.USB.enableYesMove(true, new IUsbCommadRsp.Stub() {
+                        @Override
+                        public void onSuccess(String s) throws RemoteException {
+
+                        }
+
+                        @Override
+                        public void onFailed(String s) throws RemoteException {
+
+                        }
+                    });
+                    step_num = 6;
+                    break;
+
+                case 6 : // Wait for enable
+                    if( !BuddySDK.Actuators.getYesStatus().toUpperCase().contains("DISABLE"))
+                    {
+                        step_num = 10;
+                    }
+                    break;
+
+                case 10: // get target position
+
+                    target = getCentroid(personTracker.tracked.box.x,
+                            personTracker.tracked.box.y,
+                            personTracker.tracked.box.height,
+                            personTracker.tracked.box.width
+                            );
+                    targetX = (int) target.x;
+                    targetY = (int) target.y;
+//                    Log.d(name, "Target at " + targetX + "," + targetY);
+                    // compute angle
+                    noOffset = (targetY-(768/2))*0.09375f;
+//                    Log.d(name, "Rotation " + noAngle);
+
+                    if(Math.abs(noOffset)>4.0f)
+                        step_num = 20;
+                    break;
+
+                case 20: // move head
+
+                    //reset
+                    motorAck = "";
+                    previousOffset = noOffset;
+
+                    if (noOffset>0)
+                        noAngle = -150.0f;
+                    else
+                        noAngle = 150.0f;
+
+                    Log.d(name, "rotating to " + noAngle + " (offset=" + noOffset +") at " + noSpeed);
+                    // speed
+//                    noSpeed = Math.max(noOffset*1.3f, 30.0f);
+
+//                    BuddySDK.USB.buddySayNo(Math.abs(noOffset*3), noAngle, new IUsbCommadRsp.Stub() {
+                    BuddySDK.USB.buddySayYes(BASE_SPEED, noAngle, new IUsbCommadRsp.Stub() {
+                        @Override
+                        public void onSuccess(String s) throws RemoteException {
+                            motorAck = s;
+                        }
+
+                        @Override
+                        public void onFailed(String s) throws RemoteException {
+
+                        }
+                    });
+                    step_num = 28;
+                    break;
+
+                case 25: // wait for OK
+                    if (motorAck.contains("OK"))
+                    {
+                        step_num = 28;
                     }
                     break;
 
 
+                case 28 : // wait for target in range
+                    target = getCentroid(personTracker.tracked.box.x,
+                            personTracker.tracked.box.y,
+                            personTracker.tracked.box.height,
+                            personTracker.tracked.box.width
+                    );
+                    targetX = (int) target.x;
+                    targetY = (int) target.y;
+//                    Log.d(name, "Target at " + targetX + "," + targetY);
+                    // compute angle
+                    noOffset = (targetY-(768/2))*0.09375f;
 
+                    // if target in range
+                    if (Math.abs(noOffset)<5)
+                    {
+                        Log.d(name, "offset = " + noOffset + " -> STOP");
+                        BuddySDK.USB.buddyStopYesMove(new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String s) throws RemoteException {
+
+                            }
+
+                            @Override
+                            public void onFailed(String s) throws RemoteException {
+
+                            }
+                        });
+                        step_num = 10;
+                    }
+                    else
+                    {
+                        if (Math.abs(noOffset)-Math.abs(previousOffset)>1)
+                        {
+                            Log.d(name, "offset is moving: "
+                                    + Math.abs(noOffset) + "-"+ Math.abs(previousOffset)
+                                    +"=" +(Math.abs(noOffset)-Math.abs(previousOffset)));
+                            accFactor = Math.abs(noOffset)-Math.abs(previousOffset);
+                            step_num = 30;
+                        }
+                    }
+
+                    break;
+
+
+                case 30: // adjust speed
+                    //reset
+                    motorAck = "";
+                    previousOffset = noOffset;
+
+                    if (noOffset>0)
+                        noAngle = -150.0f;
+                    else
+                        noAngle = 150.0f;
+
+                    noSpeed = accFactor*BASE_SPEED;
+                    if (noSpeed>60.0f)
+                        noSpeed=60.0f;
+
+                    Log.d(name, "rotating to " + noAngle + " (offset=" + noOffset +") at " + noSpeed);
+                    // speed
+//                    noSpeed = Math.max(noOffset*1.3f, 30.0f);
+
+//                    BuddySDK.USB.buddySayNo(Math.abs(noOffset*3), noAngle, new IUsbCommadRsp.Stub() {
+                    BuddySDK.USB.buddySayYes(noSpeed, noAngle, new IUsbCommadRsp.Stub() {
+                        @Override
+                        public void onSuccess(String s) throws RemoteException {
+                            motorAck = s;
+                        }
+
+                        @Override
+                        public void onFailed(String s) throws RemoteException {
+
+                        }
+                    });
+                    step_num = 28;
+                    break;
+
+                case 30000 : // wait
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    step_num = 10;
+                    break;
 
                 default :
                     // go to next step
@@ -117,5 +295,18 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
 
         } // end run
     }; // end new runnable
+
+    /**
+     Get the centroid of a bbox (from upper left corner coordinates and height/width)
+     */
+    private Point getCentroid(int x, int y, int height, int width)
+    {
+        Point centroid = new Point();
+
+        centroid.x = x + (int)(width/2);
+        centroid.y = y + (int)(height/2);
+
+        return centroid;
+    } //end getCentroid
 
 }

@@ -101,6 +101,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
 
 TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNo");
+TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
+
     //********************  image ***************************
 
     //Video capture
@@ -182,6 +184,7 @@ TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNo");
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 trackingNoGrafcet.go=b;
+                trackingYesGrafcet.go=b;
 
                 if(!b)
                 {
@@ -230,21 +233,24 @@ TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNo");
                 trackingNoGrafcet.go = false;
                 trackingNoGrafcet.step_num = 0;
 
-                int targetX = (int) (personTracker.tracked.box.x + personTracker.tracked.box.width/2);
+                trackingYesGrafcet.go = false;
+                trackingYesGrafcet.step_num = 0;
 
-                float noAngle = (targetX-(1024/2))*0.09375f;
-                Log.i("trackingNo", "Rotating to " + noAngle);
-                BuddySDK.USB.buddySayNo(45.0f, noAngle, new IUsbCommadRsp.Stub() {
-                    @Override
-                    public void onSuccess(String s) throws RemoteException {
-
-                    }
-
-                    @Override
-                    public void onFailed(String s) throws RemoteException {
-
-                    }
-                });//end moveNo
+//                int targetX = (int) (personTracker.tracked.box.x + personTracker.tracked.box.width/2);
+//
+//                float noAngle = (targetX-(1024/2))*0.09375f;
+//                Log.i("trackingNo", "Rotating to " + noAngle);
+//                BuddySDK.USB.buddySayNo(45.0f, noAngle, new IUsbCommadRsp.Stub() {
+//                    @Override
+//                    public void onSuccess(String s) throws RemoteException {
+//
+//                    }
+//
+//                    @Override
+//                    public void onFailed(String s) throws RemoteException {
+//
+//                    }
+//                });//end moveNo
 
 
             }
@@ -444,8 +450,20 @@ TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNo");
 
             }
         });
+        BuddySDK.USB.enableYesMove(true, new IUsbCommadRsp.Stub() {
+            @Override
+            public void onSuccess(String s) throws RemoteException {
+
+            }
+
+            @Override
+            public void onFailed(String s) throws RemoteException {
+
+            }
+        });
 
         trackingNoGrafcet.start(20);
+        trackingYesGrafcet.start(20);
 
     }
 

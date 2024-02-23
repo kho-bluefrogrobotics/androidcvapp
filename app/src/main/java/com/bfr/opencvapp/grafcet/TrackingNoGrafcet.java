@@ -62,6 +62,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
     float previousOffset=0.0f;
     float noAngle=0.0f;
     float noSpeed = 30.0f;
+    float BASE_SPEED = 30.0f;
     float accFactor = 1.0f;
 
     private IUsbCommadRsp iUsbCommadRsp = new IUsbCommadRsp.Stub(){
@@ -179,7 +180,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 //                    noSpeed = Math.max(noOffset*1.3f, 30.0f);
 
 //                    BuddySDK.USB.buddySayNo(Math.abs(noOffset*3), noAngle, new IUsbCommadRsp.Stub() {
-                    BuddySDK.USB.buddySayNo(30.0f, noAngle, new IUsbCommadRsp.Stub() {
+                    BuddySDK.USB.buddySayNo(BASE_SPEED, noAngle, new IUsbCommadRsp.Stub() {
                         @Override
                         public void onSuccess(String s) throws RemoteException {
                             motorAck = s;
@@ -255,7 +256,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     else
                         noAngle = -150.0f;
 
-                    noSpeed = accFactor*30.0f;
+                    noSpeed = accFactor*BASE_SPEED;
                     if (noSpeed>60.0f)
                         noSpeed=60.0f;
 
