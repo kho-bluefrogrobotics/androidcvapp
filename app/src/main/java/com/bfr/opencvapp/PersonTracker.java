@@ -110,7 +110,7 @@ public class PersonTracker {
     // log debug
     private boolean debugLog =true;
     ArrayList<Float> scoreHistory = new ArrayList<Float>();
-    final float NUM_OF_SCORE_HISTORY = 10;
+    final float NUM_OF_SCORE_HISTORY = 90;
     float avscore = 0.0f;
 
     PoseDetectorOptions poseDetectoptions;

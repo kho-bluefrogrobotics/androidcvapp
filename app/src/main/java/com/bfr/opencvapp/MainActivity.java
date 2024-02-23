@@ -230,21 +230,21 @@ TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNo");
                 trackingNoGrafcet.go = false;
                 trackingNoGrafcet.step_num = 0;
 
-//                int targetX = (int) (personTracker.tracked.box.x + personTracker.tracked.box.width/2);
-//
-//                float noAngle = (targetX-(1024/2))*0.09375f;
-//                Log.i("trackingNo", "Rotating to " + noAngle);
-//                BuddySDK.USB.buddySayNo(45.0f, noAngle, new IUsbCommadRsp.Stub() {
-//                    @Override
-//                    public void onSuccess(String s) throws RemoteException {
-//
-//                    }
-//
-//                    @Override
-//                    public void onFailed(String s) throws RemoteException {
-//
-//                    }
-//                });//end moveNo
+                int targetX = (int) (personTracker.tracked.box.x + personTracker.tracked.box.width/2);
+
+                float noAngle = (targetX-(1024/2))*0.09375f;
+                Log.i("trackingNo", "Rotating to " + noAngle);
+                BuddySDK.USB.buddySayNo(45.0f, noAngle, new IUsbCommadRsp.Stub() {
+                    @Override
+                    public void onSuccess(String s) throws RemoteException {
+
+                    }
+
+                    @Override
+                    public void onFailed(String s) throws RemoteException {
+
+                    }
+                });//end moveNo
 
 
             }
@@ -354,7 +354,7 @@ TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNo");
         frame = new Mat();
 
 
-        trackingNoGrafcet.start();
+
     }
 
     @SuppressLint("SuspiciousIndentation")
@@ -444,6 +444,8 @@ TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNo");
 
             }
         });
+
+        trackingNoGrafcet.start(100);
 
     }
 

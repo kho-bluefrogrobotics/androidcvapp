@@ -122,9 +122,9 @@ public class bfr_Grafcet
     public void start(long mtime_period)
     {
         //if not started yet
-        if (myscheduler.isShutdown())
+        if (myscheduler == null || myscheduler.isShutdown())
         {
-            Log.i(TAG, "\n********* GRAFCET **********\nGrafcet " + name + " starting \n");
+            Log.i(TAG, "\n********* GRAFCET **********\nGrafcet " + name + " starting every "+ mtime_period +"\n");
             // log the stack strace in verbose mode
             Log.v(TAG, "Grafcet " + name + " called at " );
             //init thread

@@ -60,6 +60,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 
     float noOffset=0.0f;
     float noAngle=0.0f;
+    float noSpeed = 60.0f;
 
     private IUsbCommadRsp iUsbCommadRsp = new IUsbCommadRsp.Stub(){
 
@@ -151,12 +152,12 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                             );
                     targetX = (int) target.x;
                     targetY = (int) target.y;
-                    Log.d(name, "Target at " + targetX + "," + targetY);
+//                    Log.d(name, "Target at " + targetX + "," + targetY);
                     // compute angle
                     noOffset = (targetX-(1024/2))*0.09375f;
-                    Log.d(name, "Rotation " + noAngle);
+//                    Log.d(name, "Rotation " + noAngle);
 
-                    if(Math.abs(noOffset)>5.0f)
+                    if(Math.abs(noOffset)>7.0f)
                         step_num = 20;
                     break;
 
@@ -165,9 +166,18 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     //reset
                     motorAck = "";
                     noAngle = BuddySDK.Actuators.getNoPosition()+noOffset;
-                    Log.d(name, "rotating to " + noAngle);
+                    Log.d(name, "rotating to " + noAngle + " (offset=" + noOffset +")");
 
-                    BuddySDK.USB.buddySayNo(Math.abs(noOffset*3), noAngle, new IUsbCommadRsp.Stub() {
+//                    if (noAngle>0)
+//                        noAngle = 150.0f;
+//                    else
+//                        noAngle = -150.0f;
+
+                    // speed
+                    noSpeed = Math.max(noOffset*1.3f, 30.0f);
+
+//                    BuddySDK.USB.buddySayNo(Math.abs(noOffset*3), noAngle, new IUsbCommadRsp.Stub() {
+                    BuddySDK.USB.buddySayNo(noSpeed, noAngle, new IUsbCommadRsp.Stub() {
                         @Override
                         public void onSuccess(String s) throws RemoteException {
                             motorAck = s;
@@ -178,7 +188,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 
                         }
                     });
-                    step_num = 25;
+                    step_num = 28;
                     break;
 
                 case 25: // wait for OK
@@ -188,13 +198,52 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     }
                     break;
 
-                case 28 : // wait for end of mvt
+
+//                case 28 : // wait for target in range
+//                    target = getCentroid(personTracker.tracked.box.x,
+//                            personTracker.tracked.box.y,
+//                            personTracker.tracked.box.height,
+//                            personTracker.tracked.box.width
+//                    );
+//                    targetX = (int) target.x;
+//                    targetY = (int) target.y;
+////                    Log.d(name, "Target at " + targetX + "," + targetY);
+//                    // compute angle
+//                    noOffset = (targetX-(1024/2))*0.09375f;
+//
+//                    if (Math.abs(noOffset)>7.0f)
+//                    {
+//                        step_num = 0;
+//                    }
+//                        else
+//                        {
+//                        BuddySDK.USB.buddyStopNoMove(new IUsbCommadRsp.Stub() {
+//                            @Override
+//                            public void onSuccess(String s) throws RemoteException {
+//
+//                            }
+//
+//                            @Override
+//                            public void onFailed(String s) throws RemoteException {
+//
+//                            }
+//                        });
+//                        step_num = 10;
+//                }
+//
+//
+//                    break;
+
+
+
+
+                    case 28 : // wait for end of mvt
                     if(motorAck.contains("FINISHED"))
                     {
-                        step_num = 30000;
+                        step_num = 10;
                     }
-
                     break;
+
                 case 30000 : // wait
                     try {
                         Thread.sleep(500);
