@@ -168,23 +168,18 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     //reset
                     motorAck = "";
                     previousOffset = noOffset;
-                    noAngle = BuddySDK.Actuators.getNoPosition()+noOffset;
 
                     if (noOffset>0)
                         noAngle = 150.0f;
                     else
                         noAngle = -150.0f;
 
-                    noSpeed = accFactor*noSpeed;
-                    if (noSpeed>60.0f)
-                        noSpeed=60.0f;
-
                     Log.d(name, "rotating to " + noAngle + " (offset=" + noOffset +") at " + noSpeed);
                     // speed
 //                    noSpeed = Math.max(noOffset*1.3f, 30.0f);
 
 //                    BuddySDK.USB.buddySayNo(Math.abs(noOffset*3), noAngle, new IUsbCommadRsp.Stub() {
-                    BuddySDK.USB.buddySayNo(noSpeed, noAngle, new IUsbCommadRsp.Stub() {
+                    BuddySDK.USB.buddySayNo(30.0f, noAngle, new IUsbCommadRsp.Stub() {
                         @Override
                         public void onSuccess(String s) throws RemoteException {
                             motorAck = s;
@@ -243,36 +238,33 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                                     + Math.abs(noOffset) + "-"+ Math.abs(previousOffset)
                                     +"=" +(Math.abs(noOffset)-Math.abs(previousOffset)));
                             accFactor = Math.abs(noOffset)-Math.abs(previousOffset);
-                            step_num = 20;
+                            step_num = 30;
                         }
                     }
 
-
                     break;
 
 
-
-
-//                    case 28 : // wait for end of mvt
-//                    if(motorAck.contains("FINISHED"))
-//                    {
-//                        step_num = 10;
-//                    }
-//                    break;
-
-                case 30000 : // wait
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    step_num = 10;
-                    break;
-                case 30: // // move head
-
+                case 30: // adjust speed
                     //reset
                     motorAck = "";
-                    BuddySDK.USB.buddySayNo(30.0f, -45f, new IUsbCommadRsp.Stub() {
+                    previousOffset = noOffset;
+
+                    if (noOffset>0)
+                        noAngle = 150.0f;
+                    else
+                        noAngle = -150.0f;
+
+                    noSpeed = accFactor*30.0f;
+                    if (noSpeed>60.0f)
+                        noSpeed=60.0f;
+
+                    Log.d(name, "rotating to " + noAngle + " (offset=" + noOffset +") at " + noSpeed);
+                    // speed
+//                    noSpeed = Math.max(noOffset*1.3f, 30.0f);
+
+//                    BuddySDK.USB.buddySayNo(Math.abs(noOffset*3), noAngle, new IUsbCommadRsp.Stub() {
+                    BuddySDK.USB.buddySayNo(noSpeed, noAngle, new IUsbCommadRsp.Stub() {
                         @Override
                         public void onSuccess(String s) throws RemoteException {
                             motorAck = s;
@@ -283,21 +275,16 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 
                         }
                     });
-                    step_num = 35;
+                    step_num = 28;
                     break;
 
-                case 35: // wait for OK
-                    if (motorAck.contains("OK"))
-                    {
-                        step_num = 38;
+                case 30000 : // wait
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
-                    break;
-
-                case 38 : // wait for end of mvt
-                    if(motorAck.contains("FINISHED"))
-                    {
-                        step_num = 10;
-                    }
+                    step_num = 10;
                     break;
 
                 default :
