@@ -594,10 +594,15 @@ public class PersonTracker {
                     new Point(pt1.x, pt1.y),
                     2, 1, _GREEN, 2);
 
+
             int targetX = (int) (tracked.box.x + tracked.box.width/2);
             Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.1f", (targetX-(1024/2))*0.09375f) + "]",
-                    new Point(pt1.x+30, pt1.y),
-                    2, 1, _BLACK, 5);
+                    new Point(pt1.x, pt1.y+30),
+                    2, 1, _WHITE, 5);
+
+            Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.1f", (targetX-(1024/2))*0.09375f) + "]",
+                    new Point(pt1.x, pt1.y+30),
+                    2, 1, _RED, 2);
 
 
 //            Imgproc.putText(displayMat, "COUCOU", new Point(300, 300),

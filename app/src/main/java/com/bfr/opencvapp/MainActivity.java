@@ -445,7 +445,7 @@ TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNo");
             }
         });
 
-        trackingNoGrafcet.start(100);
+        trackingNoGrafcet.start(20);
 
     }
 
