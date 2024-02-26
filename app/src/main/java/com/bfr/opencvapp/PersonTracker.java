@@ -10,6 +10,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.utils.TfLiteYoloXHumanHeadHands;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -156,6 +157,17 @@ public class PersonTracker {
 
 //        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2RGB);
         try {
+
+            //Imgproc.circle(frame, new Point(center.x, center.y), 3, new Scalar(255, 50, 0), 3 );
+            Point center = new Point(1024/2, 768/2);
+            double angle = 1.3*BuddySDK.Actuators.getYesPosition()*-(BuddySDK.Actuators.getNoPosition())/80;
+
+            Mat mapMatrix = Imgproc.getRotationMatrix2D(center, angle, 1.0);
+
+//            Mat frame_cpy = frame.clone();
+
+            Imgproc.warpAffine(frame, frame, mapMatrix, new Size(frame.cols(), frame.rows()));
+
 
             // Resize for better performances
 //            Imgproc.resize(frame, smallFrame, smallSize);
