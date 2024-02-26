@@ -16,11 +16,11 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.mlkit.vision.common.InputImage;
-import com.google.mlkit.vision.pose.Pose;
-import com.google.mlkit.vision.pose.PoseDetection;
-import com.google.mlkit.vision.pose.PoseDetector;
-import com.google.mlkit.vision.pose.PoseLandmark;
-import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions;
+//import com.google.mlkit.vision.pose.Pose;
+//import com.google.mlkit.vision.pose.PoseDetection;
+//import com.google.mlkit.vision.pose.PoseDetector;
+//import com.google.mlkit.vision.pose.PoseLandmark;
+//import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions;
 
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
@@ -113,9 +113,9 @@ public class PersonTracker {
     final float NUM_OF_SCORE_HISTORY = 90;
     float avscore = 0.0f;
 
-    PoseDetectorOptions poseDetectoptions;
-    PoseDetector poseDetector;
-    Pose mypose;
+//    PoseDetectorOptions poseDetectoptions;
+//    PoseDetector poseDetector;
+//    Pose mypose;
 
     TfLiteYoloXHumanHeadHands humanHeadHandsDetector;
 
@@ -139,13 +139,13 @@ public class PersonTracker {
         vitTracker = TrackerVit.create(vitTrackerparams);
 
         // Base pose detector with streaming frames, when depending on the pose-detection sdk
-        poseDetectoptions =
-                new PoseDetectorOptions.Builder()
-                        .setDetectorMode(PoseDetectorOptions.SINGLE_IMAGE_MODE)
-                        .setPreferredHardwareConfigs(PoseDetectorOptions.CPU_GPU)
-                        .build();
-
-        poseDetector = PoseDetection.getClient(poseDetectoptions);
+//        poseDetectoptions =
+//                new PoseDetectorOptions.Builder()
+//                        .setDetectorMode(PoseDetectorOptions.SINGLE_IMAGE_MODE)
+//                        .setPreferredHardwareConfigs(PoseDetectorOptions.CPU_GPU)
+//                        .build();
+//
+//        poseDetector = PoseDetection.getClient(poseDetectoptions);
 
     }
 

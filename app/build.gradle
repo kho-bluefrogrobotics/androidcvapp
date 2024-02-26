@@ -49,9 +49,9 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     implementation (platform("org.jetbrains.kotlin:kotlin-bom:1.8.0"))
     // tflite
-    implementation 'org.tensorflow:tensorflow-lite:2+'
-    implementation 'org.tensorflow:tensorflow-lite-gpu:2+'
-    implementation 'org.tensorflow:tensorflow-lite-gpu-api:2+'
+    implementation 'org.tensorflow:tensorflow-lite:2.15.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2.15.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu-api:2.15.0'
     implementation 'org.tensorflow:tensorflow-lite-hexagon:2.5.0'
     implementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.3.0'
     // Build off of nightly TensorFlow Lite Task Library
@@ -59,13 +59,13 @@ dependencies {
     implementation('org.tensorflow:tensorflow-lite-metadata:0.0.0-nightly') { changing = true }
 
     // added MLKit dependencies for face detector
-    implementation 'com.google.mlkit:face-detection:16+'
-    implementation 'com.google.mlkit:face-mesh-detection:16+'
+    implementation 'com.google.mlkit:face-detection:16.1.6'
+    implementation 'com.google.mlkit:face-mesh-detection:16.0.0-beta2'
 
     // added MLKit dependencies for pose estimation
-    implementation 'com.google.mlkit:pose-detection:18.0.0-beta3'
-    // If you want to use the accurate sdk
-    implementation 'com.google.mlkit:pose-detection-accurate:18.0.0-beta3'
+//    implementation 'com.google.mlkit:pose-detection:18.0.0-beta3'
+//    // If you want to use the accurate sdk
+//    implementation 'com.google.mlkit:pose-detection-accurate:18.0.0-beta3'
 
     implementation 'com.bluefrogrobotics.buddy:BuddySDK:2+'
 }
