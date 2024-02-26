@@ -135,12 +135,13 @@ public class AlignGrafcet extends bfr_Grafcet {
 
                     case 10: // check No position
 
-                        if (BuddySDK.Actuators.getNoPosition()>10);
-                        step_num = 15;
+                        if (Math.abs(BuddySDK.Actuators.getNoPosition())>10)
+                            step_num = 15;
                         break;
 
                     case 15: // rotate body to align
                         ackWheels = "";
+                        Log.i(name, "Rotating to " + BuddySDK.Actuators.getNoPosition());
                         BuddySDK.USB.rotateBuddy(40.0f, -BuddySDK.Actuators.getNoPosition(), new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String s) throws RemoteException {
