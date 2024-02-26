@@ -238,7 +238,21 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                             Log.d(name, "offset is moving: "
                                     + Math.abs(noOffset) + "-"+ Math.abs(previousOffset)
                                     +"=" +(Math.abs(noOffset)-Math.abs(previousOffset)));
-                            accFactor = Math.abs(noOffset)-Math.abs(previousOffset);
+
+                            if (Math.abs(noOffset)<15) // if target is getting close-> reduce speed
+                            {
+                                noSpeed = 30.0f;
+                            }
+                            else
+                            {
+                                accFactor = Math.abs(noOffset)-Math.abs(previousOffset);
+
+                                noSpeed = accFactor*BASE_SPEED*1.2f;
+                            }
+
+                            // safety upperlimit to avoid oscillation
+                            if (noSpeed>80.0f)
+                                noSpeed=80.0f;
                             step_num = 30;
                         }
                     }
@@ -255,10 +269,6 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                         noAngle = 150.0f;
                     else
                         noAngle = -150.0f;
-
-                    noSpeed = accFactor*BASE_SPEED;
-                    if (noSpeed>60.0f)
-                        noSpeed=60.0f;
 
                     Log.d(name, "rotating to " + noAngle + " (offset=" + noOffset +") at " + noSpeed);
                     // speed
