@@ -319,7 +319,7 @@ public class PersonTracker {
 //                            0.5f, 0.6f, 99.0f, frame);
 
                     hhhDetections = humanHeadHandsDetector.recognizeImage(
-                            smallFrame, 0.5f, 0.5f, 99.0f );
+                            smallFrame, 0.6f, 0.5f, 99.0f );
 
                     checkAndResetTracking(vitTracker, tracked, null, hhhDetections);
                     trackingSuccess = true;

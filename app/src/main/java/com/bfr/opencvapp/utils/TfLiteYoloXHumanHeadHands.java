@@ -36,7 +36,7 @@ public class TfLiteYoloXHumanHeadHands {
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
-    private final int[] INPUT_SIZE = {480,288};
+    private final int[] INPUT_SIZE = {320,320};
     private final int[] OUTPUT_SIZE = {60,7}; // 20 bounding box max per class -> 20x3 = 60,
                                             // where each bbox is batch_no, class_id, score, w1, y1, x2, y2 -> 7 floats
     private static final float[] IMAGE_MEAN = {0, 0, 0};
@@ -62,9 +62,9 @@ public class TfLiteYoloXHumanHeadHands {
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x512x512_float16.tflite";
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float32.tflite";
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float32.tflite";
-    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x288x480_float32.tflite";
+//    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x288x480_float32.tflite";
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x480x640_float16.tflite";
-//    private final String MODEL_NAME = "yolox_t_body_head_hand_post_0299_0.4522_1x3x256x320_float32.tflite";
+    private final String MODEL_NAME = "yolox_t_body_head_hand_post_0299_0.4522_1x3x320x320_float32.tflite";
 //    private final String MODEL_NAME = "yolox_s_body_head_hand_post_0299_0.4983_1x3x320x320_float32.tflite";
 //    private final String MODEL_NAME = "TopFormer-S_512x512_2x8_160k_argmax.tflite";
 
@@ -262,7 +262,7 @@ public class TfLiteYoloXHumanHeadHands {
                 final float y1 = floatOutput[i+4]/INPUT_SIZE[1];
                 final float x2 = floatOutput[i+5]/INPUT_SIZE[0];
                 final float y2 = floatOutput[i+6]/INPUT_SIZE[1];
-                Log.d(TAG, (i) + " " + floatOutput[i+0] + " " + detectedClass + " " + score );
+                Log.d(TAG, "detection n."+ (i) + " class="+ detectedClass   + " " + score + " " + x1 + "," + y1  );
 //                        + " " + x1 + "," + y1 + "," + x2 + "," + y2);
                 if( y1 < y2 && x1 < x2){
                     listOfDetections.add(new TfLiteYoloXHumanHeadHands.Recognition("" + i, LABELS[detectedClass], score, x1, x2, y1, y2, detectedClass));
