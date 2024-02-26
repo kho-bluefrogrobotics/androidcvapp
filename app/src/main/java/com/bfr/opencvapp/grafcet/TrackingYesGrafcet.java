@@ -153,7 +153,7 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
                             personTracker.tracked.box.width
                             );
                     targetX = (int) target.x;
-                    targetY = (int) target.y;
+                    targetY = Math.max(0,(int) (target.y- personTracker.tracked.box.height/4));
 //                    Log.d(name, "Target at " + targetX + "," + targetY);
                     // compute angle
                     noOffset = (targetY-(768/2))*0.09375f;

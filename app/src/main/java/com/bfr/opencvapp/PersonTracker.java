@@ -353,10 +353,10 @@ public class PersonTracker {
                             int right = tracked.box.x+tracked.box.width;
                             int bottom = tracked.box.y+tracked.box.height;
                             Rect toCrop = new Rect(
-                                    left,
-                                    top,
-                                    right-left-5,
-                                    bottom-top-10
+                                    Math.max(1,left), //limit to ext bound : avoid negative values
+                                    Math.max(1, top), //limit to ext bound : avoid negative values
+                                    Math.min(smallFrame.cols(),right-left-5), //limit to ext bound : avoid out of the image
+                                    Math.min(smallFrame.rows(),bottom-top-10) //limit to ext bound : avoid out of the image
                             );
                             //convert to bitmap
                             Mat croppedTargetMat = frame.submat(toCrop);

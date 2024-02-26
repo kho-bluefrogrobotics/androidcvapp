@@ -239,14 +239,18 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                                     + Math.abs(noOffset) + "-"+ Math.abs(previousOffset)
                                     +"=" +(Math.abs(noOffset)-Math.abs(previousOffset)));
 
-                            if (Math.abs(noOffset)<15) // if target is getting close-> reduce speed
+                            float offsetLimit =0.0f;
+                            if(AlignGrafcet.step_num==10)
+                                offsetLimit=5;
+                            else
+                                offsetLimit=3;
+                            if (Math.abs(noOffset)<offsetLimit) // if target is getting close-> reduce speed
                             {
                                 noSpeed = 30.0f;
                             }
                             else
                             {
                                 accFactor = Math.abs(noOffset)-Math.abs(previousOffset);
-
                                 noSpeed = accFactor*BASE_SPEED*1.2f;
                             }
 
