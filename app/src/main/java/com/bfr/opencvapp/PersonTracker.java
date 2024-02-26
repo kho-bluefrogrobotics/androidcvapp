@@ -171,7 +171,7 @@ public class PersonTracker {
             }
             else
             {// dectect every xxx frame
-                _FRAME_DETECT = 300000;
+                _FRAME_DETECT = 90;
             }
 
 
@@ -341,7 +341,7 @@ public class PersonTracker {
                                 vitTracker.update(smallFrame, tracked.box);
 //                                Log.w(TAG, "UPDATE VIT tracker " + tracked.box.x+","+tracked.box.y);
                                 tracked.score = vitTracker.getTrackingScore();
-                                if(computeTrackingScore(scoreHistory)>=0.6f)
+                                if(computeTrackingScore(scoreHistory)>=0.7f)
                                     trackingSuccess=true;
                                 else
                                     trackingSuccess = false;

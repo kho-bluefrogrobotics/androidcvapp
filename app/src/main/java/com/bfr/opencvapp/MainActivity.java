@@ -137,7 +137,7 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
     private CameraBridgeViewBase.CvCameraViewListener2 cameraListener;
 
 
-    public AlignGrafcet alignGrafcet ;
+    public AlignGrafcet alignGrafcet = new AlignGrafcet("BodyAlign") ;
 
     //todebug
     boolean recording=false;
@@ -185,6 +185,7 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 trackingNoGrafcet.go=b;
                 trackingYesGrafcet.go=b;
+                alignGrafcet.go=b;
 
                 if(!b)
                 {
@@ -235,6 +236,8 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
 
                 trackingYesGrafcet.go = false;
                 trackingYesGrafcet.step_num = 0;
+                alignGrafcet.go = false;
+                alignGrafcet.step_num = 0;
 
 //                int targetX = (int) (personTracker.tracked.box.x + personTracker.tracked.box.width/2);
 //
@@ -464,6 +467,7 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
 
         trackingNoGrafcet.start(20);
         trackingYesGrafcet.start(20);
+        alignGrafcet.start(10);
 
     }
 

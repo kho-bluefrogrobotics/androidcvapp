@@ -10,8 +10,6 @@ import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
-import org.opencv.core.Rect;
-
 public class AlignGrafcet extends bfr_Grafcet {
 
     public AlignGrafcet(String mname) {
@@ -33,7 +31,7 @@ public class AlignGrafcet extends bfr_Grafcet {
 
     private int previous_step = 0;
     private double time_in_curr_step = 0;
-    private boolean bypass = false;
+    private boolean timeout = false;
 
     public static int RESIZE_RATIO =20;
     public static double xCenter =0.0;
@@ -86,7 +84,21 @@ public class AlignGrafcet extends bfr_Grafcet {
                     Log.i(name, "current step: " + step_num + "  ");
                     // update
                     previous_step = step_num;
+
+                    // start counting time in current step
+                    time_in_curr_step = System.currentTimeMillis();
+                    //reset bypass
+                    timeout = false;
                 } // end if step = same
+                else
+                {
+                    // if time > 2s
+                    if ((System.currentTimeMillis()-time_in_curr_step > 5000) && step_num >0)
+                    {
+                        // activate bypass
+                        timeout = true;
+                    }
+                }
 
 
                 // which grafcet step?
@@ -121,148 +133,41 @@ public class AlignGrafcet extends bfr_Grafcet {
                         }
                         break;
 
-                    case 10: // enable Yes
-                        BuddySDK.USB.enableYesMove(1, new IUsbCommadRsp.Stub() {
+                    case 10: // check No position
+
+                        if (BuddySDK.Actuators.getNoPosition()>10);
+                        step_num = 15;
+                        break;
+
+                    case 15: // rotate body to align
+                        ackWheels = "";
+                        BuddySDK.USB.rotateBuddy(40.0f, -BuddySDK.Actuators.getNoPosition(), new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String s) throws RemoteException {
-
+                                ackWheels=s;
                             }
 
                             @Override
                             public void onFailed(String s) throws RemoteException {
-
-                            }
-                        });
-                        step_num = 12;
-                        break;
-
-                    case 12: //wait for enabled
-                        if (!BuddySDK.Actuators.getYesStatus().toUpperCase().contains("DISABLE")
-                        ) {
-                            step_num = 15;
-                        }
-                        break;
-
-                    case 15: // enable Yes
-                        BuddySDK.USB.enableNoMove(1, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String s) throws RemoteException {
-
-                            }
-
-                            @Override
-                            public void onFailed(String s) throws RemoteException {
-
+                                ackWheels=s;
                             }
                         });
                         step_num = 17;
                         break;
 
-                    case 17: //wait for enabled
-                        if (!BuddySDK.Actuators.getNoStatus().toUpperCase().contains("DISABLE")
-                        ) {
+                    case 17: //wait for OK
+                        if (ackWheels.toUpperCase().contains("OK") || timeout ) {
                             step_num = 20;
                         }
                         break;
 
 
-                    case 20: // reset head Yes position
-                        ackYes = "";
-                        BuddySDK.USB.buddySayYes(20.0f, -15.0f, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String s) throws RemoteException {
-                                ackYes = s;
-                            }
-
-                            @Override
-                            public void onFailed(String s) throws RemoteException {
-                                ackYes = s;
-                            }
-                        });
-                        step_num = 22;
-                        break;
-
-                    case 22: // wait end of Yes
-                        if (ackYes.toUpperCase().contains("FINISH")
-                        ) {
-                            step_num = 25;
+                    case 20: // wait for end of mvt
+                        if (ackWheels.toUpperCase().contains("FINISHED") || timeout ) {
+                            step_num = 10;
                         }
                         break;
 
-                    case 25: // reset head Yes position
-                        ackNo = "";
-                        BuddySDK.USB.buddySayNo(40.0f, 0.0f, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String s) throws RemoteException {
-                                ackNo = s;
-                            }
-
-                            @Override
-                            public void onFailed(String s) throws RemoteException {
-                                ackNo = s;
-                            }
-                        });
-                        step_num = 27;
-                        break;
-
-                    case 27: // wait end of Yes
-                        if (ackNo.toUpperCase().contains("FINISH")
-                        ) {
-                            step_num = 30;
-                        }
-                        break;
-
-                    case 30: // compute angle
-                        /**
-                         256x256 with 120° => 0,33145630368119415206289579473665 °/pixel
-                         */
-
-                        //xCenter in a 1xRESIZERATIO image (compared to 256 (orig) )
-                        xorig = xCenter * 256 / RESIZE_RATIO;
-                        deltaPixel = xorig - (256 / 2);
-                        angleToRotate = (float) (deltaPixel * 0.3314563036);
-//                        Log.w(name, "Angle to rotate=" + angleToRotate);
-                        if(Math.abs(angleToRotate)<10)
-                            step_num = 40;
-                        else
-                            step_num = 31;
-                        break;
-
-                    case 31: // rotate
-                        ackWheels = "";
-                        BuddySDK.USB.rotateBuddy(90.0f, -angleToRotate, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String s) throws RemoteException {
-                                ackWheels = s;
-                            }
-
-                            @Override
-                            public void onFailed(String s) throws RemoteException {
-                                ackWheels = s;
-                            }
-                        });
-                        step_num = 35;
-                        break;
-
-                    case 35: // wait end of rotation
-                        if (ackWheels.toUpperCase().contains("FINISH")
-                        ) {
-                            step_num = 40;
-                        }
-                        break;
-
-                    case 40: // wait
-                        try {
-                            Thread.sleep(2000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-//                        if (alignCheckbox.isChecked())
-                        if (false)
-                            step_num = 30;
-                        else
-                            step_num = 0;
-                        break;
 
                     default:
                         // go to next step
