@@ -65,12 +65,15 @@ public class TfLiteYoloX {
     private boolean WITH_DSP = false;
 
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x512x512_float32.tflite";
-//    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x512x512_float16.tflite";
+//    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x512x512_float32.tflite";
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float32.tflite";
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float32.tflite";
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x288x480_float32.tflite";
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x480x640_float16.tflite";
-    private final String MODEL_NAME = "yolox_s_body_head_hand_post_0299_0.4983_1x3x320x320_float32.tflite";
+//    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float32.tflite";
+//    private final String MODEL_NAME = "yolox_s_body_head_hand_post_0299_0.4983_1x3x320x320_float32.tflite";
+//    private final String MODEL_NAME = "yolox_t_body_head_hand_post_0299_0.4522_1x3x192x416_float32.tflite";
+    private final String MODEL_NAME = "yolox_t_body_head_hand_post_0299_0.4522_1x3x320x320_float32.tflite";
 //    private final String MODEL_NAME = "TopFormer-S_512x512_2x8_160k_argmax.tflite";
 
     private Interpreter tfLite;
@@ -282,7 +285,7 @@ public class TfLiteYoloX {
                 final float y1 = floatOutput[i+4]/INPUT_SIZE[1];
                 final float x2 = floatOutput[i+5]/INPUT_SIZE[0];
                 final float y2 = floatOutput[i+6]/INPUT_SIZE[1];
-//                Log.w(TAG, (i) + " " + floatOutput[i+0] + " " + detectedClass + " " + score );
+                Log.w(TAG, (i) + " " + floatOutput[i+0] + " " + detectedClass + " " + score );
 //                        + " " + x1 + "," + y1 + "," + x2 + "," + y2);
                 if( y1 < y2 && x1 < x2){
                     listOfDetections.add(new TfLiteYoloX.Recognition("" + i, LABELS[detectedClass], score, x1, x2, y1, y2, detectedClass));
