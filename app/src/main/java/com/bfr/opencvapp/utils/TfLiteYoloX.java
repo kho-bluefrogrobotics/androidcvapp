@@ -42,7 +42,7 @@ public class TfLiteYoloX {
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
-    private final int[] INPUT_SIZE = {320,320};
+    private final int[] INPUT_SIZE = {320,256};
     private final int[] OUTPUT_SIZE = {60,7}; // 20 bounding box max per class -> 20x3 = 60,
                                             // where each bbox is batch_no, class_id, score, w1, y1, x2, y2 -> 7 floats
     private static final float[] IMAGE_MEAN = {0, 0, 0};
@@ -73,13 +73,13 @@ public class TfLiteYoloX {
 //    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float32.tflite";
 //    private final String MODEL_NAME = "yolox_s_body_head_hand_post_0299_0.4983_1x3x320x320_float32.tflite";
 //    private final String MODEL_NAME = "yolox_t_body_head_hand_post_0299_0.4522_1x3x192x416_float32.tflite";
-    private final String MODEL_NAME = "yolox_t_body_head_hand_post_0299_0.4522_1x3x320x320_float32.tflite";
+    private final String MODEL_NAME = "yolox_n_body_head_hand_post_0461_0.4428_1x3x256x320_float16.tflite";
 //    private final String MODEL_NAME = "TopFormer-S_512x512_2x8_160k_argmax.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
 
-
+    private TfLiteClassifiier tfLiteClassifiier;
     // Input
     private Bitmap inputBitmap;
     // Output
@@ -88,6 +88,9 @@ public class TfLiteYoloX {
     private ByteBuffer outputBuffer;
 
     public TfLiteYoloX(Context context){
+
+
+        tfLiteClassifiier = new TfLiteClassifiier(context);
 
         try{
             Interpreter.Options options = (new Interpreter.Options());
@@ -276,9 +279,11 @@ public class TfLiteYoloX {
             int detectedClass = (int) floatOutput[i+1];
             float score = floatOutput[i+2];
 
-            if (  (detectedClass == 0 && score > 0.3)  // human
-            || (detectedClass == 1 && score > 0.3) // head
-            || (detectedClass == 2 && score > 0.3) // hands
+            if (  (detectedClass == 0 && score > 0.2)  // human
+//            || (detectedClass == 1 && score > 0.3) // head
+            || (detectedClass == 1 && score > 99.0) // head
+//            || (detectedClass == 2 && score > 0.3) // hands
+            || (detectedClass == 2 && score > 99.0) // hands
         ){
                 // position in % of the image
                 final float x1 = floatOutput[i+3]/INPUT_SIZE[0];

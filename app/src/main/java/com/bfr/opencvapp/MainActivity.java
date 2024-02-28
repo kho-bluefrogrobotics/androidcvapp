@@ -46,6 +46,7 @@ import com.bfr.buddysdk.BuddySDK;
 
 import com.bfr.opencvapp.grafcet.*;
 //import com.bfr.opencvapp.utils.TfLiteMidas;
+import com.bfr.opencvapp.utils.TfLiteClassifiier;
 import com.bfr.opencvapp.utils.TfLiteYoloX;
 
 public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -214,6 +215,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
     TfLiteYoloX yoloX;
 
+    TfLiteClassifiier classifiier;
+
     public void onCameraViewStarted(int width, int height) {
 
         try {
@@ -225,6 +228,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         }
 
         yoloX = new TfLiteYoloX(context);
+        classifiier = new TfLiteClassifiier(context);
 
     }
 
@@ -237,6 +241,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         frame = inputFrame.rgba();
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
+        int x1=0, y1=0, x2=0, y2=0, classId =0;
+
 //        Imgproc.resize(frame, frame, new Size(800,600));
 
         // segment floor
@@ -245,11 +251,11 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         for (int i = 0; i< listOfDetections.size(); i++)
         {
             float score= listOfDetections.get(i).confidence;
-            int x1 = (int) (listOfDetections.get(i).left * frame.cols());
-            int y1 = (int) (listOfDetections.get(i).top * frame.rows());
-            int x2 = (int) (listOfDetections.get(i).right * frame.cols());
-            int y2 = (int) (listOfDetections.get(i).bottom * frame.rows());
-            int classId = listOfDetections.get(i).getDetectedClass();
+            x1 = (int) (listOfDetections.get(i).left * frame.cols());
+            y1 = (int) (listOfDetections.get(i).top * frame.rows());
+            x2 = (int) (listOfDetections.get(i).right * frame.cols());
+            y2 = (int) (listOfDetections.get(i).bottom * frame.rows());
+            classId = listOfDetections.get(i).getDetectedClass();
 
 //            Log.w(TAG, i + " " + classId + " " + score + " coords=" + x1 + "," + y1 + "," + x2 + "," + y2);
 
@@ -267,8 +273,26 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                     break;
             }
             Imgproc.rectangle(frame, new Point(x1, y1), new Point(x2, y2), color, 4);
-            Imgproc.putText(frame, String.valueOf(score), new Point(x1, y1-10), 1, 2, new Scalar(0,0,0), 5 );
-            Imgproc.putText(frame, String.valueOf(score), new Point(x1, y1-10), 1, 2, color, 2 );
+//            Imgproc.putText(frame, String.valueOf(score), new Point(x1, y1-10), 1, 2, new Scalar(0,0,0), 5 );
+//            Imgproc.putText(frame, String.valueOf(score), new Point(x1, y1-10), 1, 2, color, 2 );
+
+            Rect toCrop = new Rect(
+                    x1, //limit to ext bound : avoid negative values
+                    y1, //limit to ext bound : avoid negative values
+                    x2-x1, //limit to ext bound : avoid out of the image
+                    y2-y1 //limit to ext bound : avoid out of the image
+            );
+            try{
+                //convert to bitmap
+                Mat croppedTargetMat = frame.submat(toCrop);
+                float[] recog = classifiier.runInference(croppedTargetMat);
+
+                Imgproc.putText(frame, String.valueOf(recog[425]), new Point(x1, y1-10), 1, 2, new Scalar(0,0,0), 5 );
+                Imgproc.putText(frame, String.valueOf(recog[425]), new Point(x1, y1-10), 1, 2, new Scalar(120,255,200), 2 );
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
 
         }
 
