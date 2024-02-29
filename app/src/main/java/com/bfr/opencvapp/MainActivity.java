@@ -339,65 +339,65 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         
         
         
-
-        SelfieSegmenterOptions options =
-                new SelfieSegmenterOptions.Builder()
-                        .setDetectorMode(SelfieSegmenterOptions.SINGLE_IMAGE_MODE)
-                        .enableRawSizeMask()
-                        .build();
-
-        Segmenter segmenter = Segmentation.getClient(options);
-
-
-        Task<SegmentationMask> result =
-                segmenter.process(inputImage)
-                        .addOnSuccessListener(
-                                new OnSuccessListener<SegmentationMask>() {
-                                    @Override
-                                    public void onSuccess(SegmentationMask mask) {
-                                        // Task completed successfully
-                                        // ...
-                                        Log.i(TAG, "Task Complete!");
-                                        segmentationMask = mask;
-
-
-                                        ByteBuffer maskbuff = segmentationMask.getBuffer();
-                                        int maskWidth = segmentationMask.getWidth();
-                                        int maskHeight = segmentationMask.getHeight();
-                                        Bitmap maskBitmap = Bitmap.createBitmap(maskWidth,maskHeight, Bitmap.Config.RGB_565);
-
-                                        for (int y = 0; y < maskHeight; y++) {
-                                            for (int x = 0; x < maskWidth; x++) {
-                                                // Gets the confidence of the (x,y) pixel in the mask being in the foreground.
-                                                float foregroundConfidence = maskbuff.getFloat();
-                                                if (foregroundConfidence>0.8)
-                                                {
-//                                                    Log.i(TAG, "proba " + x + "," + y + " = " + foregroundConfidence);
-                                                    maskBitmap.setPixel(x, y, ANDROID_GREEN);
-                                                }
-                                                Utils.bitmapToMat(maskBitmap, frame);
-
-                                                Imgproc.resize(frame, frame, new Size(1024,768));
-                                            }
-                                        }
-
-
-                                    } //end onsuccess
-                                })
-                        .addOnFailureListener(
-                                new OnFailureListener() {
-                                    @Override
-                                    public void onFailure(@NonNull Exception e) {
-                                        // Task failed with an exception
-                                        // ...
-                                    }
-                                });
+//// MLKit
+//        SelfieSegmenterOptions options =
+//                new SelfieSegmenterOptions.Builder()
+//                        .setDetectorMode(SelfieSegmenterOptions.SINGLE_IMAGE_MODE)
+//                        .enableRawSizeMask()
+//                        .build();
 //
-//                try {
-//                        Tasks.await(result);
-//                    } catch (Exception e) {
-//                        e.printStackTrace();
-//                    }
+//        Segmenter segmenter = Segmentation.getClient(options);
+//
+//
+//        Task<SegmentationMask> result =
+//                segmenter.process(inputImage)
+//                        .addOnSuccessListener(
+//                                new OnSuccessListener<SegmentationMask>() {
+//                                    @Override
+//                                    public void onSuccess(SegmentationMask mask) {
+//                                        // Task completed successfully
+//                                        // ...
+//                                        Log.i(TAG, "Task Complete!");
+//                                        segmentationMask = mask;
+//
+//
+//                                        ByteBuffer maskbuff = segmentationMask.getBuffer();
+//                                        int maskWidth = segmentationMask.getWidth();
+//                                        int maskHeight = segmentationMask.getHeight();
+//                                        Bitmap maskBitmap = Bitmap.createBitmap(maskWidth,maskHeight, Bitmap.Config.RGB_565);
+//
+//                                        for (int y = 0; y < maskHeight; y++) {
+//                                            for (int x = 0; x < maskWidth; x++) {
+//                                                // Gets the confidence of the (x,y) pixel in the mask being in the foreground.
+//                                                float foregroundConfidence = maskbuff.getFloat();
+//                                                if (foregroundConfidence>0.8)
+//                                                {
+////                                                    Log.i(TAG, "proba " + x + "," + y + " = " + foregroundConfidence);
+//                                                    maskBitmap.setPixel(x, y, ANDROID_GREEN);
+//                                                }
+//                                                Utils.bitmapToMat(maskBitmap, frame);
+//
+//                                                Imgproc.resize(frame, frame, new Size(1024,768));
+//                                            }
+//                                        }
+//
+//
+//                                    } //end onsuccess
+//                                })
+//                        .addOnFailureListener(
+//                                new OnFailureListener() {
+//                                    @Override
+//                                    public void onFailure(@NonNull Exception e) {
+//                                        // Task failed with an exception
+//                                        // ...
+//                                    }
+//                                });
+////
+////                try {
+////                        Tasks.await(result);
+////                    } catch (Exception e) {
+////                        e.printStackTrace();
+////                    }
 
 
 
@@ -406,7 +406,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         ImageSegmenter.ImageSegmenterOptions optionsmp =
                 ImageSegmenter.ImageSegmenterOptions.builder()
                         .setBaseOptions(
-                                BaseOptions.builder().setModelAssetPath("model.tflite").build())
+                                BaseOptions.builder().setModelAssetPath("selfie_segmenter_landscape.tflite").build())
                         .setRunningMode(RunningMode.IMAGE)
                         .setOutputCategoryMask(true)
                         .setOutputConfidenceMasks(false)
