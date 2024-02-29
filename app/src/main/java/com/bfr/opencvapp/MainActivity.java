@@ -2,6 +2,8 @@ package com.bfr.opencvapp;
 
 import static com.bfr.opencvapp.utils.Utils.ANDROID_GREEN;
 
+import static org.opencv.android.Utils.bitmapToMat;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -46,6 +48,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddyActivity;
@@ -59,8 +62,11 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
+import com.google.mediapipe.framework.image.BitmapExtractor;
 import com.google.mediapipe.framework.image.BitmapImageBuilder;
+import com.google.mediapipe.framework.image.ByteBufferExtractor;
 import com.google.mediapipe.tasks.core.BaseOptions;
+import com.google.mediapipe.tasks.core.Delegate;
 import com.google.mediapipe.tasks.vision.core.RunningMode;
 import com.google.mediapipe.tasks.vision.imagesegmenter.ImageSegmenter;
 import com.google.mediapipe.tasks.vision.imagesegmenter.ImageSegmenterResult;
@@ -351,9 +357,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
 
         
-        
-        
-        
+
         
         
 //// MLKit
@@ -421,11 +425,46 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         // Mediapipe
 
 
-// Convert an Android’s Bitmap object to a MediaPipe’s Image object.
+        // Convert an Android’s Bitmap object to a MediaPipe’s Image object.
         mpImage = new BitmapImageBuilder(bitmapImage).build();
         ImageSegmenterResult segmenterResult = imagesegmenter.segment(mpImage);
 
-//        segmenterResult.confidenceMasks();
+
+//       Bitmap resultingBitmap = BitmapExtractor.extract( segmenterResult.categoryMask().get());
+
+        try{
+//            ByteBuffer myByteBuffer =  ByteBufferExtractor.extract(segmenterResult.categoryMask().get());
+//            Bitmap resultingBitmap = BitmapExtractor.extract( segmenterResult.categoryMask().get());
+
+            MPImage categoryMask =  segmenterResult.categoryMask().get();
+            ByteBuffer myByteBuffer =  ByteBufferExtractor.extract(categoryMask);
+
+
+            int[] pixels = new int[myByteBuffer.capacity()];
+            int[] originalPixels  = new int[bitmapImage.getWidth()*bitmapImage.getHeight()];
+
+            bitmapImage.getPixels(originalPixels, 0, bitmapImage.getWidth(),
+                    0, 0, bitmapImage.getWidth(), bitmapImage.getHeight());
+
+            for (int ii=0; ii<pixels.length; ii++)
+            {
+                if(myByteBuffer.get(ii)>=0) // if something else recognized than background
+                    pixels[ii] = originalPixels[ii]; //get(crop) pixel value from the captured image
+            }
+
+            Bitmap resultingbmp = Bitmap.createBitmap(
+                    pixels,
+                    categoryMask.getWidth(),
+                    categoryMask.getHeight(),
+                    Bitmap.Config.ARGB_8888
+            );
+            Mat todisplay = new Mat();
+
+            bitmapToMat(resultingbmp, todisplay);
+            return todisplay;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         return frame;
 
