@@ -242,6 +242,11 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
     TfLiteClassifiier classifiier;
 
+
+    ImageSegmenter imagesegmenter;
+    MPImage mpImage;
+
+
     public void onCameraViewStarted(int width, int height) {
 
         try {
@@ -254,6 +259,18 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         yoloX = new TfLiteYoloX(context);
 //        classifiier = new TfLiteClassifiier(context);
+
+        ImageSegmenter.ImageSegmenterOptions optionsmp =
+                ImageSegmenter.ImageSegmenterOptions.builder()
+                        .setBaseOptions(
+                                BaseOptions.builder().setModelAssetPath("selfie_segmenter_landscape.tflite").build())
+                        .setRunningMode(RunningMode.IMAGE)
+                        .setOutputCategoryMask(true)
+                        .setOutputConfidenceMasks(false)
+                        .build();
+        imagesegmenter = ImageSegmenter.createFromOptions(context, optionsmp);
+
+
 
     }
 
@@ -403,22 +420,12 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         // Mediapipe
 
-        ImageSegmenter.ImageSegmenterOptions optionsmp =
-                ImageSegmenter.ImageSegmenterOptions.builder()
-                        .setBaseOptions(
-                                BaseOptions.builder().setModelAssetPath("selfie_segmenter_landscape.tflite").build())
-                        .setRunningMode(RunningMode.IMAGE)
-                        .setOutputCategoryMask(true)
-                        .setOutputConfidenceMasks(false)
-                        .build();
-        ImageSegmenter imagesegmenter = ImageSegmenter.createFromOptions(context, optionsmp);
 
-        // Convert an Android’s Bitmap object to a MediaPipe’s Image object.
-        MPImage mpImage = new BitmapImageBuilder(bitmapImage).build();
-
+// Convert an Android’s Bitmap object to a MediaPipe’s Image object.
+        mpImage = new BitmapImageBuilder(bitmapImage).build();
         ImageSegmenterResult segmenterResult = imagesegmenter.segment(mpImage);
 
-        segmenterResult.confidenceMasks();
+//        segmenterResult.confidenceMasks();
 
         return frame;
 
