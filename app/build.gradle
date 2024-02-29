@@ -36,6 +36,13 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    // Specify tflite file should not be compressed for the app apk
+    aaptOptions {
+        noCompress "tflite"
+    }
+
+
 }
 
 dependencies {
@@ -61,7 +68,12 @@ dependencies {
     implementation 'com.google.mlkit:face-detection:16+'
     implementation 'com.google.mlkit:face-mesh-detection:16+'
 
+    implementation 'com.google.mlkit:segmentation-selfie:16.0.0-beta5'
+
     implementation 'com.bluefrogrobotics.buddy:BuddySDK:2+'
+
+    implementation 'com.google.mediapipe:tasks-vision:latest.release'
+
 }
 
 configurations.implementation {
