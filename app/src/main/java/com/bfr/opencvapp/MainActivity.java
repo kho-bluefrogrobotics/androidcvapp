@@ -355,7 +355,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // init face detector
         multiDetector = new MultiDetector(context);
         //init face recognizer
-        faceRecognizerObj = new FaceRecognizer();
+//        faceRecognizerObj = new FaceRecognizer();
 
 //        // Init write video file
 //        videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),

@@ -27,7 +27,7 @@ public class MultiDetector {
     private final String TAG = "MultiDetector";
 
     //Params for TFlite interpreter
-    private final boolean IS_QUANTIZED = true;
+    private final boolean IS_QUANTIZED = false;
     private final int INPUT_SIZE = 320;
     private final int[] OUTPUT_WIDTH_SSD = new int[]{50, 50, 50};
     private final int BATCH_SIZE = 1;
@@ -44,7 +44,8 @@ public class MultiDetector {
 
     //where to find the models
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
-    private final String MODEL_NAME = "ssd_3output.tflite";
+//    private final String MODEL_NAME = "ssd_3output.tflite";
+    private final String MODEL_NAME = "ssd_3output_fp32.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;

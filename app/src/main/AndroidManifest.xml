@@ -12,7 +12,8 @@
         android:theme="@style/Theme.AppCompat.NoActionBar">  <!--Full screen mode-->
         <activity
             android:name=".MainActivity"
-            android:screenOrientation="landscape">  <!--Screen orientation-->
+            android:screenOrientation="landscape"
+            android:exported="true">  <!--Screen orientation-->>  <!--Screen orientation-->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
