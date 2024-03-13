@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -269,7 +270,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         ImageSegmenter.ImageSegmenterOptions optionsmp =
                 ImageSegmenter.ImageSegmenterOptions.builder()
                         .setBaseOptions(
-                                BaseOptions.builder().setModelAssetPath("selfie_segmenter_landscape.tflite").build())
+                                BaseOptions.builder().setModelAssetPath("selfie_segmenter.tflite").build())
                         .setRunningMode(RunningMode.IMAGE)
                         .setOutputCategoryMask(true)
                         .setOutputConfidenceMasks(true)
@@ -441,6 +442,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
             MPImage confidenceMask =  segmenterResult.confidenceMasks().get().get(0);
             ByteBuffer confidenceByteBuffer =  ByteBufferExtractor.extract(confidenceMask);
+            FloatBuffer confidenceBuffer = ((ByteBuffer) confidenceByteBuffer.rewind()).asFloatBuffer();
 
             int[] pixels = new int[myByteBuffer.capacity()];
             int[] originalPixels  = new int[bitmapImage.getWidth()*bitmapImage.getHeight()];
@@ -448,12 +450,14 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             bitmapImage.getPixels(originalPixels, 0, bitmapImage.getWidth(),
                     0, 0, bitmapImage.getWidth(), bitmapImage.getHeight());
 
+//            Log.w(TAG, "Result confidence size ="+ confidenceByteBuffer.);
             for (int ii=0; ii<pixels.length; ii++)
             {
-                if(myByteBuffer.get(ii)>=0) // if something else recognized than background
+//                if(myByteBuffer.get(ii)>=0) // if something else recognized than background
+                if(confidenceBuffer.get(ii)<0.1f) // if something else recognized than background
                 {
                     pixels[ii] = originalPixels[ii]; //get(crop) pixel value from the captured image
-                    Log.w(TAG, "confidence at "+ii+" ="+confidenceByteBuffer.get(ii) + "   "+confidenceByteBuffer.getFloat(ii));
+//                    Log.w(TAG, "confidence at "+ii+" ="+confidenceBuffer.get(ii) + "   "+confidenceByteBuffer.getFloat(ii));
                 }
             }
 
