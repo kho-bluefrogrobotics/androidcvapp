@@ -286,6 +286,13 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
             }
         });
 
+        // create folder if doesn't exist
+        File folder = new File("/sdcard/Download/trackingdebug/", "");
+        if(!folder.exists()) {
+            // create folder
+            folder.mkdirs();
+        }
+
     } // End onCreate
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
@@ -442,7 +449,7 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
 
         Log.w("coucou","coucou onSDKReady");
 
-        BuddySDK.USB.enableNoMove(true, new IUsbCommadRsp.Stub() {
+        BuddySDK.USB.enableNoMove(1, new IUsbCommadRsp.Stub() {
             @Override
             public void onSuccess(String s) throws RemoteException {
 
@@ -453,7 +460,7 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
 
             }
         });
-        BuddySDK.USB.enableYesMove(true, new IUsbCommadRsp.Stub() {
+        BuddySDK.USB.enableYesMove(1, new IUsbCommadRsp.Stub() {
             @Override
             public void onSuccess(String s) throws RemoteException {
 

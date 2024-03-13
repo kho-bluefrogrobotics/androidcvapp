@@ -69,6 +69,7 @@ public class PersonTracker {
     private int INTERVAL_MIN = 0;
     private int INTERVAL_MAX = 0;
 
+    private int _MIN_HEAD_SIZE = 70;
 
     //
 //    private boolean isTracking = false;
@@ -111,7 +112,7 @@ public class PersonTracker {
     // log debug
     private boolean debugLog =true;
     ArrayList<Float> scoreHistory = new ArrayList<Float>();
-    final float NUM_OF_SCORE_HISTORY = 90;
+    final float NUM_OF_SCORE_HISTORY = 60;
     float avscore = 0.0f;
 
 //    PoseDetectorOptions poseDetectoptions;
@@ -200,8 +201,9 @@ public class PersonTracker {
                 // Detection
                 detections = detector.recognizeImage(
                         matToBitmapAndResize(frame, 320, 320),
-                        0.5f, 0.6f, 99.0f, frame);
+                        0.7f, 0.5f, 99.0f, frame);
 
+                Log.d(TAG, "Num. of detected objectsf for init : " + detections.size());
                 if (detections.size() > 0) {
                     /*** Look for first detected face */
                     int detectedFaceId = -1;
@@ -224,7 +226,7 @@ public class PersonTracker {
                     }
                     else // no face found -> init on first detection, hopefully a human silouhette
                     {
-                        Log.w("coucou", "Init on first detection: " + detectedFaceId ) ;
+                        Log.w(TAG, "Init on first detection: " + detectedFaceId ) ;
                         tracked.box = initTracker(vitTracker, detections.get(0));
                         tracked.objectClass = detections.get(0).getDetectedClass();
                         tracked.score = vitTracker.getTrackingScore();
@@ -377,15 +379,15 @@ public class PersonTracker {
                             Utils.matToBitmap(croppedTargetMat, bitmapImage);
 
 
-                        try (FileOutputStream out = new FileOutputStream("/sdcard/Download/coucou.jpg")) {
+                        try (FileOutputStream out = new FileOutputStream("/sdcard/Download/trackingdebug/coucou.jpg")) {
                             bitmapImage.compress(Bitmap.CompressFormat.JPEG, 100, out); // bmp is your Bitmap instance
-                            Imgcodecs.imwrite("/sdcard/Download/coucoumat.jpg", croppedTargetMat);
+                            Imgcodecs.imwrite("/sdcard/Download/trackingdebug/coucoumat.jpg", croppedTargetMat);
                             // PNG is a lossless format, the compression factor (100) is ignored
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
 
-//
+
 //                        /*** MLKit for pose*/
 //                    InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
 //                    Task<Pose> result =
@@ -549,7 +551,7 @@ public class PersonTracker {
 
             } // end if First image or Already initialized
 
-            if(true) {
+            if(constructVisualizationImage) {
 
                 displayMat = displayResult(frame, tracked);
                 // set flag for handshake with displaying service
@@ -799,7 +801,7 @@ public class PersonTracker {
             // crop extra area
             croppedArea.x = (int) (tracked.x + tracked.width/4 );
             croppedArea.width = (int)(tracked.width- (tracked.width/2) );
-            croppedArea.y= (int) (tracked.y + tracked.height/16);
+//            croppedArea.y= (int) (tracked.y + tracked.height/16);
             // track the 2/3 upper part  or minimum arbitrary value
             croppedArea.height = Math.max( (int) (0.5 * tracked.height), MIN_HUMAN_HEIGHT  );
 
@@ -900,12 +902,12 @@ public class PersonTracker {
                 return;
 
             Mat currTracked = smallFrame.submat(tracked.box);
-            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_currTracking.jpg",
+            Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_currTracking.jpg",
                     currTracked);
 
             /**** Todebug: record images of tracked and where to reset*/
 //            Mat trackMat = smallFrame.submat(tracked.box);
-//            Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"0Tracked.jpg", trackMat);
+//            Imgcodecs.imwrite("/sdcard/Download/trackingdebug/"+System.currentTimeMillis()+"0Tracked.jpg", trackMat);
 
             // If detected something
             if (detections.size() > 0) {
@@ -953,35 +955,43 @@ public class PersonTracker {
 
 
                             Mat candidate = smallFrame.submat(detectionBbox);
-                            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_faceCandidate_"+iou+".jpg",
+                            Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_faceCandidate_"+iou+".jpg",
                                     candidate);
 
-                            // if IoU good enough
-                            if (iou >= IOU_THRES)
+                            if( detectionBbox.height > _MIN_HEAD_SIZE)
                             {
-                                if(debugLog)
-                                    Log.d(TAG, "IoU OK!");
-
-                                // declare tracking as OK
-                                trackingSuccess = true;
-
-                                // reset score
-                                scoreHistory.clear();
-                                for(int id=0; id<NUM_OF_SCORE_HISTORY; id++)
+                                // if IoU good enough
+                                if (iou >= IOU_THRES)
                                 {
-                                    scoreHistory.add(1.0f);
+                                    if(debugLog)
+                                        Log.d(TAG, "IoU OK!");
+
+                                    // declare tracking as OK
+                                    trackingSuccess = true;
+
+                                    // reset score
+                                    scoreHistory.clear();
+                                    for(int id=0; id<NUM_OF_SCORE_HISTORY; id++)
+                                    {
+                                        scoreHistory.add(1.0f);
+                                    }
+
+
+                                    return; // do nothing -> Exit the function to keep the current tracking object
+                                    //   NB: we do not reset on the detected face as there is a possibility to be another occluding face
+
+                                } // end if IoU OK
+                                else
+                                {
+
+
                                 }
-
-
-                                return; // do nothing -> Exit the function to keep the current tracking object
-                                //   NB: we do not reset on the detected face as there is a possibility to be another occluding face
-
-                            } // end if IoU OK
+                            } //end if head size big enough
                             else
                             {
-
-
+                                Log.d(TAG, "But size not big enough "+ detectionBbox.height );
                             }
+
                         } // end if detected object is a face
 
                         else // object detected is a human
@@ -1006,7 +1016,7 @@ public class PersonTracker {
 
 
                             Mat candidate = smallFrame.submat(detectionBbox);
-                            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_HumanCandidate_"+overlapRatio+".jpg",
+                            Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_HumanCandidate_"+overlapRatio+".jpg",
                                     candidate);
 
                             if (overlapRatio>OVERLAPRATIO_THRES)
@@ -1053,20 +1063,28 @@ public class PersonTracker {
                                         + " frame size =(" + smallFrame.size()+")");
 
                             Mat candidate = smallFrame.submat(detectionBbox);
-                            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_faceCandidate_"+overlapRatio+".jpg",
+                            Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_faceCandidate_"+overlapRatio+".jpg",
                                     candidate);
 
-                            if (overlapRatio>OVERLAPRATIO_THRES)
+                            if( detectionBbox.height > _MIN_HEAD_SIZE)
                             {
-                                if(debugLog)
-                                    Log.w(TAG, "Overlap Ratio OK!  Reseting on that face");
-                                // reset on that face
-                                resetTracker(vitTracker, detectionBbox, 1 );
-                                if(debugLog)
-                                    Log.d(TAG, "reset done: returning");
-                                return; //exit once it is done
+                                if (overlapRatio>OVERLAPRATIO_THRES)
+                                {
+                                    if(debugLog)
+                                        Log.w(TAG, "Overlap Ratio OK!  Reseting on that face");
+                                    // reset on that face
+                                    resetTracker(vitTracker, detectionBbox, 1 );
+                                    if(debugLog)
+                                        Log.d(TAG, "reset done: returning");
+                                    return; //exit once it is done
 
-                            } //end if overlap ratio good enough
+                                } //end if overlap ratio good enough
+                            }
+                            else // Head size not big enough
+                            {
+                                Log.d(TAG, "But size not big enough "+ detectionBbox.height );
+                            } //Head size not big enough
+
 
                         } // end if detected a face
                         else // detected a human
@@ -1089,7 +1107,7 @@ public class PersonTracker {
                                         + " frame size =(" + smallFrame.size()+")");
 
                             Mat candidate = smallFrame.submat(detectionBbox);
-                            Imgcodecs.imwrite("/storage/emulated/0/Download/"+System.currentTimeMillis()+"_humanCandidate_"+overlapRatio+".jpg",
+                            Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_humanCandidate_"+overlapRatio+".jpg",
                                     candidate);
 
                             // if overlap good enough
