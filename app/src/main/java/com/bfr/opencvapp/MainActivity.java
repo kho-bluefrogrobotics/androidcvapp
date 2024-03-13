@@ -272,7 +272,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                                 BaseOptions.builder().setModelAssetPath("selfie_segmenter_landscape.tflite").build())
                         .setRunningMode(RunningMode.IMAGE)
                         .setOutputCategoryMask(true)
-                        .setOutputConfidenceMasks(false)
+                        .setOutputConfidenceMasks(true)
                         .build();
         imagesegmenter = ImageSegmenter.createFromOptions(context, optionsmp);
 
@@ -439,6 +439,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             MPImage categoryMask =  segmenterResult.categoryMask().get();
             ByteBuffer myByteBuffer =  ByteBufferExtractor.extract(categoryMask);
 
+            MPImage confidenceMask =  segmenterResult.confidenceMasks().get().get(0);
+            ByteBuffer confidenceByteBuffer =  ByteBufferExtractor.extract(confidenceMask);
 
             int[] pixels = new int[myByteBuffer.capacity()];
             int[] originalPixels  = new int[bitmapImage.getWidth()*bitmapImage.getHeight()];
@@ -449,7 +451,10 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             for (int ii=0; ii<pixels.length; ii++)
             {
                 if(myByteBuffer.get(ii)>=0) // if something else recognized than background
+                {
                     pixels[ii] = originalPixels[ii]; //get(crop) pixel value from the captured image
+                    Log.w(TAG, "confidence at "+ii+" ="+confidenceByteBuffer.get(ii) + "   "+confidenceByteBuffer.getFloat(ii));
+                }
             }
 
             Bitmap resultingbmp = Bitmap.createBitmap(
