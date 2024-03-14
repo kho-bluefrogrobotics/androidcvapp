@@ -58,8 +58,8 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 
     String motorAck = "";
 
-    float noOffset=0.0f;
-    float previousOffset=0.0f;
+    float noOffset=0.0f; // diff between position of the target and the center of the camera in °
+    float previousOffset=0.0f; // to remeber previous offset
     float noAngle=0.0f;
     float noSpeed = 30.0f;
     float BASE_SPEED = 30.0f;
@@ -178,7 +178,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     else
                         noAngle = -150.0f;
 
-                    Log.d(name, "rotating to " + noAngle + " (offset=" + noOffset +") at " + noSpeed);
+                    Log.d(name, "rotating to " + noAngle + " (offset=" + noOffset +") at " + noSpeed +"°/s");
                     // speed
 //                    noSpeed = Math.max(noOffset*1.3f, 30.0f);
 
@@ -224,7 +224,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     // compute angle
                     noOffset = (targetX-(1024/2))*0.09375f;
 
-                    // if target in range
+                    /***if target in range*/
                     if (Math.abs(noOffset)<5)
                     {
                         Log.d(name, "offset = " + noOffset + " -> STOP");
@@ -239,11 +239,12 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 
                             }
                         });
-                        step_num = 10;
+//                        step_num = 10;
+                        step_num = 40;
                     }
-                    else
+                    else // target not in range
                     {
-                        if (Math.abs(noOffset)-Math.abs(previousOffset)>1)
+                        if (Math.abs(noOffset)-Math.abs(previousOffset)>1) // if offset is increasing (target still moving)
                         {
                             Log.d(name, "offset is moving: "
                                     + Math.abs(noOffset) + "-"+ Math.abs(previousOffset)
@@ -253,7 +254,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                             if(AlignGrafcet.step_num==10) // if wheels are not moving
                                 offsetLimit=10;
                             else
-                                offsetLimit=3; //coucou TODO : illogic?
+                                offsetLimit=7; //coucou TODO : illogic?
                             if (Math.abs(noOffset)<offsetLimit) // if target is getting close-> reduce speed
                             {
                                 noSpeed = 30.0f;
@@ -268,13 +269,13 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                             if (noSpeed>80.0f)
                                 noSpeed=80.0f;
                             step_num = 30;
-                        }
+                        } //end if target is moving
                     }
 
                     break;
 
 
-                case 30: // adjust speed
+                case 30: //Adjust speed if target is moving
                     //reset
                     motorAck = "";
                     previousOffset = noOffset;
@@ -302,6 +303,99 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     });
                     step_num = 28;
                     break;
+
+                case 40 : // target was in range - checking by taking a 1st measure
+                    try {
+                        Thread.sleep(800);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    target = getCentroid(personTracker.tracked.box.x,
+                            personTracker.tracked.box.y,
+                            personTracker.tracked.box.height,
+                            personTracker.tracked.box.width
+                    );
+                    targetX = (int) target.x;
+                    targetY = (int) target.y;
+//                    Log.d(name, "Target at " + targetX + "," + targetY);
+                    // compute angle
+                    noOffset = (targetX-(1024/2))*0.09375f;
+
+                    step_num = 42;
+                    break;
+
+
+                case 42:  // target was in range - waiting before taking a 2nd measure
+
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    step_num = 44 ;
+                    break;
+
+                case 44 : // target was in range- checking again if it is not moving
+
+                    target = getCentroid(personTracker.tracked.box.x,
+                            personTracker.tracked.box.y,
+                            personTracker.tracked.box.height,
+                            personTracker.tracked.box.width
+                    );
+                    targetX = (int) target.x;
+                    targetY = (int) target.y;
+//                    Log.d(name, "Target at " + targetX + "," + targetY);
+                    // compute angle
+                    previousOffset = noOffset;
+                    noOffset = (targetX-(1024/2))*0.09375f;
+                    Log.d(name, "Offset after stabilization  " + previousOffset + " " + noOffset + " difft=" + Math.abs(noOffset-previousOffset) );
+
+                    if(Math.abs(noOffset-previousOffset) >1.0f) // if target is till moving
+                        step_num = 20;
+                    else // target in range and stable
+                        step_num = 60;
+                    break;
+
+                case 60: // blink
+                    BuddySDK.USB.updateAllLed("#ebe234", new IUsbCommadRsp.Stub() {
+                        @Override
+                        public void onSuccess(String s) throws RemoteException {
+
+                        }
+
+                        @Override
+                        public void onFailed(String s) throws RemoteException {
+
+                        }
+                    });
+                    step_num =63;
+                    break;
+
+                case 63 : //wait
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    step_num = 65;
+                    break;
+
+                case 65 : //reset LED
+                    BuddySDK.USB.updateAllLed("#34dfeb", new IUsbCommadRsp.Stub() {
+                        @Override
+                        public void onSuccess(String s) throws RemoteException {
+
+                        }
+
+                        @Override
+                        public void onFailed(String s) throws RemoteException {
+
+                        }
+                    });
+                    step_num = 10;
+                    break;
+
 
                 case 30000 : // wait
                     try {

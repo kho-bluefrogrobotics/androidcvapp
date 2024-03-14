@@ -574,39 +574,58 @@ public class PersonTracker {
 //                Log.d(TAG, "preparing display mat ");
             Mat displayMat = frame.clone();
 
-            // draw a rectangle around Target
-            pt1.x = (int) (tracked.box.x);
-            pt1.y = (int) (tracked.box.y);
-            pt2.x = (int) ( (tracked.box.x + tracked.box.width));
-            pt2.y = (int) ( (tracked.box.y + tracked.box.height) );
+
+            if (frameCount == 0 ) // not tracking yet
+            {
+
+                Imgproc.putText(displayMat, "Not tracking",
+                        new Point(500, 300),
+                        2, 2, _WHITE, 8);
+                Imgproc.putText(displayMat, "Not tracking",
+                        new Point(500, 300),
+                        2, 2, _BLACK, 5);
+                Imgproc.putText(displayMat, "Not tracking",
+                        new Point(500, 300),
+                        2, 2, _BLUE, 2);
+
+            }
+            else // tracking : displaying rectangle
+            {
+                // draw a rectangle around Target
+                pt1.x = (int) (tracked.box.x);
+                pt1.y = (int) (tracked.box.y);
+                pt2.x = (int) ( (tracked.box.x + tracked.box.width));
+                pt2.y = (int) ( (tracked.box.y + tracked.box.height) );
 
 
-            Imgproc.rectangle(displayMat, pt1, pt2,
-                    _WHITE, 4);
-            Imgproc.rectangle(displayMat, pt1, pt2,
-                    _RED, 2);
-            Imgproc.putText(displayMat, "Tracking",
-                    new Point(pt1.x, pt1.y-30),
-                    2, 1, _BLACK, 5);
-            Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.3f", avscore) + "]",
-                    new Point(pt1.x, pt1.y),
-                    2, 1, _BLACK, 5);
-            Imgproc.putText(displayMat, "Tracking",
-                    new Point(pt1.x, pt1.y-30),
-                    2, 1, _GREEN, 2);
-            Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.3f", avscore) + "]",
-                    new Point(pt1.x, pt1.y),
-                    2, 1, _GREEN, 2);
+                Imgproc.rectangle(displayMat, pt1, pt2,
+                        _WHITE, 4);
+                Imgproc.rectangle(displayMat, pt1, pt2,
+                        _RED, 2);
+                Imgproc.putText(displayMat, "Tracking",
+                        new Point(pt1.x, pt1.y-30),
+                        2, 1, _BLACK, 5);
+                Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.3f", avscore) + "]",
+                        new Point(pt1.x, pt1.y),
+                        2, 1, _BLACK, 5);
+                Imgproc.putText(displayMat, "Tracking",
+                        new Point(pt1.x, pt1.y-30),
+                        2, 1, _GREEN, 2);
+                Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.3f", avscore) + "]",
+                        new Point(pt1.x, pt1.y),
+                        2, 1, _GREEN, 2);
 
 
-            int targetX = (int) (tracked.box.x + tracked.box.width/2);
-            Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.1f", (targetX-(1024/2))*0.09375f) + "]",
-                    new Point(pt1.x, pt1.y+30),
-                    2, 1, _WHITE, 5);
+                int targetX = (int) (tracked.box.x + tracked.box.width/2);
+                Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.1f", (targetX-(1024/2))*0.09375f) + "]",
+                        new Point(pt1.x, pt1.y+30),
+                        2, 1, _WHITE, 5);
 
-            Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.1f", (targetX-(1024/2))*0.09375f) + "]",
-                    new Point(pt1.x, pt1.y+30),
-                    2, 1, _RED, 2);
+                Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.1f", (targetX-(1024/2))*0.09375f) + "]",
+                        new Point(pt1.x, pt1.y+30),
+                        2, 1, _RED, 2);
+            }
+
 
 
 //            Imgproc.putText(displayMat, "COUCOU", new Point(300, 300),
@@ -884,12 +903,29 @@ public class PersonTracker {
                         + " " + tracked.box.height
                         + " " + tracked.box.width);
 
-            // dimension check
+            // dimension check & capping
+            if(tracked.box.x<=0)
+                tracked.box.x =1;
+            if(tracked.box.y<=0)
+                tracked.box.y =1;
+            if(tracked.box.x+tracked.box.width>smallFrame.cols() && tracked.box.x < smallFrame.cols())
+                tracked.box.width = smallFrame.cols()-tracked.box.x;
+            if(tracked.box.y+tracked.box.height>smallFrame.rows() && tracked.box.y < smallFrame.rows())
+                tracked.box.height = smallFrame.rows()-tracked.box.y;
+
+            //safety check
             if(tracked.box.x<=0
                     || tracked.box.y<=0
                     || tracked.box.x+tracked.box.width>smallFrame.cols()
                     || tracked.box.y+tracked.box.height>smallFrame.rows() )
+            {
+                // declare tracking as NOK
+                trackingSuccess = false;
+                // reset frame num.
+                frameCount =0;
                 return;
+            }
+
 
             Mat currTracked = smallFrame.submat(tracked.box);
             Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_currTracking.jpg",

@@ -100,7 +100,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     private String dir = "/sdcard/Android/data/com.bfr.opencvapp/files/";
 
 
-TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNo");
+TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNoGrafcet");
 TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
 
     //********************  image ***************************
