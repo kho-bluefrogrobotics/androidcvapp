@@ -1,5 +1,7 @@
 package com.bfr.opencvapp.utils;
 
+import static com.bfr.opencvapp.utils.Utils.Color._BLACK;
+import static com.bfr.opencvapp.utils.Utils.Color._GREEN;
 import static com.bfr.opencvapp.utils.Utils.modelsDir;
 import static org.opencv.core.CvType.CV_8UC3;
 
@@ -9,11 +11,15 @@ import android.graphics.RectF;
 import android.os.Build;
 import android.util.Log;
 
+import com.bfr.opencvapp.PersonTracker;
+
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.HexagonDelegate;
@@ -25,6 +31,8 @@ import org.tensorflow.lite.nnapi.NnApiDelegate;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -46,7 +54,7 @@ public class TfLiteYoloXHumanHeadHands {
     private final int PIXEL_SIZE = 3;
     private final int NUM_THREADS = 4;
 
-
+    Mat displayMat;
 
     /**
      * NB: Topformer doesn't work well with GPU (some actually is executed on the CPU)
@@ -140,6 +148,9 @@ public class TfLiteYoloXHumanHeadHands {
                 tfLite.getOutputTensor(0).shape();
         outputProbabilityBuffer = TensorBuffer.createFixedSize(probabilityShape, DataType.FLOAT32);
 
+
+        // displya results image
+        displayMat = new Mat();
     }
 
 
@@ -200,7 +211,12 @@ public class TfLiteYoloXHumanHeadHands {
         Utils.matToBitmap(frame.clone(), bitmapImage);
 
         // inference
-        return recognizeImage(bitmapImage, humanThres, headThres, handThres);
+        ArrayList<TfLiteYoloXHumanHeadHands.Recognition> listOfDetections = recognizeImage(bitmapImage, humanThres, headThres, handThres);
+
+        displayMat = displayResult(frame, listOfDetections);
+
+        return listOfDetections;
+
     }
 
 
@@ -319,6 +335,57 @@ public class TfLiteYoloXHumanHeadHands {
 
 
     } // end recognizeImage
+
+
+    /**
+     * Display tracked bounding box
+     * @param frame the original frame
+    //     * @param score the confidence score of the tracker
+     * @return a Mat dislpaying the tracked bounding box
+     */
+    public Mat displayResult(Mat frame,  ArrayList<TfLiteYoloXHumanHeadHands.Recognition> listOfDetections)
+    {
+        // Display results
+        Mat todisplay = frame.clone();
+
+        // for each detection
+        for (int k=0; k< listOfDetections.size(); k++)
+        {
+            float score= listOfDetections.get(k).confidence;
+            int x1 = (int) (listOfDetections.get(k).left * todisplay.cols());
+            int y1 = (int) (listOfDetections.get(k).top * todisplay.rows());
+            int x2 = (int) (listOfDetections.get(k).right * todisplay.cols());
+            int y2 = (int) (listOfDetections.get(k).bottom * todisplay.rows());
+            int classId = listOfDetections.get(k).getDetectedClass();
+
+//            Log.w(TAG, i + " " + classId + " " + score + " coords=" + x1 + "," + y1 + "," + x2 + "," + y2);
+
+            Scalar color = null;
+            switch (classId){
+                case 0:
+                    color = new Scalar(255,0,0);
+                    break;
+                case 1:
+                    color = new Scalar(0,255,0);
+                    break;
+
+                case 2:
+                    color = new Scalar(0,0,255);
+                    break;
+            }
+            Imgproc.rectangle(todisplay, new Point(x1, y1), new Point(x2, y2), color, 4);
+            Imgproc.putText(todisplay, String.valueOf(score), new Point(x1, y1-10), 1, 2, new Scalar(0,0,0), 5 );
+            Imgproc.putText(todisplay, String.valueOf(score), new Point(x1, y1-10), 1, 2, color, 2 );
+
+        }//next detection
+
+        Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_WholeDetectYOLOX.jpg",
+                todisplay);
+
+
+        return todisplay;
+
+    }
 
 
 

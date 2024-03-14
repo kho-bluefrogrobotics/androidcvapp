@@ -12,6 +12,8 @@ import android.util.Log;
 
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
+import org.opencv.core.Scalar;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.tensorflow.lite.HexagonDelegate;
 import org.tensorflow.lite.Interpreter;
@@ -20,6 +22,8 @@ import org.tensorflow.lite.gpu.GpuDelegate;
 import org.tensorflow.lite.nnapi.NnApiDelegate;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -202,7 +206,6 @@ public class MultiDetector {
 
                 if( ymin < ymax && xmin < xmax){
 
-
                     detections.add(new Recognition("" + i, LABELS[detectedClass], score, xmin, xmax, ymin, ymax, detectedClass));
 
                     // display
@@ -214,17 +217,34 @@ public class MultiDetector {
                     pt2.x = (int) (xmax * displayMat.cols());
                     //bottom
                     pt2.y = (int) (ymax * displayMat.rows());
+
+                    Scalar color = null;
+                    switch (detectedClass){
+                        case 0: // human
+                            color = _GREEN;
+                            break;
+                        case 1: // face
+                            color = _BLUE;
+                            break;
+
+                        case 2: // hands
+                            color = _RED;
+                            break;
+                    }
                     // Draw rectangle around detected object.
                     Imgproc.rectangle(displayMat, pt1, pt2,
-                            _GREEN, 2);
+                            color, 2);
                     // Write class name or confidence.
                     Imgproc.putText(displayMat, "id:" + String.valueOf(objId)+ " [" + String.format(java.util.Locale.US,"%.3f", score)+"]" , pt1,
                             1, 4, _BLACK, 7);
                     Imgproc.putText(displayMat, "id:" + String.valueOf(objId) + " [" + String.format(java.util.Locale.US,"%.3f", score)+"]", pt1,
-                            1, 4, _GREEN, 3);
+                            1, 4, color, 3);
 
                     readyToDisplay = true;
                     objId = objId+1;
+
+                    Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_WholeDetect.jpg",
+                            displayMat);
 
 //                    Log.i(TAG, "display frame created");
 
