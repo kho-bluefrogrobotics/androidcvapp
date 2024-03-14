@@ -67,5 +67,5 @@ dependencies {
 //    // If you want to use the accurate sdk
 //    implementation 'com.google.mlkit:pose-detection-accurate:18.0.0-beta3'
 
-    implementation 'com.bluefrogrobotics.buddy:BuddySDK:2.3+'
+    implementation 'com.bluefrogrobotics.buddy:BuddySDK:2.4+'
 }

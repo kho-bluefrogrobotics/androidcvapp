@@ -23,7 +23,7 @@ allprojects {
         jcenter()
         maven { url 'https://jitpack.io' }
         maven {
-            url "https://bluefrogrobotics.jfrog.io/artifactory/bluefrogrobotics-libs-release-local/"
+            url "https://bluefrogrobotics.jfrog.io/artifactory/bluefrogrobotics-libs-snapshot-local/"
             credentials {
                 username "${maven_user}"
                 password "${maven_password}"

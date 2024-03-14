@@ -148,6 +148,9 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 
                 case 10: // get target position
 
+                    if(AlignGrafcet.step_num!=10) // if wheels are moving, the head is controlled in the alignGrafcet-> wait for end
+                        break;
+
                     target = getCentroid(personTracker.tracked.box.x,
                             personTracker.tracked.box.y,
                             personTracker.tracked.box.height,
@@ -203,6 +206,13 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 
 
                 case 28 : // wait for target in range
+
+                    if(AlignGrafcet.step_num!=10) // if wheels are moving, the head is controlled in the alignGrafcet-> wait for end
+                    {
+                        step_num = 10;
+                        break;
+                    }
+
                     target = getCentroid(personTracker.tracked.box.x,
                             personTracker.tracked.box.y,
                             personTracker.tracked.box.height,
@@ -240,7 +250,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                                     +"=" +(Math.abs(noOffset)-Math.abs(previousOffset)));
 
                             float offsetLimit =0.0f;
-                            if(AlignGrafcet.step_num==10) // if wheels are moving
+                            if(AlignGrafcet.step_num==10) // if wheels are not moving
                                 offsetLimit=10;
                             else
                                 offsetLimit=3; //coucou TODO : illogic?

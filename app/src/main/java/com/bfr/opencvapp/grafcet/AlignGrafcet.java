@@ -8,6 +8,7 @@ import android.util.Log;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
+import com.bfr.buddysdk.services.companion.TaskCallback;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 public class AlignGrafcet extends bfr_Grafcet {
@@ -136,23 +137,63 @@ public class AlignGrafcet extends bfr_Grafcet {
                     case 10: // check No position
 
                         if (Math.abs(BuddySDK.Actuators.getNoPosition())>10)
-                            step_num = 15;
+
+                            //only if head (NO) not moving
+                            if (TrackingNoGrafcet.step_num==10)
+                                step_num = 15;
                         break;
 
                     case 15: // rotate body to align
                         ackWheels = "";
                         Log.i(name, "Rotating to " + BuddySDK.Actuators.getNoPosition());
-                        BuddySDK.USB.rotateBuddy(40.0f, -BuddySDK.Actuators.getNoPosition(), new IUsbCommadRsp.Stub() {
+
+                        BuddySDK.USB.rotateNoPrecision(40.0f, -BuddySDK.Actuators.getNoPosition(), 0, new TaskCallback() {
+                            @Override
+                            public void onStarted() {
+                                ackWheels="OK";
+                            }
+
+                            @Override
+                            public void onSuccess(String s) {
+                                ackWheels="FINISHED";
+                            }
+
+                            @Override
+                            public void onCancel() {
+
+                            }
+
+                            @Override
+                            public void onError(String s) {
+                                ackWheels="ERROR";
+                            }
+                        });
+
+//                        BuddySDK.USB.rotateBuddy(40.0f, -BuddySDK.Actuators.getNoPosition(), new IUsbCommadRsp.Stub() {
+//                            @Override
+//                            public void onSuccess(String s) throws RemoteException {
+//                                ackWheels=s;
+//                            }
+//
+//                            @Override
+//                            public void onFailed(String s) throws RemoteException {
+//                                ackWheels=s;
+//                            }
+//                        });
+
+                        // compensate with head (NO)
+                        BuddySDK.USB.buddySayNo(30.0f, 0.0f, new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String s) throws RemoteException {
-                                ackWheels=s;
+                                ackNo = s;
                             }
 
                             @Override
                             public void onFailed(String s) throws RemoteException {
-                                ackWheels=s;
+                                ackNo = s;
                             }
                         });
+
                         step_num = 17;
                         break;
 
@@ -165,10 +206,46 @@ public class AlignGrafcet extends bfr_Grafcet {
 
                     case 20: // wait for end of mvt
                         if (ackWheels.toUpperCase().contains("FINISHED") || timeout ) {
-                            step_num = 10;
+                            if (ackNo.toUpperCase().contains("FINISHED")|| timeout )
+//                                step_num = 10;
+                                step_num = 30;
                         }
                         break;
 
+                    case 30: // blink
+                    BuddySDK.USB.updateAllLed("#eb3434", new IUsbCommadRsp.Stub() {
+                        @Override
+                        public void onSuccess(String s) throws RemoteException {
+
+                        }
+
+                        @Override
+                        public void onFailed(String s) throws RemoteException {
+
+                        }
+                    });
+                    step_num =33;
+                    break;
+
+                    case 33 : //wait
+                        Thread.sleep(1000);
+                        step_num = 35;
+                        break;
+
+                    case 35 : //reset LED
+                        BuddySDK.USB.updateAllLed("#34dfeb", new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String s) throws RemoteException {
+
+                            }
+
+                            @Override
+                            public void onFailed(String s) throws RemoteException {
+
+                            }
+                        });
+                        step_num = 10;
+                        break;
 
                     default:
                         // go to next step
