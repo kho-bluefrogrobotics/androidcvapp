@@ -124,7 +124,7 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
                     break;
 
                 case 5: // enable wheels
-                    BuddySDK.USB.enableYesMove(true, new IUsbCommadRsp.Stub() {
+                    BuddySDK.USB.enableYesMove(1, new IUsbCommadRsp.Stub() {
                         @Override
                         public void onSuccess(String s) throws RemoteException {
 

@@ -365,7 +365,7 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
 
         tracked = new Rect();
 
-        videoCapture = new VideoCapture("/sdcard/Download/240124174252_trackingDebug.avi");
+        videoCapture = new VideoCapture("/sdcard/Download/240314105955_trackingDebug.avi");
         videoCapture.set(CAP_PROP_POS_FRAMES, 10);
         frame = new Mat();
 

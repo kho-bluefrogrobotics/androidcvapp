@@ -125,7 +125,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     break;
 
                 case 5: // enable wheels
-                    BuddySDK.USB.enableNoMove(true, new IUsbCommadRsp.Stub() {
+                    BuddySDK.USB.enableNoMove(1, new IUsbCommadRsp.Stub() {
                         @Override
                         public void onSuccess(String s) throws RemoteException {
 
@@ -240,10 +240,10 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                                     +"=" +(Math.abs(noOffset)-Math.abs(previousOffset)));
 
                             float offsetLimit =0.0f;
-                            if(AlignGrafcet.step_num==10)
-                                offsetLimit=5;
+                            if(AlignGrafcet.step_num==10) // if wheels are moving
+                                offsetLimit=10;
                             else
-                                offsetLimit=3;
+                                offsetLimit=3; //coucou TODO : illogic?
                             if (Math.abs(noOffset)<offsetLimit) // if target is getting close-> reduce speed
                             {
                                 noSpeed = 30.0f;
