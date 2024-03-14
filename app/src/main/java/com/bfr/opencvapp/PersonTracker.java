@@ -64,7 +64,7 @@ public class PersonTracker {
     // thres for detection
     public double THRESHOLD=0.6;
     public int frameCount =0;
-    private int _FRAME_DETECT = 0;
+    private int _FRAME_DETECT = 90; // 15fps -> check/reset every 6s
     private boolean ShouldDetectFace = false;
     private int INTERVAL_MIN = 0;
     private int INTERVAL_MAX = 0;
@@ -103,7 +103,7 @@ public class PersonTracker {
 
     String saveFolder="";
 
-    float IOU_THRES = 0.5f;
+    float IOU_THRES = 0.4f;
     float OVERLAPRATIO_THRES = 0.5f;
 
     // hard limit for human height to track (in pixel)
@@ -177,15 +177,6 @@ public class PersonTracker {
 
             double xScale = (double)frame.width() / smallFrame.width();
             double yScale =  (double)frame.height()/ smallFrame.height();
-
-            if (fastTracking)
-            {     // dectect every xxx frame
-                _FRAME_DETECT = 25;
-            }
-            else
-            {// dectect every xxx frame
-                _FRAME_DETECT = 90;
-            }
 
 
 //            if(debugLog)
