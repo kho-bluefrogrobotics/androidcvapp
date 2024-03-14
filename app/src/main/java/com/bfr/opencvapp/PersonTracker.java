@@ -336,8 +336,7 @@ public class PersonTracker {
                             smallFrame, 0.6f, 0.5f, 99.0f );
 
                     checkAndResetTracking(vitTracker, tracked, null, hhhDetections);
-                    trackingSuccess = true;
-                    frameCount +=1;
+
 
                 }
                 else  // other frames -> only tracking
@@ -968,6 +967,8 @@ public class PersonTracker {
 
                                     // declare tracking as OK
                                     trackingSuccess = true;
+                                    // go on with tracking -> increment frame num.
+                                    frameCount +=1;
 
                                     // reset score
                                     scoreHistory.clear();
@@ -1074,6 +1075,12 @@ public class PersonTracker {
                                         Log.w(TAG, "Overlap Ratio OK!  Reseting on that face");
                                     // reset on that face
                                     resetTracker(vitTracker, detectionBbox, 1 );
+
+                                    // declare tracking as OK
+                                    trackingSuccess = true;
+                                    // go on with tracking -> increment frame num.
+                                    frameCount +=1;
+
                                     if(debugLog)
                                         Log.d(TAG, "reset done: returning");
                                     return; //exit once it is done
@@ -1175,6 +1182,11 @@ public class PersonTracker {
                     detectionBboxToReset = cropExtraArea(detectionBboxToReset, 0);
 
                     resetTracker(tracker, detectionBboxToReset, 0 );
+
+                    // declare tracking as OK
+                    trackingSuccess = true;
+                    // go on with tracking -> increment frame num.
+                    frameCount +=1;
                 }
                 else // >>> else init on closest object
                 {
@@ -1195,14 +1207,23 @@ public class PersonTracker {
 
                     resetTracker(tracker, detectionBboxToReset, detections.get(idClosest).getDetectedClass() );
 
+                    // declare tracking as OK
+                    trackingSuccess = true;
+                    // go on with tracking -> increment frame num.
+                    frameCount +=1;
+
                 } // end if found a human or reset on closest object
 
 
-                //coucou todelete
-                trackingSuccess = true;
-
 
             } //end if detection size >0
+            else // nothing detected
+            {
+                // declare tracking as OK
+                trackingSuccess = false;
+                // reset : reinit from the start
+                frameCount = 0;
+            }
 
         } catch (Exception e) {
             Log.e(TAG, "ERROR During CheckReset " + Log.getStackTraceString(e));
@@ -1215,8 +1236,8 @@ public class PersonTracker {
     {
         vitTracker.init(smallFrame, bbox);
         tracked.objectClass = classOfTrack;
-        trackingSuccess = true;
 
+        // init score
         scoreHistory.clear();
         for(int i=0; i<NUM_OF_SCORE_HISTORY; i++)
         {
