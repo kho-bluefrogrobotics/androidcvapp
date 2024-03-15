@@ -347,8 +347,10 @@ public class PersonTracker {
                                 tracked.score = vitTracker.getTrackingScore();
                                 if(computeTrackingScore(scoreHistory)>=0.7f)
                                     trackingSuccess=true;
-                                else
+                                else {
                                     trackingSuccess = false;
+                                    Log.e(TAG, "Tracking NOK : score history= " +scoreHistory + " current score=" + vitTracker.getTrackingScore());
+                                }
                             }
 
 
@@ -718,14 +720,6 @@ public class PersonTracker {
 
             vitTracker.init(smallFrame, tracked);
         }
-        else if(tracker instanceof KAZE) // if the tracking method is VisualTransformer-based (fast & accurate)
-        {
-
-        }
-        else
-        {
-            //Throw error
-        }
 
         trackingSuccess = true;
 
@@ -923,6 +917,12 @@ public class PersonTracker {
                 trackingSuccess = false;
                 // reset frame num.
                 frameCount =0;
+                Log.e(TAG, "Tracking NOK : during reset, box out of range : "
+                        + tracked.box.x +" "
+                        + tracked.box.y +" "
+                        + tracked.box.width +" "
+                        + tracked.box.height +" "
+                );
                 return;
             }
 
@@ -1250,6 +1250,7 @@ public class PersonTracker {
                 trackingSuccess = false;
                 // reset : reinit from the start
                 frameCount = 0;
+                Log.e(TAG, "Tracking NOK : reset -> nothing detected");
             }
 
         } catch (Exception e) {
