@@ -38,7 +38,7 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
 
     private int previous_step = -1;
     private double time_in_curr_step = 0;
-    private boolean bypass = false;
+    private boolean timeout = false;
 
     public static Rect tracked=new Rect();
 
@@ -61,7 +61,7 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
     float previousOffset=0.0f;
     float noAngle=0.0f;
     float noSpeed = 30.0f;
-    float BASE_SPEED = 15.0f;
+    float BASE_SPEED = 30.0f;
     float accFactor = 1.0f;
 
     private IUsbCommadRsp iUsbCommadRsp = new IUsbCommadRsp.Stub(){
@@ -103,7 +103,18 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
                 Log.i(name, "current step: " + step_num + "  ");
                 // update
                 previous_step = step_num;
+                // start counting time in current step
+                time_in_curr_step = System.currentTimeMillis();
             } // end if step = same
+            else
+            {
+                // if time > 2s
+                if ((System.currentTimeMillis()-time_in_curr_step > 5000) && step_num >0)
+                {
+                    // activate bypass
+                    timeout = true;
+                }
+            }
 
 
             // which grafcet step?
@@ -153,13 +164,13 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
                             personTracker.tracked.box.width
                             );
                     targetX = (int) target.x;
-                    targetY = Math.max(0,(int) (target.y- personTracker.tracked.box.height/4));
+                    targetY = Math.max(0,(int) (target.y+ personTracker.tracked.box.height/4));
 //                    Log.d(name, "Target at " + targetX + "," + targetY);
                     // compute angle
                     noOffset = (targetY-(768/2))*0.09375f;
-//                    Log.d(name, "Rotation " + noAngle);
+                    Log.d(name, "TargetY = "+ targetY + " Offset= " + noOffset);
 
-                    if(Math.abs(noOffset)>4.0f)
+                    if(Math.abs(noOffset)>7.0f)
                         step_num = 20;
                     break;
 
@@ -169,12 +180,14 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
                     motorAck = "";
                     previousOffset = noOffset;
 
-                    if (noOffset>0)
-                        noAngle = -150.0f;
-                    else
-                        noAngle = 150.0f;
+                    noAngle = BuddySDK.Actuators.getYesPosition()-noOffset;
 
-                    Log.d(name, "rotating to " + noAngle + " (offset=" + noOffset +") at " + noSpeed);
+//                    if (noOffset>0)
+//                        noAngle = -150.0f;
+//                    else
+//                        noAngle = 150.0f;
+
+                    Log.d(name, "rotating to " + noAngle + " (offset=" + noOffset +") with Yes position = " + BuddySDK.Actuators.getYesPosition() + " at " + noSpeed);
                     // speed
 //                    noSpeed = Math.max(noOffset*1.3f, 30.0f);
 
@@ -190,15 +203,38 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
 
                         }
                     });
-                    step_num = 28;
+                    step_num = 25;
                     break;
 
                 case 25: // wait for OK
-                    if (motorAck.contains("OK"))
+                    if (motorAck.toUpperCase().contains("OK") || timeout)
                     {
-                        step_num = 28;
+                        step_num = 27;
                     }
                     break;
+
+
+
+
+
+
+                case 27 : // waiting for end of mvt
+                    if (motorAck.toUpperCase().contains("FINISHED") || timeout)
+                    {
+                        step_num = 10;
+                    }
+                    break;
+
+
+
+
+
+
+
+
+
+
+
 
 
                 case 28 : // wait for target in range
@@ -245,38 +281,6 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
                     break;
 
 
-                case 30: // adjust speed
-                    //reset
-                    motorAck = "";
-                    previousOffset = noOffset;
-
-                    if (noOffset>0)
-                        noAngle = -150.0f;
-                    else
-                        noAngle = 150.0f;
-
-                    noSpeed = accFactor*BASE_SPEED;
-                    if (noSpeed>60.0f)
-                        noSpeed=60.0f;
-
-                    Log.d(name, "rotating to " + noAngle + " (offset=" + noOffset +") at " + noSpeed);
-                    // speed
-//                    noSpeed = Math.max(noOffset*1.3f, 30.0f);
-
-//                    BuddySDK.USB.buddySayNo(Math.abs(noOffset*3), noAngle, new IUsbCommadRsp.Stub() {
-                    BuddySDK.USB.buddySayYes(noSpeed, noAngle, new IUsbCommadRsp.Stub() {
-                        @Override
-                        public void onSuccess(String s) throws RemoteException {
-                            motorAck = s;
-                        }
-
-                        @Override
-                        public void onFailed(String s) throws RemoteException {
-
-                        }
-                    });
-                    step_num = 28;
-                    break;
 
                 case 30000 : // wait
                     try {
