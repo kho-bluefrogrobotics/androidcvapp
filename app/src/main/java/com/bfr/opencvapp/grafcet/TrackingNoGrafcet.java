@@ -37,20 +37,14 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
     private int mIntervalleHist = INTERVAL_MIN;
     private float speed = 10F;
 
+    final int STABILIZATION_TIME = 1000;
+    public static boolean waitingForAlign = false;
+
     private int previous_step = -1;
     private double time_in_curr_step = 0;
-    private boolean bypass = false;
+    private boolean timeout = false;
 
     public static Rect tracked=new Rect();
-
-    // Last position where a face was detected
-    public int lastValidPos = 0;
-    // Lost faces
-    public boolean lostFaces = false;
-
-    //motor response
-    private boolean isMoving = false;
-    private float mMiddleRect;
 
 
     Point target;
@@ -58,12 +52,14 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 
     String motorAck = "";
 
-    float noOffset=0.0f; // diff between position of the target and the center of the camera in °
-    float previousOffset=0.0f; // to remeber previous offset
+    float noOffset=0.0f;
+    float previousOffset=0.0f;
     float noAngle=0.0f;
     float noSpeed = 30.0f;
     float BASE_SPEED = 30.0f;
     float accFactor = 1.0f;
+
+
 
     private IUsbCommadRsp iUsbCommadRsp = new IUsbCommadRsp.Stub(){
 
@@ -94,7 +90,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
         @Override
         public void run()
         {
-            mMiddleRect = tracked.y /*+ (tracked.height/2)*/;
+//            mMiddleRect = tracked.y /*+ (tracked.height/2)*/;
 //            Log.i("GRAFCET YES", "current Y: " + tracked.y + "  ");
             //Log.i("GRAFCET", "current step: " + step_num + "  ");
 
@@ -104,7 +100,18 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                 Log.i(name, "current step: " + step_num + "  ");
                 // update
                 previous_step = step_num;
+                // start counting time in current step
+                time_in_curr_step = System.currentTimeMillis();
             } // end if step = same
+            else
+            {
+                // if time > 2s
+                if ((System.currentTimeMillis()-time_in_curr_step > 5000) && step_num >0)
+                {
+                    // activate bypass
+                    timeout = true;
+                }
+            }
 
 
             // which grafcet step?
@@ -125,7 +132,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     break;
 
                 case 5: // enable wheels
-                    BuddySDK.USB.enableNoMove(1, new IUsbCommadRsp.Stub() {
+                    BuddySDK.USB.enableNoMove(true, new IUsbCommadRsp.Stub() {
                         @Override
                         public void onSuccess(String s) throws RemoteException {
 
@@ -148,14 +155,11 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 
                 case 10: // get target position
 
-                    if(AlignGrafcet.step_num!=10) // if wheels are moving, the head is controlled in the alignGrafcet-> wait for end
-                        break;
-
                     target = getCentroid(personTracker.tracked.box.x,
                             personTracker.tracked.box.y,
                             personTracker.tracked.box.height,
                             personTracker.tracked.box.width
-                            );
+                    );
                     targetX = (int) target.x;
                     targetY = (int) target.y;
 //                    Log.d(name, "Target at " + targetX + "," + targetY);
@@ -178,7 +182,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     else
                         noAngle = -150.0f;
 
-                    Log.d(name, "rotating to " + noAngle + " (offset=" + noOffset +") at " + noSpeed +"°/s");
+                    Log.d(name, "rotating to " + noAngle + " (offset=" + noOffset +") at " + noSpeed);
                     // speed
 //                    noSpeed = Math.max(noOffset*1.3f, 30.0f);
 
@@ -206,13 +210,6 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 
 
                 case 28 : // wait for target in range
-
-                    if(AlignGrafcet.step_num!=10) // if wheels are moving, the head is controlled in the alignGrafcet-> wait for end
-                    {
-                        step_num = 10;
-                        break;
-                    }
-
                     target = getCentroid(personTracker.tracked.box.x,
                             personTracker.tracked.box.y,
                             personTracker.tracked.box.height,
@@ -224,7 +221,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     // compute angle
                     noOffset = (targetX-(1024/2))*0.09375f;
 
-                    /***if target in range*/
+                    // if target in range
                     if (Math.abs(noOffset)<5)
                     {
                         Log.d(name, "offset = " + noOffset + " -> STOP");
@@ -239,43 +236,25 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 
                             }
                         });
-//                        step_num = 10;
-                        step_num = 40;
+                        // go to stabilization step
+                        step_num = 60;
                     }
-                    else // target not in range
+                    else
                     {
-                        if (Math.abs(noOffset)-Math.abs(previousOffset)>1) // if offset is increasing (target still moving)
+                        if (Math.abs(noOffset)-Math.abs(previousOffset)>1)
                         {
                             Log.d(name, "offset is moving: "
                                     + Math.abs(noOffset) + "-"+ Math.abs(previousOffset)
                                     +"=" +(Math.abs(noOffset)-Math.abs(previousOffset)));
-
-                            float offsetLimit =0.0f;
-                            if(AlignGrafcet.step_num==10) // if wheels are not moving
-                                offsetLimit=10;
-                            else
-                                offsetLimit=7; //coucou TODO : illogic?
-                            if (Math.abs(noOffset)<offsetLimit) // if target is getting close-> reduce speed
-                            {
-                                noSpeed = 30.0f;
-                            }
-                            else
-                            {
-                                accFactor = Math.abs(noOffset)-Math.abs(previousOffset);
-                                noSpeed = accFactor*BASE_SPEED*1.2f;
-                            }
-
-                            // safety upperlimit to avoid oscillation
-                            if (noSpeed>80.0f)
-                                noSpeed=80.0f;
+                            accFactor = Math.abs(noOffset)-Math.abs(previousOffset);
                             step_num = 30;
-                        } //end if target is moving
+                        }
                     }
 
                     break;
 
 
-                case 30: //Adjust speed if target is moving
+                case 30: // adjust speed
                     //reset
                     motorAck = "";
                     previousOffset = noOffset;
@@ -284,6 +263,10 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                         noAngle = 150.0f;
                     else
                         noAngle = -150.0f;
+
+                    noSpeed = accFactor*BASE_SPEED;
+                    if (noSpeed>60.0f)
+                        noSpeed=60.0f;
 
                     Log.d(name, "rotating to " + noAngle + " (offset=" + noOffset +") at " + noSpeed);
                     // speed
@@ -304,12 +287,9 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     step_num = 28;
                     break;
 
-                case 40 : // target was in range - checking by taking a 1st measure
-                    try {
-                        Thread.sleep(800);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+
+                case 60 : // wait around 1s to see if target stable
+
 
                     target = getCentroid(personTracker.tracked.box.x,
                             personTracker.tracked.box.y,
@@ -321,80 +301,30 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 //                    Log.d(name, "Target at " + targetX + "," + targetY);
                     // compute angle
                     noOffset = (targetX-(1024/2))*0.09375f;
+//                    Log.d(name, "Rotation " + noAngle);
 
-                    step_num = 42;
-                    break;
-
-
-                case 42:  // target was in range - waiting before taking a 2nd measure
-
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    step_num = 44 ;
-                    break;
-
-                case 44 : // target was in range- checking again if it is not moving
-
-                    target = getCentroid(personTracker.tracked.box.x,
-                            personTracker.tracked.box.y,
-                            personTracker.tracked.box.height,
-                            personTracker.tracked.box.width
-                    );
-                    targetX = (int) target.x;
-                    targetY = (int) target.y;
-//                    Log.d(name, "Target at " + targetX + "," + targetY);
-                    // compute angle
-                    previousOffset = noOffset;
-                    noOffset = (targetX-(1024/2))*0.09375f;
-                    Log.d(name, "Offset after stabilization  " + previousOffset + " " + noOffset + " difft=" + Math.abs(noOffset-previousOffset) );
-
-                    if(Math.abs(noOffset-previousOffset) >1.0f) // if target is till moving
+                    // if target moving
+                    if(Math.abs(noOffset)>5.0f)
+                    {
+                        //move head
                         step_num = 20;
-                    else // target in range and stable
-                        step_num = 60;
-                    break;
-
-                case 60: // blink
-                    BuddySDK.USB.updateAllLed("#ebe234", new IUsbCommadRsp.Stub() {
-                        @Override
-                        public void onSuccess(String s) throws RemoteException {
-
-                        }
-
-                        @Override
-                        public void onFailed(String s) throws RemoteException {
-
-                        }
-                    });
-                    step_num =63;
-                    break;
-
-                case 63 : //wait
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
                     }
-                    step_num = 65;
+                    else{
+                        // wait during a stabilization time
+                        // if time spent waiting > stabilization time
+                        if(System.currentTimeMillis()-time_in_curr_step > STABILIZATION_TIME)
+                        {
+                            // go to sync step with aligning body
+                            waitingForAlign = true;
+                            step_num = 65;
+                        }
+                    }
                     break;
 
-                case 65 : //reset LED
-                    BuddySDK.USB.updateAllLed("#34dfeb", new IUsbCommadRsp.Stub() {
-                        @Override
-                        public void onSuccess(String s) throws RemoteException {
-
-                        }
-
-                        @Override
-                        public void onFailed(String s) throws RemoteException {
-
-                        }
-                    });
-                    step_num = 10;
-                    break;
+                case 65: // wait end of aligning body
+                    if (!waitingForAlign)
+                        step_num = 10;
+                break;
 
 
                 case 30000 : // wait

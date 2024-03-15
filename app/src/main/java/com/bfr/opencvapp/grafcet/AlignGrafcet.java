@@ -134,12 +134,9 @@ public class AlignGrafcet extends bfr_Grafcet {
                         }
                         break;
 
-                    case 10: // check No position
+                    case 10: // sync with trackingNo grafcet
 
-                        if (Math.abs(BuddySDK.Actuators.getNoPosition())>10)
-
-                            //only if head (NO) not moving
-                            if (TrackingNoGrafcet.step_num==10)
+                        if (TrackingNoGrafcet.waitingForAlign)
                                 step_num = 15;
                         break;
 
@@ -182,7 +179,7 @@ public class AlignGrafcet extends bfr_Grafcet {
 //                        });
 
                         // compensate with head (NO)
-                        BuddySDK.USB.buddySayNo(30.0f, 0.0f, new IUsbCommadRsp.Stub() {
+                        BuddySDK.USB.buddySayNo(25.0f, 0.0f, new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String s) throws RemoteException {
                                 ackNo = s;
@@ -207,8 +204,14 @@ public class AlignGrafcet extends bfr_Grafcet {
                     case 20: // wait for end of mvt
                         if (ackWheels.toUpperCase().contains("FINISHED") || timeout ) {
                             if (ackNo.toUpperCase().contains("FINISHED")|| timeout )
-//                                step_num = 10;
-                                step_num = 30;
+                            {
+                                //reset handshake
+                                TrackingNoGrafcet.waitingForAlign = false;
+                                // go to sync step
+                                step_num = 10;
+                            }
+
+//                                step_num = 30;
                         }
                         break;
 

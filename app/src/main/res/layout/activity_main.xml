@@ -26,7 +26,7 @@
             android:layout_height="match_parent"
             android:visibility="visible"
             opencv:camera_id="0"
-            opencv:show_fps="true" />
+            opencv:show_fps="false" />
 
 
         <CheckBox
