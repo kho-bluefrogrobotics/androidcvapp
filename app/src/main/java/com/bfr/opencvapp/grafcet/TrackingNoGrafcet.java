@@ -52,7 +52,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 
     String motorAck = "";
 
-    float noOffset=0.0f;
+    public static float noOffset=0.0f;
     float previousOffset=0.0f;
     float noAngle=0.0f;
     float noSpeed = 30.0f;
@@ -241,6 +241,12 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     }
                     else
                     {
+
+                        //if No at maximum position
+                        // make body move
+                        if (motorAck.toUpperCase().contains("FINISHED"))
+                            AlignGrafcet.rotationRequest = true;
+
                         if (Math.abs(noOffset)-Math.abs(previousOffset)>1)
                         {
                             Log.d(name, "offset is moving: "

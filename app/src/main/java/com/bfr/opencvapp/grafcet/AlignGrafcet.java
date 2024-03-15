@@ -30,6 +30,8 @@ public class AlignGrafcet extends bfr_Grafcet {
     private int mIntervalleHist = INTERVAL_MIN;
     private float speed = 10F;
 
+    public static boolean rotationRequest = false;
+
     private int previous_step = 0;
     private double time_in_curr_step = 0;
     private boolean timeout = false;
@@ -138,6 +140,9 @@ public class AlignGrafcet extends bfr_Grafcet {
 
                         if (TrackingNoGrafcet.waitingForAlign)
                                 step_num = 15;
+
+                        if(rotationRequest)
+                            step_num = 50;
                         break;
 
                     case 15: // rotate body to align
@@ -248,6 +253,50 @@ public class AlignGrafcet extends bfr_Grafcet {
                             }
                         });
                         step_num = 10;
+                        break;
+
+
+
+                    case 50: //No at limit > request to rotate body
+
+                        //reset
+                        ackWheels = "";
+
+                        BuddySDK.USB.rotateNoPrecision(50.0f, -TrackingNoGrafcet.noOffset, 0, new TaskCallback() {
+                            @Override
+                            public void onStarted() {
+                                ackWheels = "OK";
+                            }
+
+                            @Override
+                            public void onSuccess(String s) {
+                                ackWheels = "FINISHED";
+                            }
+
+                            @Override
+                            public void onCancel() {
+                                ackWheels = "FINISHED";
+                            }
+
+                            @Override
+                            public void onError(String s) {
+                                ackWheels = "ERROR";
+                            }
+                        });
+
+                        step_num = 53;
+                        break;
+
+                    case 53 ://wait for OK
+                        if(ackWheels.toUpperCase().contains("OK") || timeout)
+                            step_num = 55;
+                        break;
+
+                    case 55: // wait for mvt finished
+                        if(ackWheels.toUpperCase().contains("FINISHED") || timeout) {
+                            step_num = 10;
+                            rotationRequest = false;
+                        }
                         break;
 
                     default:
