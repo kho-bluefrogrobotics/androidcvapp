@@ -157,6 +157,7 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
         alignCheckbox = findViewById(R.id.alignBox);
         initButton= findViewById(R.id.initButton);
         recordCkbx = findViewById(R.id.recordCkbx);
+        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.CameraView);
 
         // Check permissions
         if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -171,11 +172,15 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 1);
         }
 
-        // configure camera listener
-        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.CameraView);
-        mOpenCvCameraView.setVisibility(CameraBridgeViewBase.VISIBLE);
-        mOpenCvCameraView.setCameraPermissionGranted();
-        mOpenCvCameraView.setCvCameraViewListener(this);
+//        // configure camera listener
+//        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.CameraView);
+//        mOpenCvCameraView.setVisibility(CameraBridgeViewBase.VISIBLE);
+//        mOpenCvCameraView.setCameraPermissionGranted();
+//        mOpenCvCameraView.setCvCameraViewListener(this);
+//        mOpenCvCameraView.setAlpha(0.1F);
+//
+//        mOpenCvCameraView.getHolder().setFixedSize(1,1);
+
 
 
         /*** Listeners*/
@@ -239,6 +244,8 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
                 alignGrafcet.go = false;
                 alignGrafcet.step_num = 0;
 
+
+
 //                int targetX = (int) (personTracker.tracked.box.x + personTracker.tracked.box.width/2);
 //
 //                float noAngle = (targetX-(1024/2))*0.09375f;
@@ -278,10 +285,17 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
                     videoWriter.open(debugFileName, fourcc,
                             13, new Size(1024, 768));
                     recording = true;
+
+
+                    mOpenCvCameraView.getHolder().setFixedSize(1,1);
+
+
                 }
                 else {
                     videoWriter.release();
                     recording = false;
+
+                    mOpenCvCameraView.getHolder().setFixedSize(1124,868);
                 }
             }
         });
@@ -409,68 +423,33 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
 
 
 
-    private Bitmap arrayToBitmap(float[] img_array, int imageSizeX, int imageSizeY) {
-        float maxval = Float.NEGATIVE_INFINITY;
-        float minval = Float.POSITIVE_INFINITY;
-        for (float cur : img_array) {
-            maxval = Math.max(maxval, cur);
-            minval = Math.min(minval, cur);
-        }
-        float multiplier = 0;
-        if ((maxval - minval) > 0) multiplier = 255 / (maxval - minval);
-
-        int[] img_normalized = new int[img_array.length];
-        for (int i = 0; i < img_array.length; ++i) {
-            float val = (float) (multiplier * (img_array[i] - minval));
-            img_normalized[i] = (int) val;
-        }
-
-        int width = imageSizeX;
-        int height = imageSizeY;
-        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
-
-        for (int ii = 0; ii < width; ii++) //pass the screen pixels in 2 directions
-        {
-            for (int jj = 0; jj < height; jj++) {
-                //int val = img_normalized[ii + jj * width];
-                int index = (width - ii - 1) + (height - jj - 1) * width;
-                if(index < img_array.length) {
-                    int val = img_normalized[index];
-                    bitmap.setPixel(ii, jj, Color.rgb(val, val, val));
-                }
-            }
-        }
-
-        return bitmap;
-    }
 
     @Override
     public void onSDKReady() {
 
         Log.w("coucou","coucou onSDKReady");
 
-        BuddySDK.USB.enableNoMove(1, new IUsbCommadRsp.Stub() {
-            @Override
-            public void onSuccess(String s) throws RemoteException {
 
-            }
+        // Make background view to send touches to the face.
+        BuddySDK.UI.setViewAsFace(findViewById(R.id.view_face));
 
-            @Override
-            public void onFailed(String s) throws RemoteException {
+        View decorView = getWindow().getDecorView();
+        decorView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN);
 
-            }
-        });
-        BuddySDK.USB.enableYesMove(1, new IUsbCommadRsp.Stub() {
-            @Override
-            public void onSuccess(String s) throws RemoteException {
+        // configure camera listener
 
-            }
+        mOpenCvCameraView.setVisibility(CameraBridgeViewBase.VISIBLE);
+        mOpenCvCameraView.setCameraPermissionGranted();
+        mOpenCvCameraView.setCvCameraViewListener(this);
+        mOpenCvCameraView.setAlpha(0.1F);
 
-            @Override
-            public void onFailed(String s) throws RemoteException {
-
-            }
-        });
+        mOpenCvCameraView.getHolder().setFixedSize(1124,868);
 
         trackingNoGrafcet.start(20);
         trackingYesGrafcet.start(20);

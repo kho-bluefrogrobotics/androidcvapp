@@ -1,72 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:opencv="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/view_face"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#EFE5E5"
-    android:backgroundTint="#EAE4E4"
+    android:alpha="0"
+    android:background="#E41515"
     tools:context=".MainActivity">
 
 
-
-
-    <RelativeLayout
-        android:id="@+id/visage"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <LinearLayout
+        android:id="@+id/linearLayout"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_marginTop="10dp"
+        android:layout_weight="1"
+        android:alpha="0.1"
+        android:orientation="vertical"
         android:visibility="visible">
-
-        <!--  Wide angle camera : id=0 ; Narrow angle camera: id = 1-->
-
 
         <org.opencv.android.JavaCameraView
             android:id="@+id/CameraView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:alpha="0.1"
             android:visibility="visible"
             opencv:camera_id="0"
-            opencv:show_fps="false" />
+            opencv:show_fps="true" />
+        <!--  Wide angle camera : id=0 ; Narrow angle camera: id = 1             android:background="@color/white"   -->
 
 
-        <CheckBox
-            android:id="@+id/recordCkbx"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_marginStart="19dp"
-            android:layout_marginTop="179dp"
-            android:text="record" />
+    </LinearLayout>
 
-        <Button
-            android:id="@+id/initButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/alignBox"
-            android:layout_alignStart="@+id/alignBox"
-            android:layout_marginStart="3dp"
-            android:layout_marginTop="13dp"
-            android:text="Init"
-            android:visibility="visible" />
+    <CheckBox
+        android:id="@+id/recordCkbx"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="40dp"
+        android:layout_marginTop="180dp"
+        android:background="#EDE9E9"
+        android:text="record"
+        android:textColor="#000000"
+        android:textSize="20sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <CheckBox
-            android:id="@+id/alignBox"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentTop="true"
-            android:layout_marginStart="17dp"
-            android:layout_marginTop="233dp"
-            android:background="#EDE9E9"
-            android:text="align"
-            android:textColor="#000000"
-            android:textSize="20sp" />
+    <Button
+        android:id="@+id/initButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="16dp"
+        android:text="Init"
+        app:layout_constraintStart_toStartOf="@+id/recordCkbx"
+        app:layout_constraintTop_toBottomOf="@+id/recordCkbx" />
 
-
-
-    </RelativeLayout>
-
+    <CheckBox
+        android:id="@+id/alignBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Align"
+        app:layout_constraintStart_toStartOf="@+id/initButton"
+        app:layout_constraintTop_toBottomOf="@+id/initButton" />
 
 
-
-</FrameLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
