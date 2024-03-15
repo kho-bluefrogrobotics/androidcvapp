@@ -242,20 +242,37 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     else
                     {
 
-                        //if No at maximum position
-                        // make body move
+                        // if No not moving
                         if (motorAck.toUpperCase().contains("FINISHED"))
-                            AlignGrafcet.rotationRequest = true;
-
-                        if (Math.abs(noOffset)-Math.abs(previousOffset)>1)
                         {
-                            Log.d(name, "offset is moving: "
-                                    + Math.abs(noOffset) + "-"+ Math.abs(previousOffset)
-                                    +"=" +(Math.abs(noOffset)-Math.abs(previousOffset)));
-                            accFactor = Math.abs(noOffset)-Math.abs(previousOffset);
-                            step_num = 30;
+                            //if No at maximum position
+                            if (Math.abs(BuddySDK.Actuators.getNoPosition()) >=59)
+                            {
+                                // make body move
+                                AlignGrafcet.rotationRequest = true;
+                            }
+                            else // No not moving for unknown reason, while target still not in range
+                            {
+                                Log.d(name, "No not moving + No position=" + Math.abs(BuddySDK.Actuators.getNoPosition()) );
+                                //reset
+                                step_num = 10;
+                            }
+
                         }
-                    }
+                        else // still moving > adjusting speed
+                        {
+                            if (Math.abs(noOffset)-Math.abs(previousOffset)>1)
+                            {
+                                Log.d(name, "offset is moving: "
+                                        + Math.abs(noOffset) + "-"+ Math.abs(previousOffset)
+                                        +"=" +(Math.abs(noOffset)-Math.abs(previousOffset)));
+                                accFactor = Math.abs(noOffset)-Math.abs(previousOffset);
+                                step_num = 30;
+                            }
+                        } //end if still moving
+
+
+                    } //end if target not in range
 
                     break;
 

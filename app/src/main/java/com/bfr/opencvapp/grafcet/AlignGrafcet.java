@@ -284,6 +284,19 @@ public class AlignGrafcet extends bfr_Grafcet {
                             }
                         });
 
+
+                        BuddySDK.USB.updateAllLed("#9E74FF", new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String s) throws RemoteException {
+
+                            }
+
+                            @Override
+                            public void onFailed(String s) throws RemoteException {
+
+                            }
+                        });
+
                         step_num = 53;
                         break;
 
@@ -296,6 +309,21 @@ public class AlignGrafcet extends bfr_Grafcet {
                         if(ackWheels.toUpperCase().contains("FINISHED") || timeout) {
                             step_num = 10;
                             rotationRequest = false;
+
+
+
+                            BuddySDK.USB.updateAllLed("#34dfeb", new IUsbCommadRsp.Stub() {
+                                @Override
+                                public void onSuccess(String s) throws RemoteException {
+
+                                }
+
+                                @Override
+                                public void onFailed(String s) throws RemoteException {
+
+                                }
+                            });
+
                         }
                         break;
 
