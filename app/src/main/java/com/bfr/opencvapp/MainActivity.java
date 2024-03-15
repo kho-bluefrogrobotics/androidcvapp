@@ -130,6 +130,7 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
     Context context = this;
     public CheckBox alignCheckbox;
     public CheckBox recordCkbx;
+    public CheckBox showFace;
     Button initButton;
 
     private ImageView cameraImageView;
@@ -157,6 +158,8 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
         alignCheckbox = findViewById(R.id.alignBox);
         initButton= findViewById(R.id.initButton);
         recordCkbx = findViewById(R.id.recordCkbx);
+        showFace = findViewById(R.id.showface);
+
         mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.CameraView);
 
         // Check permissions
@@ -297,6 +300,24 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
 
                     mOpenCvCameraView.getHolder().setFixedSize(1124,868);
                 }
+            }
+        });
+
+
+        showFace.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+
+                if(isChecked){
+                //hide face - resize the cameraView to a visible size
+//                    mOpenCvCameraView.getHolder().setFixedSize(2020,1180);
+                mOpenCvCameraView.getHolder().setFixedSize(1124,868);
+            }
+                else //unchecked
+            {
+                // show face - resize the cameraView to 1x1
+                mOpenCvCameraView.getHolder().setFixedSize(1,1);
+            }
             }
         });
 
@@ -449,7 +470,7 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
         mOpenCvCameraView.setCvCameraViewListener(this);
         mOpenCvCameraView.setAlpha(0.1F);
 
-        mOpenCvCameraView.getHolder().setFixedSize(1124,868);
+        mOpenCvCameraView.getHolder().setFixedSize(1,1);
 
         trackingNoGrafcet.start(20);
         trackingYesGrafcet.start(20);
