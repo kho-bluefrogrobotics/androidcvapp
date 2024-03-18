@@ -8,6 +8,7 @@ import static com.bfr.opencvapp.MainActivity.personTracker;
 import android.os.RemoteException;
 import android.util.Log;
 
+import com.bfr.buddy.ui.shared.FacialEvent;
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
 import com.bfr.buddysdk.services.companion.TaskCallback;
@@ -39,6 +40,9 @@ public class FaceGrafcet extends bfr_Grafcet {
     private int previous_step = 0;
     private double time_in_curr_step = 0;
     private boolean timeout = false;
+
+    private double timeSinceLastBlink = 0;
+    private double randomBlinkInterval = 4000;
 
     public static int RESIZE_RATIO =20;
     public static double xCenter =0.0;
@@ -84,7 +88,6 @@ public class FaceGrafcet extends bfr_Grafcet {
 
             try {
 
-
                 // if step changed
                 if (!(step_num == previous_step)) {
                     // display current step
@@ -107,6 +110,19 @@ public class FaceGrafcet extends bfr_Grafcet {
                     }
                 }
 
+
+                // blink ever 4s
+                if (System.currentTimeMillis()-timeSinceLastBlink >randomBlinkInterval)
+                {
+                    // reset
+                    timeSinceLastBlink = System.currentTimeMillis();
+                    // compute next blink in random timelapse
+                    randomBlinkInterval = (int) (Math.random()*6000)+3000;
+
+                    Log.d(name, "Next Blink in " + randomBlinkInterval +"s");
+                    //blink
+                    BuddySDK.UI.playFacialEvent(FacialEvent.BLINK_EYES);
+                }
 
                 // which grafcet step?
                 switch (step_num) {
