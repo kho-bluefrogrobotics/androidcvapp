@@ -57,7 +57,7 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
 
     String motorAck = "";
 
-    float noOffset=0.0f;
+    public static float yesOffset =0.0f;
     float previousOffset=0.0f;
     float noAngle=0.0f;
     float noSpeed = 30.0f;
@@ -167,10 +167,10 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
                     targetY = Math.max(0,(int) (target.y+ personTracker.tracked.box.height/4));
 //                    Log.d(name, "Target at " + targetX + "," + targetY);
                     // compute angle
-                    noOffset = (targetY-(768/2))*0.09375f;
-                    Log.d(name, "TargetY = "+ targetY + " Offset= " + noOffset);
+                    yesOffset = (targetY-(768/2))*0.09375f;
+                    Log.d(name, "TargetY = "+ targetY + " Offset= " + yesOffset);
 
-                    if(Math.abs(noOffset)>7.0f)
+                    if(Math.abs(yesOffset)>7.0f)
                         step_num = 20;
                     break;
 
@@ -178,16 +178,16 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
 
                     //reset
                     motorAck = "";
-                    previousOffset = noOffset;
+                    previousOffset = yesOffset;
 
-                    noAngle = BuddySDK.Actuators.getYesPosition()-noOffset;
+                    noAngle = BuddySDK.Actuators.getYesPosition()- yesOffset;
 
 //                    if (noOffset>0)
 //                        noAngle = -150.0f;
 //                    else
 //                        noAngle = 150.0f;
 
-                    Log.d(name, "rotating to " + noAngle + " (offset=" + noOffset +") with Yes position = " + BuddySDK.Actuators.getYesPosition() + " at " + noSpeed);
+                    Log.d(name, "rotating to " + noAngle + " (offset=" + yesOffset +") with Yes position = " + BuddySDK.Actuators.getYesPosition() + " at " + noSpeed);
                     // speed
 //                    noSpeed = Math.max(noOffset*1.3f, 30.0f);
 
@@ -247,12 +247,12 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
                     targetY = (int) target.y;
 //                    Log.d(name, "Target at " + targetX + "," + targetY);
                     // compute angle
-                    noOffset = (targetY-(768/2))*0.09375f;
+                    yesOffset = (targetY-(768/2))*0.09375f;
 
                     // if target in range
-                    if (Math.abs(noOffset)<5)
+                    if (Math.abs(yesOffset)<5)
                     {
-                        Log.d(name, "offset = " + noOffset + " -> STOP");
+                        Log.d(name, "offset = " + yesOffset + " -> STOP");
                         BuddySDK.USB.buddyStopYesMove(new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String s) throws RemoteException {
@@ -268,12 +268,12 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
                     }
                     else
                     {
-                        if (Math.abs(noOffset)-Math.abs(previousOffset)>1)
+                        if (Math.abs(yesOffset)-Math.abs(previousOffset)>1)
                         {
                             Log.d(name, "offset is moving: "
-                                    + Math.abs(noOffset) + "-"+ Math.abs(previousOffset)
-                                    +"=" +(Math.abs(noOffset)-Math.abs(previousOffset)));
-                            accFactor = Math.abs(noOffset)-Math.abs(previousOffset);
+                                    + Math.abs(yesOffset) + "-"+ Math.abs(previousOffset)
+                                    +"=" +(Math.abs(yesOffset)-Math.abs(previousOffset)));
+                            accFactor = Math.abs(yesOffset)-Math.abs(previousOffset);
                             step_num = 30;
                         }
                     }

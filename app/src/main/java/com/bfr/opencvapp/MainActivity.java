@@ -139,6 +139,7 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
 
 
     public AlignGrafcet alignGrafcet = new AlignGrafcet("BodyAlign") ;
+    public FaceGrafcet faceGrafcet = new FaceGrafcet("FaceGrafcet") ;
 
     //todebug
     boolean recording=false;
@@ -353,6 +354,7 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
         super.onPause();
         try{
             alignGrafcet.stop();
+            faceGrafcet.stop();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -475,6 +477,8 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
         trackingNoGrafcet.start(20);
         trackingYesGrafcet.start(20);
         alignGrafcet.start(10);
+
+        faceGrafcet.start(500);
 
     }
 
