@@ -239,7 +239,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                         // go to stabilization step
                         step_num = 60;
                     }
-                    else
+                    else // target not in range
                     {
 
                         // if No not moving
@@ -255,7 +255,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                             {
                                 Log.d(name, "No not moving + No position=" + Math.abs(BuddySDK.Actuators.getNoPosition()) );
                                 //reset
-                                step_num = 10;
+                                step_num = 59;
                             }
 
                         }
@@ -311,8 +311,21 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     break;
 
 
-                case 60 : // wait around 1s to see if target stable
+                case 59: // No not moving and Target off range-> check if need to align body before restarting
 
+                    // if head is turned
+                    if (Math.abs(BuddySDK.Actuators.getNoPosition())>5)
+                    {
+                        TrackingNoGrafcet.waitingForAlign = true;
+                        step_num = 65;
+                    }
+                    else // No axis  aligned with body
+                    {
+                        step_num = 10;
+                    }
+                    break;
+
+                case 60 : // wait around 1s to see if target stable
 
                     target = getCentroid(personTracker.tracked.box.x,
                             personTracker.tracked.box.y,
@@ -347,8 +360,41 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                 case 65: // wait end of aligning body
                     if (!waitingForAlign)
                         step_num = 10;
-                break;
 
+                    // if target is moving
+                    //=> cancel body rotation
+
+                    target = getCentroid(personTracker.tracked.box.x,
+                            personTracker.tracked.box.y,
+                            personTracker.tracked.box.height,
+                            personTracker.tracked.box.width
+                    );
+                    targetX = (int) target.x;
+                    targetY = (int) target.y;
+//                    Log.d(name, "Target at " + targetX + "," + targetY);
+                    // compute angle
+                    noOffset = (targetX-(1024/2))*0.09375f;
+//                    Log.d(name, " salutcoucou Target at " + noOffset);
+
+                    if(Math.abs(noOffset)>=10)
+                    {
+                        Log.w(name, " interruption because offset= " + noOffset);
+                        // stop wheels
+                        BuddySDK.USB.emergencyStopMotors(new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String s) throws RemoteException {         }
+
+                            @Override
+                            public void onFailed(String s) throws RemoteException {}
+                        });
+
+                        AlignGrafcet.rotationRequest = false;
+                        AlignGrafcet.step_num = 10;
+
+                        //
+                        step_num = 20;
+                    }
+                break;
 
                 case 30000 : // wait
                     try {
