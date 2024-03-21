@@ -11,21 +11,20 @@ import android.util.Log;
 import com.bfr.buddy.ui.shared.FacialEvent;
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
-import com.bfr.buddysdk.services.companion.TaskCallback;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 import org.opencv.core.Point;
 
-public class FaceGrafcet extends bfr_Grafcet {
+public class InitGrafcet extends bfr_Grafcet {
 
-    public FaceGrafcet(String mname) {
+    public InitGrafcet(String mname) {
         super(mname);
         this.grafcet_runnable = mysequence;
 
     }
 
 
-    private FaceGrafcet grafcet=this;
+    private InitGrafcet grafcet=this;
 
     // Static variable (to manage the grafcet from outside)
     public static int step_num =0;
@@ -52,20 +51,27 @@ public class FaceGrafcet extends bfr_Grafcet {
     private float angleToRotate=0.0f;
 
 
-    private IUsbCommadRsp iUsbCommadRsp = new IUsbCommadRsp.Stub(){
+    private IUsbCommadRsp wheelsRsp = new IUsbCommadRsp.Stub(){
+        @Override
+        public void onSuccess(String success) throws RemoteException { ackWheels = success; }
 
         @Override
-        public void onSuccess(String success) throws RemoteException {
-            Log.i("GRAFCET NO", "success --------------- : " + success);
-        }
-
-        @Override
-        public void onFailed(String error) throws RemoteException {
-            Log.i("GRAFCET NO", "error --------------- : " + error);
-
-        }
+        public void onFailed(String error) throws RemoteException { ackWheels = error; }
     };
 
+    private IUsbCommadRsp yesRsp = new IUsbCommadRsp.Stub(){
+        @Override
+        public void onSuccess(String success) throws RemoteException { ackYes = success; }
+        @Override
+        public void onFailed(String error) throws RemoteException { ackYes = error; }
+    };
+
+    private IUsbCommadRsp noRsp = new IUsbCommadRsp.Stub(){
+        @Override
+        public void onSuccess(String success) throws RemoteException { ackNo = success; }
+        @Override
+        public void onFailed(String error) throws RemoteException { ackNo = error; }
+    };
     String ackYes="";
     String ackNo="";
     String ackWheels="";
@@ -128,47 +134,51 @@ public class FaceGrafcet extends bfr_Grafcet {
                 switch (step_num) {
                     case 0: // Wait for checkbox
                         //wait until check box
-                        if (true) {
+                        if (go) {
                             // go to next step
                             step_num = 5;
                         }
                         break;
 
-                    case 5: //get position
+                    case 5: //enable all motors
 
-                        // scaling the tracked box between 0;1
-                        // scaling a value v =[min1;max1] to a range [min2; max2]
-                        // new_value= ( v - min1)  * [ ( max2-min2)/(max1-min1) ] + min2
+                        //reset
+                        ackYes="";
+                        ackNo="";
+                        ackWheels="";
 
-                        // empirically, we observe the tracked box horizontal position of its center is between 200;830
-                        float centerPosX = (float)(personTracker.tracked.box.x  + personTracker.tracked.box.width/2);
-                        // changing the range
-                        float scaleX = (1.0f-0.0f) / (830 - 200.0f);
-                        // !!!the tracking is mirrored tracking.x = 0 -> position value must be 1
-                        float xpos = (( 200.0f- centerPosX)*scaleX + 1.0f) ;
-                        // the final value for the eyes mus be between 0;1300
-                        xpos = xpos *1300;
+                        BuddySDK.USB.enableWheels(true, wheelsRsp);
+                        BuddySDK.USB.enableNoMove(true, noRsp);
+                        BuddySDK.USB.enableYesMove(true, yesRsp);
 
-                        // same thing for Y
-                        float centerPosY = (float)(personTracker.tracked.box.y ); //pointing to the top of the bbox
-                        float scaleY = (0.7f-0.3f) / (350 - 150.0f);
-                        // Y is not inverted
-                        float ypos = (( centerPosY - 150.0f)*scaleY + 0.3f) ;
-                        ypos = ypos * 900;
-
-                        BuddySDK.UI.lookAtXY(xpos,
-                               ypos , true);
-//                        BuddySDK.UI.lookAtXY(1200, 1000, true);
-//                        Log.i(name, "coords " +
-//                                personTracker.tracked.box.x + "," + personTracker.tracked.box.y + " -- " +
-//                               xpos + ","+ ypos);
-                        step_num = 5;
+                        step_num = 10;
                         break;
 
-                    case 10:
-//                        Thread.sleep(100);
-                        step_num = 5;
+                    case 10: //
+                        if (ackWheels.toUpperCase().contains("OK")
+                        && ackYes.toUpperCase().contains("OK")
+                        && ackNo.toUpperCase().contains("OK"))
+                        {
+                            step_num = 15;
+                        }
                         break;
+
+                    case 15 : //wait for  wheels
+                        if (!BuddySDK.Actuators.getLeftWheelStatus().toUpperCase().contains("DISABLE"))
+                            step_num = 17;
+                        break;
+
+                    case 17 : //wait for  Yes
+                        if (!BuddySDK.Actuators.getYesStatus().toUpperCase().contains("DISABLE"))
+                            step_num = 18;
+                        break;
+                    case 18 : //wait for  Yes
+                        if (!BuddySDK.Actuators.getNoStatus().toUpperCase().contains("DISABLE")) {
+                            step_num = 20;
+                        go = false;
+                        }
+                        break;
+
                     default:
                         // go to next step
                         step_num = 0;

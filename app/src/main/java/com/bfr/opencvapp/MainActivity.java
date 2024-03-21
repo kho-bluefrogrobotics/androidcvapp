@@ -100,8 +100,10 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     private String dir = "/sdcard/Android/data/com.bfr.opencvapp/files/";
 
 
-TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNoGrafcet");
-TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
+    TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNoGrafcet");
+    TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
+    MainGrafcet mainGrafcet = new MainGrafcet("MainGrafcet");
+    public static InitGrafcet initGrafcet = new InitGrafcet("InitGrafcet");
 
     //********************  image ***************************
 
@@ -192,9 +194,11 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
         alignCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                trackingNoGrafcet.go=b;
-                trackingYesGrafcet.go=b;
-                alignGrafcet.go=b;
+//                trackingNoGrafcet.go=b;
+//                trackingYesGrafcet.go=b;
+//                alignGrafcet.go=b;
+
+                mainGrafcet.go= true;
 
                 if(!b)
                 {
@@ -248,7 +252,8 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
                 alignGrafcet.go = false;
                 alignGrafcet.step_num = 0;
 
-
+                mainGrafcet.go = false;
+                mainGrafcet.step_num = 0;
 
 //                int targetX = (int) (personTracker.tracked.box.x + personTracker.tracked.box.width/2);
 //
@@ -474,11 +479,14 @@ TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
 
         mOpenCvCameraView.getHolder().setFixedSize(1,1);
 
+
         trackingNoGrafcet.start(20);
         trackingYesGrafcet.start(20);
         alignGrafcet.start(10);
 
         faceGrafcet.start(500);
+
+        mainGrafcet.start();
 
     }
 

@@ -3,6 +3,7 @@ package com.bfr.opencvapp.grafcet;
 
 //import static com.bfr.opencvapp.MainActivity.alignCheckbox;
 
+import static com.bfr.opencvapp.MainActivity.initGrafcet;
 import static com.bfr.opencvapp.MainActivity.personTracker;
 
 import android.os.RemoteException;
@@ -11,21 +12,20 @@ import android.util.Log;
 import com.bfr.buddy.ui.shared.FacialEvent;
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
-import com.bfr.buddysdk.services.companion.TaskCallback;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 import org.opencv.core.Point;
 
-public class FaceGrafcet extends bfr_Grafcet {
+public class MainGrafcet extends bfr_Grafcet {
 
-    public FaceGrafcet(String mname) {
+    public MainGrafcet(String mname) {
         super(mname);
         this.grafcet_runnable = mysequence;
 
     }
 
 
-    private FaceGrafcet grafcet=this;
+    private MainGrafcet grafcet=this;
 
     // Static variable (to manage the grafcet from outside)
     public static int step_num =0;
@@ -128,46 +128,41 @@ public class FaceGrafcet extends bfr_Grafcet {
                 switch (step_num) {
                     case 0: // Wait for checkbox
                         //wait until check box
-                        if (true) {
+                        if (go) {
                             // go to next step
                             step_num = 5;
                         }
                         break;
 
-                    case 5: //get position
+                    case 5: //start Init
 
-                        // scaling the tracked box between 0;1
-                        // scaling a value v =[min1;max1] to a range [min2; max2]
-                        // new_value= ( v - min1)  * [ ( max2-min2)/(max1-min1) ] + min2
-
-                        // empirically, we observe the tracked box horizontal position of its center is between 200;830
-                        float centerPosX = (float)(personTracker.tracked.box.x  + personTracker.tracked.box.width/2);
-                        // changing the range
-                        float scaleX = (1.0f-0.0f) / (830 - 200.0f);
-                        // !!!the tracking is mirrored tracking.x = 0 -> position value must be 1
-                        float xpos = (( 200.0f- centerPosX)*scaleX + 1.0f) ;
-                        // the final value for the eyes mus be between 0;1300
-                        xpos = xpos *1300;
-
-                        // same thing for Y
-                        float centerPosY = (float)(personTracker.tracked.box.y ); //pointing to the top of the bbox
-                        float scaleY = (0.7f-0.3f) / (350 - 150.0f);
-                        // Y is not inverted
-                        float ypos = (( centerPosY - 150.0f)*scaleY + 0.3f) ;
-                        ypos = ypos * 900;
-
-                        BuddySDK.UI.lookAtXY(xpos,
-                               ypos , true);
-//                        BuddySDK.UI.lookAtXY(1200, 1000, true);
-//                        Log.i(name, "coords " +
-//                                personTracker.tracked.box.x + "," + personTracker.tracked.box.y + " -- " +
-//                               xpos + ","+ ypos);
-                        step_num = 5;
+                        initGrafcet.start();
+                        initGrafcet.go = true;
+                        initGrafcet.step_num=0;
+                        step_num = 7;
                         break;
 
-                    case 10:
-//                        Thread.sleep(100);
-                        step_num = 5;
+                    case 7: // wait for end of init
+//
+                        if(!initGrafcet.go)
+                        {
+                            initGrafcet.stop();
+                            initGrafcet.go = false;
+                            step_num = 10;
+                        }
+                        break;
+
+                    case 10: //start Tracking
+                        TrackingNoGrafcet.go = true;
+                        TrackingYesGrafcet.go = true;
+                        AlignGrafcet.go = true;
+
+                        step_num = 15;
+                        break;
+
+                    case 15:
+                        if(!TrackingNoGrafcet.go)
+                            step_num = 20;
                         break;
                     default:
                         // go to next step

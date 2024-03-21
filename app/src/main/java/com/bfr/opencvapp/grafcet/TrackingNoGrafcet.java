@@ -127,7 +127,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     if (go) {
 
                         // go to next step
-                        step_num = 5;
+                        step_num = 10;
                     }
                     break;
 

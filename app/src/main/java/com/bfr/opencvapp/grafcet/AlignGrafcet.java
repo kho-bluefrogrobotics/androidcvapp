@@ -110,7 +110,7 @@ public class AlignGrafcet extends bfr_Grafcet {
                         //wait until check box
                         if (go) {
                             // go to next step
-                            step_num = 5;
+                            step_num = 10;
                         }
                         break;
 
