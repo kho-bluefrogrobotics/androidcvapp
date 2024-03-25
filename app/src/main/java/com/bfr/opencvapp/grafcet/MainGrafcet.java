@@ -5,6 +5,7 @@ package com.bfr.opencvapp.grafcet;
 
 import static com.bfr.opencvapp.MainActivity.initGrafcet;
 import static com.bfr.opencvapp.MainActivity.personTracker;
+import static com.bfr.opencvapp.MainActivity.searchPersonGrafcet;
 
 import android.os.RemoteException;
 import android.util.Log;
@@ -111,18 +112,6 @@ public class MainGrafcet extends bfr_Grafcet {
                 }
 
 
-                // blink ever 4s
-                if (System.currentTimeMillis()-timeSinceLastBlink >randomBlinkInterval)
-                {
-                    // reset
-                    timeSinceLastBlink = System.currentTimeMillis();
-                    // compute next blink in random timelapse
-                    randomBlinkInterval = (int) (Math.random()*6000)+3000;
-
-                    Log.d(name, "Next Blink in " + randomBlinkInterval +"s");
-                    //blink
-                    BuddySDK.UI.playFacialEvent(FacialEvent.BLINK_EYES);
-                }
 
                 // which grafcet step?
                 switch (step_num) {
@@ -163,7 +152,34 @@ public class MainGrafcet extends bfr_Grafcet {
                     case 15:
                         if(!TrackingNoGrafcet.go)
                             step_num = 20;
+
+                        if (personTracker.frameCount==0)
+                        {
+                            TrackingNoGrafcet.go = false;
+                            TrackingYesGrafcet.go = false;
+                            AlignGrafcet.go = false;
+                            TrackingNoGrafcet.step_num=0;
+                            TrackingYesGrafcet.step_num=0;
+                            AlignGrafcet.step_num=0;
+
+                            searchPersonGrafcet.start();
+                            searchPersonGrafcet.go=true;
+                            searchPersonGrafcet.step_num=0;
+                            step_num = 70;
+                        }
                         break;
+
+
+                    case 70: //wait for end of searchperson
+                        if(!searchPersonGrafcet.go)
+                        {
+                            searchPersonGrafcet.stop();
+                            searchPersonGrafcet.go = false;
+                            step_num = 10;
+                        }
+
+                        break;
+
                     default:
                         // go to next step
                         step_num = 0;

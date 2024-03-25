@@ -3,8 +3,6 @@ package com.bfr.opencvapp.grafcet;
 
 //import static com.bfr.opencvapp.MainActivity.alignCheckbox;
 
-import static com.bfr.opencvapp.MainActivity.personTracker;
-
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -15,16 +13,16 @@ import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 import org.opencv.core.Point;
 
-public class InitGrafcet extends bfr_Grafcet {
+public class SearchPersonGrafcet extends bfr_Grafcet {
 
-    public InitGrafcet(String mname) {
+    public SearchPersonGrafcet(String mname) {
         super(mname);
         this.grafcet_runnable = mysequence;
 
     }
 
 
-    private InitGrafcet grafcet=this;
+    private SearchPersonGrafcet grafcet=this;
 
     // Static variable (to manage the grafcet from outside)
     public static int step_num =0;
@@ -53,7 +51,9 @@ public class InitGrafcet extends bfr_Grafcet {
 
     private IUsbCommadRsp wheelsRsp = new IUsbCommadRsp.Stub(){
         @Override
-        public void onSuccess(String success) throws RemoteException { ackWheels = success; }
+        public void onSuccess(String success) throws RemoteException { ackWheels = success;
+        Log.d(name, "Motor wheels ack="+ackWheels);
+            }
 
         @Override
         public void onFailed(String error) throws RemoteException { ackWheels = error; }
@@ -61,14 +61,14 @@ public class InitGrafcet extends bfr_Grafcet {
 
     private IUsbCommadRsp yesRsp = new IUsbCommadRsp.Stub(){
         @Override
-        public void onSuccess(String success) throws RemoteException { ackYes = success; }
+        public void onSuccess(String success) throws RemoteException { ackYes = success; Log.d(name, "Motor YES ack="+ackYes);}
         @Override
         public void onFailed(String error) throws RemoteException { ackYes = error; }
     };
 
     private IUsbCommadRsp noRsp = new IUsbCommadRsp.Stub(){
         @Override
-        public void onSuccess(String success) throws RemoteException { ackNo = success; }
+        public void onSuccess(String success) throws RemoteException { ackNo = success; Log.d(name, "Motor NO ack="+ackNo);}
         @Override
         public void onFailed(String error) throws RemoteException { ackNo = error; }
     };
@@ -117,6 +117,7 @@ public class InitGrafcet extends bfr_Grafcet {
                 }
 
 
+
                 // which grafcet step?
                 switch (step_num) {
                     case 0: // Wait for checkbox
@@ -127,41 +128,41 @@ public class InitGrafcet extends bfr_Grafcet {
                         }
                         break;
 
-                    case 5: //enable all motors
+                    case 5: //Head at zero
 
                         //reset
                         ackYes="";
                         ackNo="";
                         ackWheels="";
 
-                        BuddySDK.USB.enableWheels(true, wheelsRsp);
-                        BuddySDK.USB.enableNoMove(true, noRsp);
-                        BuddySDK.USB.enableYesMove(true, yesRsp);
+                        BuddySDK.USB.emergencyStopMotors(wheelsRsp);
+                        BuddySDK.USB.buddySayNo(40, 0, noRsp);
+                        BuddySDK.USB.buddySayYes(40, 15, yesRsp);
 
                         step_num = 10;
                         break;
 
-                    case 10: //
+                    case 10: // wait for OK
                         if (ackWheels.toUpperCase().contains("OK")
                         && ackYes.toUpperCase().contains("OK")
-                        && ackNo.toUpperCase().contains("OK"))
+                        && ackNo.toUpperCase().contains("OK") || timeout)
                         {
-                            step_num = 15;
+                            step_num = 18;
                         }
                         break;
 
                     case 15 : //wait for  wheels
-                        if (!BuddySDK.Actuators.getLeftWheelStatus().toUpperCase().contains("DISABLE"))
+                        if (BuddySDK.Actuators.getLeftWheelStatus().toUpperCase().contains("FINISHED"))
                             step_num = 17;
                         break;
 
                     case 17 : //wait for  Yes
-                        if (!BuddySDK.Actuators.getYesStatus().toUpperCase().contains("DISABLE"))
+                        if (ackYes.toUpperCase().contains("FINISHED"))
                             step_num = 18;
                         break;
                     case 18 : //wait for  Yes
-                        if (!BuddySDK.Actuators.getNoStatus().toUpperCase().contains("DISABLE")) {
-                            step_num = 20;
+                        if (ackNo.toUpperCase().contains("FINISHED")) {
+                            step_num = 0;
                         go = false;
                         }
                         break;

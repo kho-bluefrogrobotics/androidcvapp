@@ -10,52 +10,28 @@ import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.RectF;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.RemoteException;
 import android.util.Log;
-import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
-import android.widget.Switch;
-import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.CameraActivity;
 import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfFloat;
-import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-import org.opencv.dnn.Dnn;
-import org.opencv.dnn.Net;
-import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
-
-import org.opencv.objdetect.FaceRecognizerSF;
 
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.VideoWriter;
@@ -67,24 +43,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.stream.Stream;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddyActivity;
 import com.bfr.buddysdk.BuddySDK;
 
 import com.bfr.opencvapp.grafcet.*;
-import com.bfr.opencvapp.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteMidas;
 import com.bfr.opencvapp.utils.TfLiteYoloXHumanHeadHands;
 
@@ -104,6 +71,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
     MainGrafcet mainGrafcet = new MainGrafcet("MainGrafcet");
     public static InitGrafcet initGrafcet = new InitGrafcet("InitGrafcet");
+    public static SearchPersonGrafcet searchPersonGrafcet = new SearchPersonGrafcet("SearchPersonGrafcet");
 
     //********************  image ***************************
 
@@ -477,7 +445,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         mOpenCvCameraView.setCvCameraViewListener(this);
         mOpenCvCameraView.setAlpha(0.1F);
 
-        mOpenCvCameraView.getHolder().setFixedSize(1,1);
+//        mOpenCvCameraView.getHolder().setFixedSize(1,1);
 
 
         trackingNoGrafcet.start(20);
