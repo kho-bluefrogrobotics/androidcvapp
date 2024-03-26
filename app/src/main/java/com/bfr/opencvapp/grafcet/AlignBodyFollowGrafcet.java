@@ -120,7 +120,7 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                 else
                 {
                     // if time > 2s
-                    if ((System.currentTimeMillis()-time_in_curr_step > 5000) && step_num >0)
+                    if ((System.currentTimeMillis()-time_in_curr_step > 10000) && step_num >0)
                     {
                         // activate bypass
                         timeout = true;
@@ -269,113 +269,95 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                             if(Math.abs(noOffset)>10.0f)
                                 step_num = 15;
                             else
-                                step_num = 10;
-                            
+                                step_num = 30;
+
                         }
 
                         break;
 
-                    case 21 : //wait
 
-                        Thread.sleep(500);
-                        step_num=10;
-                        break;
-                    case 30: // blink
-                    BuddySDK.USB.updateAllLed("#eb3434", new IUsbCommadRsp.Stub() {
-                        @Override
-                        public void onSuccess(String s) throws RemoteException {
 
+                    case 30: // get closer to target
+                        if (personTracker.tracked.box.height<200)
+                        {
+                            step_num = 35;
+                            Log.i("coucou", "target size=" +personTracker.tracked.box.height );
+                        }
+                        else
+                        {
+                            Log.i("coucou", "target size=" +personTracker.tracked.box.height );
+                            step_num = 10;
                         }
 
-                        @Override
-                        public void onFailed(String s) throws RemoteException {
-
-                        }
-                    });
-                    step_num =33;
-                    break;
-
-                    case 33 : //wait
-                        Thread.sleep(1000);
-                        step_num = 35;
                         break;
 
-                    case 35 : //reset LED
-                        BuddySDK.USB.updateAllLed("#34dfeb", new IUsbCommadRsp.Stub() {
+                    case 35: // go forward
+                        ackWheels = "";
+                        BuddySDK.USB.moveBuddy(0.1f, 1.0f, new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String s) throws RemoteException {
-
+                                ackWheels = s;
                             }
 
                             @Override
                             public void onFailed(String s) throws RemoteException {
-
+                                ackWheels = s;
                             }
                         });
-                        step_num = 10;
+                        step_num = 37;
                         break;
 
 
-
-                    case 50: //No at limit > request to rotate body
-
-                        //reset
-                        ackWheels = "";
-
-                        BuddySDK.USB.rotateNoPrecision(50.0f, -TrackingNoGrafcet.noOffset, 0, new TaskCallback() {
-                            @Override
-                            public void onStarted() {
-                                ackWheels = "OK";
-                            }
-
-                            @Override
-                            public void onSuccess(String s) {
-                                ackWheels = "FINISHED";
-                            }
-
-                            @Override
-                            public void onCancel() {
-                                ackWheels = "FINISHED";
-                            }
-
-                            @Override
-                            public void onError(String s) {
-                                ackWheels = "ERROR";
-                            }
-                        });
-
-
-//                        BuddySDK.USB.updateAllLed("#9E74FF", new IUsbCommadRsp.Stub() {
-//                            @Override
-//                            public void onSuccess(String s) throws RemoteException {                            }
-//
-//                            @Override
-//                            public void onFailed(String s) throws RemoteException {}
-//                        });
-
-                        step_num = 53;
+                    case 37: //wait for OK
+                        if(ackWheels.toUpperCase().contains("OK") ||
+                                ackWheels.toUpperCase().contains("CANCELED") || timeout )
+                            step_num = 38;
                         break;
 
-                    case 53 ://wait for OK
-                        if(ackWheels.toUpperCase().contains("OK") || timeout)
-                            step_num = 55;
-                        break;
+                    case 38://wait for end
+                        if(ackWheels.toUpperCase().contains("FINISHED") ||
+                                ackWheels.toUpperCase().contains("CANCELED") || timeout )
+                        {
+                            Log.i("coucou", "going to step 10 because ack=" +ackWheels + " and timeout=" + timeout );
+                            BuddySDK.USB.setBuddySpeed(0.0f, 0.0f, 0, new IUsbCommadRsp.Stub() {
+                                @Override
+                                public void onSuccess(String s) throws RemoteException { }
 
-                    case 55: // wait for mvt finished
-                        if(ackWheels.toUpperCase().contains("FINISHED") || timeout) {
+                                @Override
+                                public void onFailed(String s) throws RemoteException {}
+                            });
                             step_num = 10;
-                            rotationRequest = false;
-
-
-
-//                            BuddySDK.USB.updateAllLed("#34dfeb", new IUsbCommadRsp.Stub() {
-//                                @Override
-//                                public void onSuccess(String s) throws RemoteException {                                }
-//                                @Override
-//                                public void onFailed(String s) throws RemoteException {                                }
-//                            });
-
                         }
+
+                        int distThres = 500;
+                        int tofMiddle =BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance();
+                        int tofLeft =BuddySDK.Sensors.TofSensors().FrontLeft().getDistance();
+                        int tofRight =BuddySDK.Sensors.TofSensors().FrontRight().getDistance();
+
+                        boolean obstacle = false;
+
+                        if( (tofLeft >0 && tofLeft < distThres)
+                        || (tofMiddle >0 && tofMiddle < distThres)
+                        || (tofRight >0 && tofRight < distThres))
+                            obstacle = true;
+
+
+
+                        Log.i("coucou", "***************Sensors value=" + tofMiddle + ", " + tofLeft + ", "  + tofRight);
+                        if(obstacle)
+                        {
+                            Log.i("coucou", "STOP!!!  sensors=" + tofMiddle + ", " + tofLeft + ", "  + tofRight);
+
+                            BuddySDK.USB.setBuddySpeed(0.0f, 0.0f, 0, new IUsbCommadRsp.Stub() {
+                                @Override
+                                public void onSuccess(String s) throws RemoteException { }
+
+                                @Override
+                                public void onFailed(String s) throws RemoteException {}
+                            });
+                            step_num = 10;
+                        }
+
                         break;
 
                     default:
