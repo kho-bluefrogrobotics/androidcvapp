@@ -128,7 +128,7 @@ public class FaceGrafcet extends bfr_Grafcet {
                 switch (step_num) {
                     case 0: // Wait for checkbox
                         //wait until check box
-                        if (true) {
+                        if (go) {
                             // go to next step
                             step_num = 5;
                         }

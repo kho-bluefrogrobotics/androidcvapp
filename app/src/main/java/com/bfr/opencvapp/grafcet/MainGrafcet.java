@@ -3,6 +3,7 @@ package com.bfr.opencvapp.grafcet;
 
 //import static com.bfr.opencvapp.MainActivity.alignCheckbox;
 
+import static com.bfr.opencvapp.MainActivity.alignBodyFollowGrafcet;
 import static com.bfr.opencvapp.MainActivity.initGrafcet;
 import static com.bfr.opencvapp.MainActivity.personTracker;
 import static com.bfr.opencvapp.MainActivity.searchPersonGrafcet;
@@ -16,6 +17,7 @@ import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 import org.opencv.core.Point;
+import org.opencv.face.Face;
 
 public class MainGrafcet extends bfr_Grafcet {
 
@@ -137,14 +139,34 @@ public class MainGrafcet extends bfr_Grafcet {
                         {
                             initGrafcet.stop();
                             initGrafcet.go = false;
-                            step_num = 10;
+                            step_num = 8;
                         }
                         break;
+
+
+
+
+                    case 8://starting body alignment
+                        alignBodyFollowGrafcet.start(10);
+                        alignBodyFollowGrafcet.go = true;
+                        alignBodyFollowGrafcet.step_num = 0;
+
+                        step_num = 9;
+                        break;
+
+
+                    case 9 : // wait for end of grafcet
+                        if(!alignBodyFollowGrafcet.go)
+                            step_num = 7;
+
+                        break;
+
 
                     case 10: //start Tracking
                         TrackingNoGrafcet.go = true;
                         TrackingYesGrafcet.go = true;
                         AlignGrafcet.go = true;
+                        FaceGrafcet.go = true;
 
                         step_num = 15;
                         break;

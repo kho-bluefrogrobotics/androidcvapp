@@ -168,7 +168,7 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
 //                    Log.d(name, "Target at " + targetX + "," + targetY);
                     // compute angle
                     yesOffset = (targetY-(768/2))*0.09375f;
-                    Log.d(name, "TargetY = "+ targetY + " Offset= " + yesOffset);
+//                    Log.d(name, "TargetY = "+ targetY + " Offset= " + yesOffset);
 
                     if(Math.abs(yesOffset)>7.0f)
                         step_num = 20;

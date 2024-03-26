@@ -72,6 +72,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     MainGrafcet mainGrafcet = new MainGrafcet("MainGrafcet");
     public static InitGrafcet initGrafcet = new InitGrafcet("InitGrafcet");
     public static SearchPersonGrafcet searchPersonGrafcet = new SearchPersonGrafcet("SearchPersonGrafcet");
+    public static AlignBodyFollowGrafcet alignBodyFollowGrafcet = new AlignBodyFollowGrafcet("AlignBodyFollowGrafcet");
 
     //********************  image ***************************
 
@@ -223,21 +224,30 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 mainGrafcet.go = false;
                 mainGrafcet.step_num = 0;
 
-//                int targetX = (int) (personTracker.tracked.box.x + personTracker.tracked.box.width/2);
-//
-//                float noAngle = (targetX-(1024/2))*0.09375f;
-//                Log.i("trackingNo", "Rotating to " + noAngle);
-//                BuddySDK.USB.buddySayNo(45.0f, noAngle, new IUsbCommadRsp.Stub() {
+
+
+
+
+
+//                BuddySDK.USB.setBuddySpeed(0.01f, 1.0f, 1.0f, new IUsbCommadRsp.Stub() {
 //                    @Override
 //                    public void onSuccess(String s) throws RemoteException {
-//
+//                        Log.w("coucou", "answer from motors: " + s);
 //                    }
 //
 //                    @Override
 //                    public void onFailed(String s) throws RemoteException {
-//
+//                        Log.w("coucou", "answer from motors: " + s);
 //                    }
-//                });//end moveNo
+//                });
+//
+
+
+
+
+
+
+
 
 
             }
@@ -423,7 +433,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     @Override
     public void onSDKReady() {
 
-        Log.w("coucou","coucou onSDKReady");
+
 
 
         // Make background view to send touches to the face.
@@ -455,6 +465,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         faceGrafcet.start(500);
 
         mainGrafcet.start();
+
+        Log.w("coucou","coucou onSDKReady");
 
     }
 
