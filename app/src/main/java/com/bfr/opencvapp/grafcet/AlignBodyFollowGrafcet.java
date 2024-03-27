@@ -142,7 +142,7 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                     case 10: // check target offaxis alignment
 
                         if(Math.abs(noOffset)>10.0f)
-                            step_num = 12;
+                            step_num = 15;
                         break;
 
 
@@ -157,80 +157,24 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 
                         ackWheels = "";
                         timerotating = System.currentTimeMillis();
+                        float rotspeed=0.5f;
 
-//
-//                        float radSpeed = (float) Math.toRadians(rotationSpeed);
-//                        if (noOffset>0)
-//                            radSpeed= radSpeed*-1;
-//
-//                        float dist= 0.1f* Math.abs(noOffset)/rotationSpeed;
-//
-//                        Log.i(name, "Rotating to " + noOffset + " at rotationspeed=" + rotationSpeed + " with dist="+dist);
-//
-//                        BuddySDK.USB.moveBuddy(0.01f, rotationSpeed, dist, 100.0f, new IUsbCommadRsp.Stub() {
-//                            @Override
-//                            public void onSuccess(String s) throws RemoteException {
-//                                ackWheels = s;
-//                                Log.w(name, "answer from motors: " + ackWheels);
-//                            }
-//
-//                            @Override
-//                            public void onFailed(String s) throws RemoteException {
-//                                ackWheels = s;
-//                                Log.w(name, "answer from motors: " + ackWheels);
-//                            }
-//                        });
+                        if (noOffset>=0)
+                            rotspeed*=-1;
 
-
-
-
-//                        BuddySDK.USB.rotateBuddy(60.0f, -noOffset,
-//                                0,
-//                                1,
-//                                new IUsbCommadRsp.Stub() {
-//                            @Override
-//                            public void onSuccess(String s) throws RemoteException {
-//                                ackWheels = s;
-//                            }
-//
-//                            @Override
-//                            public void onFailed(String s) throws RemoteException {
-//                                ackWheels = s;
-//                            }
-//                        });
-
-
-
-
-
-
-
-                        BuddySDK.USB.rotateNoPrecision(50.0f, -noOffset, 0, new TaskCallback() {
+                        BuddySDK.USB.setBuddySpeed(0.01f, rotspeed, 9999.0f, new IUsbCommadRsp.Stub() {
                             @Override
-                            public void onStarted() {
-                                ackWheels = "OK";
-                                Log.i("coucou", "task onstarted ");
+                            public void onSuccess(String s) throws RemoteException {
+                                ackWheels = s;
                             }
 
                             @Override
-                            public void onSuccess(String s) {
-                                ackWheels = "FINISHED";
-                                Log.i("coucou", "task onSuccess " + s);
-                            }
-
-                            @Override
-                            public void onCancel() {
-                                Log.i("coucou", "task onCancel ");
-                            }
-
-                            @Override
-                            public void onError(String s) {
-                                ackWheels = "error :" + s;
-                                Log.i("coucou", "task onError " + s);
+                            public void onFailed(String s) throws RemoteException {
+                                ackWheels = s;
                             }
                         });
 
-                        step_num = 20;
+                        step_num = 17;
                         break;
 
                     case 17: //wait for OK
@@ -242,34 +186,30 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                         break;
 
 
-                    case 20: // wait for end of mvt
+                    case 20: // wait for target in range
 
-                        if(ackWheels.toUpperCase().contains("FINISHED") ||
-                                ackWheels.toUpperCase().contains("CANCELED") || timeout )
-//                                if( (System.currentTimeMillis()- timerotating)/1000 >  Math.abs((noOffset/rotationSpeed)  )  )
+                        if(Math.abs(noOffset)<=10.0f)
+
                         {
 //
 //                            Log.w(name, "currtime= " + timerotating + " vs " +System.currentTimeMillis()
 //                            + "\n for offset = " + noOffset  + " rotSpeed=" + rotationSpeed);
 //
-//                            BuddySDK.USB.setBuddySpeed(0.0f, 0.0f, 0.0f, new IUsbCommadRsp.Stub() {
-//                                @Override
-//                                public void onSuccess(String s) throws RemoteException {
-//                                    ackWheels = s;
-//                                    Log.w(name, "answer from motors: " + ackWheels);
-//                                }
-//
-//                                @Override
-//                                public void onFailed(String s) throws RemoteException {
-//                                    ackWheels = s;
-//                                    Log.w(name, "answer from motors: " + ackWheels);
-//                                }
-//                            });
+                            BuddySDK.USB.setBuddySpeed(0.0f, 0.0f, 0.0f, new IUsbCommadRsp.Stub() {
+                                @Override
+                                public void onSuccess(String s) throws RemoteException {
+                                    ackWheels = s;
+                                    Log.w(name, "answer from motors: " + ackWheels);
+                                }
 
-                            if(Math.abs(noOffset)>10.0f)
-                                step_num = 15;
-                            else
-                                step_num = 30;
+                                @Override
+                                public void onFailed(String s) throws RemoteException {
+                                    ackWheels = s;
+                                    Log.w(name, "answer from motors: " + ackWheels);
+                                }
+                            });
+
+                           step_num = 10;
 
                         }
 
