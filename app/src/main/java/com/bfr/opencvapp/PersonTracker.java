@@ -17,6 +17,11 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.pose.Pose;
+import com.google.mlkit.vision.pose.PoseDetection;
+import com.google.mlkit.vision.pose.PoseDetector;
+import com.google.mlkit.vision.pose.PoseLandmark;
+import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions;
 //import com.google.mlkit.vision.pose.Pose;
 //import com.google.mlkit.vision.pose.PoseDetection;
 //import com.google.mlkit.vision.pose.PoseDetector;
@@ -41,6 +46,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class PersonTracker {
 
@@ -50,6 +58,10 @@ public class PersonTracker {
     MultiDetector detector;
 
     TfLiteBlazePose poseEstimator;
+
+    Pose mypose;
+    PoseDetectorOptions poseDetectoptions;
+    PoseDetector poseDetector;
 
     // List of detected person or faces or hands
     ArrayList<MultiDetector.Recognition> detections = new ArrayList<MultiDetector.Recognition>();
@@ -127,6 +139,7 @@ public class PersonTracker {
 
         poseEstimator = blazePose;
 
+
         humanHeadHandsDetector = hhhdetector;
 
         Log.d(TAG, "Person detector model created"  ) ;
@@ -141,13 +154,17 @@ public class PersonTracker {
         vitTracker = TrackerVit.create(vitTrackerparams);
 
         // Base pose detector with streaming frames, when depending on the pose-detection sdk
-//        poseDetectoptions =
-//                new PoseDetectorOptions.Builder()
-//                        .setDetectorMode(PoseDetectorOptions.SINGLE_IMAGE_MODE)
-//                        .setPreferredHardwareConfigs(PoseDetectorOptions.CPU_GPU)
-//                        .build();
-//
-//        poseDetector = PoseDetection.getClient(poseDetectoptions);
+        poseDetectoptions =
+                new PoseDetectorOptions.Builder()
+                        .setDetectorMode(PoseDetectorOptions.SINGLE_IMAGE_MODE)
+                        .setPreferredHardwareConfigs(PoseDetectorOptions.CPU_GPU)
+                        .build();
+
+        poseDetector = PoseDetection.getClient(poseDetectoptions);
+
+        //init thread
+        poseScheduler = Executors.newScheduledThreadPool(1);
+        poseScheduler.scheduleWithFixedDelay(poseRunnable, 0, 300, TimeUnit.MILLISECONDS);
 
     }
 
@@ -324,7 +341,8 @@ public class PersonTracker {
 //                            0.5f, 0.6f, 99.0f, frame);
 
                     hhhDetections = humanHeadHandsDetector.recognizeImage(
-                            smallFrame, 0.6f, 0.5f, 99.0f );
+//                            smallFrame, 0.6f, 0.5f, 99.0f );
+                            smallFrame, 0.6f, 99.0f, 99.0f );
 
                     checkAndResetTracking(vitTracker, tracked, null, hhhDetections);
 
@@ -618,14 +636,25 @@ public class PersonTracker {
                         2, 1, _GREEN, 2);
 
 
-                int targetX = (int) (tracked.box.x + tracked.box.width/2);
-                Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.1f", (targetX-(1024/2))*0.09375f) + "]",
+//                int targetX = (int) (tracked.box.x + tracked.box.width/2);
+//                Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.1f", (targetX-(1024/2))*0.09375f) + "]",
+//                        new Point(pt1.x, pt1.y+30),
+//                        2, 1, _WHITE, 5);
+//
+//                Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.1f", (targetX-(1024/2))*0.09375f) + "]",
+//                        new Point(pt1.x, pt1.y+30),
+//                        2, 1, _RED, 2);
+
+
+                int boxheight = (int) (tracked.box.height);
+                Imgproc.putText(displayMat, "[" + boxheight + "]",
                         new Point(pt1.x, pt1.y+30),
                         2, 1, _WHITE, 5);
 
-                Imgproc.putText(displayMat, "[" + String.format(java.util.Locale.US, "%.1f", (targetX-(1024/2))*0.09375f) + "]",
+                Imgproc.putText(displayMat, "[" + boxheight + "]",
                         new Point(pt1.x, pt1.y+30),
                         2, 1, _RED, 2);
+
             }
 
 
@@ -1299,6 +1328,89 @@ public class PersonTracker {
         avscore = averageScore;
         return averageScore;
     }
+
+
+
+    // Scheduler for motion detection
+    private ScheduledExecutorService poseScheduler ;
+    /**
+     Runnable to estimate pose of tracked person
+     @params : tracked:  the current tracked object
+     */
+    private  Runnable poseRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+
+                long mlkitTime = System.currentTimeMillis();
+                Bitmap bitmapImage = Bitmap.createBitmap(smallFrame.cols(), smallFrame.rows(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(smallFrame, bitmapImage);
+
+                InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
+
+                Task<Pose> result =
+                        poseDetector.process(inputImage)
+                                .addOnSuccessListener(
+                                        new OnSuccessListener<Pose>() {
+                                            @Override
+                                            public void onSuccess(Pose pose) {
+                                                // Task completed successfully
+                                                // ...
+
+                                                mypose = pose;
+                                            }
+                                        })
+                                .addOnFailureListener(
+                                        new OnFailureListener() {
+                                            @Override
+                                            public void onFailure(@NonNull Exception e) {
+                                                // Task failed with an exception
+                                                // ...
+                                            }
+                                        });
+
+                try {
+                    Tasks.await(result);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                // Get all PoseLandmarks. If no person was detected, the list will be empty
+                List<PoseLandmark> allPoseLandmarks = mypose.getAllPoseLandmarks();
+
+                PoseLandmark nose = mypose.getPoseLandmark(PoseLandmark.NOSE);
+                PoseLandmark leftEar = mypose.getPoseLandmark(PoseLandmark.LEFT_EAR);
+                PoseLandmark rightEar = mypose.getPoseLandmark(PoseLandmark.RIGHT_EAR);
+                PoseLandmark leftShoulder = mypose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER);
+                PoseLandmark rightShoulder = mypose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER);
+                PoseLandmark leftHip = mypose.getPoseLandmark(PoseLandmark.LEFT_HIP);
+                PoseLandmark rightHip = mypose.getPoseLandmark(PoseLandmark.RIGHT_HIP);
+
+                Log.w("coucouMLKit", "MLKit elapsed time : "+ (System.currentTimeMillis()-mlkitTime)
+                        // display position in pixels
+                        +"\n Position=" + nose.getPosition().x + "," + nose.getPosition().y );
+
+                Imgproc.circle(smallFrame, new Point(
+                        0 + nose.getPosition().x, 0 + nose.getPosition().y), 5, new Scalar(0,0,255), 10);
+                Imgproc.circle(smallFrame, new Point(
+                        0 + leftEar.getPosition().x, 0 + leftEar.getPosition().y), 5, new Scalar(0,0,255), 10);
+                Imgproc.circle(smallFrame, new Point(
+                        0 + leftShoulder.getPosition().x, 0 + leftShoulder.getPosition().y), 5, new Scalar(0,0,255), 10);
+                Imgproc.circle(smallFrame, new Point(
+                        0 + rightShoulder.getPosition().x, 0 + rightShoulder.getPosition().y), 5, new Scalar(0,0,255), 10);
+                Imgproc.circle(smallFrame, new Point(
+                        0 + leftHip.getPosition().x, 0 + leftHip.getPosition().y), 5, new Scalar(0,0,255), 10);
+                Imgproc.circle(smallFrame, new Point(
+                        0 + rightHip.getPosition().x, 0 + rightHip.getPosition().y), 5, new Scalar(0,0,255), 10);
+
+                Imgcodecs.imwrite("/sdcard/todelete.jpg", smallFrame);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    };
+
 
 
     public class TrackedObject
