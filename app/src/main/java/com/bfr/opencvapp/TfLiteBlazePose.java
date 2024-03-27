@@ -44,7 +44,7 @@ public class TfLiteBlazePose {
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nn_models/";
 //    private final String MODEL_NAME = "pyDNet__256x320_float16_quant.tflite";
 //    private final String MODEL_NAME = "fastdepth_256x256_float16_quant.tflite";
-        private final String MODEL_NAME = "pose_landmark_heavy.tflite";
+        private final String MODEL_NAME = "pose_landmark_lite.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;

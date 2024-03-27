@@ -85,6 +85,7 @@ import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.grafcet.*;
 import com.bfr.opencvapp.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteMidas;
+import com.bfr.opencvapp.utils.TfLiteYoloXHumanHeadHands;
 
 
 public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -110,13 +111,14 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
     //Tflite Multidetector
     MultiDetector detector;
-    ArrayList<MultiDetector.Recognition> tfliteDetections = new ArrayList<MultiDetector.Recognition>();
+//    ArrayList<MultiDetector.Recognition> tfliteDetections = new ArrayList<MultiDetector.Recognition>();
     int left, right, top, bottom;
 
     // BlazePose
     TfLiteBlazePose blazePose;
 
-    Rect tracked;
+    TfLiteYoloXHumanHeadHands humanHeadHandsDetector;
+    ArrayList<TfLiteYoloXHumanHeadHands.Recognition> hhhDetections = new ArrayList<TfLiteYoloXHumanHeadHands.Recognition>();
 
     // context
     Context context = this;
@@ -319,8 +321,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         detector = new MultiDetector(this);
 
-
-        tracked = new Rect();
+        humanHeadHandsDetector = new TfLiteYoloXHumanHeadHands(this);
 
 //        videoCapture = new VideoCapture("/sdcard/Download/240124174252_trackingDebug.avi");
         frame = new Mat();
@@ -351,21 +352,22 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             Utils.matToBitmap(resizedFrame, bitmapImagefull);
 
             //Human detection
-            tfliteDetections = detector.recognizeImage(bitmapImagefull, 0.6f, 0.6f, 0.5f, frame);
+//            tfliteDetections = detector.recognizeImage(bitmapImagefull, 0.5f, 99.0f, 99.0f, frame);
 
-            for (int i = 0; i < tfliteDetections.size(); ++i) {
+            hhhDetections = humanHeadHandsDetector.recognizeImage(frame, 0.5f, 99.0f, 99.0f);
+            for (int i = 0; i < hhhDetections.size(); ++i) {
 
-                double confidence = tfliteDetections.get(i).confidence;
-                double detectedClass = tfliteDetections.get(i).getDetectedClass();
+                double confidence = hhhDetections.get(i).confidence;
+                double detectedClass = hhhDetections.get(i).getDetectedClass();
 
                 // for display only
                 int cols = frame.cols();
                 int rows = frame.rows();
 
-                left = (int)(tfliteDetections.get(i).left * cols);
-                top = (int)(tfliteDetections.get(i).top * rows);
-                right = (int)(tfliteDetections.get(i).right * cols);
-                bottom = (int)(tfliteDetections.get(i).bottom* rows);
+                left = (int)(hhhDetections.get(i).left * cols);
+                top = (int)(hhhDetections.get(i).top * rows);
+                right = (int)(hhhDetections.get(i).right * cols);
+                bottom = (int)(hhhDetections.get(i).bottom* rows);
 
                 Scalar color = new Scalar(0,0,0);
                 if (detectedClass==0)
@@ -436,7 +438,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                             left + leftHipX, top + leftHipY), 5, new Scalar(0,255,0), 10);
                     Imgproc.circle(frame, new Point(
                             left + rightHipX, top + rightHipY), 5, new Scalar(0,255,0), 10);
-                }
+
+                } //end if detected class is a human silouhette
 
             } // next detection
         } catch (Exception e) {
