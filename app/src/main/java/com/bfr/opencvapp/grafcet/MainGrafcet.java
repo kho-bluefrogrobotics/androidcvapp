@@ -151,6 +151,8 @@ public class MainGrafcet extends bfr_Grafcet {
                         alignBodyFollowGrafcet.go = true;
                         alignBodyFollowGrafcet.step_num = 0;
 
+                        TrackingYesGrafcet.go = true;
+
                         step_num = 9;
                         break;
 

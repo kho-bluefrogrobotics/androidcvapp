@@ -66,6 +66,8 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
     String ackNo="";
     String ackWheels="";
     float rotspeed=1.0f;
+    float linearspeed = 0.0f;
+
     final float BASE_SPEED=0.7f;
     float targetangle = 0.0f;
 
@@ -93,7 +95,6 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
         {
 
             try {
-
 
                 // Compute target position
                 target = getCentroid(personTracker.tracked.box.x,
@@ -157,7 +158,6 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                     case 15: // rotate body to align
 
 
-
                         ackWheels = "";
                         timerotating = System.currentTimeMillis();
                         if (noOffset>= 15.0f )
@@ -172,9 +172,11 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 
                         targetangle = noOffset;
 
-                        float linearspeed = 0.0f;
-                        if (personTracker.tracked.box.height<=250)
-                            linearspeed = 0.1f;
+
+                        if (personTracker.torsoHeight<=200)
+                            linearspeed = 0.2f;
+                        else
+                            linearspeed = 0.0f;
 
                         BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, 9999.0f, new IUsbCommadRsp.Stub() {
                             @Override
@@ -209,14 +211,22 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 //                        Log.i(name, "########## Elapsed time= " + (int)((System.currentTimeMillis()-timerotating)/1000)
 //                                +"\n Nooffset =" + angleInrads + " rotspeed="+rotspeed );
 
-                        if( (int)((System.currentTimeMillis()-timerotating)) >= Math.abs(angleInrads/rotspeed)*1000 )
 
-                        {
-//
-                            Log.e(name, "currtime= " + timerotating + " vs " +System.currentTimeMillis()
-                            + "\n for offset = " + angleInrads  + " rotSpeed=" + rotationSpeed);
-//
-                            BuddySDK.USB.setBuddySpeed(0.0f, 0.0f, 0.0f, new IUsbCommadRsp.Stub() {
+                        if (personTracker.torsoHeight<=200)
+                            linearspeed = 0.2f;
+                        else
+                            linearspeed = 0.0f;
+
+
+
+                        if( (int)((System.currentTimeMillis()-timerotating)) >= Math.abs(angleInrads/rotspeed)*1000 ) {
+                            Log.e(name, "currtime= " + timerotating + " vs " + System.currentTimeMillis()
+                                    + "\n for offset = " + angleInrads + " rotSpeed=" + rotationSpeed);
+                            rotspeed = 0.0f;
+                        } //end if time elapsed OK
+
+
+                            BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, 99999.0f, new IUsbCommadRsp.Stub() {
                                 @Override
                                 public void onSuccess(String s) throws RemoteException {
                                     ackWheels = s;
@@ -230,9 +240,9 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                                 }
                             });
 
-                           step_num = 10;
+                           step_num = 15;
 
-                        }
+
 
                         break;
 
