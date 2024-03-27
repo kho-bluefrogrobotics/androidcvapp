@@ -116,7 +116,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     // BlazePose
     TfLiteBlazePose blazePose;
 
-    PersonTracker personTracker;
     Rect tracked;
 
     // context
@@ -278,7 +277,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     public void onPause() {
         super.onPause();
         try{
-            alignGrafcet.stop();
+//            alignGrafcet.stop();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -320,11 +319,10 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         detector = new MultiDetector(this);
 
-        personTracker = new PersonTracker(detector);
 
         tracked = new Rect();
 
-        videoCapture = new VideoCapture("/sdcard/Download/240124174252_trackingDebug.avi");
+//        videoCapture = new VideoCapture("/sdcard/Download/240124174252_trackingDebug.avi");
         frame = new Mat();
 
         blazePose = new TfLiteBlazePose(this);
