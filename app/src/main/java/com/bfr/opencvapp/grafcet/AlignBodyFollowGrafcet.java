@@ -65,6 +65,9 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
     String ackYes="";
     String ackNo="";
     String ackWheels="";
+    float rotspeed=1.0f;
+    final float BASE_SPEED=0.7f;
+    float targetangle = 0.0f;
 
     Point target;
     int targetX, targetY;
@@ -141,7 +144,7 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 
                     case 10: // check target offaxis alignment
 
-                        if(Math.abs(noOffset)>10.0f)
+                        if(Math.abs(noOffset)>5.0f)
                             step_num = 15;
                         break;
 
@@ -157,10 +160,17 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 
                         ackWheels = "";
                         timerotating = System.currentTimeMillis();
-                        float rotspeed=0.5f;
+                        if (noOffset>= 15.0f )
+                            rotspeed=-BASE_SPEED;
+                        else if(noOffset>= 5 && noOffset < 15.0f)
+                            rotspeed=-0.3f;
+                        else if(noOffset<=-15.0f)
+                            rotspeed=BASE_SPEED;
+                        else
+                            rotspeed = 0.3f;
+                        Log.i(name, "**** Nooffset =" + noOffset + " rotspeed="+rotspeed );
 
-                        if (noOffset>=0)
-                            rotspeed*=-1;
+                        targetangle = noOffset;
 
                         BuddySDK.USB.setBuddySpeed(0.01f, rotspeed, 9999.0f, new IUsbCommadRsp.Stub() {
                             @Override
@@ -174,13 +184,15 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                             }
                         });
 
-                        step_num = 17;
+//                        step_num = 17;
+                        step_num = 20;
                         break;
 
                     case 17: //wait for OK
                         if (ackWheels.toUpperCase().contains("OK") ||
                                 ackWheels.toUpperCase().contains("CANCELED") ||
                                 timeout ) {
+                            timerotating = System.currentTimeMillis();
                             step_num = 20;
                         }
                         break;
@@ -188,12 +200,17 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 
                     case 20: // wait for target in range
 
-                        if(Math.abs(noOffset)<=10.0f)
+//                        if(Math.abs(noOffset)<=10.0f)
+                        float angleInrads = (float) Math.toRadians(Math.abs(targetangle));
+                        Log.i(name, "########## Elapsed time= " + (int)((System.currentTimeMillis()-timerotating)/1000)
+                                +"\n Nooffset =" + angleInrads + " rotspeed="+rotspeed );
+
+                        if( (int)((System.currentTimeMillis()-timerotating)) >= Math.abs(angleInrads/rotspeed)*1000 )
 
                         {
 //
-//                            Log.w(name, "currtime= " + timerotating + " vs " +System.currentTimeMillis()
-//                            + "\n for offset = " + noOffset  + " rotSpeed=" + rotationSpeed);
+                            Log.e(name, "currtime= " + timerotating + " vs " +System.currentTimeMillis()
+                            + "\n for offset = " + angleInrads  + " rotSpeed=" + rotationSpeed);
 //
                             BuddySDK.USB.setBuddySpeed(0.0f, 0.0f, 0.0f, new IUsbCommadRsp.Stub() {
                                 @Override
