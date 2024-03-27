@@ -172,7 +172,11 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 
                         targetangle = noOffset;
 
-                        BuddySDK.USB.setBuddySpeed(0.01f, rotspeed, 9999.0f, new IUsbCommadRsp.Stub() {
+                        float linearspeed = 0.0f;
+                        if (personTracker.tracked.box.height<=250)
+                            linearspeed = 0.1f;
+
+                        BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, 9999.0f, new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String s) throws RemoteException {
                                 ackWheels = s;
@@ -202,8 +206,8 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 
 //                        if(Math.abs(noOffset)<=10.0f)
                         float angleInrads = (float) Math.toRadians(Math.abs(targetangle));
-                        Log.i(name, "########## Elapsed time= " + (int)((System.currentTimeMillis()-timerotating)/1000)
-                                +"\n Nooffset =" + angleInrads + " rotspeed="+rotspeed );
+//                        Log.i(name, "########## Elapsed time= " + (int)((System.currentTimeMillis()-timerotating)/1000)
+//                                +"\n Nooffset =" + angleInrads + " rotspeed="+rotspeed );
 
                         if( (int)((System.currentTimeMillis()-timerotating)) >= Math.abs(angleInrads/rotspeed)*1000 )
 
