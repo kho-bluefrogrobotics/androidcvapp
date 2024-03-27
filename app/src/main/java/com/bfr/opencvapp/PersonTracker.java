@@ -4,6 +4,8 @@ import static com.bfr.opencvapp.utils.Utils.Color.*;
 import static com.bfr.opencvapp.utils.Utils.matToBitmapAndResize;
 import static com.bfr.opencvapp.utils.Utils.modelsDir;
 
+import static org.opencv.core.CvType.CV_8UC3;
+
 import android.graphics.Bitmap;
 import android.util.Log;
 
@@ -62,6 +64,8 @@ public class PersonTracker {
     Pose mypose;
     PoseDetectorOptions poseDetectoptions;
     PoseDetector poseDetector;
+
+    public float torsoHeight=0.0f;
 
     // List of detected person or faces or hands
     ArrayList<MultiDetector.Recognition> detections = new ArrayList<MultiDetector.Recognition>();
@@ -341,8 +345,7 @@ public class PersonTracker {
 //                            0.5f, 0.6f, 99.0f, frame);
 
                     hhhDetections = humanHeadHandsDetector.recognizeImage(
-//                            smallFrame, 0.6f, 0.5f, 99.0f );
-                            smallFrame, 0.6f, 99.0f, 99.0f );
+                            smallFrame, 0.6f, 0.5f, 99.0f );
 
                     checkAndResetTracking(vitTracker, tracked, null, hhhDetections);
 
@@ -646,12 +649,12 @@ public class PersonTracker {
 //                        2, 1, _RED, 2);
 
 
-                int boxheight = (int) (tracked.box.height);
-                Imgproc.putText(displayMat, "[" + boxheight + "]",
+//                int boxheight = (int) (tracked.box.height);
+                Imgproc.putText(displayMat, "[" + torsoHeight + "]",
                         new Point(pt1.x, pt1.y+30),
                         2, 1, _WHITE, 5);
 
-                Imgproc.putText(displayMat, "[" + boxheight + "]",
+                Imgproc.putText(displayMat, "[" + torsoHeight + "]",
                         new Point(pt1.x, pt1.y+30),
                         2, 1, _RED, 2);
 
@@ -1342,9 +1345,44 @@ public class PersonTracker {
         public void run() {
             try {
 
+                Mat framecpy = smallFrame.clone();
+
+                //crop around tracked region
+                int newLeft = tracked.box.x-tracked.box.width;
+                int newRight = tracked.box.x+2*tracked.box.width;
+                int newTop = tracked.box.y-20;
+
+                int newBottom = 0;
+                if(tracked.objectClass==0) //tracking a human
+                    newBottom = tracked.box.y + 2* tracked.box.height;
+                else // tracking a face
+                    newBottom = tracked.box.y + 4* tracked.box.height;
+
+                Rect adjustedROI= new Rect(
+                        Math.max(0,newLeft),
+                        Math.max(0,newTop),
+                        Math.min(framecpy.cols()-newLeft,newRight-newLeft),
+                        Math.min(framecpy.rows()-newTop, newBottom-newTop) );
+
+                //Crop around face
+                Mat croppedMat = framecpy.submat(adjustedROI);
+
+
+                // Incrust cropped image on black background
+//                // init
+//                Mat roiInDisplayMat = new Mat(framecpy.rows(),framecpy.cols(), CV_8UC3, new Scalar(0, 0, 0));
+//                Rect displayROI= new Rect(
+//                        Math.max(0,newLeft),
+//                        Math.max(0,newTop),
+//                        croppedMat.cols(),
+//                        croppedMat.rows() );
+//
+//                croppedMat.copyTo(roiInDisplayMat.submat(displayROI));
+
+
                 long mlkitTime = System.currentTimeMillis();
-                Bitmap bitmapImage = Bitmap.createBitmap(smallFrame.cols(), smallFrame.rows(), Bitmap.Config.ARGB_8888);
-                Utils.matToBitmap(smallFrame, bitmapImage);
+                Bitmap bitmapImage = Bitmap.createBitmap(croppedMat.cols(), croppedMat.rows(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(croppedMat, bitmapImage);
 
                 InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
 
@@ -1376,7 +1414,7 @@ public class PersonTracker {
                 }
 
                 // Get all PoseLandmarks. If no person was detected, the list will be empty
-                List<PoseLandmark> allPoseLandmarks = mypose.getAllPoseLandmarks();
+//                List<PoseLandmark> allPoseLandmarks = mypose.getAllPoseLandmarks();
 
                 PoseLandmark nose = mypose.getPoseLandmark(PoseLandmark.NOSE);
                 PoseLandmark leftEar = mypose.getPoseLandmark(PoseLandmark.LEFT_EAR);
@@ -1390,20 +1428,22 @@ public class PersonTracker {
                         // display position in pixels
                         +"\n Position=" + nose.getPosition().x + "," + nose.getPosition().y );
 
-                Imgproc.circle(smallFrame, new Point(
+                Imgproc.circle(croppedMat, new Point(
                         0 + nose.getPosition().x, 0 + nose.getPosition().y), 5, new Scalar(0,0,255), 10);
-                Imgproc.circle(smallFrame, new Point(
+                Imgproc.circle(croppedMat, new Point(
                         0 + leftEar.getPosition().x, 0 + leftEar.getPosition().y), 5, new Scalar(0,0,255), 10);
-                Imgproc.circle(smallFrame, new Point(
+                Imgproc.circle(croppedMat, new Point(
                         0 + leftShoulder.getPosition().x, 0 + leftShoulder.getPosition().y), 5, new Scalar(0,0,255), 10);
-                Imgproc.circle(smallFrame, new Point(
+                Imgproc.circle(croppedMat, new Point(
                         0 + rightShoulder.getPosition().x, 0 + rightShoulder.getPosition().y), 5, new Scalar(0,0,255), 10);
-                Imgproc.circle(smallFrame, new Point(
+                Imgproc.circle(croppedMat, new Point(
                         0 + leftHip.getPosition().x, 0 + leftHip.getPosition().y), 5, new Scalar(0,0,255), 10);
-                Imgproc.circle(smallFrame, new Point(
+                Imgproc.circle(croppedMat, new Point(
                         0 + rightHip.getPosition().x, 0 + rightHip.getPosition().y), 5, new Scalar(0,0,255), 10);
 
-                Imgcodecs.imwrite("/sdcard/todelete.jpg", smallFrame);
+
+                torsoHeight = Math.abs(leftHip.getPosition().y - leftShoulder.getPosition().y);
+                Imgcodecs.imwrite("/sdcard/todelete.jpg", croppedMat);
 
             } catch (Exception e) {
                 e.printStackTrace();
