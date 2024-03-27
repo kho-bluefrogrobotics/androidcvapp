@@ -31,6 +31,7 @@ import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -86,6 +87,16 @@ import com.bfr.opencvapp.grafcet.*;
 import com.bfr.opencvapp.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteMidas;
 import com.bfr.opencvapp.utils.TfLiteYoloXHumanHeadHands;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.pose.Pose;
+import com.google.mlkit.vision.pose.PoseDetection;
+import com.google.mlkit.vision.pose.PoseDetector;
+import com.google.mlkit.vision.pose.PoseLandmark;
+import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions;
 
 
 public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -119,6 +130,11 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
     TfLiteYoloXHumanHeadHands humanHeadHandsDetector;
     ArrayList<TfLiteYoloXHumanHeadHands.Recognition> hhhDetections = new ArrayList<TfLiteYoloXHumanHeadHands.Recognition>();
+
+
+    Pose mypose;
+    PoseDetectorOptions poseDetectoptions;
+    PoseDetector poseDetector;
 
     // context
     Context context = this;
@@ -328,6 +344,15 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         blazePose = new TfLiteBlazePose(this);
 
+        // Base pose detector with streaming frames, when depending on the pose-detection sdk
+        poseDetectoptions =
+                new PoseDetectorOptions.Builder()
+                        .setDetectorMode(PoseDetectorOptions.SINGLE_IMAGE_MODE)
+                        .setPreferredHardwareConfigs(PoseDetectorOptions.CPU_GPU)
+                        .build();
+
+        poseDetector = PoseDetection.getClient(poseDetectoptions);
+
     }
 
 
@@ -354,94 +379,162 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             //Human detection
 //            tfliteDetections = detector.recognizeImage(bitmapImagefull, 0.5f, 99.0f, 99.0f, frame);
 
-            hhhDetections = humanHeadHandsDetector.recognizeImage(frame, 0.5f, 99.0f, 99.0f);
-            for (int i = 0; i < hhhDetections.size(); ++i) {
 
-                double confidence = hhhDetections.get(i).confidence;
-                double detectedClass = hhhDetections.get(i).getDetectedClass();
+            {  /**** MLKit for Pose estimation */
+                long mlkitTime = System.currentTimeMillis();
+                Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(frame, bitmapImage);
 
-                // for display only
-                int cols = frame.cols();
-                int rows = frame.rows();
+                InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
 
-                left = (int)(hhhDetections.get(i).left * cols);
-                top = (int)(hhhDetections.get(i).top * rows);
-                right = (int)(hhhDetections.get(i).right * cols);
-                bottom = (int)(hhhDetections.get(i).bottom* rows);
+                Task<Pose> result =
+                        poseDetector.process(inputImage)
+                                .addOnSuccessListener(
+                                        new OnSuccessListener<Pose>() {
+                                            @Override
+                                            public void onSuccess(Pose pose) {
+                                                // Task completed successfully
+                                                // ...
 
-                Scalar color = new Scalar(0,0,0);
-                if (detectedClass==0)
-                {
-                    // Draw rectangle around detected face.
-                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                            new Scalar(0, 255, 0), 3);
+                                                mypose = pose;
+                                            }
+                                        })
+                                .addOnFailureListener(
+                                        new OnFailureListener() {
+                                            @Override
+                                            public void onFailure(@NonNull Exception e) {
+                                                // Task failed with an exception
+                                                // ...
+                                            }
+                                        });
+
+                try {
+                    Tasks.await(result);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                // Get all PoseLandmarks. If no person was detected, the list will be empty
+                List<PoseLandmark> allPoseLandmarks = mypose.getAllPoseLandmarks();
+
+                PoseLandmark nose = mypose.getPoseLandmark(PoseLandmark.NOSE);
+                PoseLandmark leftEar = mypose.getPoseLandmark(PoseLandmark.LEFT_EAR);
+                PoseLandmark rightEar = mypose.getPoseLandmark(PoseLandmark.RIGHT_EAR);
+                PoseLandmark leftShoulder = mypose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER);
+                PoseLandmark rightShoulder = mypose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER);
+                PoseLandmark leftHip = mypose.getPoseLandmark(PoseLandmark.LEFT_HIP);
+                PoseLandmark rightHip = mypose.getPoseLandmark(PoseLandmark.RIGHT_HIP);
+
+                Log.w("coucouMLKit", "MLKit elapsed time : "+ (System.currentTimeMillis()-mlkitTime)
+                        // display position in pixels
+                        +"\n Position=" + nose.getPosition().x + "," + nose.getPosition().y );
+
+                Imgproc.circle(frame, new Point(
+                        0 + nose.getPosition().x, 0 + nose.getPosition().y), 5, new Scalar(0,0,255), 10);
+                Imgproc.circle(frame, new Point(
+                        0 + leftEar.getPosition().x, 0 + leftEar.getPosition().y), 5, new Scalar(0,0,255), 10);
+                Imgproc.circle(frame, new Point(
+                        0 + leftShoulder.getPosition().x, 0 + leftShoulder.getPosition().y), 5, new Scalar(0,0,255), 10);
+                Imgproc.circle(frame, new Point(
+                        0 + rightShoulder.getPosition().x, 0 + rightShoulder.getPosition().y), 5, new Scalar(0,0,255), 10);
+                Imgproc.circle(frame, new Point(
+                        0 + leftHip.getPosition().x, 0 + leftHip.getPosition().y), 5, new Scalar(0,0,255), 10);
+                Imgproc.circle(frame, new Point(
+                        0 + rightHip.getPosition().x, 0 + rightHip.getPosition().y), 5, new Scalar(0,0,255), 10);
+
+            } //end MLKit
 
 
-//            else if (detectedClass==1)// Draw rectangle around detected face.
-//                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-//                        new Scalar(0, 0, 255), 3);
-//            else if (detectedClass==2)// Draw rectangle around detected face.
-//                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-//                        new Scalar(255, 0, 0), 3);
+//            hhhDetections = humanHeadHandsDetector.recognizeImage(frame, 0.5f, 99.0f, 99.0f);
+//            for (int i = 0; i < hhhDetections.size(); ++i) {
+//
+//                double confidence = hhhDetections.get(i).confidence;
+//                double detectedClass = hhhDetections.get(i).getDetectedClass();
+//
+//                // for display only
+//                int cols = frame.cols();
+//                int rows = frame.rows();
+//
+//                left = (int)(hhhDetections.get(i).left * cols);
+//                top = (int)(hhhDetections.get(i).top * rows);
+//                right = (int)(hhhDetections.get(i).right * cols);
+//                bottom = (int)(hhhDetections.get(i).bottom* rows);
+//
+//                Scalar color = new Scalar(0,0,0);
+//                if (detectedClass==0)
+//                {
+//                    // Draw rectangle around detected face.
+//                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+//                            new Scalar(0, 255, 0), 3);
+//
+//
+////            else if (detectedClass==1)// Draw rectangle around detected face.
+////                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+////                        new Scalar(0, 0, 255), 3);
+////            else if (detectedClass==2)// Draw rectangle around detected face.
+////                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+////                        new Scalar(255, 0, 0), 3);
+//
+//                    Imgproc.putText(frame, String.format(java.util.Locale.US, "%.4f", confidence),
+//                            new Point(left - 2, top - 12), 1, 2,
+//                            new Scalar(0, 0, 0), 5);
+//                    Imgproc.putText(frame, String.format(java.util.Locale.US, "%.4f", confidence),
+//                            new Point(left - 2, top - 12), 1, 2,
+//                            new Scalar(0, 255, 0), 2);
+//
+//                    Rect toCrop = new Rect(
+//                            left,
+//                            top,
+//                            right-left-5,
+//                            bottom-top-10
+//                    );
+//                    Log.i(TAG, "To crop "+left + " " + top + " " + (right-left) + " " + (bottom-top) );
+//                    Mat croppedTargetMat = frame.submat(toCrop);
+//                    Imgproc.resize(croppedTargetMat, croppedTargetMat, new Size(256,256));
+//                    Bitmap bitmapImage = Bitmap.createBitmap(croppedTargetMat.cols(), croppedTargetMat.rows(), Bitmap.Config.ARGB_8888);
+//                    Utils.matToBitmap(croppedTargetMat, bitmapImage);
+//
+//                    float[][] result = blazePose.recognizeImage(bitmapImage);
+//
+//                    // Blaze pose returns the x, y coords as values [0:255] independent from the input resolution
+//                    int noseX = (int) (result[0][0*5] * (right-left)/255);
+//                    int noseY = (int) (result[0][0*5+1] * (bottom-top)/255);
+//                    int leftEyeX = (int) (result[0][2*5] * (right-left)/255);
+//                    int leftEyeY = (int) (result[0][2*5+1] * (bottom-top)/255);
+//                    int rightEyeX = (int) (result[0][5*5] * (right-left)/255);
+//                    int rightEyeY = (int) (result[0][5*5+1] * (bottom-top)/255);
+//                    int leftShoulderX = (int) (result[0][11*5] * (right-left)/255);
+//                    int leftShoulderY = (int) (result[0][11*5+1] * (bottom-top)/255);
+//                    int rightShoulderX = (int) (result[0][12*5] * (right-left)/255);
+//                    int rightShoulderY = (int) (result[0][12*5+1] * (bottom-top)/255);
+//                    int leftHipX = (int) (result[0][23*5] * (right-left)/255);
+//                    int leftHipY = (int) (result[0][23*5+1] * (bottom-top)/255);
+//                    int rightHipX = (int) (result[0][24*5] * (right-left)/255);
+//                    int rightHipY = (int) (result[0][24*5+1] * (bottom-top)/255);
+//                    //Log.w(TAG, "Coords : "+ shoulderX + " " +  shoulderY );
+//
+//                    Imgproc.circle(frame, new Point(
+//                                    left + noseX, top + noseY), 5, new Scalar(0,255,0), 10);
+//                    Imgproc.circle(frame, new Point(
+//                            left + leftEyeX, top + leftEyeY), 5, new Scalar(0,255,0), 10);
+//                    Imgproc.circle(frame, new Point(
+//                            left + rightEyeX, top + rightEyeY), 5, new Scalar(0,255,0), 10);
+//
+//                    Imgproc.circle(frame, new Point(
+//                            left + leftShoulderX, top + leftShoulderY), 5, new Scalar(0,255,0), 10);
+//                    Imgproc.circle(frame, new Point(
+//                            left + rightShoulderX, top + rightShoulderY), 5, new Scalar(0,255,0), 10);
+//
+//                    Imgproc.circle(frame, new Point(
+//                            left + leftHipX, top + leftHipY), 5, new Scalar(0,255,0), 10);
+//                    Imgproc.circle(frame, new Point(
+//                            left + rightHipX, top + rightHipY), 5, new Scalar(0,255,0), 10);
+//
+//                } //end if detected class is a human silouhette
+//
+//            } // next detection
 
-                    Imgproc.putText(frame, String.format(java.util.Locale.US, "%.4f", confidence),
-                            new Point(left - 2, top - 12), 1, 2,
-                            new Scalar(0, 0, 0), 5);
-                    Imgproc.putText(frame, String.format(java.util.Locale.US, "%.4f", confidence),
-                            new Point(left - 2, top - 12), 1, 2,
-                            new Scalar(0, 255, 0), 2);
 
-                    Rect toCrop = new Rect(
-                            left,
-                            top,
-                            right-left-5,
-                            bottom-top-10
-                    );
-                    Log.i(TAG, "To crop "+left + " " + top + " " + (right-left) + " " + (bottom-top) );
-                    Mat croppedTargetMat = frame.submat(toCrop);
-                    Imgproc.resize(croppedTargetMat, croppedTargetMat, new Size(256,256));
-                    Bitmap bitmapImage = Bitmap.createBitmap(croppedTargetMat.cols(), croppedTargetMat.rows(), Bitmap.Config.ARGB_8888);
-                    Utils.matToBitmap(croppedTargetMat, bitmapImage);
-
-                    float[][] result = blazePose.recognizeImage(bitmapImage);
-
-                    // Blaze pose returns the x, y coords as values [0:255] independent from the input resolution
-                    int noseX = (int) (result[0][0*5] * (right-left)/255);
-                    int noseY = (int) (result[0][0*5+1] * (bottom-top)/255);
-                    int leftEyeX = (int) (result[0][2*5] * (right-left)/255);
-                    int leftEyeY = (int) (result[0][2*5+1] * (bottom-top)/255);
-                    int rightEyeX = (int) (result[0][5*5] * (right-left)/255);
-                    int rightEyeY = (int) (result[0][5*5+1] * (bottom-top)/255);
-                    int leftShoulderX = (int) (result[0][11*5] * (right-left)/255);
-                    int leftShoulderY = (int) (result[0][11*5+1] * (bottom-top)/255);
-                    int rightShoulderX = (int) (result[0][12*5] * (right-left)/255);
-                    int rightShoulderY = (int) (result[0][12*5+1] * (bottom-top)/255);
-                    int leftHipX = (int) (result[0][23*5] * (right-left)/255);
-                    int leftHipY = (int) (result[0][23*5+1] * (bottom-top)/255);
-                    int rightHipX = (int) (result[0][24*5] * (right-left)/255);
-                    int rightHipY = (int) (result[0][24*5+1] * (bottom-top)/255);
-                    //Log.w(TAG, "Coords : "+ shoulderX + " " +  shoulderY );
-
-                    Imgproc.circle(frame, new Point(
-                                    left + noseX, top + noseY), 5, new Scalar(0,255,0), 10);
-                    Imgproc.circle(frame, new Point(
-                            left + leftEyeX, top + leftEyeY), 5, new Scalar(0,255,0), 10);
-                    Imgproc.circle(frame, new Point(
-                            left + rightEyeX, top + rightEyeY), 5, new Scalar(0,255,0), 10);
-
-                    Imgproc.circle(frame, new Point(
-                            left + leftShoulderX, top + leftShoulderY), 5, new Scalar(0,255,0), 10);
-                    Imgproc.circle(frame, new Point(
-                            left + rightShoulderX, top + rightShoulderY), 5, new Scalar(0,255,0), 10);
-
-                    Imgproc.circle(frame, new Point(
-                            left + leftHipX, top + leftHipY), 5, new Scalar(0,255,0), 10);
-                    Imgproc.circle(frame, new Point(
-                            left + rightHipX, top + rightHipY), 5, new Scalar(0,255,0), 10);
-
-                } //end if detected class is a human silouhette
-
-            } // next detection
         } catch (Exception e) {
             e.printStackTrace();
         }
