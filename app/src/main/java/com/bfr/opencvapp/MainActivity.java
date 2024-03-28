@@ -114,7 +114,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
 
 
-
     //todebug
     boolean recording=false;
     VideoWriter videoWriter;
@@ -277,15 +276,11 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                     recording = true;
 
 
-                    mOpenCvCameraView.getHolder().setFixedSize(1,1);
-
-
                 }
                 else {
                     videoWriter.release();
                     recording = false;
 
-                    mOpenCvCameraView.getHolder().setFixedSize(1124,868);
                 }
             }
         });
@@ -388,11 +383,9 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         tracked = new Rect();
 
-        videoCapture = new VideoCapture("/sdcard/Download/240314105955_trackingDebug.avi");
+        videoCapture = new VideoCapture("/sdcard/Download/240328181007_trackingDebug.avi");
         videoCapture.set(CAP_PROP_POS_FRAMES, 10);
         frame = new Mat();
-
-
 
     }
 
@@ -458,7 +451,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         mOpenCvCameraView.setCvCameraViewListener(this);
         mOpenCvCameraView.setAlpha(0.1F);
 
-//        mOpenCvCameraView.getHolder().setFixedSize(1,1);
+        mOpenCvCameraView.getHolder().setFixedSize(1,1);
 
 
         trackingNoGrafcet.start(20);

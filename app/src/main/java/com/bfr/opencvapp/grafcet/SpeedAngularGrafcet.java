@@ -66,7 +66,7 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
     String ackWheels="";
     public float angularSpeed =1.0f;
 
-    final float BASE_SPEED=0.5f;
+    final float BASE_SPEED=0.8f;
     final float BASE_LOW_SPEED=0.15f;
     float targetangle = 0.0f;
 

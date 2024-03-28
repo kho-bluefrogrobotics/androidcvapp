@@ -252,7 +252,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         else if (personTracker.torsoHeight<=150 && personTracker.torsoHeight>120)
                             linearSpeed = 0.3f;
                         else if (personTracker.torsoHeight<=120 )
-                            linearSpeed = 0.5f;
+                            linearSpeed = 0.56f;
                         else
                             linearSpeed = 0.0f;
 

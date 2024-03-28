@@ -374,7 +374,6 @@ public class PersonTracker {
                                 }
                             }
 
-
                             int left = tracked.box.x;
                             int top = tracked.box.y;
                             int right = tracked.box.x+tracked.box.width;

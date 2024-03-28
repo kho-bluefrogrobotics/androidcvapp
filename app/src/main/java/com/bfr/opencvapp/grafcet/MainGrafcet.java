@@ -164,6 +164,7 @@ public class MainGrafcet extends bfr_Grafcet {
 
 //                        TrackingNoGrafcet.go = true;
                         TrackingYesGrafcet.go = true;
+                        FaceGrafcet.go = true;
 
                         step_num = 9;
                         break;

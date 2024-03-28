@@ -173,7 +173,7 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                         linearspeed = speedLinearGrafcet.linearSpeed;
                         rotspeed = speedAngularGrafcet.angularSpeed;
 
-                        BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, 9999.0f, new IUsbCommadRsp.Stub() {
+                        BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, 0, new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String s) throws RemoteException {
                                 ackWheels = s;
