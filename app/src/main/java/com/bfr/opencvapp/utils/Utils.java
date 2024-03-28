@@ -45,8 +45,8 @@ public class Utils {
                 _RED =  new Scalar(255,0,0),
                 _BLUE = new Scalar(0,0,255),
                 _GREEN = new Scalar(0,255,0),
-                _YELLOW = new Scalar(150,150,0),
-                _PURPLE = new Scalar(155,0,155),
+                _YELLOW = new Scalar(0,250,250),
+                _PURPLE = new Scalar(250,0,255),
                 _WHITE = new Scalar(255,255,255),
                 _BLACK = new Scalar(0,0,0);
     }

@@ -78,6 +78,8 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 
     float rotationSpeed = 15.0F;
 
+    boolean obstacle = false;
+
     // Define the sequence/grafcet to be executed
    /* This provides a template for a grafcet.
    The sequence is as follows:
@@ -96,7 +98,7 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 
             try {
 
-                // Compute target position
+                /*** Compute target position */
                 target = getCentroid(personTracker.tracked.box.x,
                         personTracker.tracked.box.y,
                         personTracker.tracked.box.height,
@@ -108,6 +110,14 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                 // compute angle
                 noOffset = (targetX-(1024/2))*0.09375f;
 
+                /*** Compute obstacle detection */
+                if (
+                        (BuddySDK.Sensors.USSensors().LeftUS().getDistance() >5 && BuddySDK.Sensors.USSensors().LeftUS().getDistance() < 350)
+                        ||  (BuddySDK.Sensors.USSensors().RightUS().getDistance() >5 && BuddySDK.Sensors.USSensors().RightUS().getDistance() < 350)
+                )
+                    obstacle = true;
+                else
+                    obstacle = false;
 
                 // if step changed
                 if (!(step_num == previous_step)) {
@@ -173,9 +183,15 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                         targetangle = noOffset;
 
 
-                        if (personTracker.torsoHeight<=200)
+                        if (personTracker.torsoHeight<=200 && personTracker.torsoHeight>100)
                             linearspeed = 0.2f;
+                        else if (personTracker.torsoHeight<=100)
+                            linearspeed = 0.3f;
                         else
+                            linearspeed = 0.0f;
+
+                        if(obstacle ||
+                            (personTracker.tracked.box.height*personTracker.tracked.box.width) >21000)
                             linearspeed = 0.0f;
 
                         BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, 9999.0f, new IUsbCommadRsp.Stub() {
@@ -212,12 +228,16 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 //                                +"\n Nooffset =" + angleInrads + " rotspeed="+rotspeed );
 
 
-                        if (personTracker.torsoHeight<=200)
+                        if (personTracker.torsoHeight<=200 && personTracker.torsoHeight>100)
                             linearspeed = 0.2f;
+                        else if (personTracker.torsoHeight<=100)
+                            linearspeed = 0.3f;
                         else
                             linearspeed = 0.0f;
 
-
+                        if(obstacle ||
+                                (personTracker.tracked.box.height*personTracker.tracked.box.width) >21000)
+                            linearspeed = 0.0f;
 
                         if( (int)((System.currentTimeMillis()-timerotating)) >= Math.abs(angleInrads/rotspeed)*1000 ) {
                             Log.e(name, "currtime= " + timerotating + " vs " + System.currentTimeMillis()

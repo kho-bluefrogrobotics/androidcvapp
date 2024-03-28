@@ -658,6 +658,16 @@ public class PersonTracker {
                         new Point(pt1.x, pt1.y+30),
                         2, 1, _RED, 2);
 
+
+                int surf = tracked.box.height*tracked.box.width;
+                Imgproc.putText(displayMat, "[" + surf + "]",
+                        new Point(pt1.x, pt1.y+60),
+                        2, 1, _BLACK, 5);
+
+                Imgproc.putText(displayMat, "[" + surf + "]",
+                        new Point(pt1.x, pt1.y+60),
+                        2, 1, _YELLOW, 2);
+
             }
 
 
@@ -1424,9 +1434,9 @@ public class PersonTracker {
                 PoseLandmark leftHip = mypose.getPoseLandmark(PoseLandmark.LEFT_HIP);
                 PoseLandmark rightHip = mypose.getPoseLandmark(PoseLandmark.RIGHT_HIP);
 
-                Log.w("coucouMLKit", "MLKit elapsed time : "+ (System.currentTimeMillis()-mlkitTime)
-                        // display position in pixels
-                        +"\n Position=" + nose.getPosition().x + "," + nose.getPosition().y );
+//                Log.w("coucouMLKit", "MLKit elapsed time : "+ (System.currentTimeMillis()-mlkitTime)
+//                        // display position in pixels
+//                        +"\n Position=" + nose.getPosition().x + "," + nose.getPosition().y );
 
                 Imgproc.circle(croppedMat, new Point(
                         0 + nose.getPosition().x, 0 + nose.getPosition().y), 5, new Scalar(0,0,255), 10);
@@ -1442,7 +1452,16 @@ public class PersonTracker {
                         0 + rightHip.getPosition().x, 0 + rightHip.getPosition().y), 5, new Scalar(0,0,255), 10);
 
 
+//                torsoHeight = (float) Math.sqrt(
+//                        (double)(Math.pow(leftHip.getPosition3D().getX(),2) - Math.pow(leftShoulder.getPosition3D().getX(),2))
+//                        +(double)(Math.pow(leftHip.getPosition3D().getY(),2) - Math.pow(leftShoulder.getPosition3D().getY(),2))
+//                        +(double)(Math.pow(leftHip.getPosition3D().getZ(),2) - Math.pow(leftShoulder.getPosition3D().getZ(),2))
+//                );//end of sqrt
+
+
                 torsoHeight = Math.abs(leftHip.getPosition().y - leftShoulder.getPosition().y);
+
+
                 Imgcodecs.imwrite("/sdcard/todelete.jpg", croppedMat);
 
             } catch (Exception e) {
