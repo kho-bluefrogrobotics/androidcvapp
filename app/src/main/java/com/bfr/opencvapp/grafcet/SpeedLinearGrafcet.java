@@ -68,7 +68,10 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
     final float BASE_SPEED=0.7f;
 
-    boolean obstacle = false;
+    boolean obstacleL = false;
+    boolean obstacleR = false;
+
+    boolean LLedOn, RLedOn;
 
     // Define the sequence/grafcet to be executed
    /* This provides a template for a grafcet.
@@ -90,13 +93,70 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
 
                 /*** Compute obstacle detection */
-                if (
-                        (BuddySDK.Sensors.USSensors().LeftUS().getDistance() >5 && BuddySDK.Sensors.USSensors().LeftUS().getDistance() < 350)
-                        ||  (BuddySDK.Sensors.USSensors().RightUS().getDistance() >5 && BuddySDK.Sensors.USSensors().RightUS().getDistance() < 350)
-                )
-                    obstacle = true;
+                if ((BuddySDK.Sensors.USSensors().LeftUS().getDistance() >5 && BuddySDK.Sensors.USSensors().LeftUS().getDistance() < 350) )
+                    obstacleL = true;
                 else
-                    obstacle = false;
+                    obstacleL = false;
+
+
+                if( (BuddySDK.Sensors.USSensors().RightUS().getDistance() >5 && BuddySDK.Sensors.USSensors().RightUS().getDistance() < 350) )
+                    obstacleR = true;
+                else
+                    obstacleR = false;
+
+
+                //to debug Led on
+                if(obstacleL && !LLedOn)
+                {
+                    BuddySDK.USB.updateLedColor(1, "#ff1100", new IUsbCommadRsp.Stub() {
+                        @Override
+                        public void onSuccess(String s) throws RemoteException {}
+                        @Override
+                        public void onFailed(String s) throws RemoteException {}
+                    });
+                    LLedOn = true;
+                } //end if obstalce and led off
+                if(!obstacleL && LLedOn)
+                {
+                    BuddySDK.USB.updateLedColor(1, "#61E3EB", new IUsbCommadRsp.Stub() {
+                        @Override
+                        public void onSuccess(String s) throws RemoteException {}
+                        @Override
+                        public void onFailed(String s) throws RemoteException {}
+                    });
+                    LLedOn = false;
+                } //end if obstalce and led off
+                /***/
+                if(obstacleR && !RLedOn)
+                {
+                    BuddySDK.USB.updateLedColor(0, "#ff1100", new IUsbCommadRsp.Stub() {
+                        @Override
+                        public void onSuccess(String s) throws RemoteException {}
+                        @Override
+                        public void onFailed(String s) throws RemoteException {}
+                    });
+                    RLedOn = true;
+                } //end if obstalce and led off
+                if(!obstacleR && RLedOn)
+                {
+                    BuddySDK.USB.updateLedColor(0, "#61E3EB", new IUsbCommadRsp.Stub() {
+                        @Override
+                        public void onSuccess(String s) throws RemoteException {}
+                        @Override
+                        public void onFailed(String s) throws RemoteException {}
+                    });
+                    RLedOn = false;
+                } //end if obstalce and led off
+
+
+
+
+//                Log.e(name, "STOP!!!!!! area=" +  (personTracker.tracked.box.height*personTracker.tracked.box.width)
+//                        +"   sensors= " + BuddySDK.Sensors.USSensors().LeftUS().getDistance() + " , " + BuddySDK.Sensors.USSensors().RightUS().getDistance()
+//                        +"   ampl= " + BuddySDK.Sensors.USSensors().LeftUS().getAmplitude()+ " , " + BuddySDK.Sensors.USSensors().RightUS().getAmplitude()
+//
+//                );
+
 
                 // if step changed
                 if (!(step_num == previous_step)) {
@@ -152,105 +212,38 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         else
                             linearSpeed = 0.0f;
 
-                        if(obstacle ||
+                        if(obstacleL || obstacleR ||
                             (personTracker.tracked.box.height*personTracker.tracked.box.width) >21000)
                         {
+//                            linearSpeed = 0.0f;
+                          step_num = 20;
+                        }
+
+
+
+                        break;
+
+
+
+                    case 20: // stabilize US detection
+                        Thread.sleep(100); // wait for next value
+                        if(obstacleL || obstacleR ||
+                                (personTracker.tracked.box.height*personTracker.tracked.box.width) >21000)
+                        {
                             linearSpeed = 0.0f;
-                            Log.e(name, "STOP!!!!!! area=" +  (personTracker.tracked.box.height*personTracker.tracked.box.width)
-                            +"   sensors= " + BuddySDK.Sensors.USSensors().LeftUS().getDistance() + " , " + BuddySDK.Sensors.USSensors().RightUS().getDistance());
 
                         }
-
-
-//                        step_num = 17;
-
+                        step_num = 25;
                         break;
 
 
-
-                    case 30: // get closer to target
-                        if (personTracker.tracked.box.height<200)
+                    case 25: // wait for OK to go
+                        if(!obstacleL && !obstacleR &&
+                                (personTracker.tracked.box.height*personTracker.tracked.box.width) <21000)
                         {
-                            step_num = 35;
-                            Log.i("coucou", "target size=" +personTracker.tracked.box.height );
+                            step_num = 15;
                         }
-                        else
-                        {
-                            Log.i("coucou", "target size=" +personTracker.tracked.box.height );
-                            step_num = 10;
-                        }
-
                         break;
-
-                    case 35: // go forward
-                        ackWheels = "";
-                        BuddySDK.USB.moveBuddy(0.1f, 1.0f, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String s) throws RemoteException {
-                                ackWheels = s;
-                            }
-
-                            @Override
-                            public void onFailed(String s) throws RemoteException {
-                                ackWheels = s;
-                            }
-                        });
-                        step_num = 37;
-                        break;
-
-
-                    case 37: //wait for OK
-                        if(ackWheels.toUpperCase().contains("OK") ||
-                                ackWheels.toUpperCase().contains("CANCELED") || timeout )
-                            step_num = 38;
-                        break;
-
-                    case 38://wait for end
-                        if(ackWheels.toUpperCase().contains("FINISHED") ||
-                                ackWheels.toUpperCase().contains("CANCELED") || timeout )
-                        {
-                            Log.i("coucou", "going to step 10 because ack=" +ackWheels + " and timeout=" + timeout );
-                            BuddySDK.USB.setBuddySpeed(0.0f, 0.0f, 0, new IUsbCommadRsp.Stub() {
-                                @Override
-                                public void onSuccess(String s) throws RemoteException { }
-
-                                @Override
-                                public void onFailed(String s) throws RemoteException {}
-                            });
-                            step_num = 10;
-                        }
-
-                        int distThres = 500;
-                        int tofMiddle =BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance();
-                        int tofLeft =BuddySDK.Sensors.TofSensors().FrontLeft().getDistance();
-                        int tofRight =BuddySDK.Sensors.TofSensors().FrontRight().getDistance();
-
-                        boolean obstacle = false;
-
-                        if( (tofLeft >0 && tofLeft < distThres)
-                        || (tofMiddle >0 && tofMiddle < distThres)
-                        || (tofRight >0 && tofRight < distThres))
-                            obstacle = true;
-
-
-
-                        Log.i("coucou", "***************Sensors value=" + tofMiddle + ", " + tofLeft + ", "  + tofRight);
-                        if(obstacle)
-                        {
-                            Log.i("coucou", "STOP!!!  sensors=" + tofMiddle + ", " + tofLeft + ", "  + tofRight);
-
-                            BuddySDK.USB.setBuddySpeed(0.0f, 0.0f, 0, new IUsbCommadRsp.Stub() {
-                                @Override
-                                public void onSuccess(String s) throws RemoteException { }
-
-                                @Override
-                                public void onFailed(String s) throws RemoteException {}
-                            });
-                            step_num = 10;
-                        }
-
-                        break;
-
                     default:
                         // go to next step
                         step_num = 0;

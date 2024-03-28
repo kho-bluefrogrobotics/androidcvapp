@@ -172,6 +172,17 @@ public class MainGrafcet extends bfr_Grafcet {
                         if(!alignBodyFollowGrafcet.go)
                             step_num = 7;
 
+                        if (personTracker.frameCount==0)
+                        {
+                            alignBodyFollowGrafcet.go = false;
+                            alignBodyFollowGrafcet.step_num = 0;
+
+                            searchPersonGrafcet.start();
+                            searchPersonGrafcet.go=true;
+                            searchPersonGrafcet.step_num=0;
+                            step_num = 70;
+                        }
+
                         break;
 
 
@@ -210,7 +221,8 @@ public class MainGrafcet extends bfr_Grafcet {
                         {
                             searchPersonGrafcet.stop();
                             searchPersonGrafcet.go = false;
-                            step_num = 10;
+//                            step_num = 10;
+                            step_num = 8;
                         }
 
                         break;
