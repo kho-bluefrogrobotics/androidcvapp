@@ -162,7 +162,7 @@ public class MainGrafcet extends bfr_Grafcet {
                         speedLinearGrafcet.go = true;
                         speedLinearGrafcet.step_num = 0;
 
-                        TrackingNoGrafcet.go = true;
+//                        TrackingNoGrafcet.go = true;
                         TrackingYesGrafcet.go = true;
 
                         step_num = 9;

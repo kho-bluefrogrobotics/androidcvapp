@@ -651,12 +651,12 @@ public class PersonTracker {
 
 //                int boxheight = (int) (tracked.box.height);
                 Imgproc.putText(displayMat, "[" + torsoHeight + "]",
-                        new Point(pt1.x, pt1.y+30),
-                        2, 1, _WHITE, 5);
+                        new Point(650, 250),
+                        2, 3, _WHITE, 10);
 
                 Imgproc.putText(displayMat, "[" + torsoHeight + "]",
-                        new Point(pt1.x, pt1.y+30),
-                        2, 1, _RED, 2);
+                        new Point(650, 250),
+                        2, 3, _RED, 5);
 
 
                 int surf = tracked.box.height*tracked.box.width;

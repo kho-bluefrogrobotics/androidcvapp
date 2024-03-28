@@ -70,9 +70,10 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
     boolean obstacleL = false;
     boolean obstacleR = false;
+    boolean obstacleM = false;
     boolean bboxTooBig = false;
 
-    boolean LLedOn, RLedOn;
+    boolean LLedOn, RLedOn, MLedOn;
 
     // Define the sequence/grafcet to be executed
    /* This provides a template for a grafcet.
@@ -94,17 +95,21 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
 
                 /*** Compute obstacle detection */
-                if ((BuddySDK.Sensors.USSensors().LeftUS().getDistance() >5 && BuddySDK.Sensors.USSensors().LeftUS().getDistance() < 350) )
+                if ((BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() < 350) )
                     obstacleL = true;
                 else
                     obstacleL = false;
 
 
-                if( (BuddySDK.Sensors.USSensors().RightUS().getDistance() >5 && BuddySDK.Sensors.USSensors().RightUS().getDistance() < 350) )
+                if( (BuddySDK.Sensors.TofSensors().FrontRight().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontRight().getDistance() < 350) )
                     obstacleR = true;
                 else
                     obstacleR = false;
 
+                if( (BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() < 450) )
+                    obstacleM = true;
+                else
+                    obstacleM = false;
 
                 //to debug Led on
                 if(obstacleL && !LLedOn)
@@ -148,12 +153,33 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                     });
                     RLedOn = false;
                 } //end if obstalce and led off
+                /***/
+                if(obstacleM && !MLedOn)
+                {
+                    BuddySDK.USB.updateLedColor(2, "#ff1100", new IUsbCommadRsp.Stub() {
+                        @Override
+                        public void onSuccess(String s) throws RemoteException {}
+                        @Override
+                        public void onFailed(String s) throws RemoteException {}
+                    });
+                    MLedOn = true;
+                } //end if obstalce and led off
+                if(!obstacleM && MLedOn)
+                {
+                    BuddySDK.USB.updateLedColor(2, "#61E3EB", new IUsbCommadRsp.Stub() {
+                        @Override
+                        public void onSuccess(String s) throws RemoteException {}
+                        @Override
+                        public void onFailed(String s) throws RemoteException {}
+                    });
+                    MLedOn = false;
+                } //end if obstalce and led off
 
 
 
                if(personTracker.tracked.objectClass==0) // if tracking a human silouhette
                {
-                   if ((personTracker.tracked.box.height*personTracker.tracked.box.width) >30000)
+                   if ((personTracker.tracked.box.height*personTracker.tracked.box.width) >40000)
                        bboxTooBig =true;
                    else
                        bboxTooBig = false;
@@ -221,18 +247,20 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         ackWheels = "";
 
 
-                        if (personTracker.torsoHeight<=200 && personTracker.torsoHeight>100)
+                        if (personTracker.torsoHeight<=200 && personTracker.torsoHeight>150)
+                            linearSpeed = 0.15f;
+                        else if (personTracker.torsoHeight<=150 && personTracker.torsoHeight>120)
                             linearSpeed = 0.3f;
-                        else if (personTracker.torsoHeight<=100)
+                        else if (personTracker.torsoHeight<=120 )
                             linearSpeed = 0.5f;
                         else
                             linearSpeed = 0.0f;
 
-                        if(obstacleL || obstacleR ||
+                        if(obstacleL || obstacleR || obstacleM ||
                                 bboxTooBig)
                         {
-//                            linearSpeed = 0.0f;
-                          step_num = 20;
+                            linearSpeed = 0.0f;
+                          step_num = 25;
                         }
 
 
@@ -243,8 +271,8 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
                     case 20: // stabilize US detection
                         Thread.sleep(100); // wait for next value
-                        if(obstacleL || obstacleR ||
-                                (personTracker.tracked.box.height*personTracker.tracked.box.width) >21000)
+                        if(obstacleL || obstacleR || obstacleM ||
+                                bboxTooBig)
                         {
                             linearSpeed = 0.0f;
 
@@ -254,8 +282,8 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
 
                     case 25: // wait for OK to go
-                        if(!obstacleL && !obstacleR &&
-                                (personTracker.tracked.box.height*personTracker.tracked.box.width) <21000)
+                        if(!obstacleL && !obstacleR &&  !obstacleM &&
+                                !bboxTooBig)
                         {
                             step_num = 15;
                         }

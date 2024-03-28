@@ -66,7 +66,7 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
     String ackWheels="";
     public float angularSpeed =1.0f;
 
-    final float BASE_SPEED=0.3f;
+    final float BASE_SPEED=0.5f;
     final float BASE_LOW_SPEED=0.15f;
     float targetangle = 0.0f;
 
@@ -97,19 +97,19 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
             try {
 
                 /*** Compute target position */
-//                target = getCentroid(personTracker.tracked.box.x,
-//                        personTracker.tracked.box.y,
-//                        personTracker.tracked.box.height,
-//                        personTracker.tracked.box.width
-//                );
-//                targetX = (int) target.x;
-//                targetY = (int) target.y;
-////                    Log.d(name, "Target at " + targetX + "," + targetY);
-//                // compute angle
-//                noOffset = (targetX-(1024/2))*0.09375f;
+                target = getCentroid(personTracker.tracked.box.x,
+                        personTracker.tracked.box.y,
+                        personTracker.tracked.box.height,
+                        personTracker.tracked.box.width
+                );
+                targetX = (int) target.x;
+                targetY = (int) target.y;
+//                    Log.d(name, "Target at " + targetX + "," + targetY);
+                // compute angle
+                noOffset = (targetX-(1024/2))*0.09375f;
 
 
-                noOffset = BuddySDK.Actuators.getNoPosition();
+//                noOffset = BuddySDK.Actuators.getNoPosition();
 
                 // if step changed
                 if (!(step_num == previous_step)) {
