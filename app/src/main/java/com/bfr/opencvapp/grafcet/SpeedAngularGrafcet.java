@@ -66,7 +66,8 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
     String ackWheels="";
     public float angularSpeed =1.0f;
 
-    final float BASE_SPEED=0.7f;
+    final float BASE_SPEED=0.3f;
+    final float BASE_LOW_SPEED=0.15f;
     float targetangle = 0.0f;
 
     Point target;
@@ -96,18 +97,19 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
             try {
 
                 /*** Compute target position */
-                target = getCentroid(personTracker.tracked.box.x,
-                        personTracker.tracked.box.y,
-                        personTracker.tracked.box.height,
-                        personTracker.tracked.box.width
-                );
-                targetX = (int) target.x;
-                targetY = (int) target.y;
-//                    Log.d(name, "Target at " + targetX + "," + targetY);
-                // compute angle
-                noOffset = (targetX-(1024/2))*0.09375f;
+//                target = getCentroid(personTracker.tracked.box.x,
+//                        personTracker.tracked.box.y,
+//                        personTracker.tracked.box.height,
+//                        personTracker.tracked.box.width
+//                );
+//                targetX = (int) target.x;
+//                targetY = (int) target.y;
+////                    Log.d(name, "Target at " + targetX + "," + targetY);
+//                // compute angle
+//                noOffset = (targetX-(1024/2))*0.09375f;
 
 
+                noOffset = BuddySDK.Actuators.getNoPosition();
 
                 // if step changed
                 if (!(step_num == previous_step)) {
@@ -145,7 +147,7 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
 
                     case 10: // check target offaxis alignment
 
-                        if(Math.abs(noOffset)>5.0f)
+                        if(Math.abs(noOffset)>10.0f)
                             step_num = 15;
                         break;
 
@@ -159,11 +161,11 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
                         if (noOffset>= 15.0f )
                             angularSpeed =-BASE_SPEED;
                         else if(noOffset> 5 && noOffset < 15.0f)
-                            angularSpeed =-0.3f;
+                            angularSpeed =-BASE_LOW_SPEED;
                         else if(noOffset<=-15.0f)
                             angularSpeed =BASE_SPEED;
                         else if (noOffset< -5 && noOffset > -15.0f)
-                            angularSpeed = 0.3f;
+                            angularSpeed = BASE_LOW_SPEED;
                         else // target in range
                             angularSpeed = 0.0f;
 //                        Log.i(name, "**** Nooffset =" + noOffset + " rotspeed="+ angularSpeed);
@@ -173,30 +175,6 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
 
 //                        step_num = 17;
 //                        step_num = 20;
-                        break;
-
-
-
-                    case 20: // wait for target in range
-
-//                        if(Math.abs(noOffset)<=10.0f)
-                        float angleInrads = (float) Math.toRadians(Math.abs(targetangle));
-//                        Log.i(name, "########## Elapsed time= " + (int)((System.currentTimeMillis()-timerotating)/1000)
-//                                +"\n Nooffset =" + angleInrads + " rotspeed="+rotspeed );
-
-
-
-                        if( (int)((System.currentTimeMillis()-timerotating)) >= Math.abs(angleInrads/ angularSpeed)*1000 ) {
-                            Log.e(name, "currtime= " + timerotating + " vs " + System.currentTimeMillis()
-                                    + "\n for offset = " + angleInrads + " rotSpeed=" + rotationSpeed);
-                            angularSpeed = 0.0f;
-                        } //end if time elapsed OK
-
-
-                           step_num = 15;
-
-
-
                         break;
 
 

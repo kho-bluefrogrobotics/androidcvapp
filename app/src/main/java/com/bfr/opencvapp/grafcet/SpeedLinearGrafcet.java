@@ -70,6 +70,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
     boolean obstacleL = false;
     boolean obstacleR = false;
+    boolean bboxTooBig = false;
 
     boolean LLedOn, RLedOn;
 
@@ -150,6 +151,21 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
 
 
+               if(personTracker.tracked.objectClass==0) // if tracking a human silouhette
+               {
+                   if ((personTracker.tracked.box.height*personTracker.tracked.box.width) >30000)
+                       bboxTooBig =true;
+                   else
+                       bboxTooBig = false;
+               }
+               else // tracking a face
+               {
+                   if ((personTracker.tracked.box.height*personTracker.tracked.box.width) >21000)
+                       bboxTooBig =true;
+                   else
+                       bboxTooBig = false;
+               }
+
 
 //                Log.e(name, "STOP!!!!!! area=" +  (personTracker.tracked.box.height*personTracker.tracked.box.width)
 //                        +"   sensors= " + BuddySDK.Sensors.USSensors().LeftUS().getDistance() + " , " + BuddySDK.Sensors.USSensors().RightUS().getDistance()
@@ -206,14 +222,14 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
 
                         if (personTracker.torsoHeight<=200 && personTracker.torsoHeight>100)
-                            linearSpeed = 0.2f;
-                        else if (personTracker.torsoHeight<=100)
                             linearSpeed = 0.3f;
+                        else if (personTracker.torsoHeight<=100)
+                            linearSpeed = 0.5f;
                         else
                             linearSpeed = 0.0f;
 
                         if(obstacleL || obstacleR ||
-                            (personTracker.tracked.box.height*personTracker.tracked.box.width) >21000)
+                                bboxTooBig)
                         {
 //                            linearSpeed = 0.0f;
                           step_num = 20;
