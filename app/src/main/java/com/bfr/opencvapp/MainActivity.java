@@ -70,9 +70,13 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNoGrafcet");
     TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
     MainGrafcet mainGrafcet = new MainGrafcet("MainGrafcet");
+    public AlignGrafcet alignGrafcet = new AlignGrafcet("BodyAlign") ;
+    public FaceGrafcet faceGrafcet = new FaceGrafcet("FaceGrafcet") ;
     public static InitGrafcet initGrafcet = new InitGrafcet("InitGrafcet");
     public static SearchPersonGrafcet searchPersonGrafcet = new SearchPersonGrafcet("SearchPersonGrafcet");
     public static AlignBodyFollowGrafcet alignBodyFollowGrafcet = new AlignBodyFollowGrafcet("AlignBodyFollowGrafcet");
+    public static SpeedLinearGrafcet speedLinearGrafcet = new SpeedLinearGrafcet("SpeedLinearGrafcet");
+    public static SpeedAngularGrafcet speedAngularGrafcet = new SpeedAngularGrafcet("SpeedAngularGrafcet");
 
     //********************  image ***************************
 
@@ -109,8 +113,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     private CameraBridgeViewBase.CvCameraViewListener2 cameraListener;
 
 
-    public AlignGrafcet alignGrafcet = new AlignGrafcet("BodyAlign") ;
-    public FaceGrafcet faceGrafcet = new FaceGrafcet("FaceGrafcet") ;
+
 
     //todebug
     boolean recording=false;

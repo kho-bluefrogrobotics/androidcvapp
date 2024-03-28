@@ -7,6 +7,8 @@ import static com.bfr.opencvapp.MainActivity.alignBodyFollowGrafcet;
 import static com.bfr.opencvapp.MainActivity.initGrafcet;
 import static com.bfr.opencvapp.MainActivity.personTracker;
 import static com.bfr.opencvapp.MainActivity.searchPersonGrafcet;
+import static com.bfr.opencvapp.MainActivity.speedAngularGrafcet;
+import static com.bfr.opencvapp.MainActivity.speedLinearGrafcet;
 
 import android.os.RemoteException;
 import android.util.Log;
@@ -147,9 +149,18 @@ public class MainGrafcet extends bfr_Grafcet {
 
 
                     case 8://starting body alignment
-                        alignBodyFollowGrafcet.start(10);
+                        alignBodyFollowGrafcet.start(100);
                         alignBodyFollowGrafcet.go = true;
                         alignBodyFollowGrafcet.step_num = 0;
+
+
+                        speedAngularGrafcet.start(20);
+                        speedAngularGrafcet.go = true;
+                        speedAngularGrafcet.step_num = 0;
+
+                        speedLinearGrafcet.start(20);
+                        speedLinearGrafcet.go = true;
+                        speedLinearGrafcet.step_num = 0;
 
                         TrackingYesGrafcet.go = true;
 

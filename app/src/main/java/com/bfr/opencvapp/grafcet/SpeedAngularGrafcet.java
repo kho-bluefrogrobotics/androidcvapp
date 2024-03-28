@@ -4,29 +4,26 @@ package com.bfr.opencvapp.grafcet;
 //import static com.bfr.opencvapp.MainActivity.alignCheckbox;
 
 import static com.bfr.opencvapp.MainActivity.personTracker;
-import static com.bfr.opencvapp.MainActivity.speedAngularGrafcet;
-import static com.bfr.opencvapp.MainActivity.speedLinearGrafcet;
 
 import android.os.RemoteException;
 import android.util.Log;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
-import com.bfr.buddysdk.services.companion.TaskCallback;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 import org.opencv.core.Point;
 
-public class AlignBodyFollowGrafcet extends bfr_Grafcet {
+public class SpeedAngularGrafcet extends bfr_Grafcet {
 
-    public AlignBodyFollowGrafcet(String mname) {
+    public SpeedAngularGrafcet(String mname) {
         super(mname);
         this.grafcet_runnable = mysequence;
 
     }
 
 
-    private AlignBodyFollowGrafcet grafcet=this;
+    private SpeedAngularGrafcet grafcet=this;
 
     // Static variable (to manage the grafcet from outside)
     public static int step_num =0;
@@ -67,20 +64,18 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
     String ackYes="";
     String ackNo="";
     String ackWheels="";
-    float rotspeed=1.0f;
-    float linearspeed = 0.0f;
+    public float angularSpeed =1.0f;
 
     final float BASE_SPEED=0.7f;
     float targetangle = 0.0f;
 
     Point target;
     int targetX, targetY;
-    public static float noOffset=0.0f;
+    public float noOffset=0.0f;
     long timerotating=0;
 
     float rotationSpeed = 15.0F;
 
-    boolean obstacle = false;
 
     // Define the sequence/grafcet to be executed
    /* This provides a template for a grafcet.
@@ -112,14 +107,7 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                 // compute angle
                 noOffset = (targetX-(1024/2))*0.09375f;
 
-                /*** Compute obstacle detection */
-                if (
-                        (BuddySDK.Sensors.USSensors().LeftUS().getDistance() >5 && BuddySDK.Sensors.USSensors().LeftUS().getDistance() < 350)
-                        ||  (BuddySDK.Sensors.USSensors().RightUS().getDistance() >5 && BuddySDK.Sensors.USSensors().RightUS().getDistance() < 350)
-                )
-                    obstacle = true;
-                else
-                    obstacle = false;
+
 
                 // if step changed
                 if (!(step_num == previous_step)) {
@@ -157,46 +145,36 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 
                     case 10: // check target offaxis alignment
 
-
+                        if(Math.abs(noOffset)>5.0f)
                             step_num = 15;
                         break;
 
 
-                    case 12: // timer for stabilization
-                        Thread.sleep(800);
-                        step_num = 15;
-                        break;
 
                     case 15: // rotate body to align
 
 
-                        linearspeed = speedLinearGrafcet.linearSpeed;
-                        rotspeed = speedAngularGrafcet.angularSpeed;
+                        ackWheels = "";
+                        timerotating = System.currentTimeMillis();
+                        if (noOffset>= 15.0f )
+                            angularSpeed =-BASE_SPEED;
+                        else if(noOffset> 5 && noOffset < 15.0f)
+                            angularSpeed =-0.3f;
+                        else if(noOffset<=-15.0f)
+                            angularSpeed =BASE_SPEED;
+                        else if (noOffset< -5 && noOffset > -15.0f)
+                            angularSpeed = 0.3f;
+                        else // target in range
+                            angularSpeed = 0.0f;
+//                        Log.i(name, "**** Nooffset =" + noOffset + " rotspeed="+ angularSpeed);
 
-                        BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, 9999.0f, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String s) throws RemoteException {
-                                ackWheels = s;
-                            }
+                        targetangle = noOffset;
 
-                            @Override
-                            public void onFailed(String s) throws RemoteException {
-                                ackWheels = s;
-                            }
-                        });
 
 //                        step_num = 17;
-                       //step_num = 20;
+//                        step_num = 20;
                         break;
 
-                    case 17: //wait for OK
-                        if (ackWheels.toUpperCase().contains("OK") ||
-                                ackWheels.toUpperCase().contains("CANCELED") ||
-                                timeout ) {
-                            timerotating = System.currentTimeMillis();
-                            step_num = 20;
-                        }
-                        break;
 
 
                     case 20: // wait for target in range
@@ -207,37 +185,13 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 //                                +"\n Nooffset =" + angleInrads + " rotspeed="+rotspeed );
 
 
-                        if (personTracker.torsoHeight<=200 && personTracker.torsoHeight>100)
-                            linearspeed = 0.2f;
-                        else if (personTracker.torsoHeight<=100)
-                            linearspeed = 0.3f;
-                        else
-                            linearspeed = 0.0f;
 
-                        if(obstacle ||
-                                (personTracker.tracked.box.height*personTracker.tracked.box.width) >21000)
-                            linearspeed = 0.0f;
-
-                        if( (int)((System.currentTimeMillis()-timerotating)) >= Math.abs(angleInrads/rotspeed)*1000 ) {
+                        if( (int)((System.currentTimeMillis()-timerotating)) >= Math.abs(angleInrads/ angularSpeed)*1000 ) {
                             Log.e(name, "currtime= " + timerotating + " vs " + System.currentTimeMillis()
                                     + "\n for offset = " + angleInrads + " rotSpeed=" + rotationSpeed);
-                            rotspeed = 0.0f;
+                            angularSpeed = 0.0f;
                         } //end if time elapsed OK
 
-
-                            BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, 99999.0f, new IUsbCommadRsp.Stub() {
-                                @Override
-                                public void onSuccess(String s) throws RemoteException {
-                                    ackWheels = s;
-                                    Log.w(name, "answer from motors: " + ackWheels);
-                                }
-
-                                @Override
-                                public void onFailed(String s) throws RemoteException {
-                                    ackWheels = s;
-                                    Log.w(name, "answer from motors: " + ackWheels);
-                                }
-                            });
 
                            step_num = 15;
 
