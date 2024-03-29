@@ -247,14 +247,17 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         ackWheels = "";
 
 
-                        if (personTracker.torsoHeight<=200 && personTracker.torsoHeight>150)
-                            linearSpeed = 0.15f;
-                        else if (personTracker.torsoHeight<=150 && personTracker.torsoHeight>120)
-                            linearSpeed = 0.3f;
-                        else if (personTracker.torsoHeight<=120 )
-                            linearSpeed = 0.56f;
-                        else
-                            linearSpeed = 0.0f;
+//                        if (personTracker.torsoHeight<=200 && personTracker.torsoHeight>150)
+//                            linearSpeed = 0.15f;
+//                        else if (personTracker.torsoHeight<=150 && personTracker.torsoHeight>120)
+//                            linearSpeed = 0.3f;
+//                        else if (personTracker.torsoHeight<=120 )
+//                            linearSpeed = 0.56f;
+//                        else
+//                            linearSpeed = 0.0f;
+
+                        linearSpeed =Math.max(0.0f, (float) (-0.004 * personTracker.torsoHeight  +1) );
+
 
                         if(obstacleL || obstacleR || obstacleM ||
                                 bboxTooBig)
