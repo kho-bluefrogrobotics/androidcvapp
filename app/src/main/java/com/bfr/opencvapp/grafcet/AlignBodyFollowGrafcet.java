@@ -12,6 +12,7 @@ import android.util.Log;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
+import com.bfr.buddysdk.services.ModuleUSB;
 import com.bfr.buddysdk.services.companion.TaskCallback;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
@@ -225,7 +226,7 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                         } //end if time elapsed OK
 
 
-                            BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, 99999.0f, new IUsbCommadRsp.Stub() {
+                            BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, ModuleUSB.BuddyAccelerations.LOW, new IUsbCommadRsp.Stub() {
                                 @Override
                                 public void onSuccess(String s) throws RemoteException {
                                     ackWheels = s;
