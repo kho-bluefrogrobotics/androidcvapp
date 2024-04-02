@@ -164,7 +164,7 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
                             personTracker.tracked.box.width
                             );
                     targetX = (int) target.x;
-                    targetY = Math.max(0,(int) (target.y+ personTracker.tracked.box.height/4));
+                    targetY = Math.max(0,(int) (personTracker.tracked.box.y+ personTracker.tracked.box.height/4));
 //                    Log.d(name, "Target at " + targetX + "," + targetY);
                     // compute angle
                     yesOffset = (targetY-(768/2))*0.09375f;
@@ -180,7 +180,7 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
                     motorAck = "";
                     previousOffset = yesOffset;
 
-                    noAngle = BuddySDK.Actuators.getYesPosition()- yesOffset;
+                    noAngle = Math.max(-13, BuddySDK.Actuators.getYesPosition()- yesOffset);
 
 //                    if (noOffset>0)
 //                        noAngle = -150.0f;

@@ -95,18 +95,18 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
 
                 /*** Compute obstacle detection */
-                if ((BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() < 350) )
+                if ((BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() < 400) )
                     obstacleL = true;
                 else
                     obstacleL = false;
 
 
-                if( (BuddySDK.Sensors.TofSensors().FrontRight().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontRight().getDistance() < 350) )
+                if( (BuddySDK.Sensors.TofSensors().FrontRight().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontRight().getDistance() < 400) )
                     obstacleR = true;
                 else
                     obstacleR = false;
 
-                if( (BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() < 450) )
+                if( (BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() < 500) )
                     obstacleM = true;
                 else
                     obstacleM = false;
@@ -114,7 +114,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                 //to debug Led on
                 if(obstacleL && !LLedOn)
                 {
-                    BuddySDK.USB.updateLedColor(1, "#ff1100", new IUsbCommadRsp.Stub() {
+                    BuddySDK.USB.updateLedColor(0, "#ff1100", new IUsbCommadRsp.Stub() {
                         @Override
                         public void onSuccess(String s) throws RemoteException {}
                         @Override
@@ -124,7 +124,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                 } //end if obstalce and led off
                 if(!obstacleL && LLedOn)
                 {
-                    BuddySDK.USB.updateLedColor(1, "#61E3EB", new IUsbCommadRsp.Stub() {
+                    BuddySDK.USB.updateLedColor(0, "#61E3EB", new IUsbCommadRsp.Stub() {
                         @Override
                         public void onSuccess(String s) throws RemoteException {}
                         @Override
@@ -135,7 +135,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                 /***/
                 if(obstacleR && !RLedOn)
                 {
-                    BuddySDK.USB.updateLedColor(0, "#ff1100", new IUsbCommadRsp.Stub() {
+                    BuddySDK.USB.updateLedColor(1, "#ff1100", new IUsbCommadRsp.Stub() {
                         @Override
                         public void onSuccess(String s) throws RemoteException {}
                         @Override
@@ -145,7 +145,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                 } //end if obstalce and led off
                 if(!obstacleR && RLedOn)
                 {
-                    BuddySDK.USB.updateLedColor(0, "#61E3EB", new IUsbCommadRsp.Stub() {
+                    BuddySDK.USB.updateLedColor(1, "#61E3EB", new IUsbCommadRsp.Stub() {
                         @Override
                         public void onSuccess(String s) throws RemoteException {}
                         @Override
@@ -247,16 +247,9 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         ackWheels = "";
 
 
-//                        if (personTracker.torsoHeight<=200 && personTracker.torsoHeight>150)
-//                            linearSpeed = 0.15f;
-//                        else if (personTracker.torsoHeight<=150 && personTracker.torsoHeight>120)
-//                            linearSpeed = 0.3f;
-//                        else if (personTracker.torsoHeight<=120 )
-//                            linearSpeed = 0.56f;
-//                        else
-//                            linearSpeed = 0.0f;
 
-                        linearSpeed =Math.max(0.0f, (float) (-0.004 * personTracker.torsoHeight  +1) );
+
+//                        linearSpeed =Math.max(0.0f, (float) (-0.004 * personTracker.torsoHeight  +1) );
 
 
                         if(obstacleL || obstacleR || obstacleM ||
@@ -265,7 +258,18 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                             linearSpeed = 0.0f;
                           step_num = 25;
                         }
-
+                        else{ //box OK and no pbstacle
+                            if (personTracker.torsoHeight<=200 && personTracker.torsoHeight>150)
+                                linearSpeed = 0.15f;
+                            else if (personTracker.torsoHeight<=150 && personTracker.torsoHeight>130)
+                                linearSpeed = 0.3f;
+                            else if (personTracker.torsoHeight<=130 && personTracker.torsoHeight>120)
+                                linearSpeed = 0.4f;
+                            else if (personTracker.torsoHeight<=120 )
+                                linearSpeed = 0.56f;
+                            else
+                                linearSpeed = 0.0f;
+                        }
 
 
                         break;
