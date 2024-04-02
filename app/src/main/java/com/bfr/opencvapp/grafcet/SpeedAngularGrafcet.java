@@ -158,16 +158,27 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
 
                         ackWheels = "";
                         timerotating = System.currentTimeMillis();
-                        if (noOffset>= 15.0f )
-                            angularSpeed =-BASE_SPEED;
-                        else if(noOffset> 5 && noOffset < 15.0f)
-                            angularSpeed =-BASE_LOW_SPEED;
-                        else if(noOffset<=-15.0f)
-                            angularSpeed =BASE_SPEED;
-                        else if (noOffset< -5 && noOffset > -15.0f)
-                            angularSpeed = BASE_LOW_SPEED;
-                        else // target in range
-                            angularSpeed = 0.0f;
+                        if (personTracker.tracked.box.x>30 && (personTracker.tracked.box.x+personTracker.tracked.box.width)<(1024-30))
+                        {
+                            if(noOffset>= 15.0f)
+                                angularSpeed =-BASE_SPEED;
+                            else if(noOffset> 5 && noOffset < 15.0f)
+                                angularSpeed =-BASE_LOW_SPEED;
+                            else if(noOffset<=-15.0f)
+                                angularSpeed =BASE_SPEED;
+                            else if (noOffset< -5 && noOffset > -15.0f)
+                                angularSpeed = BASE_LOW_SPEED;
+                            else // target in range
+                                angularSpeed = 0.0f;
+                        }
+                        else // bbox on the image edge
+                        {
+                            if (personTracker.tracked.box.x>30)
+                                angularSpeed =-1.0f;
+                            else if((personTracker.tracked.box.x+personTracker.tracked.box.width)<(1024-30))
+                                angularSpeed =1.0f;
+                        } // end if box touches the image edges
+
 //                        Log.i(name, "**** Nooffset =" + noOffset + " rotspeed="+ angularSpeed);
 
                         targetangle = noOffset;
