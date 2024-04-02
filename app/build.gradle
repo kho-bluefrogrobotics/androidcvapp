@@ -9,13 +9,13 @@ android {
             keyPassword 'android'
         }
     }
-    compileSdk 31
+    compileSdk 33
     buildToolsVersion "30.0.2"
 
     defaultConfig {
         applicationId "com.bfr.opencvapp"
         minSdk 28
-        targetSdk 31
+        targetSdk 33
         versionCode 1
         versionName "1.1"
 
@@ -47,6 +47,7 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    implementation (platform("org.jetbrains.kotlin:kotlin-bom:1.8.0"))
 
     // tflite
     implementation 'org.tensorflow:tensorflow-lite:2.5.0'

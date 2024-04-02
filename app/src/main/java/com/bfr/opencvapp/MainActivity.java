@@ -293,30 +293,31 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
 
 
-        float maxval = Float.NEGATIVE_INFINITY;
-        float minval = Float.POSITIVE_INFINITY;
-        for (float cur : result) {
-            maxval = Math.max(maxval, cur);
-            minval = Math.min(minval, cur);
-        }
-
-        float multiplier = 0;
-//        if ((maxval - minval) > 0) multiplier = 255 / (maxval - minval);
-        if ((maxval - minval) > 0) multiplier = 255 / (maxval);
-        int[] img_normalized = new int[result.length];
-        for (int i = 0; i < result.length; ++i) {
-            float val = (float) (multiplier * (result[i] - minval));
-            img_normalized[i] = (int) val;
-        }
-
-//        Log.w("coucou", "result length: " + result.length + "\n"+"" +
+//        float maxval = Float.NEGATIVE_INFINITY;
+//        float minval = Float.POSITIVE_INFINITY;
+//        for (float cur : result) {
+//            maxval = Math.max(maxval, cur);
+//            minval = Math.min(minval, cur);
+//        }
+//
+//                Log.w("coucou", "result length: " + result.length + "\n"+"" +
 //                "Max in result= "+ maxval + " Min val="+ minval        );
+//        float multiplier = 0;
+////        if ((maxval - minval) > 0) multiplier = 255 / (maxval - minval);
+//        if ((maxval - minval) > 0) multiplier = 255 / (maxval);
+//        int[] img_normalized = new int[result.length];
+//        for (int i = 0; i < result.length; ++i) {
+//            float val = (float) (multiplier * (result[i] - minval));
+//            img_normalized[i] = (int) val;
+//        }
 
-        //debug
-        for (float cur : img_normalized) {
-            maxval = Math.max(maxval, cur);
-            minval = Math.min(minval, cur);
-        }
+
+
+//        //debug
+//        for (float cur : img_normalized) {
+//            maxval = Math.max(maxval, cur);
+//            minval = Math.min(minval, cur);
+//        }
 //        Log.w("coucou", "img_normalized length: " + img_normalized.length + "\n"+"" +
 //                "Max in img_normalized= "+ maxval + " Min val="+ minval        );
 
@@ -330,12 +331,18 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             for (int jj = 0; jj < resHeight; jj++) {
                 //int val = img_normalized[ii + jj * width];
                 int index = (resWidth - ii - 1) + (resHeight - jj - 1) * resWidth;
-                if(index < img_normalized.length) {
-                    int val = img_normalized[index];
-//                    if (val>150)
-//                        displayBitmap.setPixel(ii, jj, Color.rgb(val, 0, 0));
-//                    else
-                        displayBitmap.setPixel(ii, jj, Color.rgb(val, val, val));
+//                if(index < img_normalized.length) {
+//                    int val = img_normalized[index];
+                    if(index < result.length) {
+                    int val = (int)result[index];
+                    if (val>700)
+                        displayBitmap.setPixel(ii, jj, Color.rgb(255, 0, 0));
+                    else if(val>600)
+                        displayBitmap.setPixel(ii, jj, Color.rgb(0, 255, 0));
+                    else if(val>500)
+                        displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 255));
+                    else
+                        displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 0));
                 }
             }
         }
