@@ -366,7 +366,7 @@ public class PersonTracker {
                                 vitTracker.update(smallFrame, tracked.box);
 //                                Log.w(TAG, "UPDATE VIT tracker " + tracked.box.x+","+tracked.box.y);
                                 tracked.score = vitTracker.getTrackingScore();
-                                if(computeTrackingScore(scoreHistory)>=0.7f)
+                                if(computeTrackingScore(scoreHistory)>=0.7f && tracked.box.width <smallFrame.cols()/2)  // check size: Bbox must not be too big-> it means the person is very close to the camera and we should reset on the face)
                                     trackingSuccess=true;
                                 else {
                                     trackingSuccess = false;
