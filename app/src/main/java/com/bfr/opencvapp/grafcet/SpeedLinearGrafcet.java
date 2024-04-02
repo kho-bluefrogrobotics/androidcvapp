@@ -73,7 +73,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
     boolean obstacleM = false;
     boolean bboxTooBig = false;
 
-    boolean LLedOn, RLedOn, MLedOn;
+    boolean LLedOn, RLedOn, MLedOn, TorsoLedOn, AreaLedOn;
 
     // Define the sequence/grafcet to be executed
    /* This provides a template for a grafcet.
@@ -95,14 +95,24 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
 
                 /*** Compute obstacle detection */
-                if ((BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() < 400) )
+//                if ((BuddySDK.Sensors.TofSensors().FrontRight().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontRight().getDistance() < 400) )
+                if ((BuddySDK.Sensors.USSensors().LeftUS().getDistance() >30 && BuddySDK.Sensors.USSensors().LeftUS().getDistance()< 400)
+                        && BuddySDK.Sensors.USSensors().LeftUS().getAmplitude()>500)
+                {
                     obstacleL = true;
+//                    Log.i("coucou", "obstacleL : USDist="+BuddySDK.Sensors.USSensors().LeftUS().getDistance() +" amplitude="+BuddySDK.Sensors.USSensors().LeftUS().getAmplitude());
+                }
                 else
                     obstacleL = false;
 
 
-                if( (BuddySDK.Sensors.TofSensors().FrontRight().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontRight().getDistance() < 400) )
+//                if( (BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() < 400) )
+                if( (BuddySDK.Sensors.USSensors().RightUS().getDistance() >30 && BuddySDK.Sensors.USSensors().RightUS().getDistance() < 400)
+                        && BuddySDK.Sensors.USSensors().RightUS().getAmplitude()>500)
+                {
                     obstacleR = true;
+//                    Log.i("coucou", "obstacleR : USDist="+BuddySDK.Sensors.USSensors().RightUS().getDistance() +" amplitude="+BuddySDK.Sensors.USSensors().RightUS().getAmplitude());
+                }
                 else
                     obstacleR = false;
 
@@ -110,71 +120,6 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                     obstacleM = true;
                 else
                     obstacleM = false;
-
-                //to debug Led on
-                if(obstacleL && !LLedOn)
-                {
-                    BuddySDK.USB.updateLedColor(0, "#ff1100", new IUsbCommadRsp.Stub() {
-                        @Override
-                        public void onSuccess(String s) throws RemoteException {}
-                        @Override
-                        public void onFailed(String s) throws RemoteException {}
-                    });
-                    LLedOn = true;
-                } //end if obstalce and led off
-                if(!obstacleL && LLedOn)
-                {
-                    BuddySDK.USB.updateLedColor(0, "#61E3EB", new IUsbCommadRsp.Stub() {
-                        @Override
-                        public void onSuccess(String s) throws RemoteException {}
-                        @Override
-                        public void onFailed(String s) throws RemoteException {}
-                    });
-                    LLedOn = false;
-                } //end if obstalce and led off
-                /***/
-                if(obstacleR && !RLedOn)
-                {
-                    BuddySDK.USB.updateLedColor(1, "#ff1100", new IUsbCommadRsp.Stub() {
-                        @Override
-                        public void onSuccess(String s) throws RemoteException {}
-                        @Override
-                        public void onFailed(String s) throws RemoteException {}
-                    });
-                    RLedOn = true;
-                } //end if obstalce and led off
-                if(!obstacleR && RLedOn)
-                {
-                    BuddySDK.USB.updateLedColor(1, "#61E3EB", new IUsbCommadRsp.Stub() {
-                        @Override
-                        public void onSuccess(String s) throws RemoteException {}
-                        @Override
-                        public void onFailed(String s) throws RemoteException {}
-                    });
-                    RLedOn = false;
-                } //end if obstalce and led off
-                /***/
-                if(obstacleM && !MLedOn)
-                {
-                    BuddySDK.USB.updateLedColor(2, "#ff1100", new IUsbCommadRsp.Stub() {
-                        @Override
-                        public void onSuccess(String s) throws RemoteException {}
-                        @Override
-                        public void onFailed(String s) throws RemoteException {}
-                    });
-                    MLedOn = true;
-                } //end if obstalce and led off
-                if(!obstacleM && MLedOn)
-                {
-                    BuddySDK.USB.updateLedColor(2, "#61E3EB", new IUsbCommadRsp.Stub() {
-                        @Override
-                        public void onSuccess(String s) throws RemoteException {}
-                        @Override
-                        public void onFailed(String s) throws RemoteException {}
-                    });
-                    MLedOn = false;
-                } //end if obstalce and led off
-
 
 
                if(personTracker.tracked.objectClass==0) // if tracking a human silouhette
@@ -186,18 +131,11 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                }
                else // tracking a face
                {
-                   if ((personTracker.tracked.box.height*personTracker.tracked.box.width) >21000)
+                   if ((personTracker.tracked.box.height*personTracker.tracked.box.width) >16000)
                        bboxTooBig =true;
                    else
                        bboxTooBig = false;
                }
-
-
-//                Log.e(name, "STOP!!!!!! area=" +  (personTracker.tracked.box.height*personTracker.tracked.box.width)
-//                        +"   sensors= " + BuddySDK.Sensors.USSensors().LeftUS().getDistance() + " , " + BuddySDK.Sensors.USSensors().RightUS().getDistance()
-//                        +"   ampl= " + BuddySDK.Sensors.USSensors().LeftUS().getAmplitude()+ " , " + BuddySDK.Sensors.USSensors().RightUS().getAmplitude()
-//
-//                );
 
 
                 // if step changed
@@ -226,6 +164,15 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                 // which grafcet step?
                 switch (step_num) {
                     case 0: // Wait for checkbox
+                        if(obstacleL)
+                            setLedLObstacleOn();
+                        else
+                            setLedLObstacleOff();
+                        if(obstacleR)
+                            setLedRObstacleOn();
+                        else
+                            setLedRObstacleOff();
+
                         //wait until check box
                         if (go) {
                             // go to next step
@@ -247,29 +194,63 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         ackWheels = "";
 
 
+//                      linearSpeed =Math.max(0.0f, (float) (-0.004 * personTracker.torsoHeight  +1) );
 
 
-//                        linearSpeed =Math.max(0.0f, (float) (-0.004 * personTracker.torsoHeight  +1) );
-
-
-                        if(obstacleL || obstacleR || obstacleM ||
-                                bboxTooBig)
+                        if(obstacleL || obstacleR || obstacleM)
                         {
+                            if(obstacleL)
+                                setLedLObstacleOn();
+                            if(obstacleR)
+                                setLedRObstacleOn();
                             linearSpeed = 0.0f;
+
                           step_num = 25;
                         }
                         else{ //box OK and no pbstacle
-                            if (personTracker.torsoHeight<=200 && personTracker.torsoHeight>150)
-                                linearSpeed = 0.15f;
-                            else if (personTracker.torsoHeight<=150 && personTracker.torsoHeight>130)
-                                linearSpeed = 0.3f;
-                            else if (personTracker.torsoHeight<=130 && personTracker.torsoHeight>120)
-                                linearSpeed = 0.4f;
-                            else if (personTracker.torsoHeight<=120 )
-                                linearSpeed = 0.56f;
-                            else
+
+                            setLedLObstacleOff();
+                            setLedRObstacleOff();
+
+                            if (bboxTooBig)
+                            {
+                                setLedAreaOn();
                                 linearSpeed = 0.0f;
-                        }
+                                step_num = 25;
+                            }
+                            else // bbox small
+                            {
+                                setLedAreaOff();
+                                if (personTracker.torsoHeight<=200 && personTracker.torsoHeight>150)
+                                {
+                                    setLedTorsoOff();
+                                    linearSpeed = 0.15f;
+                                }
+                                else if (personTracker.torsoHeight<=150 && personTracker.torsoHeight>130)
+                                {
+                                    setLedTorsoOff();
+                                    linearSpeed = 0.28f;
+                                }
+                                else if (personTracker.torsoHeight<=130 && personTracker.torsoHeight>120)
+                                {
+                                    setLedTorsoOff();
+                                    linearSpeed = 0.35f;
+                                }
+                                else if (personTracker.torsoHeight<=120 )
+                                {
+                                    setLedTorsoOff();
+                                    linearSpeed = 0.56f;
+                                }
+                                else
+                                {
+                                    setLedTorsoOn();
+                                    linearSpeed = 0.0f;
+
+                                }
+                            } // end if bbox too big
+
+
+                        } // end box OK and no obstacles
 
 
                         break;
@@ -322,5 +303,184 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
         return centroid;
     } //end getCentroid
+
+
+    void setLedTorsoOn()
+    {
+        // ON
+        if (!TorsoLedOn)
+        {
+            TorsoLedOn = true;
+            BuddySDK.USB.updateLedColor(0, "#1dd610", new IUsbCommadRsp.Stub() {
+                @Override
+                public void onSuccess(String s) throws RemoteException {}
+                @Override
+                public void onFailed(String s) throws RemoteException {}
+            });
+            BuddySDK.USB.updateLedColor(1, "#1dd610", new IUsbCommadRsp.Stub() {
+                @Override
+                public void onSuccess(String s) throws RemoteException {}
+                @Override
+                public void onFailed(String s) throws RemoteException {}
+            });
+            BuddySDK.USB.updateLedColor(2, "#1dd610", new IUsbCommadRsp.Stub() {
+            @Override
+            public void onSuccess(String s) throws RemoteException {}
+            @Override
+            public void onFailed(String s) throws RemoteException {}
+        });
+        } //end if led is off
+    } //end on Led
+
+    void setLedTorsoOff()
+    {
+        // ON
+        if (TorsoLedOn)
+        {
+            TorsoLedOn = false;
+            BuddySDK.USB.updateLedColor(0, "#61E3EB", new IUsbCommadRsp.Stub() {
+                @Override
+                public void onSuccess(String s) throws RemoteException {}
+                @Override
+                public void onFailed(String s) throws RemoteException {}
+            });
+            BuddySDK.USB.updateLedColor(1, "#61E3EB", new IUsbCommadRsp.Stub() {
+                @Override
+                public void onSuccess(String s) throws RemoteException {}
+                @Override
+                public void onFailed(String s) throws RemoteException {}
+            });
+            BuddySDK.USB.updateLedColor(2, "#61E3EB", new IUsbCommadRsp.Stub() {
+                @Override
+                public void onSuccess(String s) throws RemoteException {}
+                @Override
+                public void onFailed(String s) throws RemoteException {}
+            });
+        } //end if led is off
+    } //end off Led
+
+
+    void setLedAreaOn()
+    {
+        // ON
+        if (!AreaLedOn)
+        {
+            AreaLedOn = true;
+            BuddySDK.USB.updateLedColor(0, "#ffdf3f", new IUsbCommadRsp.Stub() {
+                @Override
+                public void onSuccess(String s) throws RemoteException {}
+                @Override
+                public void onFailed(String s) throws RemoteException {}
+            });
+            BuddySDK.USB.updateLedColor(1, "#ffdf3f", new IUsbCommadRsp.Stub() {
+                @Override
+                public void onSuccess(String s) throws RemoteException {}
+                @Override
+                public void onFailed(String s) throws RemoteException {}
+            });
+            BuddySDK.USB.updateLedColor(2, "#ffdf3f", new IUsbCommadRsp.Stub() {
+                @Override
+                public void onSuccess(String s) throws RemoteException {}
+                @Override
+                public void onFailed(String s) throws RemoteException {}
+            });
+        } //end if led is off
+    } //end off Led
+
+    void setLedAreaOff()
+    {
+        // ON
+        if (AreaLedOn)
+        {
+            AreaLedOn = false;
+            BuddySDK.USB.updateLedColor(1, "#61E3EB", new IUsbCommadRsp.Stub() {
+                @Override
+                public void onSuccess(String s) throws RemoteException {}
+                @Override
+                public void onFailed(String s) throws RemoteException {}
+            });
+            BuddySDK.USB.updateLedColor(1, "#61E3EB", new IUsbCommadRsp.Stub() {
+                @Override
+                public void onSuccess(String s) throws RemoteException {}
+                @Override
+                public void onFailed(String s) throws RemoteException {}
+            });
+            BuddySDK.USB.updateLedColor(2, "#61E3EB", new IUsbCommadRsp.Stub() {
+                @Override
+                public void onSuccess(String s) throws RemoteException {}
+                @Override
+                public void onFailed(String s) throws RemoteException {}
+            });
+        } //end if led is off
+    } //end off Led
+
+
+    void setLedLObstacleOn()
+    {
+        // ON
+        if (!LLedOn)
+        {
+            LLedOn = true;
+            BuddySDK.USB.updateLedColor(1, "##ff1100", new IUsbCommadRsp.Stub() {
+                @Override
+                public void onSuccess(String s) throws RemoteException {}
+                @Override
+                public void onFailed(String s) throws RemoteException {}
+            });
+
+        } //end if led is off
+    } //end off Led
+
+    void setLedLObstacleOff()
+    {
+        // ON
+        if (LLedOn)
+        {
+            LLedOn = false;
+
+            BuddySDK.USB.updateLedColor(0, "#61E3EB", new IUsbCommadRsp.Stub() {
+                @Override
+                public void onSuccess(String s) throws RemoteException {}
+                @Override
+                public void onFailed(String s) throws RemoteException {}
+            });
+
+        } //end if led is off
+    } //end off Led
+
+
+    void setLedRObstacleOn()
+    {
+        // ON
+        if (!RLedOn)
+        {
+            RLedOn = true;
+            BuddySDK.USB.updateLedColor(0, "##ff1100", new IUsbCommadRsp.Stub() {
+                @Override
+                public void onSuccess(String s) throws RemoteException {}
+                @Override
+                public void onFailed(String s) throws RemoteException {}
+            });
+
+        } //end if led is off
+    } //end off Led
+
+    void setLedRObstacleOff()
+    {
+        // ON
+        if (RLedOn)
+        {
+            RLedOn = false;
+
+            BuddySDK.USB.updateLedColor(0, "#61E3EB", new IUsbCommadRsp.Stub() {
+                @Override
+                public void onSuccess(String s) throws RemoteException {}
+                @Override
+                public void onFailed(String s) throws RemoteException {}
+            });
+
+        } //end if led is off
+    } //end off Led
+
 
 }

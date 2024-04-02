@@ -6,13 +6,16 @@ import static com.bfr.opencvapp.utils.Utils.modelsDir;
 
 import static org.opencv.core.CvType.CV_8UC3;
 
+import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.util.Log;
 
 
 import androidx.annotation.NonNull;
 
 import com.bfr.buddysdk.BuddySDK;
+import com.bfr.opencvapp.utils.TfLiteMidas;
 import com.bfr.opencvapp.utils.TfLiteYoloXHumanHeadHands;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -66,6 +69,9 @@ public class PersonTracker {
     PoseDetector poseDetector;
 
     public float torsoHeight=0.0f;
+
+
+    TfLiteMidas depthEstimator;
 
     // List of detected person or faces or hands
     ArrayList<MultiDetector.Recognition> detections = new ArrayList<MultiDetector.Recognition>();
@@ -137,7 +143,7 @@ public class PersonTracker {
 
     TfLiteYoloXHumanHeadHands humanHeadHandsDetector;
 
-    public PersonTracker(MultiDetector personDetector, TfLiteBlazePose blazePose,TfLiteYoloXHumanHeadHands hhhdetector ){
+    public PersonTracker(MultiDetector personDetector, TfLiteBlazePose blazePose,TfLiteYoloXHumanHeadHands hhhdetector, Context context ){
         // Load model for human detector
         detector = personDetector;
 
@@ -169,6 +175,8 @@ public class PersonTracker {
         //init thread
         poseScheduler = Executors.newScheduledThreadPool(1);
         poseScheduler.scheduleWithFixedDelay(poseRunnable, 0, 300, TimeUnit.MILLISECONDS);
+
+        depthEstimator = new TfLiteMidas(context);
 
     }
 
@@ -565,7 +573,7 @@ public class PersonTracker {
 
             if(constructVisualizationImage) {
 
-                displayMat = displayResult(frame, tracked);
+//                displayMat = displayResult(frame, tracked);
                 // set flag for handshake with displaying service
                 readyToDisplay = true;
             }
@@ -1354,27 +1362,85 @@ public class PersonTracker {
         public void run() {
             try {
 
-                Mat framecpy = smallFrame.clone();
 
-                //crop around tracked region
-                int newLeft = tracked.box.x-tracked.box.width;
-                int newRight = tracked.box.x+2*tracked.box.width;
-                int newTop = tracked.box.y-20;
+                //convert to bitmap
+                Bitmap depthBitmapImage = Bitmap.createBitmap(smallFrame.cols(), smallFrame.rows(), Bitmap.Config.ARGB_8888);
 
-                int newBottom = 0;
-                if(tracked.objectClass==0) //tracking a human
-                    newBottom = tracked.box.y + 2* tracked.box.height;
-                else // tracking a face
-                    newBottom = tracked.box.y + 4* tracked.box.height;
+                Utils.matToBitmap(smallFrame, depthBitmapImage);
 
-                Rect adjustedROI= new Rect(
-                        Math.max(0,newLeft),
-                        Math.max(0,newTop),
-                        Math.min(framecpy.cols()-newLeft,newRight-newLeft),
-                        Math.min(framecpy.rows()-newTop, newBottom-newTop) );
+                float[] depthResult=depthEstimator.recognizeImage(depthBitmapImage);
 
-                //Crop around face
-                Mat croppedMat = framecpy.submat(adjustedROI);
+                float maxval = Float.NEGATIVE_INFINITY;
+                float minval = Float.POSITIVE_INFINITY;
+                for (float cur : depthResult) {
+                    maxval = Math.max(maxval, cur);
+                    minval = Math.min(minval, cur);
+                }
+//
+                Log.w("coucou", "result length: " + depthResult.length + "\n"+"" +
+                        "Max in result= "+ maxval + " Min val="+ minval        );
+                int resWidth = 256;
+                int resHeight = 256;
+
+
+                Bitmap displayBitmap = Bitmap.createBitmap(resWidth, resHeight, Bitmap.Config.RGB_565);
+                for (int ii = 0; ii < resWidth; ii++) //pass the screen pixels in 2 directions
+                {
+                    for (int jj = 0; jj < resHeight; jj++) {
+                        //int val = img_normalized[ii + jj * width];
+                        int index = (resWidth - ii - 1) + (resHeight - jj - 1) * resWidth;
+//                if(index < img_normalized.length) {
+//                    int val = img_normalized[index];
+
+                        if(index < depthResult.length) {
+                            int val = (int)depthResult[index];
+                            if (val>700)
+                                displayBitmap.setPixel(ii, jj, Color.rgb(255, 0, 0));
+                            else if(val>600)
+                                displayBitmap.setPixel(ii, jj, Color.rgb(0, 255, 0));
+                            else if(val>500)
+                                displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 255));
+                            else
+                                displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 0));
+                        }
+                    }
+                }
+
+                Mat tmp =  new Mat(resHeight,resWidth, CV_8UC3, new Scalar(0, 0, 0));
+                Utils.bitmapToMat(displayBitmap, tmp);
+
+                Imgproc.resize(tmp, displayMat, new Size(1024, 768));
+
+
+
+
+                torsoHeight = 50000;
+
+
+
+
+//
+//                Mat framecpy = smallFrame.clone();
+//
+//                //crop around tracked region
+//                int newLeft = tracked.box.x-tracked.box.width;
+//                int newRight = tracked.box.x+2*tracked.box.width;
+//                int newTop = tracked.box.y-20;
+//
+//                int newBottom = 0;
+//                if(tracked.objectClass==0) //tracking a human
+//                    newBottom = tracked.box.y + 2* tracked.box.height;
+//                else // tracking a face
+//                    newBottom = tracked.box.y + 4* tracked.box.height;
+//
+//                Rect adjustedROI= new Rect(
+//                        Math.max(0,newLeft),
+//                        Math.max(0,newTop),
+//                        Math.min(framecpy.cols()-newLeft,newRight-newLeft),
+//                        Math.min(framecpy.rows()-newTop, newBottom-newTop) );
+//
+//                //Crop around face
+//                Mat croppedMat = framecpy.submat(adjustedROI);
 
 
                 // Incrust cropped image on black background
@@ -1388,80 +1454,80 @@ public class PersonTracker {
 //
 //                croppedMat.copyTo(roiInDisplayMat.submat(displayROI));
 
+//
+//                long mlkitTime = System.currentTimeMillis();
+//                Bitmap bitmapImage = Bitmap.createBitmap(croppedMat.cols(), croppedMat.rows(), Bitmap.Config.ARGB_8888);
+//                Utils.matToBitmap(croppedMat, bitmapImage);
+//
+//                InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
+//
+//                Task<Pose> result =
+//                        poseDetector.process(inputImage)
+//                                .addOnSuccessListener(
+//                                        new OnSuccessListener<Pose>() {
+//                                            @Override
+//                                            public void onSuccess(Pose pose) {
+//                                                // Task completed successfully
+//                                                // ...
+//
+//                                                mypose = pose;
+//                                            }
+//                                        })
+//                                .addOnFailureListener(
+//                                        new OnFailureListener() {
+//                                            @Override
+//                                            public void onFailure(@NonNull Exception e) {
+//                                                // Task failed with an exception
+//                                                // ...
+//                                            }
+//                                        });
+//
+//                try {
+//                    Tasks.await(result);
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//
+//                // Get all PoseLandmarks. If no person was detected, the list will be empty
+////                List<PoseLandmark> allPoseLandmarks = mypose.getAllPoseLandmarks();
+//
+//                PoseLandmark nose = mypose.getPoseLandmark(PoseLandmark.NOSE);
+//                PoseLandmark leftEar = mypose.getPoseLandmark(PoseLandmark.LEFT_EAR);
+//                PoseLandmark rightEar = mypose.getPoseLandmark(PoseLandmark.RIGHT_EAR);
+//                PoseLandmark leftShoulder = mypose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER);
+//                PoseLandmark rightShoulder = mypose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER);
+//                PoseLandmark leftHip = mypose.getPoseLandmark(PoseLandmark.LEFT_HIP);
+//                PoseLandmark rightHip = mypose.getPoseLandmark(PoseLandmark.RIGHT_HIP);
+//
+////                Log.w("coucouMLKit", "MLKit elapsed time : "+ (System.currentTimeMillis()-mlkitTime)
+////                        // display position in pixels
+////                        +"\n Position=" + nose.getPosition().x + "," + nose.getPosition().y );
+//
+//                Imgproc.circle(croppedMat, new Point(
+//                        0 + nose.getPosition().x, 0 + nose.getPosition().y), 5, new Scalar(0,0,255), 10);
+//                Imgproc.circle(croppedMat, new Point(
+//                        0 + leftEar.getPosition().x, 0 + leftEar.getPosition().y), 5, new Scalar(0,0,255), 10);
+//                Imgproc.circle(croppedMat, new Point(
+//                        0 + leftShoulder.getPosition().x, 0 + leftShoulder.getPosition().y), 5, new Scalar(0,0,255), 10);
+//                Imgproc.circle(croppedMat, new Point(
+//                        0 + rightShoulder.getPosition().x, 0 + rightShoulder.getPosition().y), 5, new Scalar(0,0,255), 10);
+//                Imgproc.circle(croppedMat, new Point(
+//                        0 + leftHip.getPosition().x, 0 + leftHip.getPosition().y), 5, new Scalar(0,0,255), 10);
+//                Imgproc.circle(croppedMat, new Point(
+//                        0 + rightHip.getPosition().x, 0 + rightHip.getPosition().y), 5, new Scalar(0,0,255), 10);
+//
+//
+////                torsoHeight = (float) Math.sqrt(
+////                        (double)(Math.pow(leftHip.getPosition3D().getX(),2) - Math.pow(leftShoulder.getPosition3D().getX(),2))
+////                        +(double)(Math.pow(leftHip.getPosition3D().getY(),2) - Math.pow(leftShoulder.getPosition3D().getY(),2))
+////                        +(double)(Math.pow(leftHip.getPosition3D().getZ(),2) - Math.pow(leftShoulder.getPosition3D().getZ(),2))
+////                );//end of sqrt
+//
+//
+//                torsoHeight = Math.abs(leftHip.getPosition().y - leftShoulder.getPosition().y);
 
-                long mlkitTime = System.currentTimeMillis();
-                Bitmap bitmapImage = Bitmap.createBitmap(croppedMat.cols(), croppedMat.rows(), Bitmap.Config.ARGB_8888);
-                Utils.matToBitmap(croppedMat, bitmapImage);
 
-                InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
-
-                Task<Pose> result =
-                        poseDetector.process(inputImage)
-                                .addOnSuccessListener(
-                                        new OnSuccessListener<Pose>() {
-                                            @Override
-                                            public void onSuccess(Pose pose) {
-                                                // Task completed successfully
-                                                // ...
-
-                                                mypose = pose;
-                                            }
-                                        })
-                                .addOnFailureListener(
-                                        new OnFailureListener() {
-                                            @Override
-                                            public void onFailure(@NonNull Exception e) {
-                                                // Task failed with an exception
-                                                // ...
-                                            }
-                                        });
-
-                try {
-                    Tasks.await(result);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                // Get all PoseLandmarks. If no person was detected, the list will be empty
-//                List<PoseLandmark> allPoseLandmarks = mypose.getAllPoseLandmarks();
-
-                PoseLandmark nose = mypose.getPoseLandmark(PoseLandmark.NOSE);
-                PoseLandmark leftEar = mypose.getPoseLandmark(PoseLandmark.LEFT_EAR);
-                PoseLandmark rightEar = mypose.getPoseLandmark(PoseLandmark.RIGHT_EAR);
-                PoseLandmark leftShoulder = mypose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER);
-                PoseLandmark rightShoulder = mypose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER);
-                PoseLandmark leftHip = mypose.getPoseLandmark(PoseLandmark.LEFT_HIP);
-                PoseLandmark rightHip = mypose.getPoseLandmark(PoseLandmark.RIGHT_HIP);
-
-//                Log.w("coucouMLKit", "MLKit elapsed time : "+ (System.currentTimeMillis()-mlkitTime)
-//                        // display position in pixels
-//                        +"\n Position=" + nose.getPosition().x + "," + nose.getPosition().y );
-
-                Imgproc.circle(croppedMat, new Point(
-                        0 + nose.getPosition().x, 0 + nose.getPosition().y), 5, new Scalar(0,0,255), 10);
-                Imgproc.circle(croppedMat, new Point(
-                        0 + leftEar.getPosition().x, 0 + leftEar.getPosition().y), 5, new Scalar(0,0,255), 10);
-                Imgproc.circle(croppedMat, new Point(
-                        0 + leftShoulder.getPosition().x, 0 + leftShoulder.getPosition().y), 5, new Scalar(0,0,255), 10);
-                Imgproc.circle(croppedMat, new Point(
-                        0 + rightShoulder.getPosition().x, 0 + rightShoulder.getPosition().y), 5, new Scalar(0,0,255), 10);
-                Imgproc.circle(croppedMat, new Point(
-                        0 + leftHip.getPosition().x, 0 + leftHip.getPosition().y), 5, new Scalar(0,0,255), 10);
-                Imgproc.circle(croppedMat, new Point(
-                        0 + rightHip.getPosition().x, 0 + rightHip.getPosition().y), 5, new Scalar(0,0,255), 10);
-
-
-//                torsoHeight = (float) Math.sqrt(
-//                        (double)(Math.pow(leftHip.getPosition3D().getX(),2) - Math.pow(leftShoulder.getPosition3D().getX(),2))
-//                        +(double)(Math.pow(leftHip.getPosition3D().getY(),2) - Math.pow(leftShoulder.getPosition3D().getY(),2))
-//                        +(double)(Math.pow(leftHip.getPosition3D().getZ(),2) - Math.pow(leftShoulder.getPosition3D().getZ(),2))
-//                );//end of sqrt
-
-
-                torsoHeight = Math.abs(leftHip.getPosition().y - leftShoulder.getPosition().y);
-
-
-                Imgcodecs.imwrite("/sdcard/todelete.jpg", croppedMat);
+//                Imgcodecs.imwrite("/sdcard/todelete.jpg", croppedMat);
 
             } catch (Exception e) {
                 e.printStackTrace();

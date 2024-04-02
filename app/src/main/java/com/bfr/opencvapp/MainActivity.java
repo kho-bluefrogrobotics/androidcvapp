@@ -379,7 +379,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         blazePose = new TfLiteBlazePose(context);
         humanHeadHandsDetector = new TfLiteYoloXHumanHeadHands(context);
 
-        personTracker = new PersonTracker(detector, blazePose, humanHeadHandsDetector);
+        personTracker = new PersonTracker(detector, blazePose, humanHeadHandsDetector, this);
 
         tracked = new Rect();
 
@@ -451,12 +451,13 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         mOpenCvCameraView.setCvCameraViewListener(this);
         mOpenCvCameraView.setAlpha(0.1F);
 
-        mOpenCvCameraView.getHolder().setFixedSize(1,1);
+//        mOpenCvCameraView.getHolder().setFixedSize(1,1);
 
 
         trackingNoGrafcet.start(20);
         trackingYesGrafcet.start(20);
         alignGrafcet.start(10);
+        speedLinearGrafcet.start(20);
 
         faceGrafcet.start(500);
 

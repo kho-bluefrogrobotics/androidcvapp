@@ -158,7 +158,6 @@ public class MainGrafcet extends bfr_Grafcet {
                         speedAngularGrafcet.go = true;
                         speedAngularGrafcet.step_num = 0;
 
-                        speedLinearGrafcet.start(20);
                         speedLinearGrafcet.go = true;
                         speedLinearGrafcet.step_num = 0;
 
