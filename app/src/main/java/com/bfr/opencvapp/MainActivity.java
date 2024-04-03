@@ -348,7 +348,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //                        displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 255));
 //                    else
 //                        displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 0));
-                        displayBitmap.setPixel(jj, ii, Color.rgb(val, val, val));
+                        displayBitmap.setPixel((resWidth - jj - 1), (resHeight - ii - 1), Color.rgb(val, val, val));
                 }
             }
         }
