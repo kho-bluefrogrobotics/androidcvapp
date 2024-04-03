@@ -162,7 +162,7 @@ public class TfLiteMidas {
                         // TODO(b/169379396): investigate the impact of the resize algorithm on accuracy.
                         // To get the same inference results as lib_task_api, which is built on top of the Task
                         // Library, use ResizeMethod.BILINEAR.
-                        .add(new ResizeOp(imageSizeX, imageSizeY, ResizeOp.ResizeMethod.NEAREST_NEIGHBOR))
+//                        .add(new ResizeOp(imageSizeX, imageSizeY, ResizeOp.ResizeMethod.NEAREST_NEIGHBOR))
                         //.add(new ResizeOp(224, 224, ResizeMethod.NEAREST_NEIGHBOR))
 //            .add(new Rot90Op(numRotation))
                         .add(new Rot90Op(2))

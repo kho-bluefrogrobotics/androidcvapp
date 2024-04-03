@@ -34,6 +34,7 @@ import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions;
 //import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions;
 
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
@@ -69,6 +70,7 @@ public class PersonTracker {
     PoseDetector poseDetector;
 
     public float torsoHeight=0.0f;
+    public float targetMean=0.0f;
 
 
     TfLiteMidas depthEstimator;
@@ -153,7 +155,7 @@ public class PersonTracker {
         humanHeadHandsDetector = hhhdetector;
 
         Log.d(TAG, "Person detector model created"  ) ;
-        displayMat = new Mat();
+        displayMat = new Mat(768,1024, CV_8UC3, new Scalar(0, 0, 0));
         smallFrame = new Mat();
         frameCols = (int)smallSize.width;
         frameRows = (int)smallSize.height;//
@@ -1364,9 +1366,13 @@ public class PersonTracker {
 
 
                 //convert to bitmap
-                Bitmap depthBitmapImage = Bitmap.createBitmap(smallFrame.cols(), smallFrame.rows(), Bitmap.Config.ARGB_8888);
+                int resWidth = 256;
+                int resHeight = 256;
+                Mat tmpIn = smallFrame.clone();
+                Imgproc.resize(tmpIn, tmpIn, new Size(resWidth, resHeight));
+                Bitmap depthBitmapImage = Bitmap.createBitmap(tmpIn.cols(), tmpIn.rows(), Bitmap.Config.ARGB_8888);
 
-                Utils.matToBitmap(smallFrame, depthBitmapImage);
+                Utils.matToBitmap(tmpIn, depthBitmapImage);
 
                 float[] depthResult=depthEstimator.recognizeImage(depthBitmapImage);
 
@@ -1379,8 +1385,7 @@ public class PersonTracker {
 //
                 Log.w("coucou", "result length: " + depthResult.length + "\n"+"" +
                         "Max in result= "+ maxval + " Min val="+ minval        );
-                int resWidth = 256;
-                int resHeight = 256;
+
 
 
                 Bitmap displayBitmap = Bitmap.createBitmap(resWidth, resHeight, Bitmap.Config.RGB_565);
@@ -1409,10 +1414,52 @@ public class PersonTracker {
                 Mat tmp =  new Mat(resHeight,resWidth, CV_8UC3, new Scalar(0, 0, 0));
                 Utils.bitmapToMat(displayBitmap, tmp);
 
-                Imgproc.resize(tmp, displayMat, new Size(1024, 768));
+                Imgproc.resize(tmp, tmp, new Size(1024, 768));
+
+//                Mat tmpdisplay = smallFrame.clone();
+//                tmpdisplay.convertTo(smallFrame, CV_8UC3);
+//                                displayMat = tmp;
+////                Log.i("coucouadd", "tmp=" + tmp.cols()+"x"+tmp.rows() + "   tmpdisplay=" + tmpdisplay.cols()+"x"+tmpdisplay.rows());
+//                Core.add(tmpdisplay, tmp, displayMat);
 
 
+                // draw a rectangle around Target
+                pt1.x = (int) (tracked.box.x);
+                pt1.y = (int) (tracked.box.y);
+                pt2.x = (int) ( (tracked.box.x + tracked.box.width));
+                pt2.y = (int) ( (tracked.box.y + tracked.box.height) );
 
+
+                Rect targetROI= new Rect(
+                        Math.max(0,tracked.box.x),
+                        Math.max(0,tracked.box.y),
+                        Math.min(smallFrame.cols()-1,tracked.box.width),
+                        Math.min(smallFrame.rows()-1, tracked.box.height) );
+
+                //Crop around face
+                Log.i("coucou", "ROI="+targetROI.x + " " + targetROI.y + " " + targetROI.height + " " + targetROI.width);
+                Mat meanMat = tmp.submat(targetROI);
+
+                Scalar meanDepth = Core.mean(meanMat);
+                Log.i("coucou", "Mean="+meanDepth.toString());
+                Imgproc.rectangle(tmp, pt1, pt2,
+                        _WHITE, 4);
+                Imgproc.rectangle(tmp, pt1, pt2,
+                        _RED, 2);
+                Imgproc.putText(tmp, "Tracking",
+                        new Point(pt1.x, pt1.y-30),
+                        2, 1, _BLACK, 5);
+                Imgproc.putText(tmp, "[" + meanDepth.toString() + "]",
+                        new Point(pt1.x, pt1.y),
+                        2, 1, _BLACK, 5);
+                Imgproc.putText(tmp, "Tracking",
+                        new Point(pt1.x, pt1.y-30),
+                        2, 1, _GREEN, 2);
+                Imgproc.putText(tmp, "[" + meanDepth.toString() + "]",
+                        new Point(pt1.x, pt1.y),
+                        2, 1, _GREEN, 2);
+
+                displayMat = tmp;
 
                 torsoHeight = 50000;
 
