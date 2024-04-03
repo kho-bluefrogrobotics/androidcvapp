@@ -1365,6 +1365,7 @@ public class PersonTracker {
             try {
 
 
+                double elapsedTime = System.currentTimeMillis();
                 //convert to bitmap
                 int resWidth = 256;
                 int resHeight = 256;
@@ -1383,9 +1384,6 @@ public class PersonTracker {
                     minval = Math.min(minval, cur);
                 }
 //
-                Log.w("coucou", "result length: " + depthResult.length + "\n"+"" +
-                        "Max in result= "+ maxval + " Min val="+ minval        );
-
 
 
                 Bitmap displayBitmap = Bitmap.createBitmap(resWidth, resHeight, Bitmap.Config.RGB_565);
@@ -1398,15 +1396,16 @@ public class PersonTracker {
 //                    int val = img_normalized[index];
 
                         if(index < depthResult.length) {
-                            int val = (int)depthResult[index];
-                            if (val>700)
-                                displayBitmap.setPixel(ii, jj, Color.rgb(255, 0, 0));
-                            else if(val>600)
-                                displayBitmap.setPixel(ii, jj, Color.rgb(0, 255, 0));
-                            else if(val>500)
-                                displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 255));
-                            else
-                                displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 0));
+                            int val = (int) (255*     (depthResult[index]-minval)/(maxval-minval));
+//                            if (val>700)
+//                                displayBitmap.setPixel(ii, jj, Color.rgb(255, 0, 0));
+//                            else if(val>600)
+//                                displayBitmap.setPixel(ii, jj, Color.rgb(0, 255, 0));
+//                            else if(val>500)
+//                                displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 255));
+//                            else
+//                                displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 0));
+                            displayBitmap.setPixel(ii, jj, Color.rgb(val, val, val));
                         }
                     }
                 }
@@ -1460,6 +1459,12 @@ public class PersonTracker {
                         2, 1, _GREEN, 2);
 
                 displayMat = tmp;
+
+                Log.w("coucou", "result length: " + depthResult.length + "\n"+"" +
+                        "Max in result= "+ maxval + " Min val="+ minval
+                +"\n TIME=" + (System.currentTimeMillis()-elapsedTime) );
+
+
 
                 torsoHeight = 50000;
 
