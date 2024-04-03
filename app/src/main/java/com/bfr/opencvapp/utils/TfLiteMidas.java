@@ -38,8 +38,8 @@ public class TfLiteMidas {
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
-    private final int[] INPUT_SIZE = {320,192};
-    private final int[] OUTPUT_SIZE = {320,192};
+    private final int[] INPUT_SIZE = {192,320};
+    private final int[] OUTPUT_SIZE = {192,320};
     private final int BATCH_SIZE = 1;
     private final int PIXEL_SIZE = 3;
     private final float THRES = 0.75f;
@@ -117,13 +117,13 @@ public class TfLiteMidas {
         if(imageShape[1] != imageShape[2]) {
 //            imageSizeY = imageShape[2];
 //            imageSizeX = imageShape[3];
-            imageSizeY = 320;
-            imageSizeX = 192;
+            imageSizeY = 192;
+            imageSizeX = 320;
         } else {
 //            imageSizeY = imageShape[1];
 //            imageSizeX = imageShape[2];
-            imageSizeY = 320;
-            imageSizeX = 192;
+            imageSizeY = 192;
+            imageSizeX = 320;
         }
 
         int[] probabilityShape =
@@ -139,8 +139,8 @@ public class TfLiteMidas {
     private TensorImage inputImageBuffer;
     /** Output probability TensorBuffer. */
     private TensorBuffer outputProbabilityBuffer;
-    private static final float IMAGE_MEAN = 250.0f;
-    private static final float IMAGE_STD = 1.0f;
+    private static final float[] IMAGE_MEAN = {0, 0, 0};
+    private static final float[] IMAGE_STD = {255, 255, 255};
     /** Image size along the x axis. */
     private final int imageSizeX;
     /** Image size along the y axis. */
@@ -172,6 +172,52 @@ public class TfLiteMidas {
         return imageProcessor.process(inputImageBuffer);
     }
 
+
+    /**
+     * Converts a Bitmap into a BytBuffer
+     * @param bitmap original bitmap
+     * @return ByteBuffer
+     */
+    protected ByteBuffer convertBitmapToByteBuffer(Bitmap bitmap) {
+        ByteBuffer byteBuffer;
+        if (IS_QUANTIZED) {
+            byteBuffer = ByteBuffer.allocateDirect(BATCH_SIZE * INPUT_SIZE[0] * INPUT_SIZE[1] * PIXEL_SIZE);
+        }
+        else{
+            byteBuffer = ByteBuffer.allocateDirect(4 * BATCH_SIZE * INPUT_SIZE[0] * INPUT_SIZE[1] * PIXEL_SIZE);
+        }
+        byteBuffer.order(ByteOrder.nativeOrder());
+        int[] intValues = new int[INPUT_SIZE[0] * INPUT_SIZE[1]];
+        bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+        int pixel = 0;
+
+        for (int i = 0; i < INPUT_SIZE[0]; ++i) {
+            for (int j = 0; j < INPUT_SIZE[1]; ++j) {
+                final int val = intValues[pixel++];
+
+                if (IS_QUANTIZED) {
+                    // red
+                    byteBuffer.put((byte) ((val >> 16) & 0xFF));
+                    // blue
+                    byteBuffer.put((byte) ((val >> 8) & 0xFF));
+                    // green
+                    byteBuffer.put((byte) (val & 0xFF));
+                } else {
+                    // red
+                    byteBuffer.putFloat( ( (float)(val >> 16 & 0xFF) -IMAGE_MEAN[0]) / IMAGE_STD[0]);
+                    // blue
+                    byteBuffer.putFloat( ((float)(val >> 8 & 0xFF) - IMAGE_MEAN[1]) / IMAGE_STD[1]);
+                    // green
+                    byteBuffer.putFloat( ((float)(val & 0xFF) - IMAGE_MEAN[2]) / IMAGE_STD[2]);
+                }
+            }
+        }
+        byteBuffer.rewind();
+        return byteBuffer;
+    }
+
+
+
     /**
      * get the detected objects in the image
      * @param bitmap original image in bitmap format
@@ -179,27 +225,23 @@ public class TfLiteMidas {
      */
     public float[] recognizeImage(Bitmap bitmap) {
 
-//        ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmap);
+        ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmap);
 
-//        ArrayList<Recognition> detections = new ArrayList<Recognition>();
-//        Map<Integer, Object> outputMap = new HashMap<>();
+        ArrayList<TfLiteMidasMultiOut.Recognition> detections = new ArrayList<TfLiteMidasMultiOut.Recognition>();
+        Map<Integer, Object> outputMap = new HashMap<>();
 
         // Init Face embeedings (signature)
 //        embeedings = new float[1][OUTPUT_SIZE[0]][OUTPUT_SIZE[1]][1];
-//        embeedings = new float[1][OUTPUT_SIZE[0]][OUTPUT_SIZE[1]];
 //        embeedings = new float[1][16][16][48];
         // Assign to Facenet output
-//        outputMap.put(0, embeedings);
+        outputMap.put(0, embeedings);
 //        outputMap.put(1, new float[1][16]);
 //        outputMap.put(2, new float[1][16]);
 //        outputMap.put(3, new float[1][48]);
 
-//        Object[] inputArray = {byteBuffer};
-//        tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
 
-
-        inputImageBuffer = loadImage(bitmap, 0);
-        tfLite.run(inputImageBuffer.getBuffer(), outputProbabilityBuffer.getBuffer().rewind());
+//        inputImageBuffer = loadImage(bitmap, 0);
+        tfLite.run(byteBuffer.rewind(), outputProbabilityBuffer.getBuffer().rewind());
 
         return outputProbabilityBuffer.getFloatArray();
 

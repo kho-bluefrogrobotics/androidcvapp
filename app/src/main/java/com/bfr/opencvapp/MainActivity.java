@@ -285,9 +285,11 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //        frame = Imgcodecs.imread("/storage/emulated/0/Documents/wideFrame01.jpg");
 
         //convert to bitmap
-        Bitmap bitmapImage = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
+        Mat imgresize = new Mat();
+        Imgproc.resize(frame, imgresize, new Size(320,192));
+        Bitmap bitmapImage = Bitmap.createBitmap(imgresize.cols(), imgresize.rows(), Bitmap.Config.ARGB_8888);
 
-        Utils.matToBitmap(frame, bitmapImage);
+        Utils.matToBitmap(imgresize, bitmapImage);
 
         float[] result=mytfliterecog.recognizeImage(bitmapImage);
 
