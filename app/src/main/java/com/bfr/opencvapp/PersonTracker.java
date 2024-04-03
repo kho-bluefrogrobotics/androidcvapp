@@ -575,7 +575,7 @@ public class PersonTracker {
 
             if(constructVisualizationImage) {
 
-//                displayMat = displayResult(frame, tracked);
+                displayMat = displayResult(frame, tracked);
                 // set flag for handshake with displaying service
                 readyToDisplay = true;
             }
@@ -1385,18 +1385,31 @@ public class PersonTracker {
                 }
 //
 
+                int boxX1 = (int) (  resWidth* tracked.box.x/1024  );
+                int boxX2 = (int) (  resWidth* (tracked.box.x+tracked.box.width)/1024  );
+                int boxY1 = (int) (  resHeight* tracked.box.y/768  );
+                int boxY2 = (int) (  resHeight* (tracked.box.y+2*tracked.box.height)/768  );
+
+                Log.i("coucou", "box limit:" + boxX1 +","+boxX2+","+boxY1+","+boxY2);
 
                 Bitmap displayBitmap = Bitmap.createBitmap(resWidth, resHeight, Bitmap.Config.RGB_565);
-                for (int ii = 0; ii < resWidth; ii++) //pass the screen pixels in 2 directions
+                int totalElements=0;
+                targetMean=0.0f;
+                for (int ii = boxX1; ii < boxX2; ii++) //pass the screen pixels in 2 directions
                 {
-                    for (int jj = 0; jj < resHeight; jj++) {
+                    for (int jj = boxY1; jj < boxY2; jj++) {
                         //int val = img_normalized[ii + jj * width];
                         int index = (resWidth - ii - 1) + (resHeight - jj - 1) * resWidth;
 //                if(index < img_normalized.length) {
 //                    int val = img_normalized[index];
 
                         if(index < depthResult.length) {
-                            int val = (int) (255*     (depthResult[index]-minval)/(maxval-minval));
+
+                            totalElements+=1;
+//                            targetMean += depthResult[index];
+                            targetMean += (int) (255*     (depthResult[index]-minval)/(maxval-minval));;
+
+//                            int val = (int) (255*     (depthResult[index]-minval)/(maxval-minval));
 //                            if (val>700)
 //                                displayBitmap.setPixel(ii, jj, Color.rgb(255, 0, 0));
 //                            else if(val>600)
@@ -1405,60 +1418,64 @@ public class PersonTracker {
 //                                displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 255));
 //                            else
 //                                displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 0));
-                            displayBitmap.setPixel(ii, jj, Color.rgb(val, val, val));
-                        }
-                    }
-                }
+//                            displayBitmap.setPixel(ii, jj, Color.rgb(val, val, val));
+                        } //end if index out of range
+                    } //next jj
+                } // next ii
 
-                Mat tmp =  new Mat(resHeight,resWidth, CV_8UC3, new Scalar(0, 0, 0));
-                Utils.bitmapToMat(displayBitmap, tmp);
+                targetMean = targetMean/totalElements;
 
-                Imgproc.resize(tmp, tmp, new Size(1024, 768));
+                Log.i("coucou", "Mean=" + targetMean);
 
-//                Mat tmpdisplay = smallFrame.clone();
-//                tmpdisplay.convertTo(smallFrame, CV_8UC3);
-//                                displayMat = tmp;
-////                Log.i("coucouadd", "tmp=" + tmp.cols()+"x"+tmp.rows() + "   tmpdisplay=" + tmpdisplay.cols()+"x"+tmpdisplay.rows());
-//                Core.add(tmpdisplay, tmp, displayMat);
-
-
-                // draw a rectangle around Target
-                pt1.x = (int) (tracked.box.x);
-                pt1.y = (int) (tracked.box.y);
-                pt2.x = (int) ( (tracked.box.x + tracked.box.width));
-                pt2.y = (int) ( (tracked.box.y + tracked.box.height) );
-
-
-                Rect targetROI= new Rect(
-                        Math.max(0,tracked.box.x),
-                        Math.max(0,tracked.box.y),
-                        Math.min(smallFrame.cols()-1,tracked.box.width),
-                        Math.min(smallFrame.rows()-1, tracked.box.height) );
-
-                //Crop around face
-                Log.i("coucou", "ROI="+targetROI.x + " " + targetROI.y + " " + targetROI.height + " " + targetROI.width);
-                Mat meanMat = tmp.submat(targetROI);
-
-                Scalar meanDepth = Core.mean(meanMat);
-                Log.i("coucou", "Mean="+meanDepth.toString());
-                Imgproc.rectangle(tmp, pt1, pt2,
-                        _WHITE, 4);
-                Imgproc.rectangle(tmp, pt1, pt2,
-                        _RED, 2);
-                Imgproc.putText(tmp, "Tracking",
-                        new Point(pt1.x, pt1.y-30),
-                        2, 1, _BLACK, 5);
-                Imgproc.putText(tmp, "[" + meanDepth.toString() + "]",
-                        new Point(pt1.x, pt1.y),
-                        2, 1, _BLACK, 5);
-                Imgproc.putText(tmp, "Tracking",
-                        new Point(pt1.x, pt1.y-30),
-                        2, 1, _GREEN, 2);
-                Imgproc.putText(tmp, "[" + meanDepth.toString() + "]",
-                        new Point(pt1.x, pt1.y),
-                        2, 1, _GREEN, 2);
-
-                displayMat = tmp;
+//                Mat tmp =  new Mat(resHeight,resWidth, CV_8UC3, new Scalar(0, 0, 0));
+//                Utils.bitmapToMat(displayBitmap, tmp);
+//
+//                Imgproc.resize(tmp, tmp, new Size(1024, 768));
+//
+////                Mat tmpdisplay = smallFrame.clone();
+////                tmpdisplay.convertTo(smallFrame, CV_8UC3);
+////                                displayMat = tmp;
+//////                Log.i("coucouadd", "tmp=" + tmp.cols()+"x"+tmp.rows() + "   tmpdisplay=" + tmpdisplay.cols()+"x"+tmpdisplay.rows());
+////                Core.add(tmpdisplay, tmp, displayMat);
+//
+//
+//                // draw a rectangle around Target
+//                pt1.x = (int) (tracked.box.x);
+//                pt1.y = (int) (tracked.box.y);
+//                pt2.x = (int) ( (tracked.box.x + tracked.box.width));
+//                pt2.y = (int) ( (tracked.box.y + tracked.box.height) );
+//
+//
+//                Rect targetROI= new Rect(
+//                        Math.max(0,tracked.box.x),
+//                        Math.max(0,tracked.box.y),
+//                        Math.min(smallFrame.cols()-1,tracked.box.width),
+//                        Math.min(smallFrame.rows()-1, tracked.box.height) );
+//
+//                //Crop around face
+//                Log.i("coucou", "ROI="+targetROI.x + " " + targetROI.y + " " + targetROI.height + " " + targetROI.width);
+//                Mat meanMat = tmp.submat(targetROI);
+//
+//                Scalar meanDepth = Core.mean(meanMat);
+//                Log.i("coucou", "Mean="+meanDepth.toString());
+//                Imgproc.rectangle(tmp, pt1, pt2,
+//                        _WHITE, 4);
+//                Imgproc.rectangle(tmp, pt1, pt2,
+//                        _RED, 2);
+//                Imgproc.putText(tmp, "Tracking",
+//                        new Point(pt1.x, pt1.y-30),
+//                        2, 1, _BLACK, 5);
+//                Imgproc.putText(tmp, "[" + meanDepth.toString() + "]",
+//                        new Point(pt1.x, pt1.y),
+//                        2, 1, _BLACK, 5);
+//                Imgproc.putText(tmp, "Tracking",
+//                        new Point(pt1.x, pt1.y-30),
+//                        2, 1, _GREEN, 2);
+//                Imgproc.putText(tmp, "[" + meanDepth.toString() + "]",
+//                        new Point(pt1.x, pt1.y),
+//                        2, 1, _GREEN, 2);
+//
+////                displayMat = tmp;
 
                 Log.w("coucou", "result length: " + depthResult.length + "\n"+"" +
                         "Max in result= "+ maxval + " Min val="+ minval
@@ -1466,7 +1483,7 @@ public class PersonTracker {
 
 
 
-                torsoHeight = 50000;
+//                torsoHeight = 50000;
 
 
 
