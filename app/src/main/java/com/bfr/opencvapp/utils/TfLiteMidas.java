@@ -38,15 +38,15 @@ public class TfLiteMidas {
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
-    private final int[] INPUT_SIZE = {256,256};
-    private final int[] OUTPUT_SIZE = {256,256};
+    private final int[] INPUT_SIZE = {320,192};
+    private final int[] OUTPUT_SIZE = {320,192};
     private final int BATCH_SIZE = 1;
     private final int PIXEL_SIZE = 3;
     private final float THRES = 0.75f;
     private final String[] LABELS = {"Human", "Face", "Hand"};
     private final int NUM_THREADS = 4;
     private boolean WITH_NNAPI = false;
-    private boolean WITH_GPU = true;
+    private boolean WITH_GPU = false;
     private boolean WITH_DSP = false;
     //Face embedding
     private float[] embeedings;
@@ -55,10 +55,11 @@ public class TfLiteMidas {
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
 //    private final String MODEL_NAME = "pyDNet__256x320_float16_quant.tflite";
 //    private final String MODEL_NAME = "Midas_float32.tflite";
-    private final String MODEL_NAME = "Midas_float32_opt.tflite";
-//    private final String MODEL_NAME = "Fastdepth_512x512_float32.tflite";
+//    private final String MODEL_NAME = "Midas_float32_opt.tflite";
+//    private final String MODEL_NAME = "fast_depth_320x320.tflite";
 //    private final String MODEL_NAME = "fastdepth_256x256_float16_quant.tflite";
-//    private final String MODEL_NAME = "pydnet_256x320.tflite";
+//    private final String MODEL_NAME = "pyDNet_192x320.tflite";
+    private final String MODEL_NAME = "pyDNet_192x320_float16_quant.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
@@ -114,15 +115,15 @@ public class TfLiteMidas {
         inputImageBuffer = new TensorImage(DataType.FLOAT32);
         int[] imageShape = tfLite.getInputTensor(0).shape(); // {1, height, width, 3}
         if(imageShape[1] != imageShape[2]) {
-            imageSizeY = imageShape[2];
-            imageSizeX = imageShape[3];
-//            imageSizeY = 256;
-//            imageSizeX = 320;
+//            imageSizeY = imageShape[2];
+//            imageSizeX = imageShape[3];
+            imageSizeY = 320;
+            imageSizeX = 192;
         } else {
-            imageSizeY = imageShape[1];
-            imageSizeX = imageShape[2];
-//            imageSizeY = 256;
-//            imageSizeX = 320;
+//            imageSizeY = imageShape[1];
+//            imageSizeX = imageShape[2];
+            imageSizeY = 320;
+            imageSizeX = 192;
         }
 
         int[] probabilityShape =
@@ -138,8 +139,8 @@ public class TfLiteMidas {
     private TensorImage inputImageBuffer;
     /** Output probability TensorBuffer. */
     private TensorBuffer outputProbabilityBuffer;
-    private static final float IMAGE_MEAN = 127.0f;
-    private static final float IMAGE_STD = 128.0f;
+    private static final float IMAGE_MEAN = 250.0f;
+    private static final float IMAGE_STD = 1.0f;
     /** Image size along the x axis. */
     private final int imageSizeX;
     /** Image size along the y axis. */

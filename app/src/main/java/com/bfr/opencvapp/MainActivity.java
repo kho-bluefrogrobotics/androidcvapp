@@ -293,15 +293,17 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
 
 
-//        float maxval = Float.NEGATIVE_INFINITY;
-//        float minval = Float.POSITIVE_INFINITY;
-//        for (float cur : result) {
-//            maxval = Math.max(maxval, cur);
-//            minval = Math.min(minval, cur);
-//        }
+        float maxval = Float.NEGATIVE_INFINITY;
+        float minval = Float.POSITIVE_INFINITY;
+        for (float cur : result) {
+            maxval = Math.max(maxval, cur);
+            minval = Math.min(minval, cur);
+        }
 //
-//                Log.w("coucou", "result length: " + result.length + "\n"+"" +
-//                "Max in result= "+ maxval + " Min val="+ minval        );
+                Log.w("coucou", "result length: " + result.length + "\n"+"" +
+                "Max in result= "+ maxval + " Min val="+ minval        );
+
+
 //        float multiplier = 0;
 ////        if ((maxval - minval) > 0) multiplier = 255 / (maxval - minval);
 //        if ((maxval - minval) > 0) multiplier = 255 / (maxval);
@@ -321,31 +323,34 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //        Log.w("coucou", "img_normalized length: " + img_normalized.length + "\n"+"" +
 //                "Max in img_normalized= "+ maxval + " Min val="+ minval        );
 
-        int resWidth = 256;
-        int resHeight = 256;
+        int resWidth = 320;
+        int resHeight = 192;
 
 
         Bitmap displayBitmap = Bitmap.createBitmap(resWidth, resHeight, Bitmap.Config.RGB_565);
-        for (int ii = 0; ii < resWidth; ii++) //pass the screen pixels in 2 directions
+        for (int ii = 0; ii < resHeight; ii++) //pass the screen pixels in 2 directions
         {
-            for (int jj = 0; jj < resHeight; jj++) {
+            for (int jj = 0; jj < resWidth; jj++) {
                 //int val = img_normalized[ii + jj * width];
-                int index = (resWidth - ii - 1) + (resHeight - jj - 1) * resWidth;
+                int index = (resWidth - jj - 1) + (resHeight - ii - 1) * resWidth;
+//                int index = (jj ) + (ii ) * resWidth;
 //                if(index < img_normalized.length) {
 //                    int val = img_normalized[index];
                     if(index < result.length) {
-                    int val = (int)result[index];
-                    if (val>700)
-                        displayBitmap.setPixel(ii, jj, Color.rgb(255, 0, 0));
-                    else if(val>600)
-                        displayBitmap.setPixel(ii, jj, Color.rgb(0, 255, 0));
-                    else if(val>500)
-                        displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 255));
-                    else
-                        displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 0));
+                    int val = (int) (255*     (result[index]-minval)/(maxval-minval));
+//                    if (val>50.0)
+//                        displayBitmap.setPixel(ii, jj, Color.rgb(255, 0, 0));
+//                    else if(val>30.0)
+//                        displayBitmap.setPixel(ii, jj, Color.rgb(0, 255, 0));
+//                    else if(val>20.0)
+//                        displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 255));
+//                    else
+//                        displayBitmap.setPixel(ii, jj, Color.rgb(0, 0, 0));
+                        displayBitmap.setPixel(jj, ii, Color.rgb(val, val, val));
                 }
             }
         }
+
 
         //crop image
         Rect faceROI= new Rect(
@@ -362,6 +367,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //        Mat displaysubmat = new Mat();
         Utils.bitmapToMat(displayBitmap, displaysubmat);
 
+        Imgcodecs.imwrite("sdcard/depthMat.jpg", displaysubmat);
 
         /*****
          * Sub mat as a strip above the ground
