@@ -167,7 +167,7 @@ public class InitGrafcet extends bfr_Grafcet {
                         break;
 
                     case 20 : //init head
-                        BuddySDK.USB.buddySayYes(50.0f, 10.0f, new IUsbCommadRsp.Stub() {
+                        BuddySDK.USB.buddySayYes(50.0f, 30.0f, new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String s) throws RemoteException {}
                             @Override

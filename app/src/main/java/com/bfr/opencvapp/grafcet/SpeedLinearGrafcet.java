@@ -258,8 +258,8 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 //                        linearSpeed =Math.max(0.0f, (float) (-0.004 * personTracker.torsoHeight  +1) );
 
 
-                        if(obstacleL || obstacleR || obstacleM ||
-                                bboxTooBig)
+                        if(obstacleL || obstacleR || obstacleM)
+//                            ||     bboxTooBig)
                         {
                             linearSpeed = 0.0f;
                           step_num = 25;

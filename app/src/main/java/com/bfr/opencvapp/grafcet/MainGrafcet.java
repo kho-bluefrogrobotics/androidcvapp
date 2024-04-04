@@ -147,7 +147,11 @@ public class MainGrafcet extends bfr_Grafcet {
 
                     case 700 : // wait for tracking OK
                         if(personTracker.trackingSuccess)
+                        {
+                            TrackingYesGrafcet.go = true;
                             step_num=705;
+                        }
+
                         break;
 
                     case 705 : //ask the user to stand still
