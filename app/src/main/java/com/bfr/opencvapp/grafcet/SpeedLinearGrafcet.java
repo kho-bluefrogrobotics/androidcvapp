@@ -75,6 +75,8 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
     boolean LLedOn, RLedOn, MLedOn;
 
+    public float initialTorsoHeight =0.0f;
+
     // Define the sequence/grafcet to be executed
    /* This provides a template for a grafcet.
    The sequence is as follows:
@@ -229,13 +231,21 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         //wait until check box
                         if (go) {
                             // go to next step
-                            step_num = 10;
+                            step_num = 5;
                         }
                         break;
 
+                    case 5: // wait for tracking OK
+
+                        if(personTracker.trackingSuccess)
+                            step_num=7;
+
+                    case 7: // record initial torso height
+                        initialTorsoHeight = Math.max(200, personTracker.getTorsoHeight());
+                        step_num =10;
+                        break;
 
                     case 10: // check target offaxis alignment
-
 
                         step_num = 15;
                         break;
@@ -243,11 +253,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
                     case 15: // rotate body to align
 
-
                         ackWheels = "";
-
-
-
 
 //                        linearSpeed =Math.max(0.0f, (float) (-0.004 * personTracker.torsoHeight  +1) );
 
@@ -259,16 +265,39 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                           step_num = 25;
                         }
                         else{ //box OK and no pbstacle
-                            if (personTracker.torsoHeight<=200 && personTracker.torsoHeight>150)
-                                linearSpeed = 0.15f;
-                            else if (personTracker.torsoHeight<=150 && personTracker.torsoHeight>130)
-                                linearSpeed = 0.3f;
-                            else if (personTracker.torsoHeight<=130 && personTracker.torsoHeight>120)
-                                linearSpeed = 0.4f;
-                            else if (personTracker.torsoHeight<=120 )
-                                linearSpeed = 0.56f;
-                            else
+//                            if (personTracker.torsoHeight<=200 && personTracker.torsoHeight>150)
+//                                linearSpeed = 0.15f;
+//                            else if (personTracker.torsoHeight<=150 && personTracker.torsoHeight>130)
+//                                linearSpeed = 0.3f;
+//                            else if (personTracker.torsoHeight<=130 && personTracker.torsoHeight>120)
+//                                linearSpeed = 0.4f;
+//                            else if (personTracker.torsoHeight<=120 )
+//                                linearSpeed = 0.56f;
+//                            else
+//                                linearSpeed = 0.0f;
+
+
+                            if (personTracker.torsoHeight> initialTorsoHeight) {
+                                Log.i("coucou", "Torso>Initial: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
                                 linearSpeed = 0.0f;
+                            }
+                            else if (personTracker.torsoHeight<=initialTorsoHeight && personTracker.torsoHeight>0.7*initialTorsoHeight) {
+                                Log.i("coucou", "Torso>0.7*Initial: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
+                                linearSpeed = 0.3f;
+                            }
+                            else if (personTracker.torsoHeight<=0.7*initialTorsoHeight && personTracker.torsoHeight>0.6*initialTorsoHeight) {
+                                Log.i("coucou", "Torso>0.6*Initial: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
+                                linearSpeed = 0.4f;
+                            }
+                            else if (personTracker.torsoHeight<=0.6*initialTorsoHeight ) {
+                                Log.i("coucou", "Torso<0.6*Initial: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
+                                linearSpeed = 0.56f;
+                            }
+                            else {
+                                Log.i("coucou", "Torso - Initial ELSE: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
+                                linearSpeed = 0.0f;
+                            }
+
                         }
 
 

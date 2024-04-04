@@ -226,7 +226,12 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 mainGrafcet.go = false;
                 mainGrafcet.step_num = 0;
 
+                alignBodyFollowGrafcet.go=false;
+                alignBodyFollowGrafcet.step_num=0;
 
+
+                speedLinearGrafcet.go=false;
+                speedLinearGrafcet.step_num=0;
 
 
 
@@ -451,7 +456,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         mOpenCvCameraView.setCvCameraViewListener(this);
         mOpenCvCameraView.setAlpha(0.1F);
 
-        mOpenCvCameraView.getHolder().setFixedSize(1,1);
+//        mOpenCvCameraView.getHolder().setFixedSize(1,1);
 
 
         trackingNoGrafcet.start(20);
