@@ -1604,7 +1604,7 @@ public class PersonTracker {
 //                );//end of sqrt
 
 
-        return Math.abs(leftAnkle.getPosition().y - leftShoulder.getPosition().y);
+        return Math.abs(leftKnee.getPosition().y - leftShoulder.getPosition().y);
 
     }
 
