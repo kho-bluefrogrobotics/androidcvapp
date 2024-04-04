@@ -164,7 +164,10 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
                             personTracker.tracked.box.width
                             );
                     targetX = (int) target.x;
-                    targetY = Math.max(0,(int) (personTracker.tracked.box.y+ personTracker.tracked.box.height/4));
+                    if (personTracker.tracked.objectClass==0) // if tracking a human silouhette
+                        targetY = Math.max(0,(int) (personTracker.tracked.box.y+ personTracker.tracked.box.height/4));
+                    else
+                        targetY = Math.max(0,(int) (personTracker.tracked.box.y+ personTracker.tracked.box.height));
 //                    Log.d(name, "Target at " + targetX + "," + targetY);
                     // compute angle
                     yesOffset = (targetY-(768/2))*0.09375f;
