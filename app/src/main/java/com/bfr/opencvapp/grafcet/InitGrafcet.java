@@ -162,10 +162,26 @@ public class InitGrafcet extends bfr_Grafcet {
                     case 18 : //wait for  Yes
                         if (!BuddySDK.Actuators.getNoStatus().toUpperCase().contains("DISABLE")) {
                             step_num = 20;
-                        go = false;
+
                         }
                         break;
 
+                    case 20 : //init head
+                        BuddySDK.USB.buddySayYes(50.0f, 10.0f, new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String s) throws RemoteException {}
+                            @Override
+                            public void onFailed(String s) throws RemoteException {}
+                        });
+
+                        BuddySDK.USB.buddySayNo(50.0f, 0.0f, new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String s) throws RemoteException {}
+                            @Override
+                            public void onFailed(String s) throws RemoteException {}
+                        });
+                        go = false;
+                    break;
                     default:
                         // go to next step
                         step_num = 0;

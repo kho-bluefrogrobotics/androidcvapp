@@ -169,7 +169,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //                trackingYesGrafcet.go=b;
 //                alignGrafcet.go=b;
 
-                mainGrafcet.go= true;
 
                 if(!b)
                 {
@@ -207,6 +206,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                         }
                     });
                 }
+                else
+                    mainGrafcet.go= true;
 
             }
         });
