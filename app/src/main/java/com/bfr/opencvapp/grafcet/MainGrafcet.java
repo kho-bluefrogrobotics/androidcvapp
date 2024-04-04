@@ -141,11 +141,39 @@ public class MainGrafcet extends bfr_Grafcet {
                         {
                             initGrafcet.stop();
                             initGrafcet.go = false;
-                            step_num = 8;
+                            step_num = 700;
                         }
                         break;
 
+                    case 700 : // wait for tracking OK
+                        if(personTracker.trackingSuccess)
+                            step_num=705;
+                        break;
 
+                    case 705 : //ask the user to stand still
+                        BuddySDK.Speech.startSpeaking("Allons-y! \\pause=500\\Mais avant toute chose? \\pause=800\\ , mets toi bien droit, en face de moi avant de commencer s'il te plait");
+                            step_num = 710;
+                        break;
+
+                    case 710: // wait end of say
+                        if(BuddySDK.Speech.isReadyToSpeak())
+                            step_num = 720;
+                        break;
+                    case 720: // wait 2s
+                        Thread.sleep(2000);
+                        step_num = 730;
+                        break;
+
+
+                    case 730: // take picture and initial size
+                        speedLinearGrafcet.initialTorsoHeight = personTracker.getTorsoHeight();
+                        step_num = 740;
+                        break;
+
+                    case 740 : // announce start of followMe
+                        BuddySDK.Speech.startSpeaking("Allez, c'est parti, je te suis!");
+                        step_num = 8;
+                        break;
 
 
                     case 8://starting body alignment
@@ -230,7 +258,7 @@ public class MainGrafcet extends bfr_Grafcet {
                             searchPersonGrafcet.stop();
                             searchPersonGrafcet.go = false;
 //                            step_num = 10;
-                            step_num = 8;
+                            step_num = 7;
                         }
 
                         break;

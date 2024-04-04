@@ -238,7 +238,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                     case 5: // wait for tracking OK
 
                         if(personTracker.trackingSuccess)
-                            step_num=7;
+                            step_num=10;
 
                     case 7: // record initial torso height
                         initialTorsoHeight = Math.max(200, personTracker.getTorsoHeight());
@@ -277,19 +277,23 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 //                                linearSpeed = 0.0f;
 
 
-                            if (personTracker.torsoHeight> initialTorsoHeight) {
+                            if (personTracker.torsoHeight> 0.85*initialTorsoHeight) {
                                 Log.i("coucou", "Torso>Initial: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
                                 linearSpeed = 0.0f;
                             }
-                            else if (personTracker.torsoHeight<=initialTorsoHeight && personTracker.torsoHeight>0.7*initialTorsoHeight) {
-                                Log.i("coucou", "Torso>0.7*Initial: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
+                            else if (personTracker.torsoHeight<=0.85*initialTorsoHeight && personTracker.torsoHeight>0.75*initialTorsoHeight) {
+                                Log.i("coucou", "Torso>0.85*Initial: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
+                                linearSpeed = 0.15f;
+                            }
+                            else if (personTracker.torsoHeight<=0.75*initialTorsoHeight && personTracker.torsoHeight>0.6*initialTorsoHeight) {
+                                Log.i("coucou", "Torso>0.75*Initial: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
                                 linearSpeed = 0.3f;
                             }
-                            else if (personTracker.torsoHeight<=0.7*initialTorsoHeight && personTracker.torsoHeight>0.6*initialTorsoHeight) {
+                            else if (personTracker.torsoHeight<=0.6*initialTorsoHeight && personTracker.torsoHeight>0.4*initialTorsoHeight) {
                                 Log.i("coucou", "Torso>0.6*Initial: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
-                                linearSpeed = 0.4f;
+                                linearSpeed = 0.45f;
                             }
-                            else if (personTracker.torsoHeight<=0.6*initialTorsoHeight ) {
+                            else if (personTracker.torsoHeight<=0.4*initialTorsoHeight ) {
                                 Log.i("coucou", "Torso<0.6*Initial: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
                                 linearSpeed = 0.56f;
                             }
