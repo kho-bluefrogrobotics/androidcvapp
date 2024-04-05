@@ -406,7 +406,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //        videoCapture.read(frame);
 
         if (recording)
-            videoWriter.write(frame);
+            videoWriter.write(personTracker.displayMat);
 
         try
         {

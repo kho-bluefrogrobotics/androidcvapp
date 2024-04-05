@@ -15,6 +15,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.bfr.buddysdk.BuddySDK;
+import com.bfr.opencvapp.grafcet.SpeedLinearGrafcet;
 import com.bfr.opencvapp.utils.TfLiteYoloXHumanHeadHands;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -658,28 +659,41 @@ public class PersonTracker {
 //                        2, 1, _RED, 2);
 
 
-//                int boxheight = (int) (tracked.box.height);
-                Imgproc.putText(displayMat, "" + torsoHeight ,
-                        new Point(650, 100),
+////                int boxheight = (int) (tracked.box.height);
+//                Imgproc.putText(displayMat, "" + torsoHeight ,
+//                        new Point(650, 100),
+//                        2, 2, _WHITE, 10);
+//                Imgproc.putText(displayMat, "" + torsoHeight ,
+//                        new Point(650, 100),
+//                        2, 2, _RED, 5);
+
+//                Imgproc.putText(displayMat, "" + torso3d,
+//                        new Point(650, 160),
+//                        2, 2, _WHITE, 10);
+//                Imgproc.putText(displayMat, "" + torso3d ,
+//                        new Point(650, 160),
+//                        2, 2, _RED, 5);
+//                Imgproc.putText(displayMat, "" + (torsoHeight/speedLinearGrafcet.initialTorsoHeight) ,
+//                        new Point(650, 210),
+//                        2, 2, _WHITE, 10);
+//                Imgproc.putText(displayMat, "" + (torsoHeight/speedLinearGrafcet.initialTorsoHeight) ,
+//                        new Point(650, 210),
+//                        2, 2, _BLUE, 5);
+
+
+                Imgproc.putText(displayMat, "" + SpeedLinearGrafcet.step_num + " ("+torsoHeight+")",
+                        new Point(500, 100),
                         2, 2, _WHITE, 10);
-                Imgproc.putText(displayMat, "" + torsoHeight ,
-                        new Point(650, 100),
+                Imgproc.putText(displayMat, "" + SpeedLinearGrafcet.step_num + " ("+torsoHeight+")",
+                        new Point(500, 100),
                         2, 2, _RED, 5);
 
-                Imgproc.putText(displayMat, "" + torso3d,
-                        new Point(650, 160),
+                Imgproc.putText(displayMat, "" + speedLinearGrafcet.linearSpeed,
+                        new Point(500, 150),
                         2, 2, _WHITE, 10);
-                Imgproc.putText(displayMat, "" + torso3d ,
-                        new Point(650, 160),
-                        2, 2, _RED, 5);
-                Imgproc.putText(displayMat, "" + (torsoHeight/speedLinearGrafcet.initialTorsoHeight) ,
-                        new Point(650, 210),
-                        2, 2, _WHITE, 10);
-                Imgproc.putText(displayMat, "" + (torsoHeight/speedLinearGrafcet.initialTorsoHeight) ,
-                        new Point(650, 210),
+                Imgproc.putText(displayMat, "" + speedLinearGrafcet.linearSpeed,
+                        new Point(500, 150),
                         2, 2, _BLUE, 5);
-
-
 
 
                 int surf = tracked.box.height*tracked.box.width;
