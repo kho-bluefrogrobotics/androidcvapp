@@ -226,7 +226,7 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                         } //end if time elapsed OK
 
 
-                            BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, ModuleUSB.BuddyAccelerations.LOW,  new IUsbCommadRsp.Stub() {
+                            BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, 0.001f,  new IUsbCommadRsp.Stub() {
                                 @Override
                                 public void onSuccess(String s) throws RemoteException {
                                     ackWheels = s;

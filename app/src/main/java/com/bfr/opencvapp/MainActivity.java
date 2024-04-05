@@ -389,7 +389,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         tracked = new Rect();
 
-        videoCapture = new VideoCapture("/sdcard/Download/240328181007_trackingDebug.avi");
+        videoCapture = new VideoCapture("/sdcard/Download/240405111943_trackingDebug.avi");
         videoCapture.set(CAP_PROP_POS_FRAMES, 10);
         frame = new Mat();
 

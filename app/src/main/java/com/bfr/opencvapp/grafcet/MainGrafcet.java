@@ -116,7 +116,6 @@ public class MainGrafcet extends bfr_Grafcet {
                 }
 
 
-
                 // which grafcet step?
                 switch (step_num) {
                     case 0: // Wait for checkbox
@@ -141,7 +140,7 @@ public class MainGrafcet extends bfr_Grafcet {
                         {
                             initGrafcet.stop();
                             initGrafcet.go = false;
-                            step_num = 700;
+                            step_num = 8;
                         }
                         break;
 

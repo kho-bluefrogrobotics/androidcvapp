@@ -1,5 +1,6 @@
 package com.bfr.opencvapp;
 
+import static com.bfr.opencvapp.MainActivity.personTracker;
 import static com.bfr.opencvapp.MainActivity.speedLinearGrafcet;
 import static com.bfr.opencvapp.utils.Utils.Color.*;
 import static com.bfr.opencvapp.utils.Utils.matToBitmapAndResize;
@@ -98,9 +99,7 @@ public class PersonTracker {
     TrackerVit_Params vitTrackerparams ;
     // Human Tracking
     final String VITTRACKMODEL = modelsDir + "object_tracking_vittrack_2023sep.onnx";
-    //Mosse Tracker
-    legacy_TrackerMOSSE mosseTracker;
-    Rect2d mosseTracked=new Rect2d();
+
     // resize to be faster
     Mat smallFrame;
 //    Size smallSize = new Size(320, 240);
@@ -130,6 +129,12 @@ public class PersonTracker {
     private boolean debugLog =true;
     ArrayList<Float> scoreHistory = new ArrayList<Float>();
     final float NUM_OF_SCORE_HISTORY = 60;
+
+    ArrayList<Float> torsoHeightHistory = new ArrayList<Float>();
+
+    public float torso3d = 0.0f;
+
+    final float NUM_OF_TORSOHEIGHT_HISTORY = 3;
     float avscore = 0.0f;
 
 //    PoseDetectorOptions poseDetectoptions;
@@ -346,7 +351,8 @@ public class PersonTracker {
 //                            0.5f, 0.6f, 99.0f, frame);
 
                     hhhDetections = humanHeadHandsDetector.recognizeImage(
-                            smallFrame, 0.6f, 0.5f, 99.0f );
+//                            smallFrame, 0.6f, 0.5f, 99.0f );
+                            smallFrame, 0.4f, 0.5f, 99.0f );
 
                     checkAndResetTracking(vitTracker, tracked, null, hhhDetections);
 
@@ -359,21 +365,18 @@ public class PersonTracker {
                     if (true)
                     {
                         //Update tracker
-                            if (fastTracking) {
-                                trackingSuccess = mosseTracker.update(smallFrame, mosseTracked);
-                            }
-                            else{
 
-                                vitTracker.update(smallFrame, tracked.box);
+
+                            vitTracker.update(smallFrame, tracked.box);
 //                                Log.w(TAG, "UPDATE VIT tracker " + tracked.box.x+","+tracked.box.y);
-                                tracked.score = vitTracker.getTrackingScore();
-                                if(computeTrackingScore(scoreHistory)>=0.7f && tracked.box.width <smallFrame.cols()/2)  // check size: Bbox must not be too big-> it means the person is very close to the camera and we should reset on the face)
-                                    trackingSuccess=true;
-                                else {
-                                    trackingSuccess = false;
-                                    Log.e(TAG, "Tracking NOK : score history= " +scoreHistory + " current score=" + vitTracker.getTrackingScore());
-                                }
+                            tracked.score = vitTracker.getTrackingScore();
+                            if(computeTrackingScore(scoreHistory)>=0.7f && tracked.box.width <smallFrame.cols()/2)  // check size: Bbox must not be too big-> it means the person is very close to the camera and we should reset on the face)
+                                trackingSuccess=true;
+                            else {
+                                trackingSuccess = false;
+                                Log.e(TAG, "Tracking NOK : score history= " +scoreHistory + " current score=" + vitTracker.getTrackingScore());
                             }
+
 
                             int left = tracked.box.x;
                             int top = tracked.box.y;
@@ -597,6 +600,12 @@ public class PersonTracker {
 //                Log.d(TAG, "preparing display mat ");
             Mat displayMat = frame.clone();
 
+            if(personTracker.tracked.box.y<= speedLinearGrafcet.maxUpperLimit)
+                Imgproc.rectangle(displayMat, new Point(10, speedLinearGrafcet.maxUpperLimit), new Point(1020, 750),
+                        _BLUE, 5);
+            else
+                Imgproc.rectangle(displayMat, new Point(10, speedLinearGrafcet.maxUpperLimit), new Point(1020, 750),
+                        _YELLOW, 2);
 
             if (frameCount == 0 ) // not tracking yet
             {
@@ -657,10 +666,10 @@ public class PersonTracker {
                         new Point(650, 100),
                         2, 2, _RED, 5);
 
-                Imgproc.putText(displayMat, "" + speedLinearGrafcet.initialTorsoHeight,
+                Imgproc.putText(displayMat, "" + torso3d,
                         new Point(650, 160),
                         2, 2, _WHITE, 10);
-                Imgproc.putText(displayMat, "" + speedLinearGrafcet.initialTorsoHeight ,
+                Imgproc.putText(displayMat, "" + torso3d ,
                         new Point(650, 160),
                         2, 2, _RED, 5);
                 Imgproc.putText(displayMat, "" + (torsoHeight/speedLinearGrafcet.initialTorsoHeight) ,
@@ -762,12 +771,7 @@ public class PersonTracker {
             if(BuildConfig.DEBUG)
                 Log.d(TAG, "Init MOSSETracker");
 
-            mosseTracker = legacy_TrackerMOSSE.create();
-            mosseTracker.init(smallFrame, new Rect2d((double)tracked.x,
-                    (double)tracked.y,
-                    (double)tracked.width,
-                    (double)tracked.height
-            ));
+
         }
         else if(tracker instanceof TrackerVit) // if the tracking method is VisualTransformer-based (fast & accurate)
         {
@@ -1467,12 +1471,6 @@ public class PersonTracker {
 //                        0 + rightHip.getPosition().x, 0 + rightHip.getPosition().y), 5, new Scalar(0,0,255), 10);
 
 
-//                torsoHeight = (float) Math.sqrt(
-//                        (double)(Math.pow(leftHip.getPosition3D().getX(),2) - Math.pow(leftShoulder.getPosition3D().getX(),2))
-//                        +(double)(Math.pow(leftHip.getPosition3D().getY(),2) - Math.pow(leftShoulder.getPosition3D().getY(),2))
-//                        +(double)(Math.pow(leftHip.getPosition3D().getZ(),2) - Math.pow(leftShoulder.getPosition3D().getZ(),2))
-//                );//end of sqrt
-
 
 //                torsoHeight = Math.abs(leftHip.getPosition().y - leftShoulder.getPosition().y);
 
@@ -1595,16 +1593,34 @@ public class PersonTracker {
         Imgproc.circle(croppedMat, new Point(
                 0 + rightAnkle.getPosition().x, 0 + rightAnkle.getPosition().y), 2, new Scalar(255,255,0), 3);
 
+
         Imgcodecs.imwrite("/sdcard/todelete.jpg", croppedMat);
 
-//                torsoHeight = (float) Math.sqrt(
-//                        (double)(Math.pow(leftHip.getPosition3D().getX(),2) - Math.pow(leftShoulder.getPosition3D().getX(),2))
-//                        +(double)(Math.pow(leftHip.getPosition3D().getY(),2) - Math.pow(leftShoulder.getPosition3D().getY(),2))
-//                        +(double)(Math.pow(leftHip.getPosition3D().getZ(),2) - Math.pow(leftShoulder.getPosition3D().getZ(),2))
-//                );//end of sqrt
+                torso3d = (float) Math.sqrt(
+                        (double)(Math.pow(leftHip.getPosition3D().getX(),2) - Math.pow(leftShoulder.getPosition3D().getX(),2))
+                        +(double)(Math.pow(leftHip.getPosition3D().getY(),2) - Math.pow(leftShoulder.getPosition3D().getY(),2))
+                        +(double)(Math.pow(leftHip.getPosition3D().getZ(),2) - Math.pow(leftShoulder.getPosition3D().getZ(),2))
+                );//end of sqrt
 
 
-        return Math.abs(leftKnee.getPosition().y - leftShoulder.getPosition().y);
+        float returnvalue=0.0f;
+        torsoHeightHistory.add(Math.abs(leftKnee.getPosition().y - leftShoulder.getPosition().y));
+
+        // wait to fill the array
+        if (torsoHeightHistory.size()>NUM_OF_TORSOHEIGHT_HISTORY) {
+            //remove oldest entry
+            torsoHeightHistory.remove(0);
+
+            // compute average
+            float sum = 0.0f;
+            for (int i = 0; i < NUM_OF_TORSOHEIGHT_HISTORY; i++) {
+                sum += torsoHeightHistory.get(i);
+            }
+
+            returnvalue = sum / torsoHeightHistory.size();
+        }
+
+        return returnvalue;
 
     }
 
