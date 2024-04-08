@@ -457,7 +457,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         mOpenCvCameraView.setCvCameraViewListener(this);
         mOpenCvCameraView.setAlpha(0.1F);
 
-//        mOpenCvCameraView.getHolder().setFixedSize(1,1);
+        mOpenCvCameraView.getHolder().setFixedSize(1,1);
 
 
         trackingNoGrafcet.start(20);
@@ -467,6 +467,13 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         faceGrafcet.start(500);
 
         mainGrafcet.start();
+
+        BuddySDK.USB.enableSensorModule(true, new IUsbCommadRsp.Stub() {
+            @Override
+            public void onSuccess(String s) throws RemoteException {}
+            @Override
+            public void onFailed(String s) throws RemoteException {}
+        });
 
         Log.w("coucou","coucou onSDKReady");
 

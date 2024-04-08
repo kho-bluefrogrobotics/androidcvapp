@@ -4,11 +4,14 @@ package com.bfr.opencvapp.grafcet;
 //import static com.bfr.opencvapp.MainActivity.alignCheckbox;
 
 import static com.bfr.opencvapp.MainActivity.personTracker;
+import static com.bfr.opencvapp.MainActivity.speedLinearGrafcet;
 
 import android.os.RemoteException;
 import android.util.Log;
 
 import com.bfr.buddy.ui.shared.FacialEvent;
+import com.bfr.buddy.ui.shared.GazePosition;
+import com.bfr.buddy.ui.shared.IUIFaceAnimationCallback;
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
 import com.bfr.buddysdk.services.companion.TaskCallback;
@@ -35,7 +38,7 @@ public class FaceGrafcet extends bfr_Grafcet {
     private int mIntervalleHist = INTERVAL_MIN;
     private float speed = 10F;
 
-    public static boolean rotationRequest = false;
+    public static boolean obstacleFaceEvtReq = false;
 
     private int previous_step = 0;
     private double time_in_curr_step = 0;
@@ -162,13 +165,49 @@ public class FaceGrafcet extends bfr_Grafcet {
 //                        Log.i(name, "coords " +
 //                                personTracker.tracked.box.x + "," + personTracker.tracked.box.y + " -- " +
 //                               xpos + ","+ ypos);
-                        step_num = 5;
+                        step_num = 10;
                         break;
 
                     case 10:
-//                        Thread.sleep(100);
+                        if(obstacleFaceEvtReq) {
+                            step_num = 30;
+                            BuddySDK.UI.lookAtXY(-100, -100, true);
+                        }
+                        else
+                            step_num = 5;
+                        break;
+
+
+                    case 30 : //play facial event for obstacle behind
+
+                        // facial event
+//                        BuddySDK.UI.lookAt(GazePosition.TOP_LEFT, true);
+                        Thread.sleep(500);
+//                        BuddySDK.UI.playFacialEvent(FacialEvent.SURPRISED, 1, new IUIFaceAnimationCallback.Stub() {
+                        BuddySDK.UI.playFacialRelativeEvent();
+                        BuddySDK.USB.blinkAllLed("#ff1100", 500, new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String s) throws RemoteException {
+
+                            }
+
+                            @Override
+                            public void onFailed(String s) throws RemoteException {
+
+                            }
+                        });
+                        Thread.sleep(1000);
+                        BuddySDK.USB.updateAllLed("#61E3EB",  new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String s) throws RemoteException {}
+
+                            @Override
+                            public void onFailed(String s) throws RemoteException {}
+                        });
+                        obstacleFaceEvtReq = false;
                         step_num = 5;
                         break;
+
                     default:
                         // go to next step
                         step_num = 0;

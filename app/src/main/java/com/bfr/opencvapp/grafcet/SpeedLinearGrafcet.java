@@ -8,6 +8,8 @@ import static com.bfr.opencvapp.MainActivity.personTracker;
 import android.os.RemoteException;
 import android.util.Log;
 
+import com.bfr.buddy.ui.shared.FacialEvent;
+import com.bfr.buddy.ui.shared.GazePosition;
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
@@ -71,6 +73,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
     boolean obstacleL = false;
     boolean obstacleR = false;
     boolean obstacleM = false;
+    boolean obstacleBehind = false;
     boolean bboxTooBig = false;
 
     public int maxUpperLimit = 200;
@@ -98,7 +101,6 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
             try {
 
-
                 /*** Compute obstacle detection */
                 if ((BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() < 400) )
                     obstacleL = true;
@@ -115,6 +117,12 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                     obstacleM = true;
                 else
                     obstacleM = false;
+
+
+                if( (BuddySDK.Sensors.TofSensors().Back().getDistance() >5 && BuddySDK.Sensors.TofSensors().Back().getDistance() < 300) )
+                    obstacleBehind = true;
+                else
+                    obstacleBehind = false;
 
                 //to debug Led on
                 if(obstacleL && !LLedOn)
@@ -415,11 +423,42 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         }
                         break;
 
-                    case 190://
+                    case 190:// going back
                         if(personTracker.tracked.box.y>finalUpperLimit)
                             step_num = 15;
+
+                        if(obstacleBehind)
+                        {
+                            linearSpeed = 0.0f;
+                            // request to FaceGrafcet to play a facial event to signal an obstacle behind
+                            FaceGrafcet.obstacleFaceEvtReq = true;
+                            step_num = 194;
+                        }
+
                         break;
 
+
+                    case 194 : // play facia elvent to signal obstacle behind
+                        // wait for handshake
+                        if (!FaceGrafcet.obstacleFaceEvtReq)
+                            step_num = 195;
+                        break;
+
+                    case 195:// stop going back because of obstacle behind
+                        if(personTracker.tracked.box.y>finalUpperLimit) // if person is leaving
+                        {
+                            step_num = 15;
+                        }
+                        else // person still close
+                        {
+                            if(!obstacleBehind)
+                            {
+                                linearSpeed = -0.15f;
+                                step_num = 190;
+                            }
+                        }
+
+                        break;
                     case 250://
 //                        linearSpeed = 0.0f;
 
