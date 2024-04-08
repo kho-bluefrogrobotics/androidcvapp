@@ -140,56 +140,32 @@ public class MainGrafcet extends bfr_Grafcet {
                         {
                             initGrafcet.stop();
                             initGrafcet.go = false;
+
+
                             step_num = 8;
                         }
                         break;
 
-                    case 700 : // wait for tracking OK
-                        if(personTracker.trackingSuccess)
-                        {
-                            TrackingYesGrafcet.go = true;
-                            step_num=705;
-                        }
-
-                        break;
-
-                    case 705 : //ask the user to stand still
-                        BuddySDK.Speech.startSpeaking("Allons-y! \\pause=500\\Mais avant toute chose? \\pause=800\\ , mets toi bien droit, en face de moi avant de commencer s'il te plait");
-                            step_num = 710;
-                        break;
-
-                    case 710: // wait end of say
-                        if(BuddySDK.Speech.isReadyToSpeak())
-                            step_num = 720;
-                        break;
-                    case 720: // wait 2s
-                        Thread.sleep(2000);
-                        step_num = 730;
-                        break;
-
-
-                    case 730: // take picture and initial size
-                        speedLinearGrafcet.initialTorsoHeight = personTracker.getTorsoHeight();
-                        step_num = 740;
-                        break;
-
-                    case 740 : // announce start of followMe
-                        BuddySDK.Speech.startSpeaking("Allez, c'est parti, je te suis!");
+                    case 70: // Wait for tracking OK
+                    if(personTracker.trackingSuccess)
+                    {
+                        alignBodyFollowGrafcet.start(100);
+                        speedAngularGrafcet.start(20);
+                        speedLinearGrafcet.start(20);
                         step_num = 8;
-                        break;
+                    }
 
+                    break;
 
                     case 8://starting body alignment
-                        alignBodyFollowGrafcet.start(100);
+
                         alignBodyFollowGrafcet.go = true;
                         alignBodyFollowGrafcet.step_num = 0;
 
 
-                        speedAngularGrafcet.start(20);
                         speedAngularGrafcet.go = true;
                         speedAngularGrafcet.step_num = 0;
 
-                        speedLinearGrafcet.start(20);
                         speedLinearGrafcet.go = true;
                         speedLinearGrafcet.step_num = 0;
 
@@ -250,18 +226,18 @@ public class MainGrafcet extends bfr_Grafcet {
                             searchPersonGrafcet.start();
                             searchPersonGrafcet.go=true;
                             searchPersonGrafcet.step_num=0;
-                            step_num = 70;
+                            step_num = 20;
                         }
                         break;
 
 
-                    case 70: //wait for end of searchperson
+                    case 20: //wait for end of searchperson
                         if(!searchPersonGrafcet.go)
                         {
                             searchPersonGrafcet.stop();
                             searchPersonGrafcet.go = false;
 //                            step_num = 10;
-                            step_num = 7;
+                            step_num = 70;
                         }
 
                         break;

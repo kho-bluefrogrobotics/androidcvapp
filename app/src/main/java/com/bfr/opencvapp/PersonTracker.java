@@ -218,9 +218,10 @@ public class PersonTracker {
                             "Init tracker " ) ;
 
                 // Detection
+                // Using the most robust model we have to avoid false detection at init
                 detections = detector.recognizeImage(
                         matToBitmapAndResize(frame, 320, 320),
-                        0.7f, 0.7f, 99.0f, frame);
+                        0.7f, 0.5f, 99.0f, frame);
 
                 Log.d(TAG, "Num. of detected objectsf for init : " + detections.size());
                 if (detections.size() > 0) {

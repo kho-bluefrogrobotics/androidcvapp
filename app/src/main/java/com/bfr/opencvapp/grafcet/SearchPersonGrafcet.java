@@ -3,6 +3,8 @@ package com.bfr.opencvapp.grafcet;
 
 //import static com.bfr.opencvapp.MainActivity.alignCheckbox;
 
+import static com.bfr.opencvapp.MainActivity.personTracker;
+
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -46,7 +48,8 @@ public class SearchPersonGrafcet extends bfr_Grafcet {
     private double xorig=0.0;
     private double deltaPixel=0.0;
 
-    private float angleToRotate=0.0f;
+    private float noAngle=0.0f;
+    private float wheelsAngle=0.0f;
 
 
     private IUsbCommadRsp wheelsRsp = new IUsbCommadRsp.Stub(){
@@ -135,11 +138,30 @@ public class SearchPersonGrafcet extends bfr_Grafcet {
                         ackNo="";
                         ackWheels="";
 
-                        BuddySDK.USB.emergencyStopMotors(wheelsRsp);
-                        BuddySDK.USB.buddySayNo(40, 0, noRsp);
-                        BuddySDK.USB.buddySayYes(40, 15, yesRsp);
+//                        if (personTracker.tracked.box.x<500)
+//                            noAngle = -30;
+//                        else if(personTracker.tracked.box.x>550)
+//                            noAngle = 30;
+//                        else
+//                            noAngle = 0.0f;
 
-                        step_num = 10;
+                        if (personTracker.tracked.box.x<500)
+                            wheelsAngle = 90;
+                        else if(personTracker.tracked.box.x>550)
+                            wheelsAngle = -90;
+                        else
+                            wheelsAngle = 0.0f;
+//                        BuddySDK.USB.emergencyStopMotors(wheelsRsp);
+                        BuddySDK.USB.rotateBuddy(70.0f, wheelsAngle, new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String s) throws RemoteException {}
+                            @Override
+                            public void onFailed(String s) throws RemoteException {}
+                        });
+                        BuddySDK.USB.buddySayNo(40, noAngle, noRsp);
+                        BuddySDK.USB.buddySayYes(40, 20, yesRsp);
+
+                        step_num = 15;
                         break;
 
                     case 10: // wait for OK
@@ -152,16 +174,16 @@ public class SearchPersonGrafcet extends bfr_Grafcet {
                         break;
 
                     case 15 : //wait for  wheels
-                        if (BuddySDK.Actuators.getLeftWheelStatus().toUpperCase().contains("FINISHED"))
+                        if (ackWheels.toUpperCase().contains("FINISHED") || timeout)
                             step_num = 17;
                         break;
 
                     case 17 : //wait for  Yes
-                        if (ackYes.toUpperCase().contains("FINISHED"))
+                        if (ackYes.toUpperCase().contains("FINISHED") || timeout)
                             step_num = 18;
                         break;
                     case 18 : //wait for  Yes
-                        if (ackNo.toUpperCase().contains("FINISHED")) {
+                        if (ackNo.toUpperCase().contains("FINISHED") || timeout) {
                             step_num = 0;
                         go = false;
                         }
