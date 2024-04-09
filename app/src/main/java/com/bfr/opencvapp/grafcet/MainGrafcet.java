@@ -142,7 +142,7 @@ public class MainGrafcet extends bfr_Grafcet {
                             initGrafcet.go = false;
 
 
-                            step_num = 8;
+                            step_num = 70;
                         }
                         break;
 
