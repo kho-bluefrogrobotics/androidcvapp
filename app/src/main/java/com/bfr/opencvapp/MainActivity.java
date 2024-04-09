@@ -457,7 +457,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         mOpenCvCameraView.setCvCameraViewListener(this);
         mOpenCvCameraView.setAlpha(0.1F);
 
-//        mOpenCvCameraView.getHolder().setFixedSize(1,1);
+        mOpenCvCameraView.getHolder().setFixedSize(1,1);
 
 
         trackingNoGrafcet.start(20);

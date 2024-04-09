@@ -74,10 +74,10 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
     final float BASE_SPEED=0.7f;
 
-    boolean obstacleL = false;
-    boolean obstacleR = false;
-    boolean obstacleM = false;
-    boolean obstacleBehind = false;
+    public boolean obstacleL = false;
+    public boolean obstacleR = false;
+    public boolean obstacleM = false;
+    public boolean obstacleBehind = false;
     boolean bboxTooBig = false;
 
     public int maxUpperLimit = 200;
@@ -191,6 +191,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                     });
                     MLedOn = false;
                 } //end if obstalce and led off
+
 
 
 

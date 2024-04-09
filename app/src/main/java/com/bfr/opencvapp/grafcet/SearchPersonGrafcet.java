@@ -11,6 +11,7 @@ import android.util.Log;
 import com.bfr.buddy.ui.shared.FacialEvent;
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
+import com.bfr.buddysdk.services.ModuleUSB;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 import org.opencv.core.Point;
@@ -151,13 +152,13 @@ public class SearchPersonGrafcet extends bfr_Grafcet {
                             wheelsAngle = -90;
                         else
                             wheelsAngle = 0.0f;
-//                        BuddySDK.USB.emergencyStopMotors(wheelsRsp);
-                        BuddySDK.USB.rotateBuddy(70.0f, wheelsAngle, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String s) throws RemoteException {}
-                            @Override
-                            public void onFailed(String s) throws RemoteException {}
-                        });
+                        BuddySDK.USB.moveBuddy(0.0f, 0.0f, 0.0f, ModuleUSB.BuddyAccelerations.LOW, wheelsRsp);
+//                        BuddySDK.USB.rotateBuddy(70.0f, wheelsAngle, new IUsbCommadRsp.Stub() {
+//                            @Override
+//                            public void onSuccess(String s) throws RemoteException {}
+//                            @Override
+//                            public void onFailed(String s) throws RemoteException {}
+//                        });
                         BuddySDK.USB.buddySayNo(40, noAngle, noRsp);
                         BuddySDK.USB.buddySayYes(40, 20, yesRsp);
 

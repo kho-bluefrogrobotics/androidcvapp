@@ -115,13 +115,7 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                 noOffset = (targetX-(1024/2))*0.09375f;
 
                 /*** Compute obstacle detection */
-                if (
-                        (BuddySDK.Sensors.USSensors().LeftUS().getDistance() >5 && BuddySDK.Sensors.USSensors().LeftUS().getDistance() < 350)
-                        ||  (BuddySDK.Sensors.USSensors().RightUS().getDistance() >5 && BuddySDK.Sensors.USSensors().RightUS().getDistance() < 350)
-                )
-                    obstacle = true;
-                else
-                    obstacle = false;
+
 
                 // if step changed
                 if (!(step_num == previous_step)) {
@@ -146,6 +140,12 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                 }
 
 
+//                // Obstacle emergency stop
+//                if( (speedLinearGrafcet.obstacleL || speedLinearGrafcet.obstacleR || speedLinearGrafcet.obstacleM) )
+//                {
+//                  step_num = 90;
+//                }
+
                 // which grafcet step?
                 switch (step_num) {
                     case 0: // Wait for checkbox
@@ -164,10 +164,6 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                         break;
 
 
-                    case 12: // timer for stabilization
-                        Thread.sleep(800);
-                        step_num = 15;
-                        break;
 
                     case 15: // rotate body to align
 
@@ -192,6 +188,41 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                        //step_num = 20;
                         break;
 
+
+
+                    case 90 : // obstacle - emergency stop
+
+                        BuddySDK.USB.emergencyStopMotors(new IUsbCommadRsp.Stub() {
+                            @Override
+                            public void onSuccess(String s) throws RemoteException {
+
+                            }
+
+                            @Override
+                            public void onFailed(String s) throws RemoteException {
+
+                            }
+                        });
+
+                      step_num = 93;
+                        break;
+
+                    case 93: // wait for stop
+                        Log.i("coucou", ""+ BuddySDK.Actuators.getLeftWheelStatus());
+
+                        if (BuddySDK.Actuators.getLeftWheelStatus().toUpperCase().contains("STOP") && BuddySDK.Actuators.getRightWheelStatus().toUpperCase().contains("STOP") )
+                            step_num = 95;
+
+                        break;
+
+                    case 95: //wait for end obstacle
+                         if( (!speedLinearGrafcet.obstacleL && !speedLinearGrafcet.obstacleR && !speedLinearGrafcet.obstacleM)
+                          || linearspeed <0)
+                            step_num = 0;
+
+                        break;
+
+//
 //                    case 17: //wait for OK
 //                        if (ackWheels.toUpperCase().contains("OK") ||
 //                                ackWheels.toUpperCase().contains("CANCELED") ||
