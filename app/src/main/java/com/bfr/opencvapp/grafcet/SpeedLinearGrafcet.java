@@ -226,7 +226,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                 // if step changed
                 if (!(step_num == previous_step)) {
                     // display current step
-                    Log.i(name, "current step: " + step_num + "  ");
+                    Log.i(name, "current step: " + step_num + "  speed="+linearSpeed + " accel="+accel);
                     // update
                     previous_step = step_num;
 
@@ -289,7 +289,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
-                            accel = ModuleUSB.BuddyAccelerations.LOW;
+                            accel = ModuleUSB.BuddyAccelerations.HIGH;
                             linearSpeed = 0.0f;
                             step_num = 250;
                         }
@@ -299,134 +299,76 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                                 Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 100");
                                 accel = ModuleUSB.BuddyAccelerations.NORMAL;
                                 linearSpeed = 0.15f;
-                                step_num = 100;
+                                step_num = 110;
                             }
                             else if (personTracker.torsoHeight<=300 && personTracker.torsoHeight>250) {
                                 Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 110");
                                 accel = ModuleUSB.BuddyAccelerations.NORMAL;
                                 linearSpeed = 0.3f;
-                                step_num = 110;
+                                step_num = 120;
                             }
                             else if (personTracker.torsoHeight<=250 && personTracker.torsoHeight>210)
                             {
                                 Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 120");
-                                accel = ModuleUSB.BuddyAccelerations.LOW;
+                                accel = ModuleUSB.BuddyAccelerations.HIGH;
                                 linearSpeed = 0.4f;
-                                step_num = 120;
+                                step_num = 130;
                             }
                             else if (personTracker.torsoHeight<=210 )
                             {
-                                Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 130");
-                                accel = ModuleUSB.BuddyAccelerations.LOW;
+                                Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 150");
+                                accel = ModuleUSB.BuddyAccelerations.HIGH;
                                 linearSpeed = 0.56f;
-                                step_num = 130;
+                                step_num = 140;
                             }
                             else
                             {
                                 Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 140");
                                 accel = ModuleUSB.BuddyAccelerations.LOW;
                                 linearSpeed = 0.0f;
-                                step_num = 140;
+                                step_num = 100;
                             }
 
-
-
-//                            if (personTracker.torsoHeight> 0.85*initialTorsoHeight) {
-//                                Log.i("coucou", "Torso>Initial: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
-//                                linearSpeed = 0.0f;
-//                            }
-//                            else if (personTracker.torsoHeight<=0.85*initialTorsoHeight && personTracker.torsoHeight>0.75*initialTorsoHeight) {
-//                                Log.i("coucou", "Torso>0.85*Initial: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
-//                                linearSpeed = 0.15f;
-//                            }
-//                            else if (personTracker.torsoHeight<=0.75*initialTorsoHeight && personTracker.torsoHeight>0.6*initialTorsoHeight) {
-//                                Log.i("coucou", "Torso>0.75*Initial: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
-//                                linearSpeed = 0.3f;
-//                            }
-//                            else if (personTracker.torsoHeight<=0.6*initialTorsoHeight && personTracker.torsoHeight>0.4*initialTorsoHeight) {
-//                                Log.i("coucou", "Torso>0.6*Initial: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
-//                                linearSpeed = 0.45f;
-//                            }
-//                            else if (personTracker.torsoHeight<=0.4*initialTorsoHeight ) {
-//                                Log.i("coucou", "Torso<0.6*Initial: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
-//                                linearSpeed = 0.56f;
-//                            }
-//                            else {
-//                                Log.i("coucou", "Torso - Initial ELSE: " +personTracker.torsoHeight  + "/"+ initialTorsoHeight);
-//                                linearSpeed = 0.0f;
-//                            }
-
                         }
 
                         break;
 
-                    case 100 : //
-                        if(personTracker.torsoHeight>350 || personTracker.torsoHeight<300)
-                            step_num=15;
-
-                        if(obstacleL || obstacleR || obstacleM
-                                ||     bboxTooBig)
-                        {   Log.i(name, "OBSTACLE L/M/R= " +
-                                BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
-                                + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
-                                + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
-                            accel = ModuleUSB.BuddyAccelerations.LOW;
-                            linearSpeed = 0.0f;
-                            step_num = 250;
-                        }
-                        break;
-
-                    case 110://
-                        if (personTracker.torsoHeight>300 || personTracker.torsoHeight<250)
-                            step_num=15;
-
-                        if(obstacleL || obstacleR || obstacleM
-                                ||     bboxTooBig)
-                        {   Log.i(name, "OBSTACLE L/M/R= " +
-                                BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
-                                + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
-                                + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
-                            accel = ModuleUSB.BuddyAccelerations.LOW;
-                            linearSpeed = 0.0f;
-                            step_num = 250;
-                        }
-                        break;
-
-                    case 120://
-                        if (personTracker.torsoHeight>250 || personTracker.torsoHeight<210)
-                            step_num=15;
-
-                        if(obstacleL || obstacleR || obstacleM
-                                ||     bboxTooBig)
-                        {   Log.i(name, "OBSTACLE L/M/R= " +
-                                BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
-                                + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
-                                + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
-                            accel = ModuleUSB.BuddyAccelerations.LOW;
-                            linearSpeed = 0.0f;
-                            step_num = 250;
-                        }
-                        break;
-                    case 130://
-                        if (personTracker.torsoHeight>210 )
-                            step_num=15;
-
-                        if(obstacleL || obstacleR || obstacleM
-                                ||     bboxTooBig)
-                        {   Log.i(name, "OBSTACLE L/M/R= " +
-                                BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
-                                + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
-                                + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
-                            accel = ModuleUSB.BuddyAccelerations.LOW;
-                            linearSpeed = 0.0f;
-                            step_num = 250;
-                        }
-                        break;
-                    case 140://
+                    case 100://target [350;inf]
 
                         if (personTracker.torsoHeight<350 )
-                            step_num=15;
+                        {
+                            linearSpeed = 0.15f;
+                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            step_num = 110;
+                        }
 
+
+                        if(obstacleL || obstacleR || obstacleM
+                                ||     bboxTooBig)
+                        {   Log.i(name, "OBSTACLE L/M/R= " +
+                                BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
+                                + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
+                                + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
+                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            linearSpeed = 0.0f;
+                            step_num = 250;
+                        }
+                        break;
+
+                    case 110 : // target [300;350]
+                        if(personTracker.torsoHeight>350)
+                        {
+                            linearSpeed = 0.0f;
+                            accel = ModuleUSB.BuddyAccelerations.LOW;
+                            step_num=100;
+                        }
+
+                        if(personTracker.torsoHeight<300)
+                        {
+                            linearSpeed = 0.3f;
+                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            step_num=120;
+                        }
                         if(obstacleL || obstacleR || obstacleM
                                 ||     bboxTooBig)
                         {   Log.i(name, "OBSTACLE L/M/R= " +
@@ -438,6 +380,82 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                             step_num = 250;
                         }
                         break;
+
+                    case 120:// target [250;300]
+
+                        if(personTracker.torsoHeight>300)
+                        {
+                            linearSpeed = 0.15f;
+                            accel = ModuleUSB.BuddyAccelerations.LOW;
+                            step_num=110;
+                        }
+
+                        if(personTracker.torsoHeight<250)
+                        {
+                            linearSpeed = 0.4f;
+                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            step_num=130;
+                        }
+
+                        if(obstacleL || obstacleR || obstacleM
+                                ||     bboxTooBig)
+                        {   Log.i(name, "OBSTACLE L/M/R= " +
+                                BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
+                                + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
+                                + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
+                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            linearSpeed = 0.0f;
+                            step_num = 250;
+                        }
+                        break;
+
+                    case 130://target [210;250]
+
+                        if(personTracker.torsoHeight>250)
+                        {
+                            linearSpeed = 0.3f;
+                            accel = ModuleUSB.BuddyAccelerations.LOW;
+                            step_num=120;
+                        }
+
+                        if(personTracker.torsoHeight<210)
+                        {
+                            linearSpeed = 0.56f;
+                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            step_num=140;
+                        }
+
+                        if(obstacleL || obstacleR || obstacleM)
+                        {   Log.i(name, "OBSTACLE L/M/R= " +
+                                BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
+                                + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
+                                + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
+                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            linearSpeed = 0.0f;
+                            step_num = 250;
+                        }
+                        break;
+                    case 140:// target [0;210]
+
+                        if(personTracker.torsoHeight>210)
+                        {
+                            linearSpeed = 0.4f;
+                            accel = ModuleUSB.BuddyAccelerations.LOW;
+                            step_num=130;
+                        }
+
+                        if(obstacleL || obstacleR || obstacleM)
+                        {   Log.i(name, "OBSTACLE L/M/R= " +
+                                BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
+                                + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
+                                + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
+                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            linearSpeed = 0.0f;
+                            step_num = 250;
+                        }
+                        break;
+
+
 
                     case 190:// going back
                         if(personTracker.tracked.box.y>finalUpperLimit)

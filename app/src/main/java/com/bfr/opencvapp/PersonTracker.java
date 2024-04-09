@@ -88,7 +88,7 @@ public class PersonTracker {
     private int INTERVAL_MIN = 0;
     private int INTERVAL_MAX = 0;
 
-    private int _MIN_HEAD_SIZE = 90;
+    private int _MIN_HEAD_SIZE = 85;
 
     //
 //    private boolean isTracking = false;
