@@ -83,12 +83,12 @@ public class PersonTracker {
     // thres for detection
     public double THRESHOLD=0.6;
     public int frameCount =0;
-    private int _FRAME_DETECT = 90; // 15fps -> check/reset every 6s
+    private int _FRAME_DETECT = 60; // 15fps -> check/reset every 3-4 s
     private boolean ShouldDetectFace = false;
     private int INTERVAL_MIN = 0;
     private int INTERVAL_MAX = 0;
 
-    private int _MIN_HEAD_SIZE = 70;
+    private int _MIN_HEAD_SIZE = 90;
 
     //
 //    private boolean isTracking = false;
@@ -348,13 +348,8 @@ public class PersonTracker {
 //                            height); // height
 
                     // Detection
-//                    detections = detector.recognizeImage(
-//                            matToBitmapAndResize(frame, 320, 320),
-//                            0.5f, 0.6f, 99.0f, frame);
-
                     hhhDetections = humanHeadHandsDetector.recognizeImage(
-//                            smallFrame, 0.6f, 0.5f, 99.0f );
-                            smallFrame, 0.4f, 0.5f, 99.0f );
+                            smallFrame, 0.6f, 0.5f, 99.0f );
 
                     checkAndResetTracking(vitTracker, tracked, null, hhhDetections);
 
@@ -883,6 +878,12 @@ public class PersonTracker {
             // track the 2/3 upper part  or minimum arbitrary value
             croppedArea.height = Math.max( (int) (0.5 * tracked.height), MIN_HUMAN_HEIGHT  );
 
+
+            //convert to bitmap
+            Mat croppedResult = smallFrame.submat(croppedArea);
+            Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_newTrackingHuma.jpg",
+                    croppedResult);
+
         }
         else if (detectedClass == 1) // Face
         {
@@ -890,10 +891,19 @@ public class PersonTracker {
             // crop extra area
             croppedArea.y = (int)(tracked.y + 0.1*tracked.height);
             //tracked.height = Math.max( (int) (0.75 * tracked.height),  10 );
+
+            //convert to bitmap
+            Mat croppedResult = smallFrame.submat(croppedArea);
+            Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_newTrackingCropFace.jpg",
+                    croppedResult);
         }
         else
         {
             croppedArea = tracked;
+
+            Mat croppedResult = smallFrame.submat(croppedArea);
+            Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_newTrackingElse.jpg",
+                    croppedResult);
         }
         // else, a face
 
@@ -1003,7 +1013,7 @@ public class PersonTracker {
 
 
             Mat currTracked = smallFrame.submat(tracked.box);
-            Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_currTracking.jpg",
+            Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_currTracking_"+personTracker.tracked.objectClass+".jpg",
                     currTracked);
 
             /**** Todebug: record images of tracked and where to reset*/
@@ -1079,6 +1089,9 @@ public class PersonTracker {
                                         scoreHistory.add(1.0f);
                                     }
 
+                                    Mat newT = smallFrame.submat(detectionBbox);
+                                    Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_newTrackFace.jpg",
+                                            newT);
 
                                     return; // do nothing -> Exit the function to keep the current tracking object
                                     //   NB: we do not reset on the detected face as there is a possibility to be another occluding face
@@ -1183,6 +1196,11 @@ public class PersonTracker {
                                     // go on with tracking -> increment frame num.
                                     frameCount +=1;
 
+                                    //convert to bitmap
+                                    Mat croppedResult = smallFrame.submat(detectionBbox);
+                                    Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_newTrackingFace.jpg",
+                                            croppedResult);
+
                                     if(debugLog)
                                         Log.d(TAG, "reset done: returning");
                                     return; //exit once it is done
@@ -1254,7 +1272,9 @@ public class PersonTracker {
                     // find the closest detection to the tracking position
                     // L1 distance to optimize computing time
                     dist =  (Math.abs(detectionCentroid.x - trackedCentroid.x) + Math.abs(detectionCentroid.y - trackedCentroid.y));
-                    if (dist < maxDist) {
+                    if ( (dist < maxDist)
+                            &&  Math.abs(detections.get(i).bottom-detections.get(i).top) >= _MIN_HEAD_SIZE ) //to manage the case that the closest object is a small head
+                    {
                         // update
                         maxDist = dist;
                         idClosest = i;
@@ -1307,8 +1327,13 @@ public class PersonTracker {
                                 + " " + detectionBboxToReset.width
                         );
 
+                    // crop extra area wether it is a face or a human
+                    detectionBboxToReset = cropExtraArea(detectionBboxToReset, detections.get(idClosest).getDetectedClass());
                     resetTracker(tracker, detectionBboxToReset, detections.get(idClosest).getDetectedClass() );
 
+                    Mat candidate = smallFrame.submat(detectionBboxToReset);
+                    Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_newTrackClosest.jpg",
+                            candidate);
                     // declare tracking as OK
                     trackingSuccess = true;
                     // go on with tracking -> increment frame num.

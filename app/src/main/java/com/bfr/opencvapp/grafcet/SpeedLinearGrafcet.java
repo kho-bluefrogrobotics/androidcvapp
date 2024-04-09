@@ -12,6 +12,7 @@ import com.bfr.buddy.ui.shared.FacialEvent;
 import com.bfr.buddy.ui.shared.GazePosition;
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
+import com.bfr.buddysdk.services.ModuleUSB;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 import org.opencv.core.Point;
@@ -67,6 +68,9 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
     String ackNo="";
     String ackWheels="";
     public float linearSpeed = 0.0f;
+
+    ModuleUSB.BuddyAccelerations accel = ModuleUSB.BuddyAccelerations.NORMAL;
+
 
     final float BASE_SPEED=0.7f;
 
@@ -284,6 +288,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
+                            accel = ModuleUSB.BuddyAccelerations.LOW;
                             linearSpeed = 0.0f;
                             step_num = 250;
                         }
@@ -291,29 +296,34 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                             if (personTracker.torsoHeight<=350 && personTracker.torsoHeight>300)
                             {
                                 Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 100");
+                                accel = ModuleUSB.BuddyAccelerations.NORMAL;
                                 linearSpeed = 0.15f;
                                 step_num = 100;
                             }
                             else if (personTracker.torsoHeight<=300 && personTracker.torsoHeight>250) {
                                 Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 110");
+                                accel = ModuleUSB.BuddyAccelerations.NORMAL;
                                 linearSpeed = 0.3f;
                                 step_num = 110;
                             }
                             else if (personTracker.torsoHeight<=250 && personTracker.torsoHeight>210)
                             {
                                 Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 120");
+                                accel = ModuleUSB.BuddyAccelerations.LOW;
                                 linearSpeed = 0.4f;
                                 step_num = 120;
                             }
                             else if (personTracker.torsoHeight<=210 )
                             {
                                 Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 130");
+                                accel = ModuleUSB.BuddyAccelerations.LOW;
                                 linearSpeed = 0.56f;
                                 step_num = 130;
                             }
                             else
                             {
                                 Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 140");
+                                accel = ModuleUSB.BuddyAccelerations.LOW;
                                 linearSpeed = 0.0f;
                                 step_num = 140;
                             }
@@ -359,6 +369,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
+                            accel = ModuleUSB.BuddyAccelerations.LOW;
                             linearSpeed = 0.0f;
                             step_num = 250;
                         }
@@ -374,6 +385,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
+                            accel = ModuleUSB.BuddyAccelerations.LOW;
                             linearSpeed = 0.0f;
                             step_num = 250;
                         }
@@ -389,6 +401,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
+                            accel = ModuleUSB.BuddyAccelerations.LOW;
                             linearSpeed = 0.0f;
                             step_num = 250;
                         }
@@ -403,6 +416,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
+                            accel = ModuleUSB.BuddyAccelerations.LOW;
                             linearSpeed = 0.0f;
                             step_num = 250;
                         }
@@ -418,6 +432,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
+                            accel = ModuleUSB.BuddyAccelerations.LOW;
                             linearSpeed = 0.0f;
                             step_num = 250;
                         }

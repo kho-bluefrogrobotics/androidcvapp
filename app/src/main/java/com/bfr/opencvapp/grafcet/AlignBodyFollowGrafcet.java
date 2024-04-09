@@ -70,6 +70,7 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
     String ackWheels="";
     float rotspeed=1.0f;
     float linearspeed = 0.0f;
+    ModuleUSB.BuddyAccelerations accel =  ModuleUSB.BuddyAccelerations.NORMAL;
 
     final float BASE_SPEED=0.7f;
     float targetangle = 0.0f;
@@ -173,8 +174,9 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 
                         linearspeed = speedLinearGrafcet.linearSpeed;
                         rotspeed = speedAngularGrafcet.angularSpeed;
+                        accel = speedLinearGrafcet.accel;
 
-                        BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, 0, new IUsbCommadRsp.Stub() {
+                        BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, ModuleUSB.BuddyAccelerations.NORMAL, new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String s) throws RemoteException {
                                 ackWheels = s;
@@ -190,146 +192,146 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                        //step_num = 20;
                         break;
 
-                    case 17: //wait for OK
-                        if (ackWheels.toUpperCase().contains("OK") ||
-                                ackWheels.toUpperCase().contains("CANCELED") ||
-                                timeout ) {
-                            timerotating = System.currentTimeMillis();
-                            step_num = 20;
-                        }
-                        break;
-
-
-                    case 20: // wait for target in range
-
-//                        if(Math.abs(noOffset)<=10.0f)
-                        float angleInrads = (float) Math.toRadians(Math.abs(targetangle));
-//                        Log.i(name, "########## Elapsed time= " + (int)((System.currentTimeMillis()-timerotating)/1000)
-//                                +"\n Nooffset =" + angleInrads + " rotspeed="+rotspeed );
-
-
-                        if (personTracker.torsoHeight<=200 && personTracker.torsoHeight>100)
-                            linearspeed = 0.2f;
-                        else if (personTracker.torsoHeight<=100)
-                            linearspeed = 0.3f;
-                        else
-                            linearspeed = 0.0f;
-
-                        if(obstacle ||
-                                (personTracker.tracked.box.height*personTracker.tracked.box.width) >21000)
-                            linearspeed = 0.0f;
-
-                        if( (int)((System.currentTimeMillis()-timerotating)) >= Math.abs(angleInrads/rotspeed)*1000 ) {
-                            Log.e(name, "currtime= " + timerotating + " vs " + System.currentTimeMillis()
-                                    + "\n for offset = " + angleInrads + " rotSpeed=" + rotationSpeed);
-                            rotspeed = 0.0f;
-                        } //end if time elapsed OK
-
-
-                            BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, 0.001f,  new IUsbCommadRsp.Stub() {
-                                @Override
-                                public void onSuccess(String s) throws RemoteException {
-                                    ackWheels = s;
-                                    Log.w(name, "answer from motors: " + ackWheels);
-                                }
-
-                                @Override
-                                public void onFailed(String s) throws RemoteException {
-                                    ackWheels = s;
-                                    Log.w(name, "answer from motors: " + ackWheels);
-                                }
-                            });
-
-                           step_num = 15;
-
-
-
-                        break;
-
-
-
-                    case 30: // get closer to target
-                        if (personTracker.tracked.box.height<200)
-                        {
-                            step_num = 35;
-                            Log.i("coucou", "target size=" +personTracker.tracked.box.height );
-                        }
-                        else
-                        {
-                            Log.i("coucou", "target size=" +personTracker.tracked.box.height );
-                            step_num = 10;
-                        }
-
-                        break;
-
-                    case 35: // go forward
-                        ackWheels = "";
-                        BuddySDK.USB.moveBuddy(0.1f, 1.0f, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String s) throws RemoteException {
-                                ackWheels = s;
-                            }
-
-                            @Override
-                            public void onFailed(String s) throws RemoteException {
-                                ackWheels = s;
-                            }
-                        });
-                        step_num = 37;
-                        break;
-
-
-                    case 37: //wait for OK
-                        if(ackWheels.toUpperCase().contains("OK") ||
-                                ackWheels.toUpperCase().contains("CANCELED") || timeout )
-                            step_num = 38;
-                        break;
-
-                    case 38://wait for end
-                        if(ackWheels.toUpperCase().contains("FINISHED") ||
-                                ackWheels.toUpperCase().contains("CANCELED") || timeout )
-                        {
-                            Log.i("coucou", "going to step 10 because ack=" +ackWheels + " and timeout=" + timeout );
-                            BuddySDK.USB.setBuddySpeed(0.0f, 0.0f, 0, new IUsbCommadRsp.Stub() {
-                                @Override
-                                public void onSuccess(String s) throws RemoteException { }
-
-                                @Override
-                                public void onFailed(String s) throws RemoteException {}
-                            });
-                            step_num = 10;
-                        }
-
-                        int distThres = 500;
-                        int tofMiddle =BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance();
-                        int tofLeft =BuddySDK.Sensors.TofSensors().FrontLeft().getDistance();
-                        int tofRight =BuddySDK.Sensors.TofSensors().FrontRight().getDistance();
-
-                        boolean obstacle = false;
-
-                        if( (tofLeft >0 && tofLeft < distThres)
-                        || (tofMiddle >0 && tofMiddle < distThres)
-                        || (tofRight >0 && tofRight < distThres))
-                            obstacle = true;
-
-
-
-                        Log.i("coucou", "***************Sensors value=" + tofMiddle + ", " + tofLeft + ", "  + tofRight);
-                        if(obstacle)
-                        {
-                            Log.i("coucou", "STOP!!!  sensors=" + tofMiddle + ", " + tofLeft + ", "  + tofRight);
-
-                            BuddySDK.USB.setBuddySpeed(0.0f, 0.0f, 0, new IUsbCommadRsp.Stub() {
-                                @Override
-                                public void onSuccess(String s) throws RemoteException { }
-
-                                @Override
-                                public void onFailed(String s) throws RemoteException {}
-                            });
-                            step_num = 10;
-                        }
-
-                        break;
+//                    case 17: //wait for OK
+//                        if (ackWheels.toUpperCase().contains("OK") ||
+//                                ackWheels.toUpperCase().contains("CANCELED") ||
+//                                timeout ) {
+//                            timerotating = System.currentTimeMillis();
+//                            step_num = 20;
+//                        }
+//                        break;
+//
+//
+//                    case 20: // wait for target in range
+//
+////                        if(Math.abs(noOffset)<=10.0f)
+//                        float angleInrads = (float) Math.toRadians(Math.abs(targetangle));
+////                        Log.i(name, "########## Elapsed time= " + (int)((System.currentTimeMillis()-timerotating)/1000)
+////                                +"\n Nooffset =" + angleInrads + " rotspeed="+rotspeed );
+//
+//
+//                        if (personTracker.torsoHeight<=200 && personTracker.torsoHeight>100)
+//                            linearspeed = 0.2f;
+//                        else if (personTracker.torsoHeight<=100)
+//                            linearspeed = 0.3f;
+//                        else
+//                            linearspeed = 0.0f;
+//
+//                        if(obstacle ||
+//                                (personTracker.tracked.box.height*personTracker.tracked.box.width) >21000)
+//                            linearspeed = 0.0f;
+//
+//                        if( (int)((System.currentTimeMillis()-timerotating)) >= Math.abs(angleInrads/rotspeed)*1000 ) {
+//                            Log.e(name, "currtime= " + timerotating + " vs " + System.currentTimeMillis()
+//                                    + "\n for offset = " + angleInrads + " rotSpeed=" + rotationSpeed);
+//                            rotspeed = 0.0f;
+//                        } //end if time elapsed OK
+//
+//
+//                            BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, 0.001f,  new IUsbCommadRsp.Stub() {
+//                                @Override
+//                                public void onSuccess(String s) throws RemoteException {
+//                                    ackWheels = s;
+//                                    Log.w(name, "answer from motors: " + ackWheels);
+//                                }
+//
+//                                @Override
+//                                public void onFailed(String s) throws RemoteException {
+//                                    ackWheels = s;
+//                                    Log.w(name, "answer from motors: " + ackWheels);
+//                                }
+//                            });
+//
+//                           step_num = 15;
+//
+//
+//
+//                        break;
+//
+//
+//
+//                    case 30: // get closer to target
+//                        if (personTracker.tracked.box.height<200)
+//                        {
+//                            step_num = 35;
+//                            Log.i("coucou", "target size=" +personTracker.tracked.box.height );
+//                        }
+//                        else
+//                        {
+//                            Log.i("coucou", "target size=" +personTracker.tracked.box.height );
+//                            step_num = 10;
+//                        }
+//
+//                        break;
+//
+//                    case 35: // go forward
+//                        ackWheels = "";
+//                        BuddySDK.USB.moveBuddy(0.1f, 1.0f, new IUsbCommadRsp.Stub() {
+//                            @Override
+//                            public void onSuccess(String s) throws RemoteException {
+//                                ackWheels = s;
+//                            }
+//
+//                            @Override
+//                            public void onFailed(String s) throws RemoteException {
+//                                ackWheels = s;
+//                            }
+//                        });
+//                        step_num = 37;
+//                        break;
+//
+//
+//                    case 37: //wait for OK
+//                        if(ackWheels.toUpperCase().contains("OK") ||
+//                                ackWheels.toUpperCase().contains("CANCELED") || timeout )
+//                            step_num = 38;
+//                        break;
+//
+//                    case 38://wait for end
+//                        if(ackWheels.toUpperCase().contains("FINISHED") ||
+//                                ackWheels.toUpperCase().contains("CANCELED") || timeout )
+//                        {
+//                            Log.i("coucou", "going to step 10 because ack=" +ackWheels + " and timeout=" + timeout );
+//                            BuddySDK.USB.setBuddySpeed(0.0f, 0.0f, 0, new IUsbCommadRsp.Stub() {
+//                                @Override
+//                                public void onSuccess(String s) throws RemoteException { }
+//
+//                                @Override
+//                                public void onFailed(String s) throws RemoteException {}
+//                            });
+//                            step_num = 10;
+//                        }
+//
+//                        int distThres = 500;
+//                        int tofMiddle =BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance();
+//                        int tofLeft =BuddySDK.Sensors.TofSensors().FrontLeft().getDistance();
+//                        int tofRight =BuddySDK.Sensors.TofSensors().FrontRight().getDistance();
+//
+//                        boolean obstacle = false;
+//
+//                        if( (tofLeft >0 && tofLeft < distThres)
+//                        || (tofMiddle >0 && tofMiddle < distThres)
+//                        || (tofRight >0 && tofRight < distThres))
+//                            obstacle = true;
+//
+//
+//
+//                        Log.i("coucou", "***************Sensors value=" + tofMiddle + ", " + tofLeft + ", "  + tofRight);
+//                        if(obstacle)
+//                        {
+//                            Log.i("coucou", "STOP!!!  sensors=" + tofMiddle + ", " + tofLeft + ", "  + tofRight);
+//
+//                            BuddySDK.USB.setBuddySpeed(0.0f, 0.0f, 0, new IUsbCommadRsp.Stub() {
+//                                @Override
+//                                public void onSuccess(String s) throws RemoteException { }
+//
+//                                @Override
+//                                public void onFailed(String s) throws RemoteException {}
+//                            });
+//                            step_num = 10;
+//                        }
+//
+//                        break;
 
                     default:
                         // go to next step
