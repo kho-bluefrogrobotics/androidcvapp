@@ -6,7 +6,6 @@ package com.bfr.opencvapp.grafcet;
 import static com.bfr.opencvapp.MainActivity.alignBodyFollowGrafcet;
 import static com.bfr.opencvapp.MainActivity.initGrafcet;
 import static com.bfr.opencvapp.MainActivity.personTracker;
-import static com.bfr.opencvapp.MainActivity.searchPersonGrafcet;
 import static com.bfr.opencvapp.MainActivity.speedAngularGrafcet;
 import static com.bfr.opencvapp.MainActivity.speedLinearGrafcet;
 
@@ -151,8 +150,12 @@ public class MainGrafcet extends bfr_Grafcet {
                         alignBodyFollowGrafcet.start(100);
                         speedAngularGrafcet.start(20);
                         speedLinearGrafcet.start(20);
+
                         step_num = 8;
                     }
+
+                    if(timeout) // if no tracking (timeout)
+                        step_num = 20; // activate search person
 
                     break;
 
@@ -177,24 +180,11 @@ public class MainGrafcet extends bfr_Grafcet {
 
 
                     case 9 : // wait for end of grafcet
-                        if(!alignBodyFollowGrafcet.go)
-                            step_num = 7;
+
 
                         if (personTracker.frameCount==0)
                         {
-                            alignBodyFollowGrafcet.go = false;
-                            alignBodyFollowGrafcet.step_num = 0;
-
-                            searchPersonGrafcet.start();
-                            searchPersonGrafcet.go=true;
-                            searchPersonGrafcet.step_num=0;
-
-                            TrackingNoGrafcet.go = false;
-                            TrackingYesGrafcet.go = false;
-                            TrackingNoGrafcet.step_num=0;
-                            TrackingYesGrafcet.step_num=0;
-
-                            step_num = 70;
+                            step_num = 20;
                         }
 
                         break;
@@ -215,27 +205,41 @@ public class MainGrafcet extends bfr_Grafcet {
 
                         if (personTracker.frameCount==0)
                         {
-                            TrackingNoGrafcet.go = false;
-                            TrackingYesGrafcet.go = false;
-                            AlignGrafcet.go = false;
-                            TrackingNoGrafcet.step_num=0;
-                            TrackingYesGrafcet.step_num=0;
-                            AlignGrafcet.step_num=0;
-
-                            searchPersonGrafcet.start();
-                            searchPersonGrafcet.go=true;
-                            searchPersonGrafcet.step_num=0;
                             step_num = 20;
                         }
                         break;
 
+                    case 20:// activate search person
 
-                    case 20: //wait for end of searchperson
-                        if(!searchPersonGrafcet.go)
+                        TrackingNoGrafcet.go = false;
+                        TrackingYesGrafcet.go = false;
+                        AlignGrafcet.go = false;
+                        TrackingNoGrafcet.step_num=0;
+                        TrackingYesGrafcet.step_num=0;
+                        AlignGrafcet.step_num=0;
+
+                        SpeedLinearGrafcet.go=false;
+                        SpeedLinearGrafcet.step_num=0;
+                        SpeedAngularGrafcet.go=false;
+                        SpeedAngularGrafcet.step_num = 0;
+                        AlignBodyFollowGrafcet.go=false;
+                        AlignBodyFollowGrafcet.step_num=0;
+
+                        alignBodyFollowGrafcet.stop();
+                        speedLinearGrafcet.stop();
+                        speedAngularGrafcet.stop();
+
+                        SearchPersonGrafcet.go=true;
+                        SearchPersonGrafcet.step_num=0;
+
+                        step_num = 25;
+                        break;
+
+                    case 25: //wait for end of searchperson
+                        if(!SearchPersonGrafcet.go)
                         {
-                            searchPersonGrafcet.stop();
-                            searchPersonGrafcet.go = false;
-//                            step_num = 10;
+                            SearchPersonGrafcet.step_num=0;
+                            SearchPersonGrafcet.go = false;
                             step_num = 70;
                         }
 
