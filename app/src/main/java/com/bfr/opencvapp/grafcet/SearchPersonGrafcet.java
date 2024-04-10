@@ -76,14 +76,14 @@ Context context;
         @Override
         public void onSuccess(String success) throws RemoteException { ackYes = success; Log.d(name, "Motor YES ack="+ackYes);}
         @Override
-        public void onFailed(String error) throws RemoteException { ackYes = error; }
+        public void onFailed(String error) throws RemoteException { ackYes = error;Log.d(name, "Motor YES ack="+ackYes); }
     };
 
     private IUsbCommadRsp noRsp = new IUsbCommadRsp.Stub(){
         @Override
         public void onSuccess(String success) throws RemoteException { ackNo = success; Log.d(name, "Motor NO ack="+ackNo);}
         @Override
-        public void onFailed(String error) throws RemoteException { ackNo = error; }
+        public void onFailed(String error) throws RemoteException { ackNo = error; Log.d(name, "Motor NO ack="+ackNo);}
     };
     String ackYes="";
     String ackNo="";
@@ -202,19 +202,15 @@ Context context;
                         BuddySDK.USB.buddySayNo(40, noAngle, noRsp);
                         BuddySDK.USB.buddySayYes(40, 30, yesRsp);
 
-                        step_num = 25;
+                        step_num = 23;
                         break;
 
-//                    case 10: // wait for OK
-//                        if (ackWheels.toUpperCase().contains("OK")
-//                        && ackYes.toUpperCase().contains("OK")
-//                        && ackNo.toUpperCase().contains("OK") || timeout)
-//                        {
-//                            step_num = 18;
-//                        }
-//                        break;
 
                     case 25 : //wait for  wheels
+
+                        if (ackWheels.toUpperCase().contains("RESPONDING")) // managing the msg "board not responding (timeout)"
+                            step_num = 20;
+
                         if (ackWheels.toUpperCase().contains("FINISHED")
                                 || BuddySDK.Actuators.getLeftWheelSpeed()<5
                                 || timeout)
@@ -222,12 +218,20 @@ Context context;
                         break;
 
                     case 27 : //wait for  Yes
+
+                        if (ackYes.toUpperCase().contains("RESPONDING")) // managing the msg "board not responding (timeout)"
+                            step_num = 20;
+
                         if (ackYes.toUpperCase().contains("FINISHED") ||
                                 ( Math.abs(BuddySDK.Actuators.getYesPosition()) < 22 && Math.abs(BuddySDK.Actuators.getYesPosition()) > 19 )
                                 || timeout)
                             step_num = 28;
                         break;
+
                     case 28 : //wait for  Yes
+                        if (ackNo.toUpperCase().contains("RESPONDING")) // managing the msg "board not responding (timeout)"
+                            step_num = 20;
+
                         if (ackNo.toUpperCase().contains("FINISHED") ||
                         ( Math.abs(BuddySDK.Actuators.getNoPosition()) < 2  )
 
@@ -253,8 +257,13 @@ Context context;
                         break;
 
                     case 32: // wait for OK
+
+                        if (ackNo.toUpperCase().contains("RESPONDING")) // managing the msg "board not responding (timeout)"
+                            step_num = 30;
+
                         if(ackNo.toUpperCase().contains("OK") || timeout)
                             step_num = 33;
+
                         break;
                     case 33 : //wait for end
                         if(ackNo.toUpperCase().contains("FINISHED") || timeout)
@@ -320,20 +329,42 @@ Context context;
 
 
                     case 47: // wait for end of mvt
+                        
                         if (ackWheels.toUpperCase().contains("FINISHED") || timeout ) {
                             if (ackNo.toUpperCase().contains("FINISHED")|| timeout )
                             {
                                 Thread.sleep(500);
-                                if(personTracker.trackingSuccess)
+                                if(personTracker.trackingSuccess) // tracking sucessful
                                     step_num=100;
-                                else
+                                else // tracking not succesfull
                                 {
-                                    noAngle = (int)Math.floor(Math.random() * (60 +60 + 1) -60);
-                                    step_num=30;
+                                    // radomly make a U-Turn
+                                    if( (new Random().nextInt(4) == 3) )
+                                        step_num = 50;
+                                    else // make the head turn alone
+                                    {
+                                        noAngle = (int)Math.floor(Math.random() * (60 +60 + 1) -60);
+                                        step_num=30;
+                                    }
+
                                 }
                             }
                         }
                         break;
+
+                    case 50 : // make U Turn
+                        //reset
+                        ackWheels = "";
+                        BuddySDK.USB.rotateBuddy(100.0f, 180.0f, wheelsRsp);
+                        step_num = 53;
+                        break;
+
+                    case 53 : //wait for FINISHED
+                        if(ackWheels.toUpperCase().contains("FINISHED") || timeout)
+                        {
+                            noAngle = (int)Math.floor(Math.random() * (60 +60 + 1) -60);
+                            step_num = 30;
+                        }
 
                     case 100:// wait for tracking OK
 
