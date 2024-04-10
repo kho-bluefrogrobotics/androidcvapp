@@ -471,7 +471,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         faceGrafcet.start(500);
 
         mainGrafcet.start();
-        alignBodyFollowGrafcet.start(100);
+        alignBodyFollowGrafcet.start(50);
         speedAngularGrafcet.start(20);
         speedLinearGrafcet.start(20);
 

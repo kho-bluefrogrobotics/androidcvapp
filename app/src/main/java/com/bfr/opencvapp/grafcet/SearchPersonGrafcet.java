@@ -202,7 +202,7 @@ Context context;
                         BuddySDK.USB.buddySayNo(40, noAngle, noRsp);
                         BuddySDK.USB.buddySayYes(40, 30, yesRsp);
 
-                        step_num = 23;
+                        step_num = 25;
                         break;
 
 
@@ -329,7 +329,7 @@ Context context;
 
 
                     case 47: // wait for end of mvt
-                        
+
                         if (ackWheels.toUpperCase().contains("FINISHED") || timeout ) {
                             if (ackNo.toUpperCase().contains("FINISHED")|| timeout )
                             {
