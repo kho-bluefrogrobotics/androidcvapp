@@ -147,9 +147,6 @@ public class MainGrafcet extends bfr_Grafcet {
                     case 70: // Wait for tracking OK
                     if(personTracker.trackingSuccess)
                     {
-                        alignBodyFollowGrafcet.start(100);
-                        speedAngularGrafcet.start(20);
-                        speedLinearGrafcet.start(20);
 
                         step_num = 8;
                     }
@@ -224,10 +221,6 @@ public class MainGrafcet extends bfr_Grafcet {
                         SpeedAngularGrafcet.step_num = 0;
                         AlignBodyFollowGrafcet.go=false;
                         AlignBodyFollowGrafcet.step_num=0;
-
-                        alignBodyFollowGrafcet.stop();
-                        speedLinearGrafcet.stop();
-                        speedAngularGrafcet.stop();
 
                         SearchPersonGrafcet.go=true;
                         SearchPersonGrafcet.step_num=0;

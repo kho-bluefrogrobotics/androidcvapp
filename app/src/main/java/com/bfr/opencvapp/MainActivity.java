@@ -471,6 +471,9 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         faceGrafcet.start(500);
 
         mainGrafcet.start();
+        alignBodyFollowGrafcet.start(100);
+        speedAngularGrafcet.start(20);
+        speedLinearGrafcet.start(20);
 
         BuddySDK.USB.enableSensorModule(true, new IUsbCommadRsp.Stub() {
             @Override
