@@ -1,0 +1,23 @@
+<resources>
+    <string name="end_search_person">Bon tant pis,  je retourne à mes occupations</string>
+    <string-array name="user_lost">
+        <item>"Zut, où es tu?"</item>
+        <item>"Hey, où es tu passé?"</item>
+        <item>"Ah, mince! Je t'ai perdu de vue!"</item>
+        <item>"Oups! Je ne te vois plus!"</item>
+        <item>"Oh!"</item>
+        <item>"Attends, ne va pas si vite!"</item>
+        <item>"Ben?! tu es parti? "</item>
+        <item>"Alors? Tu ne veux plus rester avec moi? "</item>
+    </string-array>
+    <string-array name="search_person_found">
+        <item>"Ah, tu es là!"</item>
+        <item>"Te voilà!"</item>
+        <item>"Je t'ai trouvé!"</item>
+        <item>"Ouf! J'ai cru t'avoir perdu"</item>
+        <item>"Hey, Bonjour?"</item>
+        <item>"Coucou! Je suis là!"</item>
+        <item>"Salut! Je reste à tes côtés maintenant!"</item>
+    </string-array>
+
+</resources>

@@ -66,6 +66,7 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
     String ackNo="";
     String ackWheels="";
     public float angularSpeed =1.0f;
+    public float accel =0.5f;
 
     final float BASE_SPEED=0.9f;
     final float BASE_LOW_SPEED=0.15f;
@@ -161,16 +162,29 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
                         timerotating = System.currentTimeMillis();
                         if (personTracker.tracked.box.x>30 && (personTracker.tracked.box.x+personTracker.tracked.box.width)<(1024-30))
                         {
-                            if(noOffset>= 15.0f)
-                                angularSpeed =-BASE_SPEED;
+                            if(noOffset>= 15.0f) {
+                                accel = 1.1f;
+                                angularSpeed = -BASE_SPEED;
+                            }
                             else if(noOffset> 5 && noOffset < 15.0f)
+                            {
+//                                accel = 0.5f;
                                 angularSpeed =-BASE_LOW_SPEED;
+                            }
                             else if(noOffset<=-15.0f)
+                            {
+                                accel = 1.1f;
                                 angularSpeed =BASE_SPEED;
+                            }
                             else if (noOffset< -5 && noOffset > -15.0f)
+                            {
+//                                accel = 0.5f;
                                 angularSpeed = BASE_LOW_SPEED;
+                            }
                             else // target in range
+                            {
                                 angularSpeed = 0.0f;
+                            }
                         }
                         else // bbox on the image edge
                         {

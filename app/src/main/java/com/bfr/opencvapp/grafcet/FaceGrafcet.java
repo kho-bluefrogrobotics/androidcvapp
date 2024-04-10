@@ -122,7 +122,7 @@ public class FaceGrafcet extends bfr_Grafcet {
                     // compute next blink in random timelapse
                     randomBlinkInterval = (int) (Math.random()*6000)+3000;
 
-                    Log.d(name, "Next Blink in " + randomBlinkInterval +"s");
+//                    Log.d(name, "Next Blink in " + randomBlinkInterval +"s");
                     //blink
                     BuddySDK.UI.playFacialEvent(FacialEvent.BLINK_EYES);
                 }

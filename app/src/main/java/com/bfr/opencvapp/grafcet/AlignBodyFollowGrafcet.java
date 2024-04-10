@@ -70,7 +70,7 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
     String ackWheels="";
     float rotspeed=1.0f;
     float linearspeed = 0.0f;
-    ModuleUSB.BuddyAccelerations accel =  ModuleUSB.BuddyAccelerations.NORMAL;
+    float accel =  0.5f;
 
     final float BASE_SPEED=0.7f;
     float targetangle = 0.0f;
@@ -170,7 +170,7 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 
                         linearspeed = speedLinearGrafcet.linearSpeed;
                         rotspeed = speedAngularGrafcet.angularSpeed;
-                        accel = speedLinearGrafcet.accel;
+                        accel = Math.max(speedLinearGrafcet.accel, speedAngularGrafcet.accel);
 
                         BuddySDK.USB.setBuddySpeed(linearspeed, rotspeed, accel, new IUsbCommadRsp.Stub() {
                             @Override

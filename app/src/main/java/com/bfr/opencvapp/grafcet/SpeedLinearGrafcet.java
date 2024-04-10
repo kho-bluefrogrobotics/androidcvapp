@@ -69,7 +69,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
     String ackWheels="";
     public float linearSpeed = 0.0f;
 
-    ModuleUSB.BuddyAccelerations accel = ModuleUSB.BuddyAccelerations.NORMAL;
+    public float accel = 0.5f;
 
 
     final float BASE_SPEED=0.7f;
@@ -289,7 +289,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
-                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            accel = 1.0f;
                             linearSpeed = 0.0f;
                             step_num = 250;
                         }
@@ -297,34 +297,34 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                             if (personTracker.torsoHeight<=350 && personTracker.torsoHeight>300)
                             {
                                 Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 100");
-                                accel = ModuleUSB.BuddyAccelerations.NORMAL;
+                                accel = 0.5f;
                                 linearSpeed = 0.15f;
                                 step_num = 110;
                             }
                             else if (personTracker.torsoHeight<=300 && personTracker.torsoHeight>250) {
                                 Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 110");
-                                accel = ModuleUSB.BuddyAccelerations.NORMAL;
+                                accel = 0.6f;
                                 linearSpeed = 0.3f;
                                 step_num = 120;
                             }
                             else if (personTracker.torsoHeight<=250 && personTracker.torsoHeight>210)
                             {
                                 Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 120");
-                                accel = ModuleUSB.BuddyAccelerations.HIGH;
+                                accel = 1.0f;
                                 linearSpeed = 0.4f;
                                 step_num = 130;
                             }
                             else if (personTracker.torsoHeight<=210 )
                             {
                                 Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 150");
-                                accel = ModuleUSB.BuddyAccelerations.HIGH;
+                                accel = 1.0f;
                                 linearSpeed = 0.56f;
                                 step_num = 140;
                             }
                             else
                             {
                                 Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 140");
-                                accel = ModuleUSB.BuddyAccelerations.LOW;
+                                accel = 0.3f;
                                 linearSpeed = 0.0f;
                                 step_num = 100;
                             }
@@ -338,7 +338,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         if (personTracker.torsoHeight<350 )
                         {
                             linearSpeed = 0.15f;
-                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            accel = 1.0f;
                             step_num = 110;
                         }
 
@@ -349,7 +349,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
-                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            accel = 1.0f;
                             linearSpeed = 0.0f;
                             step_num = 250;
                         }
@@ -359,14 +359,14 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         if(personTracker.torsoHeight>350)
                         {
                             linearSpeed = 0.0f;
-                            accel = ModuleUSB.BuddyAccelerations.LOW;
+                            accel = 0.3f;
                             step_num=100;
                         }
 
                         if(personTracker.torsoHeight<300)
                         {
                             linearSpeed = 0.3f;
-                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            accel = 1.0f;
                             step_num=120;
                         }
                         if(obstacleL || obstacleR || obstacleM
@@ -375,7 +375,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
-                            accel = ModuleUSB.BuddyAccelerations.LOW;
+                            accel = 0.3f;
                             linearSpeed = 0.0f;
                             step_num = 250;
                         }
@@ -386,14 +386,14 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         if(personTracker.torsoHeight>300)
                         {
                             linearSpeed = 0.15f;
-                            accel = ModuleUSB.BuddyAccelerations.LOW;
+                            accel = 0.3f;
                             step_num=110;
                         }
 
                         if(personTracker.torsoHeight<250)
                         {
                             linearSpeed = 0.4f;
-                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            accel = 1.0f;
                             step_num=130;
                         }
 
@@ -403,7 +403,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
-                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            accel = 1.0f;
                             linearSpeed = 0.0f;
                             step_num = 250;
                         }
@@ -414,14 +414,14 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         if(personTracker.torsoHeight>250)
                         {
                             linearSpeed = 0.3f;
-                            accel = ModuleUSB.BuddyAccelerations.LOW;
+                            accel = 0.3f;
                             step_num=120;
                         }
 
                         if(personTracker.torsoHeight<210)
                         {
                             linearSpeed = 0.56f;
-                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            accel = 1.0f;
                             step_num=140;
                         }
 
@@ -430,7 +430,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
-                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            accel = 1.0f;
                             linearSpeed = 0.0f;
                             step_num = 250;
                         }
@@ -440,7 +440,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         if(personTracker.torsoHeight>210)
                         {
                             linearSpeed = 0.4f;
-                            accel = ModuleUSB.BuddyAccelerations.LOW;
+                            accel = 0.3f;
                             step_num=130;
                         }
 
@@ -449,7 +449,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
-                            accel = ModuleUSB.BuddyAccelerations.HIGH;
+                            accel = 1.0f;
                             linearSpeed = 0.0f;
                             step_num = 250;
                         }

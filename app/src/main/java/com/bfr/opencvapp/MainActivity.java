@@ -46,6 +46,7 @@ import java.io.OutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Random;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddyActivity;
@@ -73,7 +74,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     public AlignGrafcet alignGrafcet = new AlignGrafcet("BodyAlign") ;
     public FaceGrafcet faceGrafcet = new FaceGrafcet("FaceGrafcet") ;
     public static InitGrafcet initGrafcet = new InitGrafcet("InitGrafcet");
-    public static SearchPersonGrafcet searchPersonGrafcet = new SearchPersonGrafcet("SearchPersonGrafcet");
+    public SearchPersonGrafcet searchPersonGrafcet = new SearchPersonGrafcet("SearchPersonGrafcet", this);
     public static AlignBodyFollowGrafcet alignBodyFollowGrafcet = new AlignBodyFollowGrafcet("AlignBodyFollowGrafcet");
     public static SpeedLinearGrafcet speedLinearGrafcet = new SpeedLinearGrafcet("SpeedLinearGrafcet");
     public static SpeedAngularGrafcet speedAngularGrafcet = new SpeedAngularGrafcet("SpeedAngularGrafcet");
@@ -235,6 +236,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 speedLinearGrafcet.step_num=0;
 
 
+                searchPersonGrafcet.go = false;
+                searchPersonGrafcet.step_num = 0;
 
 
 //                BuddySDK.USB.setBuddySpeed(0.01f, 1.0f, 1.0f, new IUsbCommadRsp.Stub() {
@@ -402,7 +405,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         frame = inputFrame.rgba();
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2BGR);
 
-
 //        videoCapture.read(frame);
 
         if (recording)
@@ -463,6 +465,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         trackingNoGrafcet.start(20);
         trackingYesGrafcet.start(20);
         alignGrafcet.start(10);
+
+        searchPersonGrafcet.start();
 
         faceGrafcet.start(500);
 

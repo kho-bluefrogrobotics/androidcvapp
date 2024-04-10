@@ -1,0 +1,5 @@
+<resources>
+    <string name="user_lost">Where are you ?</string>
+    <string name="end_search_person">Never mind,  I will go back to my things</string>
+<string name="search_person_found">Hey? There you are!</string>
+</resources>
