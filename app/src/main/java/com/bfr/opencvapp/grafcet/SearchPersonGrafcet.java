@@ -4,6 +4,7 @@ package com.bfr.opencvapp.grafcet;
 //import static com.bfr.opencvapp.MainActivity.alignCheckbox;
 
 import static com.bfr.opencvapp.MainActivity.personTracker;
+import static com.bfr.opencvapp.MainActivity.speedLinearGrafcet;
 
 import android.content.Context;
 import android.os.RemoteException;
@@ -148,15 +149,16 @@ Context context;
                         arrayOfStrings = context.getResources().getStringArray(R.array.user_lost);
                         randomString = arrayOfStrings[new Random().nextInt(arrayOfStrings.length)];
                         BuddySDK.Speech.startSpeaking(randomString);
-
-                        step_num = 7;
+                        BuddySDK.USB.moveBuddy(0.3f, 0.0f, 0.05f, 0.5f,  wheelsRsp);
+//                        step_num = 7;
+                        step_num = 20;
                         break;
 
 
                     case 7: // wait a bit to give a chance to the tracking
                         if(personTracker.trackingSuccess)
                             step_num=900;
-                        if (System.currentTimeMillis()-time_in_curr_step > 1000)
+                        if (System.currentTimeMillis()-time_in_curr_step > 500)
                             step_num = 10;
                         break;
 
@@ -180,27 +182,19 @@ Context context;
                         ackNo="";
                         ackWheels="";
 
-//                        if (personTracker.tracked.box.x<500)
-//                            noAngle = -30;
-//                        else if(personTracker.tracked.box.x>550)
-//                            noAngle = 30;
-//                        else
-//                            noAngle = 0.0f;
-
-//                        if (personTracker.tracked.box.x<500)
-//                            wheelsAngle = 90;
-//                        else if(personTracker.tracked.box.x>550)
-//                            wheelsAngle = -90;
-//                        else
-//                            wheelsAngle = 0.0f;
-
                         //Stop wheels
 //                        BuddySDK.USB.emergencyStopMotors(wheelsRsp);
-                        BuddySDK.USB.moveBuddy(0.3f, 0.0f, 0.1f, 0.05f,  wheelsRsp);
+                        float deccel = 0.0f;
+                        if (speedLinearGrafcet.linearSpeed >=0.3)
+                            deccel = 0.1f;
+                        else //low speed
+                            deccel = 0.3f;
+
+                        BuddySDK.USB.moveBuddy(0.3f, 0.0f, 0.05f, deccel,  wheelsRsp);
 
 
                         BuddySDK.USB.buddySayNo(40, noAngle, noRsp);
-                        BuddySDK.USB.buddySayYes(40, 30, yesRsp);
+                        BuddySDK.USB.buddySayYes(40, 20, yesRsp);
 
                         step_num = 25;
                         break;
@@ -285,7 +279,16 @@ Context context;
 //                        }
 //                        break;
 
-                    case 40: // rotate body to align
+
+                    case 40: // Align body and Head
+
+                        if(personTracker.trackingSuccess)
+                        {
+                            arrayOfStrings = context.getResources().getStringArray(R.array.search_person_found);
+                            randomString = arrayOfStrings[new Random().nextInt(arrayOfStrings.length)];
+                            BuddySDK.Speech.startSpeaking(randomString);
+                        }
+
                         ackWheels = "";
                         ackNo = "";
                         BuddySDK.USB.rotateNoPrecision(70.0f, -BuddySDK.Actuators.getNoPosition(), 0, new TaskCallback() {
@@ -373,7 +376,7 @@ Context context;
                             arrayOfStrings = context.getResources().getStringArray(R.array.search_person_found);
                             randomString = arrayOfStrings[new Random().nextInt(arrayOfStrings.length)];
                             BuddySDK.Speech.startSpeaking(randomString);
-                            step_num = 105;
+                            step_num = 900;
                         }
                         break;
 
