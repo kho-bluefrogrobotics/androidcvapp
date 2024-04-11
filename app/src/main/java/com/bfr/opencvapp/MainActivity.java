@@ -489,18 +489,18 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         LATERAL_TOF_LIM_LOWSPEED = 450;
         LATERAL_TOF_LIM_HIGHSPEED = 550;
 
-        trackingNoGrafcet.start(20);
-        trackingYesGrafcet.start(20);
-        alignGrafcet.start(10);
+        trackingNoGrafcet.start(40);
+        trackingYesGrafcet.start(40);
+        alignGrafcet.start(20);
 
         searchPersonGrafcet.start();
 
         faceGrafcet.start(500);
 
         mainGrafcet.start();
-        alignBodyFollowGrafcet.start(40);
-        speedAngularGrafcet.start(20);
-        speedLinearGrafcet.start(20);
+        alignBodyFollowGrafcet.start(50);
+        speedAngularGrafcet.start(50);
+        speedLinearGrafcet.start(50);
 
         BuddySDK.USB.enableSensorModule(true, new IUsbCommadRsp.Stub() {
             @Override
