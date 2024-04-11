@@ -14,6 +14,7 @@ import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
 import com.bfr.buddysdk.services.ModuleUSB;
 import com.bfr.buddysdk.services.companion.TaskCallback;
+import com.bfr.opencvapp.MainActivity;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 import org.opencv.core.Point;
@@ -23,6 +24,16 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
     public AlignBodyFollowGrafcet(String mname) {
         super(mname);
         this.grafcet_runnable = mysequence;
+
+        Log.i("coucou", "Align body contructor "+  MainActivity.FRONT_TOF_LIM_LOWSPEED);
+//        FRONT_TOF_LIM_LOWSPEED = MainActivity.FRONT_TOF_LIM_LOWSPEED;
+//        FRONT_TOF_LIM_HIGHSPEED = MainActivity.FRONT_TOF_LIM_HIGHSPEED;
+//        LATERAL_TOF_LIM_LOWSPEED = MainActivity.LATERAL_TOF_LIM_LOWSPEED;
+//        LATERAL_TOF_LIM_HIGHSPEED = MainActivity.LATERAL_TOF_LIM_HIGHSPEED;
+        FRONT_TOF_LIM_LOWSPEED = 500;
+        FRONT_TOF_LIM_HIGHSPEED = 650;
+        LATERAL_TOF_LIM_LOWSPEED = 400;
+        LATERAL_TOF_LIM_HIGHSPEED = 450;
 
     }
 
@@ -72,6 +83,14 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
     float linearspeed = 0.0f;
     float accel =  0.5f;
 
+    int FRONT_TOF_LIM_LOWSPEED = 600;
+    int FRONT_TOF_LIM_HIGHSPEED = 600;
+    int LATERAL_TOF_LIM_LOWSPEED = 600;
+    int LATERAL_TOF_LIM_HIGHSPEED = 600;
+
+    int frontTofThres = 999;
+    int lateralTofThres = 999;
+
     final float BASE_SPEED=0.7f;
     float targetangle = 0.0f;
 
@@ -102,21 +121,8 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 
             try {
 
-                /*** Compute target position */
-                target = getCentroid(personTracker.tracked.box.x,
-                        personTracker.tracked.box.y,
-                        personTracker.tracked.box.height,
-                        personTracker.tracked.box.width
-                );
-                targetX = (int) target.x;
-                targetY = (int) target.y;
-//                    Log.d(name, "Target at " + targetX + "," + targetY);
-                // compute angle
-                noOffset = (targetX-(1024/2))*0.09375f;
-
                 /*** Compute obstacle detection */
-
-
+               
                 // if step changed
                 if (!(step_num == previous_step)) {
                     // display current step
@@ -140,11 +146,28 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                 }
 
 
-//                // Obstacle emergency stop
-//                if( (speedLinearGrafcet.obstacleL || speedLinearGrafcet.obstacleR || speedLinearGrafcet.obstacleM) )
+
+//                else
 //                {
-//                  step_num = 90;
+//                    /*** Compute target position */
+//                    try{
+//                        target = getCentroid(personTracker.tracked.box.x,
+//                                personTracker.tracked.box.y,
+//                                personTracker.tracked.box.height,
+//                                personTracker.tracked.box.width
+//                        );
+//                        targetX = (int) target.x;
+//                        targetY = (int) target.y;
+////                    Log.d(name, "Target at " + targetX + "," + targetY);
+//                        // compute angle
+//                        noOffset = (targetX-(1024/2))*0.09375f;
+//                    } catch (Exception e) {
+//                        Log.e(name, "Error:" + Log.getStackTraceString(e));
+//                    }
 //                }
+
+
+//                Log.i(name, "Entering switch case");
 
                 // which grafcet step?
                 switch (step_num) {
@@ -166,7 +189,40 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
 
 
                     case 15: // rotate body to align
+                        // Obstacle emergency stop
+                        if (speedLinearGrafcet.linearSpeed >=0.3)
+                        {
+                            frontTofThres = FRONT_TOF_LIM_HIGHSPEED;
+                            lateralTofThres = LATERAL_TOF_LIM_HIGHSPEED;
+                        }
+                        else
+                        {
+                            frontTofThres = FRONT_TOF_LIM_LOWSPEED;
+                            lateralTofThres = LATERAL_TOF_LIM_LOWSPEED;
+                        }
 
+                        if(  (
+                                (BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() < lateralTofThres)
+                            || (BuddySDK.Sensors.TofSensors().FrontRight().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontRight().getDistance() < lateralTofThres)
+                            || (BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() < frontTofThres)
+                        ) && speedLinearGrafcet.linearSpeed >0 )
+                        {
+//                            BuddySDK.USB.emergencyStopMotors( new IUsbCommadRsp.Stub() {
+//                                @Override
+//                                public void onSuccess(String s) throws RemoteException {}
+//                                @Override
+//                                public void onFailed(String s) throws RemoteException {}
+//                            });
+
+                            BuddySDK.USB.moveBuddy(5.0f, 0.0f, -0.01f, 90.0f, new IUsbCommadRsp.Stub() {
+                                @Override
+                                public void onSuccess(String s) throws RemoteException {}
+                                @Override
+                                public void onFailed(String s) throws RemoteException {}
+                            });
+                            step_num = 90;
+                            break;
+                        }
 
                         linearspeed = speedLinearGrafcet.linearSpeed;
                         rotspeed = speedAngularGrafcet.angularSpeed;
@@ -189,35 +245,28 @@ public class AlignBodyFollowGrafcet extends bfr_Grafcet {
                         break;
 
 
-
                     case 90 : // obstacle - emergency stop
 
-                        BuddySDK.USB.emergencyStopMotors(new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String s) throws RemoteException {
+                        Log.i(name, "Stopping" );
 
-                            }
-
-                            @Override
-                            public void onFailed(String s) throws RemoteException {
-
-                            }
-                        });
-
-                      step_num = 93;
+                      step_num = 95;
                         break;
 
                     case 93: // wait for stop
-                        Log.i("coucou", ""+ BuddySDK.Actuators.getLeftWheelStatus());
+                        Log.i(name, "wheels status1: "+ BuddySDK.Actuators.getLeftWheelStatus()
+                        + BuddySDK.Actuators.getRightWheelStatus()  );
 
                         if (BuddySDK.Actuators.getLeftWheelStatus().toUpperCase().contains("STOP") && BuddySDK.Actuators.getRightWheelStatus().toUpperCase().contains("STOP") )
                             step_num = 95;
+                        else
+                            Log.i(name, "wheels status: "+ BuddySDK.Actuators.getLeftWheelStatus()
+                                    + BuddySDK.Actuators.getRightWheelStatus()  );
 
                         break;
 
                     case 95: //wait for end obstacle
                          if( (!speedLinearGrafcet.obstacleL && !speedLinearGrafcet.obstacleR && !speedLinearGrafcet.obstacleM)
-                          || linearspeed <0)
+                          || speedLinearGrafcet.linearSpeed <0)
                             step_num = 0;
 
                         break;

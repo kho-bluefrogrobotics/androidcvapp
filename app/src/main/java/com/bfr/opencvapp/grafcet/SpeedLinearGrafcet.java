@@ -4,6 +4,7 @@ package com.bfr.opencvapp.grafcet;
 //import static com.bfr.opencvapp.MainActivity.alignCheckbox;
 
 import static com.bfr.opencvapp.MainActivity.personTracker;
+import static com.bfr.opencvapp.MainActivity.speedLinearGrafcet;
 
 import android.os.RemoteException;
 import android.util.Log;
@@ -13,6 +14,7 @@ import com.bfr.buddy.ui.shared.GazePosition;
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
 import com.bfr.buddysdk.services.ModuleUSB;
+import com.bfr.opencvapp.MainActivity;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 import org.opencv.core.Point;
@@ -22,6 +24,15 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
     public SpeedLinearGrafcet(String mname) {
         super(mname);
         this.grafcet_runnable = mysequence;
+        Log.i("coucou", "Lenear speed contructor "+  MainActivity.FRONT_TOF_LIM_LOWSPEED);
+//        FRONT_TOF_LIM_LOWSPEED = MainActivity.FRONT_TOF_LIM_LOWSPEED;
+//        FRONT_TOF_LIM_HIGHSPEED = MainActivity.FRONT_TOF_LIM_HIGHSPEED;
+//        LATERAL_TOF_LIM_LOWSPEED = MainActivity.LATERAL_TOF_LIM_LOWSPEED;
+//        LATERAL_TOF_LIM_HIGHSPEED = MainActivity.LATERAL_TOF_LIM_HIGHSPEED;
+        FRONT_TOF_LIM_LOWSPEED = 500;
+        FRONT_TOF_LIM_HIGHSPEED = 650;
+        LATERAL_TOF_LIM_LOWSPEED = 400;
+        LATERAL_TOF_LIM_HIGHSPEED = 450;
 
     }
 
@@ -74,6 +85,14 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
     final float BASE_SPEED=0.7f;
 
+    int FRONT_TOF_LIM_LOWSPEED = 600;
+    int FRONT_TOF_LIM_HIGHSPEED = 600;
+    int LATERAL_TOF_LIM_LOWSPEED = 600;
+    int LATERAL_TOF_LIM_HIGHSPEED = 600;
+
+    int frontTofThres = 999;
+    int lateralTofThres = 999;
+
     public boolean obstacleL = false;
     public boolean obstacleR = false;
     public boolean obstacleM = false;
@@ -104,26 +123,40 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
         {
 
             try {
-
                 /*** Compute obstacle detection */
-                if ((BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() < 400) )
+                if (linearSpeed >=0.3)
+                {
+                    frontTofThres = FRONT_TOF_LIM_HIGHSPEED;
+                    lateralTofThres = LATERAL_TOF_LIM_HIGHSPEED;
+                }
+                else
+                {
+                    frontTofThres = FRONT_TOF_LIM_LOWSPEED;
+                    lateralTofThres = LATERAL_TOF_LIM_LOWSPEED;
+                }
+
+
+                if ((BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() < lateralTofThres) )
+                {
                     obstacleL = true;
+                }
+
                 else
                     obstacleL = false;
 
 
-                if( (BuddySDK.Sensors.TofSensors().FrontRight().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontRight().getDistance() < 400) )
+                if( (BuddySDK.Sensors.TofSensors().FrontRight().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontRight().getDistance() < lateralTofThres) )
                     obstacleR = true;
                 else
                     obstacleR = false;
 
-                if( (BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() >5 && BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() < 500) )
+                if( (BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() < frontTofThres) )
                     obstacleM = true;
                 else
                     obstacleM = false;
 
 
-                if( (BuddySDK.Sensors.TofSensors().Back().getDistance() >5 && BuddySDK.Sensors.TofSensors().Back().getDistance() < 300) )
+                if( (BuddySDK.Sensors.TofSensors().Back().getDistance() >15 && BuddySDK.Sensors.TofSensors().Back().getDistance() < 450) )
                     obstacleBehind = true;
                 else
                     obstacleBehind = false;
@@ -211,6 +244,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 //               }
 
 
+                if(personTracker !=null)
                 if ((personTracker.tracked.box.y) <=maxUpperLimit)
                     bboxTooBig = true;
                 else

@@ -89,6 +89,13 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
     double elpasedtime = 0.0;
 
+    // Thresholds for Tof IR sensors
+    public static int FRONT_TOF_LIM_LOWSPEED = 500;
+    public static int FRONT_TOF_LIM_HIGHSPEED = 750;
+    public static int LATERAL_TOF_LIM_LOWSPEED = 450;
+    public static int LATERAL_TOF_LIM_HIGHSPEED = 550;
+
+
     //Tflite Multidetector
     MultiDetector detector;
     ArrayList<MultiDetector.Recognition> tfliteDetections = new ArrayList<MultiDetector.Recognition>();
@@ -176,36 +183,51 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                     BuddySDK.USB.enableWheels(0, 0, new IUsbCommadRsp.Stub() {
                         @Override
                         public void onSuccess(String s) throws RemoteException {
-
                         }
 
                         @Override
                         public void onFailed(String s) throws RemoteException {
-
                         }
                     });
                     BuddySDK.USB.enableYesMove(0, new IUsbCommadRsp.Stub() {
                         @Override
                         public void onSuccess(String s) throws RemoteException {
-
                         }
 
                         @Override
                         public void onFailed(String s) throws RemoteException {
-
                         }
                     });
                     BuddySDK.USB.enableNoMove(0, new IUsbCommadRsp.Stub() {
                         @Override
                         public void onSuccess(String s) throws RemoteException {
-
                         }
 
                         @Override
-                        public void onFailed(String s) throws RemoteException {
-
-                        }
+                        public void onFailed(String s) throws RemoteException {}
                     });
+
+                    trackingNoGrafcet.go = false;
+                    trackingNoGrafcet.step_num = 0;
+
+                    trackingYesGrafcet.go = false;
+                    trackingYesGrafcet.step_num = 0;
+                    alignGrafcet.go = false;
+                    alignGrafcet.step_num = 0;
+
+                    mainGrafcet.go = false;
+                    mainGrafcet.step_num = 0;
+
+                    alignBodyFollowGrafcet.go=false;
+                    alignBodyFollowGrafcet.step_num=0;
+
+
+                    speedLinearGrafcet.go=false;
+                    speedLinearGrafcet.step_num=0;
+
+
+                    searchPersonGrafcet.go = false;
+                    searchPersonGrafcet.step_num = 0;
                 }
                 else
                     mainGrafcet.go= true;
@@ -461,6 +483,11 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         mOpenCvCameraView.getHolder().setFixedSize(1,1);
 
+        // Thresholds for Tof IR sensors
+        FRONT_TOF_LIM_LOWSPEED = 500;
+        FRONT_TOF_LIM_HIGHSPEED = 750;
+        LATERAL_TOF_LIM_LOWSPEED = 450;
+        LATERAL_TOF_LIM_HIGHSPEED = 550;
 
         trackingNoGrafcet.start(20);
         trackingYesGrafcet.start(20);
@@ -471,7 +498,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         faceGrafcet.start(500);
 
         mainGrafcet.start();
-        alignBodyFollowGrafcet.start(50);
+        alignBodyFollowGrafcet.start(40);
         speedAngularGrafcet.start(20);
         speedLinearGrafcet.start(20);
 
