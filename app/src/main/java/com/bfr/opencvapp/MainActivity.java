@@ -1,5 +1,6 @@
 package com.bfr.opencvapp;
 
+import static com.bfr.opencvapp.utils.Utils.modelsDir;
 import static org.opencv.core.CvType.*;
 
 import android.Manifest;
@@ -32,6 +33,7 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfFloat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
@@ -105,6 +107,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     int left, right, top, bottom;
     // Neural net for detection
     private FaceRecognizer faceRecognizerObj;
+    private Net humanClassifier;
 
     // for saving face
     boolean isSavingFace = false;
@@ -195,13 +198,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
-                if (isChecked)
-                {
-                    isSavingFace = isChecked;
-                    countToPicture.start = isChecked;
-                    countToPicture.time = 5;
-                    countToPicture.elapsedTime= System.currentTimeMillis();
-                }
+//                if (isChecked)
+//                {
+//                    isSavingFace = isChecked;
+//                    countToPicture.start = isChecked;
+//                    countToPicture.time = 5;
+//                    countToPicture.elapsedTime= System.currentTimeMillis();
+//                }
 
             }
         });
@@ -363,9 +366,13 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //        videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
 //                25.0D,  new Size( 800,600));
 
+        humanClassifier = Dnn.readNet(modelsDir+"FP_classifier.onnx");
+
         started = true;
+        Log.w("coucou", "Camera started");
     }
 
+    double elapsedT = 0;
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
@@ -416,22 +423,75 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
             Scalar color = new Scalar(0,0,0);
             if (detectedClass==0)
-            // Draw rectangle around detected face.
+            {
+                Mat frameHuman = new Mat();
+                Rect humanRect = new Rect(new Point(left, top), new Point(right, bottom));
+
+                frameHuman = frame.clone().submat(humanRect);
+
+                double newWidth = Math.max(frameHuman.cols() , frameHuman.rows()/1.75);
+                Mat isolatedDetection = new Mat((int)(newWidth*1.75)+1,(int)newWidth+1, CV_8UC3, new Scalar(0, 0, 0));
+                Rect displayROI= new Rect(
+                        0,
+                        0,
+                        frameHuman.cols(),
+                        frameHuman.rows() );
+                Mat roiInBlackMat = isolatedDetection.submat(displayROI);
+                frameHuman.copyTo(roiInBlackMat);
+
+                Imgproc.cvtColor(isolatedDetection, isolatedDetection, Imgproc.COLOR_RGB2BGR);
+
+                if (System.currentTimeMillis()-elapsedT>3000  && saveCheckbox.isChecked()) {
+                    Imgcodecs.imwrite("/sdcard/Download/" + System.currentTimeMillis() + "_croppedHuman.jpg", isolatedDetection);
+                    elapsedT = System.currentTimeMillis();
+                }
+//                else
+//                {
+//                    Log.w("elapsed", "elapsed time since last save : " + (System.currentTimeMillis()-elapsedT) );
+//                }
+                    //                Imgproc.resize(frameHuman, frameHuman, new Size(32, 56));
+
+                Mat blob = Dnn.blobFromImage(isolatedDetection, 0.003921568627451,
+                        new org.opencv.core.Size(32, 56),
+                        new Scalar(new double[]{0.0, 0.0, 0.0}), /*swapRB*/true, /*crop*/true, CV_32F);
+                humanClassifier.setInput(blob);
+
+                List<Mat> outputs = new ArrayList<Mat>();
+                humanClassifier.forward(outputs);
+
+                Log.w("coucou", "Output size " + outputs.get(0).cols() + "x" + outputs.get(0).rows()
+                +" > " + outputs.get(0).get(0,0)[0] + "/" + outputs.get(0).get(0,1)[0]);
+//                Mat row = outputs.get(0).row(i);
+//                List<Float> detect = new MatOfFloat(row).toList();
+
                 Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
                     new Scalar(0, 255, 0), 3);
-            else if (detectedClass==1)// Draw rectangle around detected face.
-                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                    new Scalar(0, 0, 255), 3);
-            else if (detectedClass==2)// Draw rectangle around detected face.
-                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                        new Scalar(255, 0, 0), 3);
+//                Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
+//                    new Point(left-2, top-12),1, 2,
+//                    new Scalar(0, 0, 0), 5);
+//            Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
+//                    new Point(left-2, top-12),1, 2,
+//                    new Scalar(0, 255, 0), 2);
 
-            Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
-                    new Point(left-2, top-12),1, 2,
-                    new Scalar(0, 0, 0), 5);
-            Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
-                    new Point(left-2, top-12),1, 2,
-                    new Scalar(0, 255, 0), 2);
+            }
+
+
+//            // Draw rectangle around detected face.
+//                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+//                    new Scalar(0, 255, 0), 3);
+//            else if (detectedClass==1)// Draw rectangle around detected face.
+//                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+//                    new Scalar(0, 0, 255), 3);
+//            else if (detectedClass==2)// Draw rectangle around detected face.
+//                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+//                        new Scalar(255, 0, 0), 3);
+//
+//            Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
+//                    new Point(left-2, top-12),1, 2,
+//                    new Scalar(0, 0, 0), 5);
+//            Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
+//                    new Point(left-2, top-12),1, 2,
+//                    new Scalar(0, 255, 0), 2);
 
 
          } // next detection

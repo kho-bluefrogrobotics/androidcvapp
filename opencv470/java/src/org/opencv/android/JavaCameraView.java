@@ -148,7 +148,7 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
 //                    width = 800;
 //                    height = 600;
                     width = 1024;
-                    height = 720;
+                    height = 768;
                     Size frameSize = calculateCameraFrameSize(sizes, new JavaCameraSizeAccessor(), width, height);
 
                     /* Image format NV21 causes issues in the Android emulators */
@@ -180,9 +180,9 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                     }
 
                     params.setExposureCompensation(5);
-                    params.setAutoWhiteBalanceLock(true);
+//                    params.setAutoWhiteBalanceLock(true);
 
-                    params.setAutoExposureLock(true);
+//                    params.setAutoExposureLock(true);
 
                     mCamera.setParameters(params);
                     params = mCamera.getParameters();
