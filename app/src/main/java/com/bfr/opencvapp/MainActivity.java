@@ -376,7 +376,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                     Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
                             new Scalar(0, 255, 0), 3);
 
-
 //            else if (detectedClass==1)// Draw rectangle around detected face.
 //                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
 //                        new Scalar(0, 0, 255), 3);
@@ -399,45 +398,51 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                     );
                     Log.i(TAG, "To crop "+left + " " + top + " " + (right-left) + " " + (bottom-top) );
                     Mat croppedTargetMat = frame.submat(toCrop);
+
+                    Mat toSave = resizeWithPadding(croppedTargetMat, 256, 256);
+                    Imgcodecs.imwrite("/sdcard/Download/detected.jpg", croppedTargetMat);
+                    Imgcodecs.imwrite("/sdcard/Download/cropped.jpg", toSave);
+
+//                    Imgproc.resize(croppedTargetMat, croppedTargetMat, new Size(192,192));
                     Imgproc.resize(croppedTargetMat, croppedTargetMat, new Size(256,256));
                     Bitmap bitmapImage = Bitmap.createBitmap(croppedTargetMat.cols(), croppedTargetMat.rows(), Bitmap.Config.ARGB_8888);
                     Utils.matToBitmap(croppedTargetMat, bitmapImage);
 
-                    float[][] result = blazePose.recognizeImage(bitmapImage);
+                    float[][][][] result = blazePose.recognizeImage(bitmapImage);
 
-                    // Blaze pose returns the x, y coords as values [0:255] independent from the input resolution
-                    int noseX = (int) (result[0][0*5] * (right-left)/255);
-                    int noseY = (int) (result[0][0*5+1] * (bottom-top)/255);
-                    int leftEyeX = (int) (result[0][2*5] * (right-left)/255);
-                    int leftEyeY = (int) (result[0][2*5+1] * (bottom-top)/255);
-                    int rightEyeX = (int) (result[0][5*5] * (right-left)/255);
-                    int rightEyeY = (int) (result[0][5*5+1] * (bottom-top)/255);
-                    int leftShoulderX = (int) (result[0][11*5] * (right-left)/255);
-                    int leftShoulderY = (int) (result[0][11*5+1] * (bottom-top)/255);
-                    int rightShoulderX = (int) (result[0][12*5] * (right-left)/255);
-                    int rightShoulderY = (int) (result[0][12*5+1] * (bottom-top)/255);
-                    int leftHipX = (int) (result[0][23*5] * (right-left)/255);
-                    int leftHipY = (int) (result[0][23*5+1] * (bottom-top)/255);
-                    int rightHipX = (int) (result[0][24*5] * (right-left)/255);
-                    int rightHipY = (int) (result[0][24*5+1] * (bottom-top)/255);
-                    //Log.w(TAG, "Coords : "+ shoulderX + " " +  shoulderY );
-
-                    Imgproc.circle(frame, new Point(
-                                    left + noseX, top + noseY), 5, new Scalar(0,255,0), 10);
-                    Imgproc.circle(frame, new Point(
-                            left + leftEyeX, top + leftEyeY), 5, new Scalar(0,255,0), 10);
-                    Imgproc.circle(frame, new Point(
-                            left + rightEyeX, top + rightEyeY), 5, new Scalar(0,255,0), 10);
-
-                    Imgproc.circle(frame, new Point(
-                            left + leftShoulderX, top + leftShoulderY), 5, new Scalar(0,255,0), 10);
-                    Imgproc.circle(frame, new Point(
-                            left + rightShoulderX, top + rightShoulderY), 5, new Scalar(0,255,0), 10);
-
-                    Imgproc.circle(frame, new Point(
-                            left + leftHipX, top + leftHipY), 5, new Scalar(0,255,0), 10);
-                    Imgproc.circle(frame, new Point(
-                            left + rightHipX, top + rightHipY), 5, new Scalar(0,255,0), 10);
+//                    // Blaze pose returns the x, y coords as values [0:255] independent from the input resolution
+//                    int noseX = (int) (result[0][0*5] * (right-left)/255);
+//                    int noseY = (int) (result[0][0*5+1] * (bottom-top)/255);
+//                    int leftEyeX = (int) (result[0][2*5] * (right-left)/255);
+//                    int leftEyeY = (int) (result[0][2*5+1] * (bottom-top)/255);
+//                    int rightEyeX = (int) (result[0][5*5] * (right-left)/255);
+//                    int rightEyeY = (int) (result[0][5*5+1] * (bottom-top)/255);
+//                    int leftShoulderX = (int) (result[0][11*5] * (right-left)/255);
+//                    int leftShoulderY = (int) (result[0][11*5+1] * (bottom-top)/255);
+//                    int rightShoulderX = (int) (result[0][12*5] * (right-left)/255);
+//                    int rightShoulderY = (int) (result[0][12*5+1] * (bottom-top)/255);
+//                    int leftHipX = (int) (result[0][23*5] * (right-left)/255);
+//                    int leftHipY = (int) (result[0][23*5+1] * (bottom-top)/255);
+//                    int rightHipX = (int) (result[0][24*5] * (right-left)/255);
+//                    int rightHipY = (int) (result[0][24*5+1] * (bottom-top)/255);
+//                    //Log.w(TAG, "Coords : "+ shoulderX + " " +  shoulderY );
+//
+//                    Imgproc.circle(frame, new Point(
+//                                    left + noseX, top + noseY), 5, new Scalar(0,255,0), 10);
+//                    Imgproc.circle(frame, new Point(
+//                            left + leftEyeX, top + leftEyeY), 5, new Scalar(0,255,0), 10);
+//                    Imgproc.circle(frame, new Point(
+//                            left + rightEyeX, top + rightEyeY), 5, new Scalar(0,255,0), 10);
+//
+//                    Imgproc.circle(frame, new Point(
+//                            left + leftShoulderX, top + leftShoulderY), 5, new Scalar(0,255,0), 10);
+//                    Imgproc.circle(frame, new Point(
+//                            left + rightShoulderX, top + rightShoulderY), 5, new Scalar(0,255,0), 10);
+//
+//                    Imgproc.circle(frame, new Point(
+//                            left + leftHipX, top + leftHipY), 5, new Scalar(0,255,0), 10);
+//                    Imgproc.circle(frame, new Point(
+//                            left + rightHipX, top + rightHipY), 5, new Scalar(0,255,0), 10);
 
                 } //end if detected class is a human silouhette
 
@@ -492,6 +497,63 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         return bitmap;
     }
 
+
+    private Mat resizeWithPadding(Mat input, int desiredWidth, int desiredHeight)
+    {
+
+        int originalHeight = input.height();
+        int originalWidth = input.width();
+
+        // image with originalsize to be padded to keep ratio of resizing
+        Mat paddedImage = input.clone();
+
+        if ((float)originalHeight/(float)originalWidth > (float)desiredHeight/(float)desiredWidth) // if height of orig image is too large (=>need horizontal padding)
+        {
+            // width which respects required ratio
+            int targetWidth =(int) ((float)originalHeight * (float)desiredWidth/(float)desiredHeight);
+            // compute padding size
+            int pad = (targetWidth - originalWidth);
+
+            paddedImage = new Mat( originalHeight,targetWidth, CV_8UC3, new Scalar(0, 0, 0));
+            Rect ROI= new Rect(
+                    0,
+                    0,
+                    input.cols(),
+                    input.rows() );
+            Mat roiInBlackMat = paddedImage.submat(ROI);
+            input.copyTo(roiInBlackMat);
+
+        }
+        else if((float)originalHeight/(float)originalWidth < (float)desiredHeight/(float)desiredWidth)
+        // if width of orig image is too large (=>need vertical padding)
+        {
+            // Height which respects required ratio
+            int targetHeight =(int) ((float)originalWidth * (float)desiredHeight/(float)desiredWidth );
+
+            paddedImage = new Mat( targetHeight, originalWidth, CV_8UC3, new Scalar(0, 0, 0));
+            Rect ROI= new Rect(
+                    0,
+                    0,
+                    input.cols(),
+                    input.rows() );
+            Mat roiInBlackMat = paddedImage.submat(ROI);
+            input.copyTo(roiInBlackMat);
+
+        }
+        else // ratio is already correct
+        {
+            //do nothing
+        }
+
+        //finally resize to required size
+        Mat resizedMat = new Mat();
+        Imgproc.resize(paddedImage, resizedMat, new Size(desiredWidth, desiredHeight));
+
+        Log.i(TAG, "Resizing "+originalHeight + " " +  originalWidth +" "
+                + desiredHeight + " " + desiredWidth );
+
+        return resizedMat;
+    }
     @Override
     public void onSDKReady() {
 
