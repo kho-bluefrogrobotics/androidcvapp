@@ -29,22 +29,24 @@ public class TfLiteBlazePose {
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
+//    private final int[] INPUT_SIZE = {192,192};
     private final int[] INPUT_SIZE = {256,256};
-    private final int[] OUTPUT_SIZE = {1,195};
+    private final int[] OUTPUT_SIZE = {17,3};
     private final int BATCH_SIZE = 1;
     private final int PIXEL_SIZE = 3;
     private final int NUM_THREADS = 4;
-    private boolean WITH_NNAPI = false;
+    private boolean WITH_NNAPI = true;
     private boolean WITH_GPU = true;
     private boolean WITH_DSP = false;
     //Face embedding
-    private float[][] embeedings;
+    private float[][][][] embeedings;
 
     //where to find the models
     private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nn_models/";
 //    private final String MODEL_NAME = "pyDNet__256x320_float16_quant.tflite";
 //    private final String MODEL_NAME = "fastdepth_256x256_float16_quant.tflite";
-        private final String MODEL_NAME = "pose_landmark_lite.tflite";
+//        private final String MODEL_NAME = "pose_landmark_lite.tflite";
+        private final String MODEL_NAME = "Movenet_singlepose_thunder.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
@@ -123,9 +125,9 @@ public class TfLiteBlazePose {
                     byteBuffer.put((byte) (val & 0xFF));
                 } else {
 
-                    byteBuffer.putFloat(((val >> 16) & 0xFF) / 255.0f);
-                    byteBuffer.putFloat(((val >> 8) & 0xFF) / 255.0f);
-                    byteBuffer.putFloat((val & 0xFF) / 255.0f);
+                    byteBuffer.putFloat(((val >> 16) & 0xFF) / 1.0f);
+                    byteBuffer.putFloat(((val >> 8) & 0xFF) / 1.0f);
+                    byteBuffer.putFloat((val & 0xFF) / 1.0f);
                 }
             }
         }
@@ -138,7 +140,7 @@ public class TfLiteBlazePose {
      * @param bitmap original image in bitmap format
      * @return array of detections
      */
-    public float[][] recognizeImage(Bitmap bitmap) {
+    public float[][][][] recognizeImage(Bitmap bitmap) {
 
         ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmap);
 
@@ -146,7 +148,7 @@ public class TfLiteBlazePose {
         Map<Integer, Object> outputMap = new HashMap<>();
 
         // Init Face embeedings (signature)
-        embeedings = new float[OUTPUT_SIZE[0]][OUTPUT_SIZE[1]];
+        embeedings = new float[1][1][OUTPUT_SIZE[0]][OUTPUT_SIZE[1]];
 //        embeedings = new float[1][16][16][48];
         // Assign to Facenet output
         outputMap.put(0, embeedings);
@@ -160,17 +162,26 @@ public class TfLiteBlazePose {
 
 
 //        float[] result = new float[195];
-//        Log.i("coucou", "i=" + embeedings[0].length + " j=" + 195);
-//        for (int i = 0; i < embeedings[0].length; i++) {
-//            for (int j = 0; j < 195; j++) {
+        Log.i("coucou", "i=" + embeedings[0].length + " j=" + 195);
+
+        float mean = 0.0f;
+        for (int i = 0; i < embeedings[0][0].length; i++) {
+
+
+//            Log.i("coucou", i+" score=" + embeedings[0][0][i][2]);
+                mean += embeedings[0][0][i][2];
+
+//            for (int j = 0; j < 3; j++) {
 //
-//                result[ (i*j)+j] = embeedings[i][j];
+////                result[ (i*j)+j] = embeedings[i][j];
 ////                if (i*j+j<50) {
 ////                    Log.i("coucou", "i=" + i + " j=" + j);
 ////                    Log.i("coucou", ((i * j) + j) + " : " + result[i * j + j]);
 ////                }
 //            }
-//        }
+        }
+
+        Log.i("coucou", "score=" + (mean/ embeedings[0][0].length));
             return embeedings;
 
 

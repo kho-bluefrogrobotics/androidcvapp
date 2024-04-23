@@ -400,13 +400,24 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                     Mat croppedTargetMat = frame.submat(toCrop);
 
                     Mat toSave = resizeWithPadding(croppedTargetMat, 256, 256);
+                    Imgproc.cvtColor(croppedTargetMat, croppedTargetMat, Imgproc.COLOR_BGR2RGB);
+                    Imgproc.cvtColor(toSave, toSave, Imgproc.COLOR_BGR2RGB);
+
                     Imgcodecs.imwrite("/sdcard/Download/detected.jpg", croppedTargetMat);
                     Imgcodecs.imwrite("/sdcard/Download/cropped.jpg", toSave);
 
 //                    Imgproc.resize(croppedTargetMat, croppedTargetMat, new Size(192,192));
-                    Imgproc.resize(croppedTargetMat, croppedTargetMat, new Size(256,256));
-                    Bitmap bitmapImage = Bitmap.createBitmap(croppedTargetMat.cols(), croppedTargetMat.rows(), Bitmap.Config.ARGB_8888);
-                    Utils.matToBitmap(croppedTargetMat, bitmapImage);
+//                    Imgproc.resize(croppedTargetMat, croppedTargetMat, new Size(256,256));
+
+                    // open image
+//                    toSave = resizeWithPadding(Imgcodecs.imread("/sdcard/Download/realhuman.jpg"),
+//                             256, 256);
+//                    Imgproc.resize(Imgcodecs.imread("/sdcard/Download/realhuman.jpg"), toSave,
+//                            new Size(256,256));
+//                    Imgcodecs.imwrite("/sdcard/Download/croppedHuman.jpg", toSave);
+
+                    Bitmap bitmapImage = Bitmap.createBitmap(toSave.cols(), toSave.rows(), Bitmap.Config.ARGB_8888);
+                    Utils.matToBitmap(toSave, bitmapImage);
 
                     float[][][][] result = blazePose.recognizeImage(bitmapImage);
 
