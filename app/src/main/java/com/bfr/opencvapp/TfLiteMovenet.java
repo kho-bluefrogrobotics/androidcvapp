@@ -1,11 +1,18 @@
 package com.bfr.opencvapp;
 
+import static org.opencv.core.CvType.CV_8UC3;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.RectF;
 import android.os.Build;
 import android.util.Log;
 
+import org.opencv.core.Mat;
+import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
 import org.tensorflow.lite.HexagonDelegate;
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.CompatibilityList;
@@ -20,8 +27,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /** Movenet tflite implementation from official models https://www.kaggle.com/models/google/movenet
- * The models output a map of 17,3 =  17 keypoints x (x, y, score)
- * the list of keypoints can be found here https://www.kaggle.com/models/google/movenet
+ * The models output a map of 17,3 =  17 keypoints x (x, y, score) , with x, y in the range [0;1]
+ * The order of the 17 keypoint joints is:
+ * [nose, left eye, right eye, left ear, right ear, left shoulder, right shoulder, left elbow, right elbow, left wrist, right wrist, left hip, right hip, left knee, right knee, left ankle, right ankle]
  * */
 public class TfLiteMovenet {
 
@@ -50,6 +58,8 @@ public class TfLiteMovenet {
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
 
+
+    public float mean = 0.0f;
 
     public TfLiteMovenet(Context context){
 
@@ -163,7 +173,7 @@ public class TfLiteMovenet {
 //        float[] result = new float[195];
         Log.i("coucou", "i=" + embeedings[0].length + " j=" + 195);
 
-        float mean = 0.0f;
+
         for (int i = 0; i < embeedings[0][0].length; i++) {
 
 
@@ -185,6 +195,7 @@ public class TfLiteMovenet {
 
 
     }
+
 
 
 

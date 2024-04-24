@@ -4,15 +4,20 @@ package com.bfr.opencvapp;
 import static com.bfr.opencvapp.utils.Utils.Color.*;
 import static com.bfr.opencvapp.utils.Utils.modelsDir;
 
+import static org.opencv.core.CvType.CV_8UC3;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.RectF;
 import android.os.Build;
 import android.util.Log;
 
+import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.tensorflow.lite.HexagonDelegate;
@@ -65,6 +70,11 @@ public class MultiDetector {
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
 
+    // Pose estimation Movenet model, used to double check human silhouette, using the confidence score
+    private TfLiteMovenet movenetDetector;
+
+    // confidence level of human detection for doublecheck with Movenet
+    public float humanConfidence = 0.0f;
 
     public MultiDetector(Context context){
 
@@ -107,6 +117,10 @@ public class MultiDetector {
             //Init interpreter
             File tfliteModel = new File(modelsDir+MODEL_NAME);
             tfLite = new Interpreter(tfliteModel, options );
+
+
+            //movenet model to doublecheck human silouhette
+            movenetDetector = new TfLiteMovenet(context);
         }
         catch (Exception e)
         {
@@ -159,7 +173,8 @@ public class MultiDetector {
      * @param originalMat the input image
      * @return array of detections
      */
-    public ArrayList<Recognition> recognizeImage(Bitmap bitmap, float humanThres, float faceThres, float handThres, Mat originalMat) {
+    public ArrayList<Recognition> recognizeImage(Bitmap bitmap, float humanThres, float faceThres, float handThres,
+                                                 boolean doubleCheckHuman, Mat originalMat) {
 
         Log.i(TAG, "starting detection ");
 
@@ -198,6 +213,7 @@ public class MultiDetector {
                     || (detectedClass == 1 &&  score > faceThres) //face detection
                     || (detectedClass == 2 &&  score > handThres) ) // hand detection
                   {
+
                 // position in % of the image
                 final float ymin = bboxes[0][i][0];
                 final float xmin = bboxes[0][i][1];
@@ -206,7 +222,42 @@ public class MultiDetector {
 
                 if( ymin < ymax && xmin < xmax){
 
-                    detections.add(new Recognition("" + i, LABELS[detectedClass], score, xmin, xmax, ymin, ymax, detectedClass));
+                    // if human and need to double check
+                    if(detectedClass == 0 && doubleCheckHuman)
+                    {
+                        // crop image around human detection
+                        // for display only
+                        int cols = originalMat.cols();
+                        int rows = originalMat.rows();
+
+                        int left = (int)(xmin * cols);
+                        int top = (int)(ymin * rows);
+                        int right = (int)(xmax * cols);
+                        int bottom = (int)(ymax* rows);
+
+                        Rect toCrop = new Rect(
+                                left,
+                                top,
+                                right-left-5,
+                                bottom-top-10
+                        );
+                        Log.i(TAG, "To crop "+left + " " + top + " " + (right-left) + " " + (bottom-top) );
+                        Mat croppedTargetMat = originalMat.clone().submat(toCrop);
+                        // resizing for Movenet model, with padding to keep ratio
+                        Mat resizedWithScale = resizeWithPadding(croppedTargetMat, 256, 256);
+                        // if is really a human
+                        if(doubleCheckHuman(movenetDetector, resizedWithScale, 0.3f))
+                        {
+                            // add detection
+                            detections.add(new Recognition("" + i, LABELS[detectedClass], score, xmin, xmax, ymin, ymax, detectedClass));
+                        }
+                        // else ignore this detection
+
+                    }
+                    else // if not a human or no need to double check
+                    {
+                        detections.add(new Recognition("" + i, LABELS[detectedClass], score, xmin, xmax, ymin, ymax, detectedClass));
+                    }
 
                     // display
                     //left
@@ -259,6 +310,93 @@ public class MultiDetector {
 
     }
 
+
+
+    /**
+     * get the detected objects in the image
+     * @param movenet a movenet pose detector
+     * @param detectionImg an image containing e supposed human, typically obtained from a bounding box of a human detector
+     * @param thres a confidence threshold to accept a human (recommended value=0.3)
+     * @return array of detections
+     */
+    public boolean doubleCheckHuman(TfLiteMovenet movenet, Mat detectionImg, float thres)
+    {
+
+        Bitmap bitmapImage = Bitmap.createBitmap(detectionImg.cols(), detectionImg.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(detectionImg, bitmapImage);
+
+        float[][][][] result = movenet.recognizeImage(bitmapImage);
+
+        //init
+        humanConfidence = 0.0f;
+        //for each keypoint including:
+        // left shoulder, right shoulder, left elbow, right elbow, left wrist, right wrist, left hip, right hip
+        for (int i = 5; i < 12; i++) {
+            humanConfidence += result[0][0][i][2];
+        }
+        //computing mean
+        humanConfidence = humanConfidence/7;
+
+        return (humanConfidence>=thres);
+    }
+
+
+    private Mat resizeWithPadding(Mat input, int desiredWidth, int desiredHeight)
+    {
+
+        int originalHeight = input.height();
+        int originalWidth = input.width();
+
+        // image with originalsize to be padded to keep ratio of resizing
+        Mat paddedImage = input.clone();
+
+        if ((float)originalHeight/(float)originalWidth > (float)desiredHeight/(float)desiredWidth) // if height of orig image is too large (=>need horizontal padding)
+        {
+            // width which respects required ratio
+            int targetWidth =(int) ((float)originalHeight * (float)desiredWidth/(float)desiredHeight);
+            // compute padding size
+            int pad = (targetWidth - originalWidth);
+
+            paddedImage = new Mat( originalHeight,targetWidth, CV_8UC3, new Scalar(0, 0, 0));
+            Rect ROI= new Rect(
+                    0,
+                    0,
+                    input.cols(),
+                    input.rows() );
+            Mat roiInBlackMat = paddedImage.submat(ROI);
+            input.copyTo(roiInBlackMat);
+
+        }
+        else if((float)originalHeight/(float)originalWidth < (float)desiredHeight/(float)desiredWidth)
+        // if width of orig image is too large (=>need vertical padding)
+        {
+            // Height which respects required ratio
+            int targetHeight =(int) ((float)originalWidth * (float)desiredHeight/(float)desiredWidth );
+
+            paddedImage = new Mat( targetHeight, originalWidth, CV_8UC3, new Scalar(0, 0, 0));
+            Rect ROI= new Rect(
+                    0,
+                    0,
+                    input.cols(),
+                    input.rows() );
+            Mat roiInBlackMat = paddedImage.submat(ROI);
+            input.copyTo(roiInBlackMat);
+
+        }
+        else // ratio is already correct
+        {
+            //do nothing
+        }
+
+        //finally resize to required size
+        Mat resizedMat = new Mat();
+        Imgproc.resize(paddedImage, resizedMat, new Size(desiredWidth, desiredHeight));
+
+        Log.i(TAG, "Resizing "+originalHeight + " " +  originalWidth +" "
+                + desiredHeight + " " + desiredWidth );
+
+        return resizedMat;
+    }
 
     // return object by tflite interpreter
     public class Recognition {
