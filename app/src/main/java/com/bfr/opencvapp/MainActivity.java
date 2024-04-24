@@ -343,9 +343,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 Scalar color = new Scalar(0,0,0);
                 if (detectedClass==0)
                 {
-                    // Draw rectangle around detected face.
-                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                            new Scalar(0, 255, 0), 3);
 
 //            else if (detectedClass==1)// Draw rectangle around detected face.
 //                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
@@ -429,6 +426,17 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //                            left + leftHipX, top + leftHipY), 5, new Scalar(0,255,0), 10);
 //                    Imgproc.circle(frame, new Point(
 //                            left + rightHipX, top + rightHipY), 5, new Scalar(0,255,0), 10);
+
+
+                    if(blazePose.mean>=0.3)
+                        // Draw rectangle around detected face.
+                        Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                                new Scalar(0, 255, 0), 3);
+                    else
+                        // Draw rectangle around detected face.
+                        Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                                new Scalar(255, 0, 0), 5);
+
 
                 } //end if detected class is a human silouhette
 

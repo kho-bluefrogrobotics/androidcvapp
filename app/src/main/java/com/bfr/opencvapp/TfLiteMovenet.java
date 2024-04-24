@@ -20,8 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /** Movenet tflite implementation from official models https://www.kaggle.com/models/google/movenet
- * The models output a map of 17,3 =  17 keypoints x (x, y, score)
- * the list of keypoints can be found here https://www.kaggle.com/models/google/movenet
+ * The models output a map of 17,3 =  17 keypoints x (x, y, score) , with x, y in the range [0;1]
+ * The order of the 17 keypoint joints is:
+ * [nose, left eye, right eye, left ear, right ear, left shoulder, right shoulder, left elbow, right elbow, left wrist, right wrist, left hip, right hip, left knee, right knee, left ankle, right ankle]
  * */
 public class TfLiteMovenet {
 
@@ -133,7 +134,7 @@ public class TfLiteMovenet {
         return byteBuffer;
     }
 
-
+ public float mean = 0.0f;
     /**
      * get the detected objects in the image
      * @param bitmap original image in bitmap format
@@ -163,8 +164,10 @@ public class TfLiteMovenet {
 //        float[] result = new float[195];
         Log.i("coucou", "i=" + embeedings[0].length + " j=" + 195);
 
-        float mean = 0.0f;
-        for (int i = 0; i < embeedings[0][0].length; i++) {
+
+        mean = 0.0f;
+//        for (int i = 0; i < embeedings[0][0].length; i++) {
+        for (int i = 5; i < 12; i++) {
 
 
 //            Log.i("coucou", i+" score=" + embeedings[0][0][i][2]);
@@ -180,7 +183,8 @@ public class TfLiteMovenet {
 //            }
         }
 
-        Log.i("coucou", "score=" + (mean/ embeedings[0][0].length));
+        mean = mean/7;
+        Log.i("coucou", "score=" + (mean));
             return embeedings;
 
 
