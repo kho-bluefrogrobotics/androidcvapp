@@ -19,17 +19,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Blazepose tflite implementation from official models https://github.com/google/mediapipe/blob/master/docs/solutions/models.md#pose
- * The models output a first map of 1,195 = 1,  33 keypoints x (x, y, z, visibility, presence)
- * the list of keypoints can be found here https://developers.google.com/ml-kit/vision/pose-detection
+/** Movenet tflite implementation from official models https://www.kaggle.com/models/google/movenet
+ * The models output a map of 17,3 =  17 keypoints x (x, y, score)
+ * the list of keypoints can be found here https://www.kaggle.com/models/google/movenet
  * */
-public class TfLiteBlazePose {
+public class TfLiteMovenet {
 
-    private final String TAG = "TfLiteBlazePose";
+    private final String TAG = "TfLiteMovenet";
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
-//    private final int[] INPUT_SIZE = {192,192};
     private final int[] INPUT_SIZE = {256,256};
     private final int[] OUTPUT_SIZE = {17,3};
     private final int BATCH_SIZE = 1;
@@ -52,7 +51,7 @@ public class TfLiteBlazePose {
     private HexagonDelegate hexagonDelegate;
 
 
-    public TfLiteBlazePose(Context context){
+    public TfLiteMovenet(Context context){
 
         try{
             Interpreter.Options options = (new Interpreter.Options());

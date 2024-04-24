@@ -1,7 +1,5 @@
 package com.bfr.opencvapp;
 
-import static com.bfr.opencvapp.grafcet.AlignGrafcet.RESIZE_RATIO;
-import static com.bfr.opencvapp.grafcet.AlignGrafcet.xCenter;
 import static org.opencv.core.CvType.*;
 
 import android.Manifest;
@@ -11,50 +9,32 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.RectF;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.util.Log;
-import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
-import android.widget.Switch;
-import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.CameraActivity;
 import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfFloat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-import org.opencv.dnn.Dnn;
-import org.opencv.dnn.Net;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
-
-import org.opencv.objdetect.FaceRecognizerSF;
 
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.VideoWriter;
@@ -66,24 +46,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.stream.Stream;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddyActivity;
 import com.bfr.buddysdk.BuddySDK;
 
 import com.bfr.opencvapp.grafcet.*;
-import com.bfr.opencvapp.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteMidas;
 import com.bfr.opencvapp.utils.TfLiteYoloXHumanHeadHands;
 
@@ -115,7 +86,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     int left, right, top, bottom;
 
     // BlazePose
-    TfLiteBlazePose blazePose;
+    TfLiteMovenet blazePose;
 
     TfLiteYoloXHumanHeadHands humanHeadHandsDetector;
     ArrayList<TfLiteYoloXHumanHeadHands.Recognition> hhhDetections = new ArrayList<TfLiteYoloXHumanHeadHands.Recognition>();
@@ -326,7 +297,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //        videoCapture = new VideoCapture("/sdcard/Download/240124174252_trackingDebug.avi");
         frame = new Mat();
 
-        blazePose = new TfLiteBlazePose(this);
+        blazePose = new TfLiteMovenet(this);
 
     }
 
