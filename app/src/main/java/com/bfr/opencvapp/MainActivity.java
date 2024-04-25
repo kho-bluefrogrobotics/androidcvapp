@@ -57,7 +57,7 @@ import com.bfr.buddysdk.BuddySDK;
 
 import com.bfr.opencvapp.grafcet.*;
 //import com.bfr.opencvapp.utils.TfLiteMidas;
-import com.bfr.opencvapp.utils.TfLiteClassifiier;
+import com.bfr.opencvapp.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteYoloX;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -109,6 +109,12 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
 
     public AlignGrafcet alignGrafcet ;
+
+
+    MultiDetector multiDetector;
+    ArrayList<MultiDetector.Recognition> tfliteDetections = new ArrayList<MultiDetector.Recognition>();
+
+    TfLiteMovenet movenetDetector;
 
 
     @Override
@@ -245,13 +251,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     }
 
 
-    TfLiteYoloX yoloX;
-
-    TfLiteClassifiier classifiier;
-
-
-    ImageSegmenter imagesegmenter;
-    MPImage mpImage;
 
 
     public void onCameraViewStarted(int width, int height) {
@@ -264,24 +263,12 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             e.printStackTrace();
         }
 
-        yoloX = new TfLiteYoloX(context);
-//        classifiier = new TfLiteClassifiier(context);
-
-        ImageSegmenter.ImageSegmenterOptions optionsmp =
-                ImageSegmenter.ImageSegmenterOptions.builder()
-                        .setBaseOptions(
-                                BaseOptions.builder().setModelAssetPath("selfie_segmenter.tflite").build())
-                        .setRunningMode(RunningMode.IMAGE)
-                        .setOutputCategoryMask(true)
-                        .setOutputConfidenceMasks(true)
-                        .build();
-        imagesegmenter = ImageSegmenter.createFromOptions(context, optionsmp);
-
+        multiDetector = new MultiDetector(context);
+        movenetDetector = new TfLiteMovenet(context);
 
 
     }
 
-    SegmentationMask segmentationMask;
 
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
@@ -290,192 +277,19 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         frame = inputFrame.rgba();
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
-        int x1=0, y1=0, x2=0, y2=0, classId =0;
-
-//        Imgproc.resize(frame, frame, new Size(800,600));
-
-        // segment floor
-//        ArrayList<TfLiteYoloX.Recognition> listOfDetections = yoloX.runInference(frame);
-//
-//        for (int i = 0; i< listOfDetections.size(); i++)
-//        {
-//            float score= listOfDetections.get(i).confidence;
-//            x1 = (int) (listOfDetections.get(i).left * frame.cols());
-//            y1 = (int) (listOfDetections.get(i).top * frame.rows());
-//            x2 = (int) (listOfDetections.get(i).right * frame.cols());
-//            y2 = (int) (listOfDetections.get(i).bottom * frame.rows());
-//            classId = listOfDetections.get(i).getDetectedClass();
-//
-////            Log.w(TAG, i + " " + classId + " " + score + " coords=" + x1 + "," + y1 + "," + x2 + "," + y2);
-//
-//            Scalar color = null;
-//            switch (classId){
-//                case 0:
-//                    color = new Scalar(255,0,0);
-//                    break;
-//                case 1:
-//                    color = new Scalar(0,255,0);
-//                    break;
-//
-//                case 2:
-//                    color = new Scalar(0,0,255);
-//                    break;
-//            }
-//            Imgproc.rectangle(frame, new Point(x1, y1), new Point(x2, y2), color, 4);
-////            Imgproc.putText(frame, String.valueOf(score), new Point(x1, y1-10), 1, 2, new Scalar(0,0,0), 5 );
-////            Imgproc.putText(frame, String.valueOf(score), new Point(x1, y1-10), 1, 2, color, 2 );
-//
-//            Rect toCrop = new Rect(
-//                    x1, //limit to ext bound : avoid negative values
-//                    y1, //limit to ext bound : avoid negative values
-//                    x2-x1, //limit to ext bound : avoid out of the image
-//                    y2-y1 //limit to ext bound : avoid out of the image
-//            );
-//            try{
-//                //convert to bitmap
-//                Mat croppedTargetMat = frame.submat(toCrop);
-//                float[] recog = classifiier.runInference(croppedTargetMat);
-//
-//                Imgproc.putText(frame, String.valueOf(recog[425]), new Point(x1, y1-10), 1, 2, new Scalar(0,0,0), 5 );
-//                Imgproc.putText(frame, String.valueOf(recog[425]), new Point(x1, y1-10), 1, 2, new Scalar(120,255,200), 2 );
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//
-//
-//        }
-
-
-
-
-
         //convert to bitmap
-        Mat croppedTargetMat = frame.clone();
-//                            Imgproc.resize(croppedTargetMat, croppedTargetMat, new Size(256,256));
-        Bitmap bitmapImage = Bitmap.createBitmap(croppedTargetMat.cols(), croppedTargetMat.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(croppedTargetMat, bitmapImage);
+        Mat resizedFrame = new Mat();
+        Imgproc.resize(frame, resizedFrame, new Size(320,320));
+        Bitmap bitmapImagefull = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(resizedFrame, bitmapImagefull);
 
-        InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
-
-        
-
-        
-        
-//// MLKit
-//        SelfieSegmenterOptions options =
-//                new SelfieSegmenterOptions.Builder()
-//                        .setDetectorMode(SelfieSegmenterOptions.SINGLE_IMAGE_MODE)
-//                        .enableRawSizeMask()
-//                        .build();
-//
-//        Segmenter segmenter = Segmentation.getClient(options);
-//
-//
-//        Task<SegmentationMask> result =
-//                segmenter.process(inputImage)
-//                        .addOnSuccessListener(
-//                                new OnSuccessListener<SegmentationMask>() {
-//                                    @Override
-//                                    public void onSuccess(SegmentationMask mask) {
-//                                        // Task completed successfully
-//                                        // ...
-//                                        Log.i(TAG, "Task Complete!");
-//                                        segmentationMask = mask;
-//
-//
-//                                        ByteBuffer maskbuff = segmentationMask.getBuffer();
-//                                        int maskWidth = segmentationMask.getWidth();
-//                                        int maskHeight = segmentationMask.getHeight();
-//                                        Bitmap maskBitmap = Bitmap.createBitmap(maskWidth,maskHeight, Bitmap.Config.RGB_565);
-//
-//                                        for (int y = 0; y < maskHeight; y++) {
-//                                            for (int x = 0; x < maskWidth; x++) {
-//                                                // Gets the confidence of the (x,y) pixel in the mask being in the foreground.
-//                                                float foregroundConfidence = maskbuff.getFloat();
-//                                                if (foregroundConfidence>0.8)
-//                                                {
-////                                                    Log.i(TAG, "proba " + x + "," + y + " = " + foregroundConfidence);
-//                                                    maskBitmap.setPixel(x, y, ANDROID_GREEN);
-//                                                }
-//                                                Utils.bitmapToMat(maskBitmap, frame);
-//
-//                                                Imgproc.resize(frame, frame, new Size(1024,768));
-//                                            }
-//                                        }
-//
-//
-//                                    } //end onsuccess
-//                                })
-//                        .addOnFailureListener(
-//                                new OnFailureListener() {
-//                                    @Override
-//                                    public void onFailure(@NonNull Exception e) {
-//                                        // Task failed with an exception
-//                                        // ...
-//                                    }
-//                                });
-////
-////                try {
-////                        Tasks.await(result);
-////                    } catch (Exception e) {
-////                        e.printStackTrace();
-////                    }
+        //Human detection
+            tfliteDetections = multiDetector.recognizeImage(bitmapImagefull, 0.4f, 99.0f, 99.0f,
+                    true, frame);
 
 
 
-        // Mediapipe
-
-
-        // Convert an Android’s Bitmap object to a MediaPipe’s Image object.
-        mpImage = new BitmapImageBuilder(bitmapImage).build();
-        ImageSegmenterResult segmenterResult = imagesegmenter.segment(mpImage);
-
-
-//       Bitmap resultingBitmap = BitmapExtractor.extract( segmenterResult.categoryMask().get());
-
-        try{
-//            ByteBuffer myByteBuffer =  ByteBufferExtractor.extract(segmenterResult.categoryMask().get());
-//            Bitmap resultingBitmap = BitmapExtractor.extract( segmenterResult.categoryMask().get());
-
-            MPImage categoryMask =  segmenterResult.categoryMask().get();
-            ByteBuffer myByteBuffer =  ByteBufferExtractor.extract(categoryMask);
-
-            MPImage confidenceMask =  segmenterResult.confidenceMasks().get().get(0);
-            ByteBuffer confidenceByteBuffer =  ByteBufferExtractor.extract(confidenceMask);
-            FloatBuffer confidenceBuffer = ((ByteBuffer) confidenceByteBuffer.rewind()).asFloatBuffer();
-
-            int[] pixels = new int[myByteBuffer.capacity()];
-            int[] originalPixels  = new int[bitmapImage.getWidth()*bitmapImage.getHeight()];
-
-            bitmapImage.getPixels(originalPixels, 0, bitmapImage.getWidth(),
-                    0, 0, bitmapImage.getWidth(), bitmapImage.getHeight());
-
-//            Log.w(TAG, "Result confidence size ="+ confidenceByteBuffer.);
-            for (int ii=0; ii<pixels.length; ii++)
-            {
-//                if(myByteBuffer.get(ii)>=0) // if something else recognized than background
-                if(confidenceBuffer.get(ii)<0.1f) // if something else recognized than background
-                {
-                    pixels[ii] = originalPixels[ii]; //get(crop) pixel value from the captured image
-//                    Log.w(TAG, "confidence at "+ii+" ="+confidenceBuffer.get(ii) + "   "+confidenceByteBuffer.getFloat(ii));
-                }
-            }
-
-            Bitmap resultingbmp = Bitmap.createBitmap(
-                    pixels,
-                    categoryMask.getWidth(),
-                    categoryMask.getHeight(),
-                    Bitmap.Config.ARGB_8888
-            );
-            Mat todisplay = new Mat();
-
-            bitmapToMat(resultingbmp, todisplay);
-            return todisplay;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return frame;
+        return multiDetector.displayMat;
 
 
     } // end function
