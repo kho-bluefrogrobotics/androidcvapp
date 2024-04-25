@@ -277,15 +277,15 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         frame = inputFrame.rgba();
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
-        //convert to bitmap
-        Mat resizedFrame = new Mat();
-        Imgproc.resize(frame, resizedFrame, new Size(320,320));
-        Bitmap bitmapImagefull = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(resizedFrame, bitmapImagefull);
+//        //convert to bitmap
+//        Mat resizedFrame = new Mat();
+//        Imgproc.resize(frame, resizedFrame, new Size(320,320));
+//        Bitmap bitmapImagefull = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
+//        Utils.matToBitmap(resizedFrame, bitmapImagefull);
 
         //Human detection
-            tfliteDetections = multiDetector.recognizeImage(bitmapImagefull, 0.4f, 99.0f, 99.0f,
-                    true, frame);
+            tfliteDetections = multiDetector.recognizeImage(frame, 0.4f, 99.0f, 99.0f,
+                    false);
 
 
 
