@@ -285,7 +285,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         //Human detection
             tfliteDetections = multiDetector.recognizeImage(frame, 0.4f, 99.0f, 99.0f,
-                    false);
+                    0.3f, true);
 
 
 
