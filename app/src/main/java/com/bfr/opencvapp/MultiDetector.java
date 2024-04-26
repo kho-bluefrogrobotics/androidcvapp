@@ -190,7 +190,7 @@ public class MultiDetector {
      * @param humanThres Threshold for human detection. Set very high >1.0 to exclude detection
      * @param faceThres Threshold for face detection. Set very high >1.0 to exclude detection
      * @param handThres Threshold for hand detection. Set very high >1.0 to exclude detection
-     * @param doubleCheckHuman enable/disable the doublechecking of a human detection, using the confidence of a Movenet model
+     * @param doubleCheckHumanReq enable/disable the doublechecking of a human detection, using the confidence of a Movenet model
      * @param originalMat the input image
      * @return array of detections
      */
@@ -271,7 +271,7 @@ public class MultiDetector {
                             // resizing for Movenet model, with padding to keep ratio
                             Mat resizedWithScale = resizeWithPadding(croppedTargetMat, 256, 256);
                             // double check if is really a human
-                            isReallyHuman =doubleCheckHuman(movenetDetector, resizedWithScale, 0.3f);
+                            isReallyHuman = doubleCheckHuman(movenetDetector, resizedWithScale, 0.3f);
 
                             if(isReallyHuman)
                             {
@@ -316,9 +316,9 @@ public class MultiDetector {
                                     color, 2);
                             // Write class name or confidence.
                             Imgproc.putText(displayMat, "id:" + String.valueOf(objId)+ " [" + String.format(java.util.Locale.US,"%.3f", score)+"]" , pt1,
-                                    1, 2, _BLACK, 7);
+                                    1, 3, _BLACK, 7);
                             Imgproc.putText(displayMat, "id:" + String.valueOf(objId) + " [" + String.format(java.util.Locale.US,"%.3f", score)+"]", pt1,
-                                    1, 2, color, 3);
+                                    1, 3, color, 3);
 
                             readyToDisplay = true;
                             objId = objId+1;
@@ -331,8 +331,8 @@ public class MultiDetector {
                 } // //end if score OK
             } // next detection
 
-            Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_WholeDetect.jpg",
-                    displayMat);
+//            Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_WholeDetect.jpg",
+//                    displayMat);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -346,7 +346,8 @@ public class MultiDetector {
     /**
      * get the detected objects in the image
      * @param movenet a movenet pose detector
-     * @param detectionImg an image containing e supposed human, typically obtained from a bounding box of a human detector
+     * @param detectionImg an image containing the supposed human, typically obtained from a bounding box of a human detector
+     *                     Must be 256x256
      * @param thres a confidence threshold to accept a human (recommended value=0.3)
      * @return array of detections
      */
@@ -372,6 +373,13 @@ public class MultiDetector {
     }
 
 
+    /**
+     * resize and add padding to keep scale
+     * @param input the image to resize
+     * @param desiredWidth the desired with for the output resized image
+     * @param desiredHeight the desired height for the output resized image
+     * @return a resized image
+     */
     private Mat resizeWithPadding(Mat input, int desiredWidth, int desiredHeight)
     {
 
@@ -423,8 +431,6 @@ public class MultiDetector {
         Mat resizedMat = new Mat();
         Imgproc.resize(paddedImage, resizedMat, new Size(desiredWidth, desiredHeight));
 
-        Log.i(TAG, "Resizing "+originalHeight + " " +  originalWidth +" "
-                + desiredHeight + " " + desiredWidth );
 
         return resizedMat;
     }
