@@ -46,7 +46,6 @@ import java.io.OutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Random;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddyActivity;
@@ -104,7 +103,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     // Pose estimator
     TfLiteBlazePose blazePose;
 
-    public static PersonTracker personTracker;
+    public static PersonTrackerVIT personTrackerVIT;
     Rect tracked;
 
     TfLiteYoloXHumanHeadHands humanHeadHandsDetector;
@@ -410,13 +409,15 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         blazePose = new TfLiteBlazePose(context);
         humanHeadHandsDetector = new TfLiteYoloXHumanHeadHands(context);
 
-        personTracker = new PersonTracker(detector, blazePose, humanHeadHandsDetector);
+        personTrackerVIT = new PersonTrackerVIT(detector, humanHeadHandsDetector);
 
         tracked = new Rect();
 
         videoCapture = new VideoCapture("/sdcard/Download/240408130327_trackingDebug.avi");
         videoCapture.set(CAP_PROP_POS_FRAMES, 10);
         frame = new Mat();
+
+        personTrackerVIT.startTorsoHeightEstimation();
 
     }
 
@@ -430,15 +431,15 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //        videoCapture.read(frame);
 
         if (recording)
-            videoWriter.write(personTracker.displayMat);
+            videoWriter.write(personTrackerVIT.displayMat);
 
         try
         {
-            personTracker.visualTracking(frame, false, true);
-            personTracker.readyToDisplay =false;
+            personTrackerVIT.visualTracking(frame, true);
+            personTrackerVIT.readyToDisplay =false;
 
-            Imgproc.cvtColor( personTracker.displayMat,  personTracker.displayMat, Imgproc.COLOR_RGB2BGR);
-            return personTracker.displayMat;
+            Imgproc.cvtColor( personTrackerVIT.displayMat,  personTrackerVIT.displayMat, Imgproc.COLOR_RGB2BGR);
+            return personTrackerVIT.displayMat;
         }
         catch (Exception e)
         {
@@ -481,7 +482,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         mOpenCvCameraView.setCvCameraViewListener(this);
         mOpenCvCameraView.setAlpha(0.1F);
 
-        mOpenCvCameraView.getHolder().setFixedSize(1,1);
+//        mOpenCvCameraView.getHolder().setFixedSize(1,1);
 
         // Thresholds for Tof IR sensors
         FRONT_TOF_LIM_LOWSPEED = 500;

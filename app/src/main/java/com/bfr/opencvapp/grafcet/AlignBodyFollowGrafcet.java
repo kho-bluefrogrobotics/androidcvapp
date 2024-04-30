@@ -3,7 +3,6 @@ package com.bfr.opencvapp.grafcet;
 
 //import static com.bfr.opencvapp.MainActivity.alignCheckbox;
 
-import static com.bfr.opencvapp.MainActivity.personTracker;
 import static com.bfr.opencvapp.MainActivity.speedAngularGrafcet;
 import static com.bfr.opencvapp.MainActivity.speedLinearGrafcet;
 
@@ -12,8 +11,6 @@ import android.util.Log;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
-import com.bfr.buddysdk.services.ModuleUSB;
-import com.bfr.buddysdk.services.companion.TaskCallback;
 import com.bfr.opencvapp.MainActivity;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 

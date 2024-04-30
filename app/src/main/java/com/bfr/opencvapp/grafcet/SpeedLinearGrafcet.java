@@ -3,17 +3,13 @@ package com.bfr.opencvapp.grafcet;
 
 //import static com.bfr.opencvapp.MainActivity.alignCheckbox;
 
-import static com.bfr.opencvapp.MainActivity.personTracker;
-import static com.bfr.opencvapp.MainActivity.speedLinearGrafcet;
+import static com.bfr.opencvapp.MainActivity.personTrackerVIT;
 
 import android.os.RemoteException;
 import android.util.Log;
 
-import com.bfr.buddy.ui.shared.FacialEvent;
-import com.bfr.buddy.ui.shared.GazePosition;
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
-import com.bfr.buddysdk.services.ModuleUSB;
 import com.bfr.opencvapp.MainActivity;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
@@ -244,8 +240,8 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 //               }
 
 
-                if(personTracker !=null)
-                if ((personTracker.tracked.box.y) <=maxUpperLimit)
+                if(personTrackerVIT !=null)
+                if ((personTrackerVIT.tracked.box.y) <=maxUpperLimit)
                     bboxTooBig = true;
                 else
                     bboxTooBig = false;
@@ -292,11 +288,11 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
                     case 5: // wait for tracking OK
 
-                        if(personTracker.trackingSuccess)
+                        if(personTrackerVIT.isTracking)
                             step_num=10;
 
                     case 7: // record initial torso height
-                        initialTorsoHeight = Math.max(200, personTracker.getTorsoHeight());
+                        initialTorsoHeight = Math.max(200, personTrackerVIT.getTorsoHeight());
                         step_num =10;
                         break;
 
@@ -312,7 +308,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
 //                        linearSpeed =Math.max(0.0f, (float) (-0.004 * personTracker.torsoHeight  +1) );
 
-                        if (personTracker.tracked.box.y <= finalUpperLimit) {
+                        if (personTrackerVIT.tracked.box.y <= finalUpperLimit) {
                             linearSpeed = -0.15f;
                             step_num = 190;
                             break;
@@ -328,36 +324,36 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                             step_num = 250;
                         }
                         else{ //box OK and no pbstacle
-                            if (personTracker.torsoHeight<=350 && personTracker.torsoHeight>300)
+                            if (personTrackerVIT.torsoHeight<=350 && personTrackerVIT.torsoHeight>300)
                             {
-                                Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 100");
+                                Log.i(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 100");
                                 accel = 0.5f;
                                 linearSpeed = 0.15f;
                                 step_num = 110;
                             }
-                            else if (personTracker.torsoHeight<=300 && personTracker.torsoHeight>250) {
-                                Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 110");
+                            else if (personTrackerVIT.torsoHeight<=300 && personTrackerVIT.torsoHeight>250) {
+                                Log.i(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 110");
                                 accel = 0.6f;
                                 linearSpeed = 0.3f;
                                 step_num = 120;
                             }
-                            else if (personTracker.torsoHeight<=250 && personTracker.torsoHeight>210)
+                            else if (personTrackerVIT.torsoHeight<=250 && personTrackerVIT.torsoHeight>210)
                             {
-                                Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 120");
+                                Log.i(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 120");
                                 accel = 1.0f;
                                 linearSpeed = 0.4f;
                                 step_num = 130;
                             }
-                            else if (personTracker.torsoHeight<=210 )
+                            else if (personTrackerVIT.torsoHeight<=210 )
                             {
-                                Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 150");
+                                Log.i(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 150");
                                 accel = 1.0f;
                                 linearSpeed = 0.56f;
                                 step_num = 140;
                             }
                             else
                             {
-                                Log.i(name, "Torso height = " + personTracker.torsoHeight + " -> step = 140");
+                                Log.i(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 140");
                                 accel = 0.3f;
                                 linearSpeed = 0.0f;
                                 step_num = 100;
@@ -369,7 +365,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
                     case 100://target [350;inf]
 
-                        if (personTracker.torsoHeight<350 )
+                        if (personTrackerVIT.torsoHeight<350 )
                         {
                             linearSpeed = 0.15f;
                             accel = 1.0f;
@@ -390,14 +386,14 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         break;
 
                     case 110 : // target [300;350]
-                        if(personTracker.torsoHeight>350)
+                        if(personTrackerVIT.torsoHeight>350)
                         {
                             linearSpeed = 0.0f;
                             accel = 0.3f;
                             step_num=100;
                         }
 
-                        if(personTracker.torsoHeight<300)
+                        if(personTrackerVIT.torsoHeight<300)
                         {
                             linearSpeed = 0.3f;
                             accel = 1.0f;
@@ -417,14 +413,14 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
                     case 120:// target [250;300]
 
-                        if(personTracker.torsoHeight>300)
+                        if(personTrackerVIT.torsoHeight>300)
                         {
                             linearSpeed = 0.15f;
                             accel = 0.3f;
                             step_num=110;
                         }
 
-                        if(personTracker.torsoHeight<250)
+                        if(personTrackerVIT.torsoHeight<250)
                         {
                             linearSpeed = 0.4f;
                             accel = 1.0f;
@@ -445,14 +441,14 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
                     case 130://target [210;250]
 
-                        if(personTracker.torsoHeight>250)
+                        if(personTrackerVIT.torsoHeight>250)
                         {
                             linearSpeed = 0.3f;
                             accel = 0.3f;
                             step_num=120;
                         }
 
-                        if(personTracker.torsoHeight<210)
+                        if(personTrackerVIT.torsoHeight<210)
                         {
                             linearSpeed = 0.56f;
                             accel = 1.0f;
@@ -471,7 +467,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         break;
                     case 140:// target [0;210]
 
-                        if(personTracker.torsoHeight>210)
+                        if(personTrackerVIT.torsoHeight>210)
                         {
                             linearSpeed = 0.4f;
                             accel = 0.3f;
@@ -492,7 +488,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
 
                     case 190:// going back
-                        if(personTracker.tracked.box.y>finalUpperLimit)
+                        if(personTrackerVIT.tracked.box.y>finalUpperLimit)
                             step_num = 15;
 
                         if(obstacleBehind)
@@ -513,7 +509,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         break;
 
                     case 195:// stop going back because of obstacle behind
-                        if(personTracker.tracked.box.y>finalUpperLimit) // if person is leaving
+                        if(personTrackerVIT.tracked.box.y>finalUpperLimit) // if person is leaving
                         {
                             step_num = 15;
                         }
@@ -530,7 +526,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                     case 250://
 //                        linearSpeed = 0.0f;
 
-                        if (personTracker.tracked.box.y <= finalUpperLimit) {
+                        if (personTrackerVIT.tracked.box.y <= finalUpperLimit) {
                             linearSpeed = -0.15f;
                             step_num = 190;
                             break;

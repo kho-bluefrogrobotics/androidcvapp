@@ -54,15 +54,15 @@ public class Utils {
 
     /**
     /*** Path for models (should be automatically copied at startup from the assets)***/
-    public static String modelsDir = "/storage/emulated/0/Android/data/com.bfr.opencvapp/files/nn_models/";
+    public static String MODELS_DIR = "/storage/emulated/0/Android/data/com.bfr.opencvapp/files/nn_models/";
     // QRCode
-    public static String wechatDetectorPrototxtPath = modelsDir + "detect_2021nov.prototxt";
-    public static String wechatDetectorCaffeModelPath = modelsDir + "detect_2021nov.caffemodel";
-    public static String wechatSuperResolutionPrototxtPath = modelsDir + "sr_2021nov.prototxt";
-    public static String wechatSuperResolutionCaffeModelPath = modelsDir + "sr_2021nov.caffemodel";
+    public static String wechatDetectorPrototxtPath = MODELS_DIR + "detect_2021nov.prototxt";
+    public static String wechatDetectorCaffeModelPath = MODELS_DIR + "detect_2021nov.caffemodel";
+    public static String wechatSuperResolutionPrototxtPath = MODELS_DIR + "sr_2021nov.prototxt";
+    public static String wechatSuperResolutionCaffeModelPath = MODELS_DIR + "sr_2021nov.caffemodel";
 
-    public static String yoloQRCodeCFG = modelsDir + "yolov4-tiny-custom-640.cfg";
-    public static String yoloQRCodeWeights = modelsDir + "yolov4-tiny-custom-640_last.weights";
+    public static String yoloQRCodeCFG = MODELS_DIR + "yolov4-tiny-custom-640.cfg";
+    public static String yoloQRCodeWeights = MODELS_DIR + "yolov4-tiny-custom-640_last.weights";
 
     /*** Camera calibrations ***/
     //wideangle 640x480

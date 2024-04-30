@@ -1,14 +1,13 @@
 package com.bfr.opencvapp.grafcet;
 
 
-import static com.bfr.opencvapp.MainActivity.personTracker;
+import static com.bfr.opencvapp.MainActivity.personTrackerVIT;
 
 import android.os.RemoteException;
 import android.util.Log;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
-import com.bfr.opencvapp.PersonTracker;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 import org.opencv.core.Point;
@@ -155,10 +154,10 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 
                 case 10: // get target position
 
-                    target = getCentroid(personTracker.tracked.box.x,
-                            personTracker.tracked.box.y,
-                            personTracker.tracked.box.height,
-                            personTracker.tracked.box.width
+                    target = getCentroid(personTrackerVIT.tracked.box.x,
+                            personTrackerVIT.tracked.box.y,
+                            personTrackerVIT.tracked.box.height,
+                            personTrackerVIT.tracked.box.width
                     );
                     targetX = (int) target.x;
                     targetY = (int) target.y;
@@ -210,10 +209,10 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 
 
                 case 28 : // wait for target in range
-                    target = getCentroid(personTracker.tracked.box.x,
-                            personTracker.tracked.box.y,
-                            personTracker.tracked.box.height,
-                            personTracker.tracked.box.width
+                    target = getCentroid(personTrackerVIT.tracked.box.x,
+                            personTrackerVIT.tracked.box.y,
+                            personTrackerVIT.tracked.box.height,
+                            personTrackerVIT.tracked.box.width
                     );
                     targetX = (int) target.x;
                     targetY = (int) target.y;
@@ -327,10 +326,10 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
 
                 case 60 : // wait around 1s to see if target stable
 
-                    target = getCentroid(personTracker.tracked.box.x,
-                            personTracker.tracked.box.y,
-                            personTracker.tracked.box.height,
-                            personTracker.tracked.box.width
+                    target = getCentroid(personTrackerVIT.tracked.box.x,
+                            personTrackerVIT.tracked.box.y,
+                            personTrackerVIT.tracked.box.height,
+                            personTrackerVIT.tracked.box.width
                     );
                     targetX = (int) target.x;
                     targetY = (int) target.y;
@@ -364,10 +363,10 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                     // if target is moving
                     //=> cancel body rotation
 
-                    target = getCentroid(personTracker.tracked.box.x,
-                            personTracker.tracked.box.y,
-                            personTracker.tracked.box.height,
-                            personTracker.tracked.box.width
+                    target = getCentroid(personTrackerVIT.tracked.box.x,
+                            personTrackerVIT.tracked.box.y,
+                            personTrackerVIT.tracked.box.height,
+                            personTrackerVIT.tracked.box.width
                     );
                     targetX = (int) target.x;
                     targetY = (int) target.y;

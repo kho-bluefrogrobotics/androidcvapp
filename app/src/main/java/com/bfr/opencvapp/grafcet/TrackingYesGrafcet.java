@@ -1,7 +1,7 @@
 package com.bfr.opencvapp.grafcet;
 
 
-import static com.bfr.opencvapp.MainActivity.personTracker;
+import static com.bfr.opencvapp.MainActivity.personTrackerVIT;
 
 import android.os.RemoteException;
 import android.util.Log;
@@ -158,16 +158,16 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
 
                 case 10: // get target position
 
-                    target = getCentroid(personTracker.tracked.box.x,
-                            personTracker.tracked.box.y,
-                            personTracker.tracked.box.height,
-                            personTracker.tracked.box.width
+                    target = getCentroid(personTrackerVIT.tracked.box.x,
+                            personTrackerVIT.tracked.box.y,
+                            personTrackerVIT.tracked.box.height,
+                            personTrackerVIT.tracked.box.width
                             );
                     targetX = (int) target.x;
-                    if (personTracker.tracked.objectClass==0) // if tracking a human silouhette
-                        targetY = Math.max(0,(int) (personTracker.tracked.box.y+ personTracker.tracked.box.height/4));
+                    if (personTrackerVIT.tracked.objectClass==0) // if tracking a human silouhette
+                        targetY = Math.max(0,(int) (personTrackerVIT.tracked.box.y+ personTrackerVIT.tracked.box.height/4));
                     else
-                        targetY = Math.max(0,(int) (personTracker.tracked.box.y+ personTracker.tracked.box.height));
+                        targetY = Math.max(0,(int) (personTrackerVIT.tracked.box.y+ personTrackerVIT.tracked.box.height));
 //                    Log.d(name, "Target at " + targetX + "," + targetY);
                     // compute angle
                     yesOffset = (targetY-(768/2))*0.09375f;
@@ -241,10 +241,10 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
 
 
                 case 28 : // wait for target in range
-                    target = getCentroid(personTracker.tracked.box.x,
-                            personTracker.tracked.box.y,
-                            personTracker.tracked.box.height,
-                            personTracker.tracked.box.width
+                    target = getCentroid(personTrackerVIT.tracked.box.x,
+                            personTrackerVIT.tracked.box.y,
+                            personTrackerVIT.tracked.box.height,
+                            personTrackerVIT.tracked.box.width
                     );
                     targetX = (int) target.x;
                     targetY = (int) target.y;

@@ -3,12 +3,9 @@ package com.bfr.opencvapp.grafcet;
 
 //import static com.bfr.opencvapp.MainActivity.alignCheckbox;
 
-import static com.bfr.opencvapp.MainActivity.personTracker;
-
 import android.os.RemoteException;
 import android.util.Log;
 
-import com.bfr.buddy.ui.shared.FacialEvent;
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.utils.bfr_Grafcet;

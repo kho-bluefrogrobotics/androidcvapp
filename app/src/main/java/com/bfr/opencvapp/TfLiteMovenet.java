@@ -1,13 +1,14 @@
 package com.bfr.opencvapp;
 
+import static com.bfr.opencvapp.utils.Utils.MODELS_DIR;
 import static org.opencv.core.CvType.CV_8UC3;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.RectF;
 import android.os.Build;
 import android.util.Log;
 
+import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
@@ -22,7 +23,6 @@ import org.tensorflow.lite.nnapi.NnApiDelegate;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,18 +48,11 @@ public class TfLiteMovenet {
     //Face embedding
     private float[][][][] embeedings;
 
-    //where to find the models
-    private final String DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nn_models/";
-//    private final String MODEL_NAME = "pyDNet__256x320_float16_quant.tflite";
-//    private final String MODEL_NAME = "fastdepth_256x256_float16_quant.tflite";
-//        private final String MODEL_NAME = "pose_landmark_lite.tflite";
-        private final String MODEL_NAME = "Movenet_singlepose_thunder.tflite";
+    //model file
+    private final String MODEL_NAME = "Movenet_singlepose_thunder.tflite";
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
-
-
-    public float mean = 0.0f;
 
     public TfLiteMovenet(Context context){
 
@@ -98,7 +91,7 @@ public class TfLiteMovenet {
             }
 
             //Init interpreter
-            File tfliteModel = new File(DIR+MODEL_NAME);
+            File tfliteModel = new File(MODELS_DIR +MODEL_NAME);
             tfLite = new Interpreter(tfliteModel, options );
         }
         catch (Exception e)
@@ -146,165 +139,102 @@ public class TfLiteMovenet {
 
     /**
      * get the detected objects in the image
-     * @param bitmap original image in bitmap format
+     * @param img original image
      * @return array of detections
      */
-    public float[][][][] recognizeImage(Bitmap bitmap) {
+    public float[][][][] recognizeImage(Mat img) {
 
-        ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmap);
+        Mat resizedWithScale = new Mat();
 
-        ArrayList<Recognition> detections = new ArrayList<Recognition>();
+        // if input resolution NOK
+        if(img.rows()!=256 && img.cols()!=256)
+        {
+            // resizing for Movenet model, with padding to keep ratio
+            resizedWithScale = resizeWithPadding(img, 256, 256);
+        }
+        else
+        {
+            resizedWithScale = img.clone();
+        }
+
+        // convert to bitmap
+        Bitmap bitmapImage = Bitmap.createBitmap(resizedWithScale.cols(), resizedWithScale.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(resizedWithScale, bitmapImage);
+        //get buffer
+        ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmapImage);
+
         Map<Integer, Object> outputMap = new HashMap<>();
 
         // Init Face embeedings (signature)
         embeedings = new float[1][1][OUTPUT_SIZE[0]][OUTPUT_SIZE[1]];
-//        embeedings = new float[1][16][16][48];
-        // Assign to Facenet output
+
         outputMap.put(0, embeedings);
-//        outputMap.put(1, new float[1][16]);
-//        outputMap.put(2, new float[1][16]);
-//        outputMap.put(3, new float[1][48]);
 
         Object[] inputArray = {byteBuffer};
         tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
 
-
-
-//        float[] result = new float[195];
-        Log.i("coucou", "i=" + embeedings[0].length + " j=" + 195);
-
-
-        for (int i = 0; i < embeedings[0][0].length; i++) {
-
-
-//            Log.i("coucou", i+" score=" + embeedings[0][0][i][2]);
-                mean += embeedings[0][0][i][2];
-
-//            for (int j = 0; j < 3; j++) {
-//
-////                result[ (i*j)+j] = embeedings[i][j];
-////                if (i*j+j<50) {
-////                    Log.i("coucou", "i=" + i + " j=" + j);
-////                    Log.i("coucou", ((i * j) + j) + " : " + result[i * j + j]);
-////                }
-//            }
-        }
-
-        Log.i("coucou", "score=" + (mean/ embeedings[0][0].length));
-            return embeedings;
-
-
+        return embeedings;
     }
 
 
+    /**
+     * resize and add padding to keep scale
+     * @param input the image to resize
+     * @param desiredWidth the desired with for the output resized image
+     * @param desiredHeight the desired height for the output resized image
+     * @return a resized image
+     */
+    private Mat resizeWithPadding(Mat input, int desiredWidth, int desiredHeight)
+    {
 
+        int originalHeight = input.height();
+        int originalWidth = input.width();
 
-    // return object by tflite interpreter
-    public class Recognition {
-        /**
-         * A unique identifier for what has been recognized. Specific to the class, not the instance of
-         * the object.
-         */
-        private final String id;
+        // image with original size to be padded to keep ratio of resizing
+        Mat paddedImage = input.clone();
 
-        /**
-         * Display name for the recognition.
-         */
-        private final String title;
+        if ((float)originalHeight/(float)originalWidth > (float)desiredHeight/(float)desiredWidth) // if height of orig image is too large (=>need horizontal padding)
+        {
+            // width which respects required ratio
+            int targetWidth =(int) ((float)originalHeight * (float)desiredWidth/(float)desiredHeight);
 
-        /**
-         * A sortable score for how good the recognition is relative to others. Higher should be better.
-         */
-        public final Float confidence;
+            paddedImage = new Mat( originalHeight,targetWidth, CV_8UC3, new Scalar(0, 0, 0));
+            Rect ROI= new Rect(
+                    0,
+                    0,
+                    input.cols(),
+                    input.rows() );
+            Mat roiInBlackMat = paddedImage.submat(ROI);
+            input.copyTo(roiInBlackMat);
 
-        /**
-         * Optional location within the source image for the location of the recognized object.
-         */
-        private RectF location;
+        }
+        else if((float)originalHeight/(float)originalWidth < (float)desiredHeight/(float)desiredWidth)
+        // if width of orig image is too large (=>need vertical padding)
+        {
+            // Height which respects required ratio
+            int targetHeight =(int) ((float)originalWidth * (float)desiredHeight/(float)desiredWidth );
 
-        private int detectedClass;
+            paddedImage = new Mat( targetHeight, originalWidth, CV_8UC3, new Scalar(0, 0, 0));
+            Rect ROI= new Rect(
+                    0,
+                    0,
+                    input.cols(),
+                    input.rows() );
+            Mat roiInBlackMat = paddedImage.submat(ROI);
+            input.copyTo(roiInBlackMat);
 
-        public Recognition(
-                final String id, final String title, final Float confidence, final RectF location) {
-            this.id = id;
-            this.title = title;
-            this.confidence = confidence;
-            this.location = location;
+        }
+        else // ratio is already correct
+        {
+            //do nothing, the image already has the right ratio
         }
 
-        public Recognition(final String id, final String title, final Float confidence, final RectF location, int detectedClass) {
-            this.id = id;
-            this.title = title;
-            this.confidence = confidence;
-            this.location = location;
-            this.detectedClass = detectedClass;
-        }
+        //finally resize to required size
+        Mat resizedMat = new Mat();
+        Imgproc.resize(paddedImage, resizedMat, new Size(desiredWidth, desiredHeight));
 
-        public Recognition(final String id, final String title, final Float confidence, float left, float right, float top, float bottom, int detectedClass) {
-            this.id = id;
-            this.title = title;
-            this.confidence = confidence;
-            this.location = location;
-            this.detectedClass = detectedClass;
 
-            this.left= left;
-            this.right=right;
-            this.top=top;
-            this.bottom=bottom;
-        }
-
-        public float left, right, top, bottom=0;
-
-        public String getId() {
-            return id;
-        }
-
-        public String getTitle() {
-            return title;
-        }
-
-        public Float getConfidence() {
-            return confidence;
-        }
-
-        public RectF getLocation() {
-            return new RectF(location);
-        }
-
-        public void setLocation(RectF location) {
-            this.location = location;
-        }
-
-        public int getDetectedClass() {
-            return detectedClass;
-        }
-
-        public void setDetectedClass(int detectedClass) {
-            this.detectedClass = detectedClass;
-        }
-
-        @Override
-        public String toString() {
-            String resultString = "";
-            if (id != null) {
-                resultString += "[" + id + "] ";
-            }
-
-            if (title != null) {
-                resultString += title + " ";
-            }
-
-            if (confidence != null) {
-                resultString += String.format("(%.1f%%) ", confidence * 100.0f);
-            }
-
-            if (location != null) {
-                resultString += location + " ";
-            }
-
-            return resultString.trim();
-        }
+        return resizedMat;
     }
-
 
 }

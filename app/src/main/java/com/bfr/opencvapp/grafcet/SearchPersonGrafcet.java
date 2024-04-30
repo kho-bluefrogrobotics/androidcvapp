@@ -3,17 +3,15 @@ package com.bfr.opencvapp.grafcet;
 
 //import static com.bfr.opencvapp.MainActivity.alignCheckbox;
 
-import static com.bfr.opencvapp.MainActivity.personTracker;
+import static com.bfr.opencvapp.MainActivity.personTrackerVIT;
 import static com.bfr.opencvapp.MainActivity.speedLinearGrafcet;
 
 import android.content.Context;
 import android.os.RemoteException;
 import android.util.Log;
 
-import com.bfr.buddy.ui.shared.FacialEvent;
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
-import com.bfr.buddysdk.services.ModuleUSB;
 import com.bfr.buddysdk.services.companion.TaskCallback;
 import com.bfr.opencvapp.R;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
@@ -156,7 +154,7 @@ Context context;
 
 
                     case 7: // wait a bit to give a chance to the tracking
-                        if(personTracker.trackingSuccess)
+                        if(personTrackerVIT.isTracking)
                             step_num=900;
                         if (System.currentTimeMillis()-time_in_curr_step > 500)
                             step_num = 10;
@@ -170,7 +168,7 @@ Context context;
                     case 20: //Head at zero
 
                         //if tracking again then skip
-                        if(personTracker.trackingSuccess)
+                        if(personTrackerVIT.isTracking)
                         {
                             step_num = 0;
                             go = false;
@@ -236,7 +234,7 @@ Context context;
 
                     case 29:// calc no Angle
                         //                        if(BuddySDK.Actuators.getNoPosition()>=0)
-                        if (personTracker.tracked.box.x + 0.5*personTracker.tracked.box.width<500)
+                        if (personTrackerVIT.tracked.box.x + 0.5* personTrackerVIT.tracked.box.width<500)
                             noAngle = -50.0f;
                         else
                             noAngle = 50.0f;
@@ -282,7 +280,7 @@ Context context;
 
                     case 40: // Align body and Head
 
-                        if(personTracker.trackingSuccess)
+                        if(personTrackerVIT.isTracking)
                         {
                             arrayOfStrings = context.getResources().getStringArray(R.array.search_person_found);
                             randomString = arrayOfStrings[new Random().nextInt(arrayOfStrings.length)];
@@ -337,7 +335,7 @@ Context context;
                             if (ackNo.toUpperCase().contains("FINISHED")|| timeout )
                             {
                                 Thread.sleep(500);
-                                if(personTracker.trackingSuccess) // tracking sucessful
+                                if(personTrackerVIT.isTracking) // tracking sucessful
                                     step_num=100;
                                 else // tracking not succesfull
                                 {
@@ -371,7 +369,7 @@ Context context;
 
                     case 100:// wait for tracking OK
 
-                        if(personTracker.trackingSuccess)
+                        if(personTrackerVIT.isTracking)
                         {
                             arrayOfStrings = context.getResources().getStringArray(R.array.search_person_found);
                             randomString = arrayOfStrings[new Random().nextInt(arrayOfStrings.length)];

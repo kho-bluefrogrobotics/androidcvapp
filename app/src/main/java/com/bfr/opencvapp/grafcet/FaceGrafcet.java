@@ -3,18 +3,14 @@ package com.bfr.opencvapp.grafcet;
 
 //import static com.bfr.opencvapp.MainActivity.alignCheckbox;
 
-import static com.bfr.opencvapp.MainActivity.personTracker;
-import static com.bfr.opencvapp.MainActivity.speedLinearGrafcet;
+import static com.bfr.opencvapp.MainActivity.personTrackerVIT;
 
 import android.os.RemoteException;
 import android.util.Log;
 
 import com.bfr.buddy.ui.shared.FacialEvent;
-import com.bfr.buddy.ui.shared.GazePosition;
-import com.bfr.buddy.ui.shared.IUIFaceAnimationCallback;
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
-import com.bfr.buddysdk.services.companion.TaskCallback;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 import org.opencv.core.Point;
@@ -144,7 +140,7 @@ public class FaceGrafcet extends bfr_Grafcet {
                         // new_value= ( v - min1)  * [ ( max2-min2)/(max1-min1) ] + min2
 
                         // empirically, we observe the tracked box horizontal position of its center is between 200;830
-                        float centerPosX = (float)(personTracker.tracked.box.x  + personTracker.tracked.box.width/2);
+                        float centerPosX = (float)(personTrackerVIT.tracked.box.x  + personTrackerVIT.tracked.box.width/2);
                         // changing the range
                         float scaleX = (1.0f-0.0f) / (830 - 200.0f);
                         // !!!the tracking is mirrored tracking.x = 0 -> position value must be 1
@@ -153,7 +149,7 @@ public class FaceGrafcet extends bfr_Grafcet {
                         xpos = xpos *1300;
 
                         // same thing for Y
-                        float centerPosY = (float)(personTracker.tracked.box.y ); //pointing to the top of the bbox
+                        float centerPosY = (float)(personTrackerVIT.tracked.box.y ); //pointing to the top of the bbox
                         float scaleY = (0.7f-0.3f) / (350 - 150.0f);
                         // Y is not inverted
                         float ypos = (( centerPosY - 150.0f)*scaleY + 0.3f) ;

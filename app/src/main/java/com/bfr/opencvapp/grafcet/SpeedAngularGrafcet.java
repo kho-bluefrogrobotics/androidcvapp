@@ -3,14 +3,13 @@ package com.bfr.opencvapp.grafcet;
 
 //import static com.bfr.opencvapp.MainActivity.alignCheckbox;
 
-import static com.bfr.opencvapp.MainActivity.personTracker;
+import static com.bfr.opencvapp.MainActivity.personTrackerVIT;
 
 import android.os.RemoteException;
 import android.util.Log;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
-import com.bfr.buddysdk.services.ModuleUSB;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 import org.opencv.core.Point;
@@ -99,10 +98,10 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
             try {
 
                 /*** Compute target position */
-                target = getCentroid(personTracker.tracked.box.x,
-                        personTracker.tracked.box.y,
-                        personTracker.tracked.box.height,
-                        personTracker.tracked.box.width
+                target = getCentroid(personTrackerVIT.tracked.box.x,
+                        personTrackerVIT.tracked.box.y,
+                        personTrackerVIT.tracked.box.height,
+                        personTrackerVIT.tracked.box.width
                 );
                 targetX = (int) target.x;
                 targetY = (int) target.y;
@@ -160,7 +159,7 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
 
                         ackWheels = "";
                         timerotating = System.currentTimeMillis();
-                        if (personTracker.tracked.box.x>30 && (personTracker.tracked.box.x+personTracker.tracked.box.width)<(1024-30))
+                        if (personTrackerVIT.tracked.box.x>30 && (personTrackerVIT.tracked.box.x+ personTrackerVIT.tracked.box.width)<(1024-30))
                         {
                             if(noOffset>= 15.0f) {
                                 accel = 1.1f;
@@ -188,9 +187,9 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
                         }
                         else // bbox on the image edge
                         {
-                            if (personTracker.tracked.box.x>30)
+                            if (personTrackerVIT.tracked.box.x>30)
                                 angularSpeed =-1.0f;
-                            else if((personTracker.tracked.box.x+personTracker.tracked.box.width)<(1024-30))
+                            else if((personTrackerVIT.tracked.box.x+ personTrackerVIT.tracked.box.width)<(1024-30))
                                 angularSpeed =1.0f;
                         } // end if box touches the image edges
 
@@ -206,14 +205,14 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
 
 
                     case 30: // get closer to target
-                        if (personTracker.tracked.box.height<200)
+                        if (personTrackerVIT.tracked.box.height<200)
                         {
                             step_num = 35;
-                            Log.i("coucou", "target size=" +personTracker.tracked.box.height );
+                            Log.i("coucou", "target size=" + personTrackerVIT.tracked.box.height );
                         }
                         else
                         {
-                            Log.i("coucou", "target size=" +personTracker.tracked.box.height );
+                            Log.i("coucou", "target size=" + personTrackerVIT.tracked.box.height );
                             step_num = 10;
                         }
 

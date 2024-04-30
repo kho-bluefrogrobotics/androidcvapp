@@ -5,20 +5,17 @@ package com.bfr.opencvapp.grafcet;
 
 import static com.bfr.opencvapp.MainActivity.alignBodyFollowGrafcet;
 import static com.bfr.opencvapp.MainActivity.initGrafcet;
-import static com.bfr.opencvapp.MainActivity.personTracker;
+import static com.bfr.opencvapp.MainActivity.personTrackerVIT;
 import static com.bfr.opencvapp.MainActivity.speedAngularGrafcet;
 import static com.bfr.opencvapp.MainActivity.speedLinearGrafcet;
 
 import android.os.RemoteException;
 import android.util.Log;
 
-import com.bfr.buddy.ui.shared.FacialEvent;
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
-import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 import org.opencv.core.Point;
-import org.opencv.face.Face;
 
 public class MainGrafcet extends bfr_Grafcet {
 
@@ -145,7 +142,7 @@ public class MainGrafcet extends bfr_Grafcet {
                         break;
 
                     case 70: // Wait for tracking OK
-                    if(personTracker.trackingSuccess)
+                    if(personTrackerVIT.isTracking)
                     {
 
                         step_num = 8;
@@ -179,7 +176,7 @@ public class MainGrafcet extends bfr_Grafcet {
                     case 9 : // wait for end of grafcet
 
 
-                        if (personTracker.frameCount==0)
+                        if (personTrackerVIT.frameCount==0)
                         {
                             step_num = 20;
                         }
@@ -200,7 +197,7 @@ public class MainGrafcet extends bfr_Grafcet {
                         if(!TrackingNoGrafcet.go)
                             step_num = 20;
 
-                        if (personTracker.frameCount==0)
+                        if (personTrackerVIT.frameCount==0)
                         {
                             step_num = 20;
                         }

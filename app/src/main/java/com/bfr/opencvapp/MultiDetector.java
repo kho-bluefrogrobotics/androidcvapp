@@ -2,9 +2,7 @@ package com.bfr.opencvapp;
 
 
 import static com.bfr.opencvapp.utils.Utils.Color.*;
-import static com.bfr.opencvapp.utils.Utils.modelsDir;
-
-import static org.opencv.core.CvType.CV_8UC3;
+import static com.bfr.opencvapp.utils.Utils.MODELS_DIR;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -18,7 +16,6 @@ import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.tensorflow.lite.HexagonDelegate;
 import org.tensorflow.lite.Interpreter;
@@ -27,8 +24,6 @@ import org.tensorflow.lite.gpu.GpuDelegate;
 import org.tensorflow.lite.nnapi.NnApiDelegate;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -42,17 +37,13 @@ public class MultiDetector {
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
-    private final int INPUT_SIZE = 320;
+    private final int[] INPUT_SIZE = new int[]{320,320};
     private final int[] OUTPUT_WIDTH_SSD = new int[]{50, 50, 50};
     private final int BATCH_SIZE = 1;
     private final int PIXEL_SIZE = 3;
-    //Empiric valules for Thres of acceptance
-    private final float THRES_FACE = 0.7f;
-    private final float THRES_HUMAN = 0.6f;
-    private final float THRES_HAND = 0.3f;
     private final String[] LABELS = {"Human", "Face", "Hand"};
     private final int NUM_THREADS =4;
-    private boolean WITH_NNAPI = true;
+    private boolean WITH_NNAPI = false;
     private boolean WITH_GPU = true;
     private boolean WITH_DSP = false;
 
@@ -115,7 +106,7 @@ public class MultiDetector {
             }
 
             //Init interpreter
-            File tfliteModel = new File(modelsDir+MODEL_NAME);
+            File tfliteModel = new File(MODELS_DIR +MODEL_NAME);
             tfLite = new Interpreter(tfliteModel, options );
 
 
@@ -137,17 +128,17 @@ public class MultiDetector {
     protected ByteBuffer convertBitmapToByteBuffer(Bitmap bitmap) {
         ByteBuffer byteBuffer;
         if (IS_QUANTIZED) {
-            byteBuffer = ByteBuffer.allocateDirect(BATCH_SIZE * INPUT_SIZE * INPUT_SIZE * PIXEL_SIZE);
+            byteBuffer = ByteBuffer.allocateDirect(BATCH_SIZE * INPUT_SIZE[0] * INPUT_SIZE[1] * PIXEL_SIZE);
         }
         else{
-            byteBuffer = ByteBuffer.allocateDirect(4 * BATCH_SIZE * INPUT_SIZE * INPUT_SIZE * PIXEL_SIZE);
+            byteBuffer = ByteBuffer.allocateDirect(4 * BATCH_SIZE * INPUT_SIZE[0] * INPUT_SIZE[1] * PIXEL_SIZE);
         }
         byteBuffer.order(ByteOrder.nativeOrder());
-        int[] intValues = new int[INPUT_SIZE * INPUT_SIZE];
+        int[] intValues = new int[INPUT_SIZE[0] * INPUT_SIZE[1]];
         bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
         int pixel = 0;
-        for (int i = 0; i < INPUT_SIZE; ++i) {
-            for (int j = 0; j < INPUT_SIZE; ++j) {
+        for (int i = 0; i < INPUT_SIZE[0]; ++i) {
+            for (int j = 0; j < INPUT_SIZE[1]; ++j) {
                 final int val = intValues[pixel++];
                 if (IS_QUANTIZED) {
                     byteBuffer.put((byte) ((val >> 16) & 0xFF));
@@ -166,166 +157,190 @@ public class MultiDetector {
 
     /**
      * get the detected objects in the image
-     * @param bitmap original image in bitmap format
+     * @param frame original image in Mat format
      * @param humanThres Threshold for human detection. Set very high >1.0 to exclude detection
      * @param faceThres Threshold for face detection. Set very high >1.0 to exclude detection
      * @param handThres Threshold for hand detection. Set very high >1.0 to exclude detection
-     * @param originalMat the input image
+     * @param doubleCheckThres Threshold for double checking a humandetection
+     *                         doesn't work for face and hand detections.
+     *                         to disable the double check, specify a value <=0.0F
+     *
      * @return array of detections
      */
-    public ArrayList<Recognition> recognizeImage(Bitmap bitmap, float humanThres, float faceThres, float handThres,
-                                                 boolean doubleCheckHuman, Mat originalMat) {
+    public ArrayList<Recognition> recognizeImage(Mat frame, float humanThres, float faceThres, float handThres,
+                                                 float doubleCheckThres,
+                                                 boolean withDisplay) {
 
-        Log.i(TAG, "starting detection ");
-
-        displayMat = originalMat.clone();
-
-        ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmap);
+        Log.i(TAG, "Starting Multidetector recognition" +
+                " humanThres=" + humanThres + " faceThres=" + faceThres + " handThes=" + handThres);
 
         ArrayList<Recognition> detections = new ArrayList<Recognition>();
-        Map<Integer, Object> outputMap = new HashMap<>();
+        boolean isReallyHuman = true;
 
-        outputMap.put(0, new float[1][OUTPUT_WIDTH_SSD[0]]);
-        outputMap.put(1, new float[1][OUTPUT_WIDTH_SSD[1]][4]);
-        outputMap.put(2, new float[1]);
-        outputMap.put(3, new float[1][OUTPUT_WIDTH_SSD[1]]);
+        try
+        {
+            displayMat = frame.clone();
 
-        Object[] inputArray = {byteBuffer};
-        tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
+            //convert to bitmap
+            Mat resizedFrame = new Mat();
+            Imgproc.resize(frame, resizedFrame, new Size(INPUT_SIZE[0],INPUT_SIZE[1]));
+            Bitmap bitmapImg = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(resizedFrame, bitmapImg);
 
-        float[][]  out_score= (float [][]) outputMap.get(0);
-        float[][][] bboxes = (float[][][]) outputMap.get(1);
-        float[] nb_labels = (float[]) outputMap.get(2);
-        float[][] out_labels = (float[][]) outputMap.get(3);
+            ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmapImg);
 
-        //init
-        objId = 0;
+            Map<Integer, Object> outputMap = new HashMap<>();
 
-        for (int i = 0; i < OUTPUT_WIDTH_SSD[0];i++){
-            int maxClass = (int) nb_labels[0];
-            int detectedClass = (int) out_labels[0][i];
-            final float score = out_score[0][i];
+            outputMap.put(0, new float[1][OUTPUT_WIDTH_SSD[0]]);
+            outputMap.put(1, new float[1][OUTPUT_WIDTH_SSD[1]][4]);
+            outputMap.put(2, new float[1]);
+            outputMap.put(3, new float[1][OUTPUT_WIDTH_SSD[1]]);
 
-            Log.i(TAG, "Object detected : class=" + detectedClass + " score=" + score);
+            Object[] inputArray = {byteBuffer};
+            tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
 
-            // filter by class
-            if ( (detectedClass == 0 &&  score > humanThres)  // human detection
-                    || (detectedClass == 1 &&  score > faceThres) //face detection
-                    || (detectedClass == 2 &&  score > handThres) ) // hand detection
-                  {
+            float[][]  out_score= (float [][]) outputMap.get(0);
+            float[][][] bboxes = (float[][][]) outputMap.get(1);
+            float[][] out_labels = (float[][]) outputMap.get(3);
 
-                // position in % of the image
-                final float ymin = bboxes[0][i][0];
-                final float xmin = bboxes[0][i][1];
-                final float ymax = bboxes[0][i][2];
-                final float xmax = bboxes[0][i][3];
+            //init
+            objId = 0;
 
-                if( ymin < ymax && xmin < xmax){
+            // for each detection
+            for (int i = 0; i < OUTPUT_WIDTH_SSD[0];i++)
+            {
+                int detectedClass = (int) out_labels[0][i];
+                final float score = out_score[0][i];
 
-                    // if human and need to double check
-                    if(detectedClass == 0 && doubleCheckHuman)
-                    {
-                        // crop image around human detection
-                        // for display only
-                        int cols = originalMat.cols();
-                        int rows = originalMat.rows();
+                Log.d(TAG, "Object detected : class=" + detectedClass + " score=" + score);
 
-                        int left = (int)(xmin * cols);
-                        int top = (int)(ymin * rows);
-                        int right = (int)(xmax * cols);
-                        int bottom = (int)(ymax* rows);
+                // filter by class
+                if ( (detectedClass == 0 &&  score > humanThres)  // human detection
+                        || (detectedClass == 1 &&  score > faceThres) //face detection
+                        || (detectedClass == 2 &&  score > handThres) ) // hand detection
+                {
 
-                        Rect toCrop = new Rect(
-                                left,
-                                top,
-                                right-left-5,
-                                bottom-top-10
-                        );
-                        Log.i(TAG, "To crop "+left + " " + top + " " + (right-left) + " " + (bottom-top) );
-                        Mat croppedTargetMat = originalMat.clone().submat(toCrop);
-                        // resizing for Movenet model, with padding to keep ratio
-                        Mat resizedWithScale = resizeWithPadding(croppedTargetMat, 256, 256);
-                        // if is really a human
-                        if(doubleCheckHuman(movenetDetector, resizedWithScale, 0.3f))
+                    // position in % of the image
+                    final float ymin = bboxes[0][i][0];
+                    final float xmin = bboxes[0][i][1];
+                    final float ymax = bboxes[0][i][2];
+                    final float xmax = bboxes[0][i][3];
+
+                    if( ymin < ymax && xmin < xmax){
+
+                        // if human and need to double check
+                        if(detectedClass == 0 && doubleCheckThres>0.0f)
                         {
-                            // add detection
+                            // crop image around human detection
+                            // for display only
+                            int cols = frame.cols();
+                            int rows = frame.rows();
+
+                            int left = (int)(xmin * cols);
+                            int top = (int)(ymin * rows);
+                            int right = (int)(xmax * cols);
+                            int bottom = (int)(ymax* rows);
+
+                            Rect toCrop = new Rect(
+                                    Math.max(0,left),
+                                    Math.max(0,top),
+                                    Math.min(cols-left,right-left-1),
+                                    Math.min(rows-top, bottom-top-1)
+                            );
+
+                            Log.d(TAG, "To crop "+left + " " + top + " " + (right-left) + " " + (bottom-top) );
+
+                            Mat croppedTargetMat = frame.clone().submat(toCrop);
+
+                            // double check if is really a human
+                            isReallyHuman = doubleCheckHuman(movenetDetector, croppedTargetMat, doubleCheckThres);
+
+                            if(isReallyHuman)
+                            {
+                                // add detection
+                                detections.add(new Recognition("" + i, LABELS[detectedClass], score, xmin, xmax, ymin, ymax, detectedClass));
+                            }
+                            // else ignore this detection
+
+                        }
+                        else // if not a human or no need to double check
+                        {
                             detections.add(new Recognition("" + i, LABELS[detectedClass], score, xmin, xmax, ymin, ymax, detectedClass));
                         }
-                        // else ignore this detection
 
-                    }
-                    else // if not a human or no need to double check
-                    {
-                        detections.add(new Recognition("" + i, LABELS[detectedClass], score, xmin, xmax, ymin, ymax, detectedClass));
-                    }
+                        // ********* display
+                        if (withDisplay)
+                        {
+                            if( ((detectedClass == 0 && isReallyHuman) || detectedClass >0 )
+                                    || BuildConfig.DEBUG)
+                            {
+                                //left
+                                pt1.x = (int) (xmin* displayMat.cols());
+                                //top
+                                pt1.y = (int) (ymin * displayMat.rows());
+                                //right
+                                pt2.x = (int) (xmax * displayMat.cols());
+                                //bottom
+                                pt2.y = (int) (ymax * displayMat.rows());
 
-                    // display
-                    //left
-                    pt1.x = (int) (xmin* displayMat.cols());
-                    //top
-                    pt1.y = (int) (ymin * displayMat.rows());
-                    //right
-                    pt2.x = (int) (xmax * displayMat.cols());
-                    //bottom
-                    pt2.y = (int) (ymax * displayMat.rows());
+                                Scalar color = null;
+                                switch (detectedClass){
+                                    case 0: // human
+                                        color = _GREEN;
+                                        break;
+                                    case 1: // face
+                                        color = _BLUE;
+                                        break;
+                                    case 2: // hands
+                                        color = _RED;
+                                        break;
+                                }
 
-                    Scalar color = null;
-                    switch (detectedClass){
-                        case 0: // human
-                            color = _GREEN;
-                            break;
-                        case 1: // face
-                            color = _BLUE;
-                            break;
+                                if( detectedClass == 0 && !isReallyHuman)
+                                    color = _RED;
 
-                        case 2: // hands
-                            color = _RED;
-                            break;
-                    }
-                    // Draw rectangle around detected object.
-                    Imgproc.rectangle(displayMat, pt1, pt2,
-                            color, 2);
-                    // Write class name or confidence.
-                    Imgproc.putText(displayMat, "id:" + String.valueOf(objId)+ " [" + String.format(java.util.Locale.US,"%.3f", score)+"]" , pt1,
-                            1, 4, _BLACK, 7);
-                    Imgproc.putText(displayMat, "id:" + String.valueOf(objId) + " [" + String.format(java.util.Locale.US,"%.3f", score)+"]", pt1,
-                            1, 4, color, 3);
+                                // Draw rectangle around detected object.
+                                Imgproc.rectangle(displayMat, pt1, pt2,
+                                        color, 2);
+                                // Write class name or confidence.
+                                Imgproc.putText(displayMat, "id:" + String.valueOf(objId)+ " [" + String.format(java.util.Locale.US,"%.3f", score)+"]" , pt1,
+                                        1, 3, _BLACK, 7);
+                                Imgproc.putText(displayMat, "id:" + String.valueOf(objId) + " [" + String.format(java.util.Locale.US,"%.3f", score)+"]", pt1,
+                                        1, 3, color, 3);
 
-                    readyToDisplay = true;
-                    objId = objId+1;
+                                readyToDisplay = true;
+                                objId = objId+1;
 
-                    Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_WholeDetect.jpg",
-                            displayMat);
+                            } // end if correct detection
+                        }
 
-//                    Log.i(TAG, "display frame created");
+                    } //end if ymin < ymax && xmin < xmax
 
+                } // //end if score OK
+            } // next detection
 
-                } //end if ymin < ymax && xmin < xmax
-
-
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
         return detections;
 
     }
 
 
 
+
     /**
-     * get the detected objects in the image
+     * Doublechecks a human detection, by computing the average of confidence in Pose detection
      * @param movenet a movenet pose detector
-     * @param detectionImg an image containing e supposed human, typically obtained from a bounding box of a human detector
+     * @param detectionImg an image containing the supposed human, typically obtained from a bounding box of a human detector
+     *                     Must be 256x256
      * @param thres a confidence threshold to accept a human (recommended value=0.3)
      * @return array of detections
      */
     public boolean doubleCheckHuman(TfLiteMovenet movenet, Mat detectionImg, float thres)
     {
 
-        Bitmap bitmapImage = Bitmap.createBitmap(detectionImg.cols(), detectionImg.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(detectionImg, bitmapImage);
-
-        float[][][][] result = movenet.recognizeImage(bitmapImage);
+        float[][][][] result = movenet.recognizeImage(detectionImg);
 
         //init
         humanConfidence = 0.0f;
@@ -334,69 +349,14 @@ public class MultiDetector {
         for (int i = 5; i < 12; i++) {
             humanConfidence += result[0][0][i][2];
         }
-        //computing mean
+        //computing average
         humanConfidence = humanConfidence/7;
 
         return (humanConfidence>=thres);
     }
 
 
-    private Mat resizeWithPadding(Mat input, int desiredWidth, int desiredHeight)
-    {
 
-        int originalHeight = input.height();
-        int originalWidth = input.width();
-
-        // image with originalsize to be padded to keep ratio of resizing
-        Mat paddedImage = input.clone();
-
-        if ((float)originalHeight/(float)originalWidth > (float)desiredHeight/(float)desiredWidth) // if height of orig image is too large (=>need horizontal padding)
-        {
-            // width which respects required ratio
-            int targetWidth =(int) ((float)originalHeight * (float)desiredWidth/(float)desiredHeight);
-            // compute padding size
-            int pad = (targetWidth - originalWidth);
-
-            paddedImage = new Mat( originalHeight,targetWidth, CV_8UC3, new Scalar(0, 0, 0));
-            Rect ROI= new Rect(
-                    0,
-                    0,
-                    input.cols(),
-                    input.rows() );
-            Mat roiInBlackMat = paddedImage.submat(ROI);
-            input.copyTo(roiInBlackMat);
-
-        }
-        else if((float)originalHeight/(float)originalWidth < (float)desiredHeight/(float)desiredWidth)
-        // if width of orig image is too large (=>need vertical padding)
-        {
-            // Height which respects required ratio
-            int targetHeight =(int) ((float)originalWidth * (float)desiredHeight/(float)desiredWidth );
-
-            paddedImage = new Mat( targetHeight, originalWidth, CV_8UC3, new Scalar(0, 0, 0));
-            Rect ROI= new Rect(
-                    0,
-                    0,
-                    input.cols(),
-                    input.rows() );
-            Mat roiInBlackMat = paddedImage.submat(ROI);
-            input.copyTo(roiInBlackMat);
-
-        }
-        else // ratio is already correct
-        {
-            //do nothing
-        }
-
-        //finally resize to required size
-        Mat resizedMat = new Mat();
-        Imgproc.resize(paddedImage, resizedMat, new Size(desiredWidth, desiredHeight));
-
-        Log.i(TAG, "Resizing "+originalHeight + " " +  originalWidth +" "
-                + desiredHeight + " " + desiredWidth );
-
-        return resizedMat;
-    }
 
     // return object by tflite interpreter
     public class Recognition {
