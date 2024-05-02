@@ -1,8 +1,5 @@
 package com.bfr.opencvapp.grafcet;
 
-
-//import static com.bfr.opencvapp.MainActivity.alignCheckbox;
-
 import static com.bfr.opencvapp.MainActivity.personTrackerVIT;
 
 import android.os.RemoteException;
@@ -13,73 +10,37 @@ import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.MainActivity;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
-import org.opencv.core.Point;
 
+/***
+ * In FollowMe mode, computes the linear speed needed to keep the robot close to the target
+ */
 public class SpeedLinearGrafcet extends bfr_Grafcet {
 
     public SpeedLinearGrafcet(String mname) {
         super(mname);
         this.grafcet_runnable = mysequence;
         Log.i("coucou", "Lenear speed contructor "+  MainActivity.FRONT_TOF_LIM_LOWSPEED);
-//        FRONT_TOF_LIM_LOWSPEED = MainActivity.FRONT_TOF_LIM_LOWSPEED;
-//        FRONT_TOF_LIM_HIGHSPEED = MainActivity.FRONT_TOF_LIM_HIGHSPEED;
-//        LATERAL_TOF_LIM_LOWSPEED = MainActivity.LATERAL_TOF_LIM_LOWSPEED;
-//        LATERAL_TOF_LIM_HIGHSPEED = MainActivity.LATERAL_TOF_LIM_HIGHSPEED;
+
         FRONT_TOF_LIM_LOWSPEED = 500;
         FRONT_TOF_LIM_HIGHSPEED = 650;
         LATERAL_TOF_LIM_LOWSPEED = 400;
         LATERAL_TOF_LIM_HIGHSPEED = 450;
-
     }
 
-
-    private SpeedLinearGrafcet grafcet=this;
 
     // Static variable (to manage the grafcet from outside)
     public static int step_num =0;
     public static boolean go = false;
-    final static int INTERVAL_MIN = 350;
-    final static int INTERVAL_MAX = 450;
-    private int mIntervalleHist = INTERVAL_MIN;
-    private float speed = 10F;
-
-    public static boolean rotationRequest = false;
 
     private int previous_step = 0;
     private double time_in_curr_step = 0;
     private boolean timeout = false;
 
-    public static int RESIZE_RATIO =20;
-    public static double xCenter =0.0;
-    private double xorig=0.0;
-    private double deltaPixel=0.0;
-
-    private float angleToRotate=0.0f;
-
-
-    private IUsbCommadRsp iUsbCommadRsp = new IUsbCommadRsp.Stub(){
-
-        @Override
-        public void onSuccess(String success) throws RemoteException {
-            Log.i("GRAFCET NO", "success --------------- : " + success);
-        }
-
-        @Override
-        public void onFailed(String error) throws RemoteException {
-            Log.i("GRAFCET NO", "error --------------- : " + error);
-
-        }
-    };
-
-    String ackYes="";
-    String ackNo="";
     String ackWheels="";
     public float linearSpeed = 0.0f;
 
     public float accel = 0.5f;
 
-
-    final float BASE_SPEED=0.7f;
 
     int FRONT_TOF_LIM_LOWSPEED = 600;
     int FRONT_TOF_LIM_HIGHSPEED = 600;
@@ -102,15 +63,6 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
     public float initialTorsoHeight =0.0f;
 
-    // Define the sequence/grafcet to be executed
-   /* This provides a template for a grafcet.
-   The sequence is as follows:
-   - check the checkbox
-   - Move the No from Left to right
-   - Move the no from right to left
-   - If the check box is unchecked then stop<
-   - if not, repeat
-    */
     // runable for grafcet
     private Runnable mysequence = new Runnable()
     {
@@ -564,4 +516,9 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
         return centroid;
     } //end getCentroid
 
+    //Point in the image with coords in pixel
+    class Point{
+        int x = 0;
+        int y = 0;
+    }
 }

@@ -1,8 +1,6 @@
 package com.bfr.opencvapp.grafcet;
 
 
-//import static com.bfr.opencvapp.MainActivity.alignCheckbox;
-
 import static com.bfr.opencvapp.MainActivity.personTrackerVIT;
 
 import android.os.RemoteException;
@@ -13,8 +11,11 @@ import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
-import org.opencv.core.Point;
-
+/***
+ * This grafcet manages the Face :
+ * it makes it blink every xxx seconds (random)
+ * it makes the eyes follow the target
+ */
 public class FaceGrafcet extends bfr_Grafcet {
 
     public FaceGrafcet(String mname) {
@@ -29,10 +30,6 @@ public class FaceGrafcet extends bfr_Grafcet {
     // Static variable (to manage the grafcet from outside)
     public static int step_num =0;
     public static boolean go = false;
-    final static int INTERVAL_MIN = 350;
-    final static int INTERVAL_MAX = 450;
-    private int mIntervalleHist = INTERVAL_MIN;
-    private float speed = 10F;
 
     public static boolean obstacleFaceEvtReq = false;
 
@@ -43,41 +40,6 @@ public class FaceGrafcet extends bfr_Grafcet {
     private double timeSinceLastBlink = 0;
     private double randomBlinkInterval = 4000;
 
-    public static int RESIZE_RATIO =20;
-    public static double xCenter =0.0;
-    private double xorig=0.0;
-    private double deltaPixel=0.0;
-
-    private float angleToRotate=0.0f;
-
-
-    private IUsbCommadRsp iUsbCommadRsp = new IUsbCommadRsp.Stub(){
-
-        @Override
-        public void onSuccess(String success) throws RemoteException {
-            Log.i("GRAFCET NO", "success --------------- : " + success);
-        }
-
-        @Override
-        public void onFailed(String error) throws RemoteException {
-            Log.i("GRAFCET NO", "error --------------- : " + error);
-
-        }
-    };
-
-    String ackYes="";
-    String ackNo="";
-    String ackWheels="";
-
-    // Define the sequence/grafcet to be executed
-   /* This provides a template for a grafcet.
-   The sequence is as follows:
-   - check the checkbox
-   - Move the No from Left to right
-   - Move the no from right to left
-   - If the check box is unchecked then stop
-   - if not, repeat
-    */
     // runable for grafcet
     private Runnable mysequence = new Runnable()
     {
@@ -90,7 +52,7 @@ public class FaceGrafcet extends bfr_Grafcet {
                 // if step changed
                 if (!(step_num == previous_step)) {
                     // display current step
-//                    Log.i(name, "current step: " + step_num + "  ");
+                    Log.d(name, "current step: " + step_num + "  ");
                     // update
                     previous_step = step_num;
 
@@ -110,15 +72,14 @@ public class FaceGrafcet extends bfr_Grafcet {
                 }
 
 
-                // blink ever 4s
+                // blink every xxx random amount of time
                 if (System.currentTimeMillis()-timeSinceLastBlink >randomBlinkInterval)
                 {
                     // reset
                     timeSinceLastBlink = System.currentTimeMillis();
-                    // compute next blink in random timelapse
+                    // compute next blink in random timelapse (min 3s)
                     randomBlinkInterval = (int) (Math.random()*6000)+3000;
 
-//                    Log.d(name, "Next Blink in " + randomBlinkInterval +"s");
                     //blink
                     BuddySDK.UI.playFacialEvent(FacialEvent.BLINK_EYES);
                 }
@@ -133,7 +94,7 @@ public class FaceGrafcet extends bfr_Grafcet {
                         }
                         break;
 
-                    case 5: //get position
+                    case 5: //make the eyes follow the target
 
                         // scaling the tracked box between 0;1
                         // scaling a value v =[min1;max1] to a range [min2; max2]
@@ -155,44 +116,40 @@ public class FaceGrafcet extends bfr_Grafcet {
                         float ypos = (( centerPosY - 150.0f)*scaleY + 0.3f) ;
                         ypos = ypos * 900;
 
-                        BuddySDK.UI.lookAtXY(xpos,
-                               ypos , true);
-//                        BuddySDK.UI.lookAtXY(1200, 1000, true);
-//                        Log.i(name, "coords " +
-//                                personTracker.tracked.box.x + "," + personTracker.tracked.box.y + " -- " +
-//                               xpos + ","+ ypos);
+                        // move eyes
+                        BuddySDK.UI.lookAtXY(xpos, ypos , true);
+
                         step_num = 10;
                         break;
 
-                    case 10:
+                    case 10: // obstacle behind, make the eyes look up
+
+                        // if obstacle behind
                         if(obstacleFaceEvtReq) {
-                            step_num = 30;
                             BuddySDK.UI.lookAtXY(-100, -100, true);
+                            step_num = 30;
                         }
-                        else
+                        else // continue with eyes following target
                             step_num = 5;
                         break;
 
 
                     case 30 : //play facial event for obstacle behind
-
                         // facial event
-//                        BuddySDK.UI.lookAt(GazePosition.TOP_LEFT, true);
                         Thread.sleep(500);
-//                        BuddySDK.UI.playFacialEvent(FacialEvent.SURPRISED, 1, new IUIFaceAnimationCallback.Stub() {
+
                         BuddySDK.UI.playFacialRelativeEvent();
+                        // Blink leds in red
                         BuddySDK.USB.blinkAllLed("#ff1100", 500, new IUsbCommadRsp.Stub() {
                             @Override
-                            public void onSuccess(String s) throws RemoteException {
-
-                            }
+                            public void onSuccess(String s) throws RemoteException {}
 
                             @Override
-                            public void onFailed(String s) throws RemoteException {
-
-                            }
+                            public void onFailed(String s) throws RemoteException {}
                         });
+                        //wait
                         Thread.sleep(1000);
+                        // reset leds to blue
                         BuddySDK.USB.updateAllLed("#61E3EB",  new IUsbCommadRsp.Stub() {
                             @Override
                             public void onSuccess(String s) throws RemoteException {}
@@ -200,6 +157,8 @@ public class FaceGrafcet extends bfr_Grafcet {
                             @Override
                             public void onFailed(String s) throws RemoteException {}
                         });
+
+                        //reset
                         obstacleFaceEvtReq = false;
                         step_num = 5;
                         break;
@@ -220,17 +179,5 @@ public class FaceGrafcet extends bfr_Grafcet {
     }; // end new runnable
 
 
-    /**
-     Get the centroid of a bbox (from upper left corner coordinates and height/width)
-     */
-    private Point getCentroid(int x, int y, int height, int width)
-    {
-        Point centroid = new Point();
-
-        centroid.x = x + (int)(width/2);
-        centroid.y = y + (int)(height/2);
-
-        return centroid;
-    } //end getCentroid
 
 }

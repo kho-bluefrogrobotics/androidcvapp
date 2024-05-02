@@ -70,11 +70,11 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNoGrafcet");
     TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
     MainGrafcet mainGrafcet = new MainGrafcet("MainGrafcet");
-    public AlignGrafcet alignGrafcet = new AlignGrafcet("BodyAlign") ;
+    public AlignBodyGrafcet alignGrafcet = new AlignBodyGrafcet("BodyAlign") ;
     public FaceGrafcet faceGrafcet = new FaceGrafcet("FaceGrafcet") ;
     public static InitGrafcet initGrafcet = new InitGrafcet("InitGrafcet");
     public SearchPersonGrafcet searchPersonGrafcet = new SearchPersonGrafcet("SearchPersonGrafcet", this);
-    public static AlignBodyFollowGrafcet alignBodyFollowGrafcet = new AlignBodyFollowGrafcet("AlignBodyFollowGrafcet");
+    public static AlignBodyAndFollowGrafcet alignBodyAndFollowGrafcet = new AlignBodyAndFollowGrafcet("AlignBodyFollowGrafcet");
     public static SpeedLinearGrafcet speedLinearGrafcet = new SpeedLinearGrafcet("SpeedLinearGrafcet");
     public static SpeedAngularGrafcet speedAngularGrafcet = new SpeedAngularGrafcet("SpeedAngularGrafcet");
 
@@ -83,10 +83,16 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     //Video capture
     Mat frame_orig, frame;
     VideoCapture videoCapture;
-    // Parameters for Base facial detection
-    final double THRESHOLD = 0.6;
-
-    double elpasedtime = 0.0;
+    
+    
+    // Watch me mode or Follow Me mode or Come Here mode
+    public enum FOLLOWME_MODE{
+        WATCHME,
+        FOLLOWME,
+        COMEHERE
+    }
+    
+    public static FOLLOWME_MODE followmeMode = FOLLOWME_MODE.FOLLOWME;
 
     // Thresholds for Tof IR sensors
     public static int FRONT_TOF_LIM_LOWSPEED = 500;
@@ -217,8 +223,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                     mainGrafcet.go = false;
                     mainGrafcet.step_num = 0;
 
-                    alignBodyFollowGrafcet.go=false;
-                    alignBodyFollowGrafcet.step_num=0;
+                    alignBodyAndFollowGrafcet.go=false;
+                    alignBodyAndFollowGrafcet.step_num=0;
 
 
                     speedLinearGrafcet.go=false;
@@ -249,8 +255,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 mainGrafcet.go = false;
                 mainGrafcet.step_num = 0;
 
-                alignBodyFollowGrafcet.go=false;
-                alignBodyFollowGrafcet.step_num=0;
+                alignBodyAndFollowGrafcet.go=false;
+                alignBodyAndFollowGrafcet.step_num=0;
 
 
                 speedLinearGrafcet.go=false;
@@ -259,25 +265,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
                 searchPersonGrafcet.go = false;
                 searchPersonGrafcet.step_num = 0;
-
-
-//                BuddySDK.USB.setBuddySpeed(0.01f, 1.0f, 1.0f, new IUsbCommadRsp.Stub() {
-//                    @Override
-//                    public void onSuccess(String s) throws RemoteException {
-//                        Log.w("coucou", "answer from motors: " + s);
-//                    }
-//
-//                    @Override
-//                    public void onFailed(String s) throws RemoteException {
-//                        Log.w("coucou", "answer from motors: " + s);
-//                    }
-//                });
-//
-
-
-
-
-
 
 
 
@@ -379,7 +366,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         // OpenCV manager initialization
         OpenCVLoader.initDebug();
         mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-        Log.w("coucou", "coucou onResume");
+        Log.w("MainActivity", "onResume");
 
 
     }
@@ -403,7 +390,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             e.printStackTrace();
         }
 
-        Log.w("coucou", "coucou started");
+        Log.w("MainActivity", "Camera view started");
 
         detector = new MultiDetector(this);
         blazePose = new TfLiteBlazePose(context);
@@ -499,7 +486,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         faceGrafcet.start(500);
 
         mainGrafcet.start();
-        alignBodyFollowGrafcet.start(50);
+        alignBodyAndFollowGrafcet.start(50);
         speedAngularGrafcet.start(50);
         speedLinearGrafcet.start(50);
 
@@ -510,7 +497,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             public void onFailed(String s) throws RemoteException {}
         });
 
-        Log.w("coucou","coucou onSDKReady");
+        Log.w("MainActivity","onSDKReady");
 
     }
 

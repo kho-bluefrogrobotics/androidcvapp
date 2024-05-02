@@ -1,8 +1,5 @@
 package com.bfr.opencvapp.grafcet;
 
-
-//import static com.bfr.opencvapp.MainActivity.alignCheckbox;
-
 import static com.bfr.opencvapp.MainActivity.personTrackerVIT;
 import static com.bfr.opencvapp.MainActivity.speedLinearGrafcet;
 
@@ -16,12 +13,15 @@ import com.bfr.buddysdk.services.companion.TaskCallback;
 import com.bfr.opencvapp.R;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
-import org.opencv.core.Point;
-
 import java.util.Random;
 
+/***
+ * This grafcet manages the Search person after the traccking is lost
+ */
 public class SearchPersonGrafcet extends bfr_Grafcet {
-Context context;
+
+    Context context;
+
     public SearchPersonGrafcet(String mname) {
         this(mname, null);
     }
@@ -30,75 +30,73 @@ Context context;
         super(mname);
         this.grafcet_runnable = mysequence;
         this.context = context;
-
     }
 
-    private SearchPersonGrafcet grafcet=this;
 
     // Static variable (to manage the grafcet from outside)
     public static int step_num =0;
     public static boolean go = false;
-    final static int INTERVAL_MIN = 350;
-    final static int INTERVAL_MAX = 450;
-    private int mIntervalleHist = INTERVAL_MIN;
-    private float speed = 10F;
-
-    public static boolean rotationRequest = false;
 
     private int previous_step = 0;
     private double time_in_curr_step = 0;
     private boolean timeout = false;
 
-    private double timeSinceLastBlink = 0;
-    private double randomBlinkInterval = 4000;
-
-    public static int RESIZE_RATIO =20;
-    public static double xCenter =0.0;
-    private double xorig=0.0;
-    private double deltaPixel=0.0;
-
     private float noAngle=0.0f;
-    private float wheelsAngle=0.0f;
 
+    String ackYes="";
+    String ackNo="";
+    String ackWheels="";
+    // random Buddy vocal
+    String[] arrayOfStrings;
+    String randomString;
 
     private IUsbCommadRsp wheelsRsp = new IUsbCommadRsp.Stub(){
         @Override
-        public void onSuccess(String success) throws RemoteException { ackWheels = success;
-        Log.d(name, "Motor wheels ack="+ackWheels);
-            }
+        public void onSuccess(String success){
+            ackWheels = success;
+            Log.d(name, "Motor wheels ack="+ackWheels);
+        }
 
         @Override
-        public void onFailed(String error) throws RemoteException { ackWheels = error; }
+        public void onFailed(String error) { ackWheels = error; }
     };
 
     private IUsbCommadRsp yesRsp = new IUsbCommadRsp.Stub(){
         @Override
-        public void onSuccess(String success) throws RemoteException { ackYes = success; Log.d(name, "Motor YES ack="+ackYes);}
+        public void onSuccess(String success) { ackYes = success; Log.d(name, "Motor YES ack="+ackYes);}
         @Override
-        public void onFailed(String error) throws RemoteException { ackYes = error;Log.d(name, "Motor YES ack="+ackYes); }
+        public void onFailed(String error)  { ackYes = error;Log.d(name, "Motor YES ack="+ackYes); }
     };
 
     private IUsbCommadRsp noRsp = new IUsbCommadRsp.Stub(){
         @Override
-        public void onSuccess(String success) throws RemoteException { ackNo = success; Log.d(name, "Motor NO ack="+ackNo);}
+        public void onSuccess(String success){ ackNo = success; Log.d(name, "Motor NO ack="+ackNo);}
         @Override
-        public void onFailed(String error) throws RemoteException { ackNo = error; Log.d(name, "Motor NO ack="+ackNo);}
+        public void onFailed(String error) { ackNo = error; Log.d(name, "Motor NO ack="+ackNo);}
     };
-    String ackYes="";
-    String ackNo="";
-    String ackWheels="";
-    String[] arrayOfStrings;
-    String randomString;
 
-    // Define the sequence/grafcet to be executed
-   /* This provides a template for a grafcet.
-   The sequence is as follows:
-   - check the checkbox
-   - Move the No from Left to right
-   - Move the no from right to left
-   - If the check box is unchecked then stop
-   - if not, repeat
-    */
+    private TaskCallback wheelsTskCbk =  new TaskCallback() {
+        @Override
+        public void onStarted() {
+            ackWheels = "OK";
+        }
+
+        @Override
+        public void onSuccess(String s) {
+            ackWheels = "FINISHED";
+        }
+
+        @Override
+        public void onCancel() {
+            ackWheels = "FINISHED";
+        }
+
+        @Override
+        public void onError(String s) {
+            ackWheels = "ERROR";
+        }
+    };
+
     // runable for grafcet
     private Runnable mysequence = new Runnable()
     {
@@ -131,6 +129,28 @@ Context context;
                 }
 
 
+                /*** Compute obstacle detection */
+                boolean obstacleL, obstacleR, obstacleM;
+                int frontTofThres = 500;
+                int lateralTofThres = 500;
+
+                if ((BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() < lateralTofThres) )
+                    obstacleL = true;
+                else
+                    obstacleL = false;
+
+
+                if( (BuddySDK.Sensors.TofSensors().FrontRight().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontRight().getDistance() < lateralTofThres) )
+                    obstacleR = true;
+                else
+                    obstacleR = false;
+
+                if( (BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() < frontTofThres) )
+                    obstacleM = true;
+                else
+                    obstacleM = false;
+
+
 
                 // which grafcet step?
                 switch (step_num) {
@@ -142,13 +162,11 @@ Context context;
                         }
                         break;
 
-                    case 5://
-
+                    case 5: // Say that buddy lost the target
                         arrayOfStrings = context.getResources().getStringArray(R.array.user_lost);
                         randomString = arrayOfStrings[new Random().nextInt(arrayOfStrings.length)];
                         BuddySDK.Speech.startSpeaking(randomString);
-                        BuddySDK.USB.moveBuddy(0.3f, 0.0f, 0.05f, 0.5f,  wheelsRsp);
-//                        step_num = 7;
+                        BuddySDK.USB.setBuddySpeed(0.0f, 0.0f, 0.2f,   wheelsRsp);
                         step_num = 20;
                         break;
 
@@ -166,7 +184,6 @@ Context context;
                         break;
 
                     case 20: //Head at zero
-
                         //if tracking again then skip
                         if(personTrackerVIT.isTracking)
                         {
@@ -178,19 +195,8 @@ Context context;
                         //reset
                         ackYes="";
                         ackNo="";
-                        ackWheels="";
 
-                        //Stop wheels
-//                        BuddySDK.USB.emergencyStopMotors(wheelsRsp);
-                        float deccel = 0.0f;
-                        if (speedLinearGrafcet.linearSpeed >=0.3)
-                            deccel = 0.1f;
-                        else //low speed
-                            deccel = 0.3f;
-
-                        BuddySDK.USB.moveBuddy(0.3f, 0.0f, 0.05f, deccel,  wheelsRsp);
-
-
+                        // reset head position
                         BuddySDK.USB.buddySayNo(40, noAngle, noRsp);
                         BuddySDK.USB.buddySayYes(40, 20, yesRsp);
 
@@ -198,7 +204,10 @@ Context context;
                         break;
 
 
-                    case 25 : //wait for  wheels
+                    case 25 : //wait for wheels
+
+                        if(obstacleL || obstacleR || obstacleM)
+                            BuddySDK.USB.emergencyStopMotors(wheelsRsp);
 
                         if (ackWheels.toUpperCase().contains("RESPONDING")) // managing the msg "board not responding (timeout)"
                             step_num = 20;
@@ -209,7 +218,10 @@ Context context;
                             step_num = 27;
                         break;
 
-                    case 27 : //wait for  Yes
+                    case 27 : //wait for Yes
+
+                        if(obstacleL || obstacleR || obstacleM)
+                            BuddySDK.USB.emergencyStopMotors(wheelsRsp);
 
                         if (ackYes.toUpperCase().contains("RESPONDING")) // managing the msg "board not responding (timeout)"
                             step_num = 20;
@@ -220,21 +232,23 @@ Context context;
                             step_num = 28;
                         break;
 
-                    case 28 : //wait for  Yes
+                    case 28 : //wait for No
+
+                        if(obstacleL || obstacleR || obstacleM)
+                            BuddySDK.USB.emergencyStopMotors(wheelsRsp);
+
                         if (ackNo.toUpperCase().contains("RESPONDING")) // managing the msg "board not responding (timeout)"
                             step_num = 20;
 
                         if (ackNo.toUpperCase().contains("FINISHED") ||
                         ( Math.abs(BuddySDK.Actuators.getNoPosition()) < 2  )
-
                                 || timeout) {
                             step_num = 29;
                         }
                         break;
 
                     case 29:// calc no Angle
-                        //                        if(BuddySDK.Actuators.getNoPosition()>=0)
-                        if (personTrackerVIT.tracked.box.x + 0.5* personTrackerVIT.tracked.box.width<500)
+                        if(BuddySDK.Actuators.getNoPosition()>=0)
                             noAngle = -50.0f;
                         else
                             noAngle = 50.0f;
@@ -242,14 +256,12 @@ Context context;
                         break;
 
                     case 30: // turn head No
-
                         ackNo = "";
-                        BuddySDK.USB.buddySayNo(80.0f, noAngle, noRsp);
+                        BuddySDK.USB.buddySayNo(50.0f, noAngle, noRsp);
                         step_num=32;
                         break;
 
                     case 32: // wait for OK
-
                         if (ackNo.toUpperCase().contains("RESPONDING")) // managing the msg "board not responding (timeout)"
                             step_num = 30;
 
@@ -257,29 +269,17 @@ Context context;
                             step_num = 33;
 
                         break;
-                    case 33 : //wait for end
+
+                    case 33 : //wait for end of mvt
                         if(ackNo.toUpperCase().contains("FINISHED") || timeout)
                             step_num = 40;
                         break;
 
-//                    case 35: // check if tracking OK
-//                        Thread.sleep(800);
-//                        if(personTracker.trackingSuccess)
-//                        {
-//                            arrayOfStrings = context.getResources().getStringArray(R.array.search_person_found);
-//                            randomString = arrayOfStrings[new Random().nextInt(arrayOfStrings.length)];
-//                            BuddySDK.Speech.startSpeaking(randomString);
-//                            step_num = 105;
-//                        }
-//                        else
-//                        {
-//                            step_num=40;
-//                        }
-//                        break;
 
 
                     case 40: // Align body and Head
 
+                        // if tracking again advertise user
                         if(personTrackerVIT.isTracking)
                         {
                             arrayOfStrings = context.getResources().getStringArray(R.array.search_person_found);
@@ -289,32 +289,8 @@ Context context;
 
                         ackWheels = "";
                         ackNo = "";
-                        BuddySDK.USB.rotateNoPrecision(70.0f, -BuddySDK.Actuators.getNoPosition(), 0, new TaskCallback() {
-                            @Override
-                            public void onStarted() {
-                                ackWheels="OK";
-                            }
+                        BuddySDK.USB.rotateNoPrecision(70.0f, -BuddySDK.Actuators.getNoPosition(), 0, wheelsTskCbk);
 
-                            @Override
-                            public void onSuccess(String s) {
-                                ackWheels="FINISHED";
-                            }
-
-                            @Override
-                            public void onCancel() {
-
-                            }
-
-                            @Override
-                            public void onError(String s) {
-                                ackWheels="ERROR";
-                            }
-                        });
-////
-
-//                        BuddySDK.USB.rotateBuddy(40.0f, -BuddySDK.Actuators.getNoPosition(), wheelsRsp);
-                        Log.i(name, "Current No pos= " +BuddySDK.Actuators.getNoPosition() + "  ");
-//                        BuddySDK.USB.rotateBuddy(70.0f, -BuddySDK.Actuators.getNoPosition(), wheelsRsp);
                         // compensate with head (NO)
                         BuddySDK.USB.buddySayNo(35.0f, 0.0f, noRsp);
 
@@ -339,7 +315,7 @@ Context context;
                                     step_num=100;
                                 else // tracking not succesfull
                                 {
-                                    // radomly make a U-Turn
+                                    // randomly make a U-Turn (1 out of 3times)
                                     if( (new Random().nextInt(4) == 3) )
                                         step_num = 50;
                                     else // make the head turn alone
@@ -406,18 +382,5 @@ Context context;
         } // end run
     }; // end new runnable
 
-
-    /**
-     Get the centroid of a bbox (from upper left corner coordinates and height/width)
-     */
-    private Point getCentroid(int x, int y, int height, int width)
-    {
-        Point centroid = new Point();
-
-        centroid.x = x + (int)(width/2);
-        centroid.y = y + (int)(height/2);
-
-        return centroid;
-    } //end getCentroid
 
 }

@@ -1,87 +1,55 @@
 package com.bfr.opencvapp.grafcet;
 
 
-//import static com.bfr.opencvapp.MainActivity.alignCheckbox;
-
-import android.os.RemoteException;
 import android.util.Log;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
-import org.opencv.core.Point;
-
 public class InitGrafcet extends bfr_Grafcet {
 
     public InitGrafcet(String mname) {
         super(mname);
         this.grafcet_runnable = mysequence;
-
     }
-
-
-    private InitGrafcet grafcet=this;
 
     // Static variable (to manage the grafcet from outside)
     public static int step_num =0;
     public static boolean go = false;
-    final static int INTERVAL_MIN = 350;
-    final static int INTERVAL_MAX = 450;
-    private int mIntervalleHist = INTERVAL_MIN;
-    private float speed = 10F;
-
-    public static boolean rotationRequest = false;
 
     private int previous_step = 0;
     private double time_in_curr_step = 0;
     private boolean timeout = false;
 
-    private double timeSinceLastBlink = 0;
-    private double randomBlinkInterval = 4000;
-
-    public static int RESIZE_RATIO =20;
-    public static double xCenter =0.0;
-    private double xorig=0.0;
-    private double deltaPixel=0.0;
-
-    private float angleToRotate=0.0f;
-
-
-    private IUsbCommadRsp wheelsRsp = new IUsbCommadRsp.Stub(){
-        @Override
-        public void onSuccess(String success) throws RemoteException { ackWheels = success; }
-
-        @Override
-        public void onFailed(String error) throws RemoteException { ackWheels = error; }
-    };
-
-    private IUsbCommadRsp yesRsp = new IUsbCommadRsp.Stub(){
-        @Override
-        public void onSuccess(String success) throws RemoteException { ackYes = success; }
-        @Override
-        public void onFailed(String error) throws RemoteException { ackYes = error; }
-    };
-
-    private IUsbCommadRsp noRsp = new IUsbCommadRsp.Stub(){
-        @Override
-        public void onSuccess(String success) throws RemoteException { ackNo = success; }
-        @Override
-        public void onFailed(String error) throws RemoteException { ackNo = error; }
-    };
+    // Response callback from USB
     String ackYes="";
     String ackNo="";
     String ackWheels="";
 
-    // Define the sequence/grafcet to be executed
-   /* This provides a template for a grafcet.
-   The sequence is as follows:
-   - check the checkbox
-   - Move the No from Left to right
-   - Move the no from right to left
-   - If the check box is unchecked then stop
-   - if not, repeat
-    */
+    private IUsbCommadRsp wheelsRsp = new IUsbCommadRsp.Stub(){
+        @Override
+        public void onSuccess(String success) { ackWheels = success; }
+
+        @Override
+        public void onFailed(String error) { ackWheels = error; }
+    };
+
+    private IUsbCommadRsp yesRsp = new IUsbCommadRsp.Stub(){
+        @Override
+        public void onSuccess(String success) { ackYes = success; }
+        @Override
+        public void onFailed(String error) { ackYes = error; }
+    };
+
+    private IUsbCommadRsp noRsp = new IUsbCommadRsp.Stub(){
+        @Override
+        public void onSuccess(String success) { ackNo = success; }
+        @Override
+        public void onFailed(String error) { ackNo = error; }
+    };
+
+
     // runable for grafcet
     private Runnable mysequence = new Runnable()
     {
@@ -163,20 +131,15 @@ public class InitGrafcet extends bfr_Grafcet {
                         }
                         break;
 
-                    case 20 : //init head
-                        BuddySDK.USB.buddySayYes(50.0f, 30.0f, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String s) throws RemoteException {}
-                            @Override
-                            public void onFailed(String s) throws RemoteException {}
-                        });
+                    case 20 : // reset head position
 
-                        BuddySDK.USB.buddySayNo(50.0f, 0.0f, new IUsbCommadRsp.Stub() {
-                            @Override
-                            public void onSuccess(String s) throws RemoteException {}
-                            @Override
-                            public void onFailed(String s) throws RemoteException {}
-                        });
+                        //reset
+                        ackYes="";
+                        ackNo="";
+
+                        BuddySDK.USB.buddySayYes(50.0f, 30.0f, yesRsp);
+
+                        BuddySDK.USB.buddySayNo(50.0f, 0.0f, noRsp);
                         go = false;
                     break;
                     default:
@@ -193,19 +156,5 @@ public class InitGrafcet extends bfr_Grafcet {
 
         } // end run
     }; // end new runnable
-
-
-    /**
-     Get the centroid of a bbox (from upper left corner coordinates and height/width)
-     */
-    private Point getCentroid(int x, int y, int height, int width)
-    {
-        Point centroid = new Point();
-
-        centroid.x = x + (int)(width/2);
-        centroid.y = y + (int)(height/2);
-
-        return centroid;
-    } //end getCentroid
 
 }

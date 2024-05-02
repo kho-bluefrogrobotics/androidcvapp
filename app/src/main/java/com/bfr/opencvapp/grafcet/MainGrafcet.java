@@ -1,85 +1,33 @@
 package com.bfr.opencvapp.grafcet;
 
 
-//import static com.bfr.opencvapp.MainActivity.alignCheckbox;
-
-import static com.bfr.opencvapp.MainActivity.alignBodyFollowGrafcet;
+import static com.bfr.opencvapp.MainActivity.alignBodyAndFollowGrafcet;
 import static com.bfr.opencvapp.MainActivity.initGrafcet;
 import static com.bfr.opencvapp.MainActivity.personTrackerVIT;
 import static com.bfr.opencvapp.MainActivity.speedAngularGrafcet;
 import static com.bfr.opencvapp.MainActivity.speedLinearGrafcet;
 
-import android.os.RemoteException;
 import android.util.Log;
 
-import com.bfr.buddy.usb.shared.IUsbCommadRsp;
+import com.bfr.opencvapp.MainActivity;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
-
-import org.opencv.core.Point;
 
 public class MainGrafcet extends bfr_Grafcet {
 
     public MainGrafcet(String mname) {
         super(mname);
         this.grafcet_runnable = mysequence;
-
     }
-
-
-    private MainGrafcet grafcet=this;
 
     // Static variable (to manage the grafcet from outside)
     public static int step_num =0;
     public static boolean go = false;
-    final static int INTERVAL_MIN = 350;
-    final static int INTERVAL_MAX = 450;
-    private int mIntervalleHist = INTERVAL_MIN;
-    private float speed = 10F;
-
-    public static boolean rotationRequest = false;
 
     private int previous_step = 0;
     private double time_in_curr_step = 0;
     private boolean timeout = false;
 
-    private double timeSinceLastBlink = 0;
-    private double randomBlinkInterval = 4000;
 
-    public static int RESIZE_RATIO =20;
-    public static double xCenter =0.0;
-    private double xorig=0.0;
-    private double deltaPixel=0.0;
-
-    private float angleToRotate=0.0f;
-
-
-    private IUsbCommadRsp iUsbCommadRsp = new IUsbCommadRsp.Stub(){
-
-        @Override
-        public void onSuccess(String success) throws RemoteException {
-            Log.i("GRAFCET NO", "success --------------- : " + success);
-        }
-
-        @Override
-        public void onFailed(String error) throws RemoteException {
-            Log.i("GRAFCET NO", "error --------------- : " + error);
-
-        }
-    };
-
-    String ackYes="";
-    String ackNo="";
-    String ackWheels="";
-
-    // Define the sequence/grafcet to be executed
-   /* This provides a template for a grafcet.
-   The sequence is as follows:
-   - check the checkbox
-   - Move the No from Left to right
-   - Move the no from right to left
-   - If the check box is unchecked then stop
-   - if not, repeat
-    */
     // runable for grafcet
     private Runnable mysequence = new Runnable()
     {
@@ -114,8 +62,8 @@ public class MainGrafcet extends bfr_Grafcet {
 
                 // which grafcet step?
                 switch (step_num) {
-                    case 0: // Wait for checkbox
-                        //wait until check box
+                    case 0: // Wait for begining
+
                         if (go) {
                             // go to next step
                             step_num = 5;
@@ -131,33 +79,43 @@ public class MainGrafcet extends bfr_Grafcet {
                         break;
 
                     case 7: // wait for end of init
-//
                         if(!initGrafcet.go)
                         {
                             initGrafcet.stop();
                             initGrafcet.go = false;
 
-                            step_num = 70;
+                            step_num = 9;
                         }
                         break;
 
-                    case 70: // Wait for tracking OK
-                    if(personTrackerVIT.isTracking)
-                    {
+                    case 9: // Wait for tracking OK
+                        if(personTrackerVIT.isTracking)
+                        {
+                            step_num = 10;
+                        }
 
-                        step_num = 8;
-                    }
+                        if(timeout) // if no tracking (timeout)
+                            step_num = 20; // activate search person
 
-                    if(timeout) // if no tracking (timeout)
-                        step_num = 20; // activate search person
+                        break;
 
-                    break;
 
-                    case 8://starting body alignment
+                    case 10:// redirect to WatchMe Follow or ComeHere
 
-                        alignBodyFollowGrafcet.go = true;
-                        alignBodyFollowGrafcet.step_num = 0;
+                        if(MainActivity.followmeMode == MainActivity.FOLLOWME_MODE.COMEHERE)
+                            step_num = 60;
+                        else if(MainActivity.followmeMode == MainActivity.FOLLOWME_MODE.FOLLOWME)
+                            step_num = 20;
+                        else
+                            step_num = 40;
 
+                        break;
+
+
+
+                    case 20: // Follow me mode
+                        alignBodyAndFollowGrafcet.go = true;
+                        alignBodyAndFollowGrafcet.step_num = 0;
 
                         speedAngularGrafcet.go = true;
                         speedAngularGrafcet.step_num = 0;
@@ -165,72 +123,71 @@ public class MainGrafcet extends bfr_Grafcet {
                         speedLinearGrafcet.go = true;
                         speedLinearGrafcet.step_num = 0;
 
-//                        TrackingNoGrafcet.go = true;
                         TrackingYesGrafcet.go = true;
                         FaceGrafcet.go = true;
 
-                        step_num = 9;
+                        step_num = 90;
                         break;
 
 
-                    case 9 : // wait for end of grafcet
 
 
-                        if (personTrackerVIT.frameCount==0)
-                        {
-                            step_num = 20;
-                        }
-
-                        break;
-
-
-                    case 10: //start Tracking
+                    case 40: //WatchMe mode
                         TrackingNoGrafcet.go = true;
                         TrackingYesGrafcet.go = true;
-                        AlignGrafcet.go = true;
+                        AlignBodyGrafcet.go = true;
                         FaceGrafcet.go = true;
 
-                        step_num = 15;
+                        step_num = 90;
                         break;
 
-                    case 15:
-                        if(!TrackingNoGrafcet.go)
-                            step_num = 20;
 
+
+                    case 60: //ComeHere mode
+                        TrackingNoGrafcet.go = true;
+                        TrackingYesGrafcet.go = true;
+                        AlignBodyAndComeHereGrafcet.go = true;
+                        FaceGrafcet.go = true;
+
+                        step_num = 90;
+                        break;
+
+
+                    case 90 : // if tracking lost
                         if (personTrackerVIT.frameCount==0)
                         {
-                            step_num = 20;
+                            step_num = 100;
                         }
                         break;
 
-                    case 20:// activate search person
+                    case 100:// activate search person
 
                         TrackingNoGrafcet.go = false;
                         TrackingYesGrafcet.go = false;
-                        AlignGrafcet.go = false;
+                        AlignBodyGrafcet.go = false;
                         TrackingNoGrafcet.step_num=0;
                         TrackingYesGrafcet.step_num=0;
-                        AlignGrafcet.step_num=0;
+                        AlignBodyGrafcet.step_num=0;
 
                         SpeedLinearGrafcet.go=false;
                         SpeedLinearGrafcet.step_num=0;
                         SpeedAngularGrafcet.go=false;
                         SpeedAngularGrafcet.step_num = 0;
-                        AlignBodyFollowGrafcet.go=false;
-                        AlignBodyFollowGrafcet.step_num=0;
+                        AlignBodyAndFollowGrafcet.go=false;
+                        AlignBodyAndFollowGrafcet.step_num=0;
 
                         SearchPersonGrafcet.go=true;
                         SearchPersonGrafcet.step_num=0;
 
-                        step_num = 25;
+                        step_num = 105;
                         break;
 
-                    case 25: //wait for end of searchperson
+                    case 105: //wait for end of searchperson
                         if(!SearchPersonGrafcet.go)
                         {
                             SearchPersonGrafcet.step_num=0;
                             SearchPersonGrafcet.go = false;
-                            step_num = 70;
+                            step_num = 9;
                         }
 
                         break;
@@ -250,18 +207,5 @@ public class MainGrafcet extends bfr_Grafcet {
         } // end run
     }; // end new runnable
 
-
-    /**
-     Get the centroid of a bbox (from upper left corner coordinates and height/width)
-     */
-    private Point getCentroid(int x, int y, int height, int width)
-    {
-        Point centroid = new Point();
-
-        centroid.x = x + (int)(width/2);
-        centroid.y = y + (int)(height/2);
-
-        return centroid;
-    } //end getCentroid
 
 }

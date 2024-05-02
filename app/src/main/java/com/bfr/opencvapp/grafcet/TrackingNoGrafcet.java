@@ -13,28 +13,19 @@ import com.bfr.opencvapp.utils.bfr_Grafcet;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 
-
+/***
+ * This grafcet aligns the NO with the target
+ */
 public class TrackingNoGrafcet extends bfr_Grafcet{
 
     public TrackingNoGrafcet(String mname) {
         super(mname);
         this.grafcet_runnable = mysequence;
-
     }
-
-
-
-    private TrackingNoGrafcet grafcet=this;
 
     // Static variable (to manage the grafcet from outside)
     public static int step_num =0;
     public static boolean go = false;
-
-    //A CHANGER POUR LE YES
-    final static int INTERVAL_MIN = 250;
-    final static int INTERVAL_MAX = 350;
-    private int mIntervalleHist = INTERVAL_MIN;
-    private float speed = 10F;
 
     final int STABILIZATION_TIME = 1000;
     public static boolean waitingForAlign = false;
@@ -42,9 +33,6 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
     private int previous_step = -1;
     private double time_in_curr_step = 0;
     private boolean timeout = false;
-
-    public static Rect tracked=new Rect();
-
 
     Point target;
     int targetX, targetY;
@@ -74,15 +62,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
         }
     };
 
-    // Define the sequence/grafcet to be executed
-   /* This provides a template for a grafcet.
-   The sequence is as follows:
-   - check the checkbox
-   - Move the yes from top to bottom
-   - Move the no from bottom to top
-   - If the check box is unchecked then stop
-   - if not, repeat
-    */
+
     // runable for grafcet
     private Runnable mysequence = new Runnable()
     {
@@ -248,7 +228,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                             if (Math.abs(BuddySDK.Actuators.getNoPosition()) >=59)
                             {
                                 // make body move
-                                AlignGrafcet.rotationRequest = true;
+                                AlignBodyGrafcet.rotationRequest = true;
                             }
                             else // No not moving for unknown reason, while target still not in range
                             {
@@ -387,8 +367,8 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
                             public void onFailed(String s) throws RemoteException {}
                         });
 
-                        AlignGrafcet.rotationRequest = false;
-                        AlignGrafcet.step_num = 10;
+                        AlignBodyGrafcet.rotationRequest = false;
+                        AlignBodyGrafcet.step_num = 10;
 
                         //
                         step_num = 20;
