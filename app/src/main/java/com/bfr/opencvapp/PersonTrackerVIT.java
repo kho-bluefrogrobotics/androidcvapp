@@ -285,11 +285,11 @@ public class PersonTrackerVIT {
             Mat displayMat = frame.clone();
 
             // to debug: lmits in Follow-Me
-            if(tracked.box.y<= speedLinearGrafcet.maxUpperLimit)
-                Imgproc.rectangle(displayMat, new Point(10, speedLinearGrafcet.maxUpperLimit), new Point(1020, 750),
+            if(tracked.box.y<= speedLinearGrafcet.MAX_UPPER_LIMIT)
+                Imgproc.rectangle(displayMat, new Point(10, speedLinearGrafcet.MAX_UPPER_LIMIT), new Point(1020, 750),
                         _BLUE, 5);
             else
-                Imgproc.rectangle(displayMat, new Point(10, speedLinearGrafcet.maxUpperLimit), new Point(1020, 750),
+                Imgproc.rectangle(displayMat, new Point(10, speedLinearGrafcet.MAX_UPPER_LIMIT), new Point(1020, 750),
                         _YELLOW, 2);
 
             if (frameCount == 0 ) // not tracking yet

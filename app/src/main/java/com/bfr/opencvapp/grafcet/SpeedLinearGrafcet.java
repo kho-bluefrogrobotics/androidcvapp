@@ -13,6 +13,8 @@ import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 /***
  * In FollowMe mode, computes the linear speed needed to keep the robot close to the target
+ * it uses the torso height of the target to estimate the distance
+ * (the torso height is obtained with a pose estimation of the tracked human)
  */
 public class SpeedLinearGrafcet extends bfr_Grafcet {
 
@@ -36,11 +38,9 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
     private double time_in_curr_step = 0;
     private boolean timeout = false;
 
-    String ackWheels="";
     public float linearSpeed = 0.0f;
 
     public float accel = 0.5f;
-
 
     int FRONT_TOF_LIM_LOWSPEED = 600;
     int FRONT_TOF_LIM_HIGHSPEED = 600;
@@ -56,12 +56,10 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
     public boolean obstacleBehind = false;
     boolean bboxTooBig = false;
 
-    public int maxUpperLimit = 200;
-    public int finalUpperLimit = 120;
+    public int MAX_UPPER_LIMIT = 200;
+    public int FINAL_UPPER_LIMIT = 120;
 
     boolean LLedOn, RLedOn, MLedOn;
-
-    public float initialTorsoHeight =0.0f;
 
     // runable for grafcet
     private Runnable mysequence = new Runnable()
@@ -174,35 +172,13 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                 } //end if obstalce and led off
 
 
-
-
-//               if(personTracker.tracked.objectClass==0) // if tracking a human silouhette
-//               {
-//                   if ((personTracker.tracked.box.height*personTracker.tracked.box.width) >40000)
-//                       bboxTooBig =true;
-//                   else
-//                       bboxTooBig = false;
-//               }
-//               else // tracking a face
-//               {
-//                   if ((personTracker.tracked.box.height*personTracker.tracked.box.width) >21000)
-//                       bboxTooBig =true;
-//                   else
-//                       bboxTooBig = false;
-//               }
-
-
+                // if top of the tracked bbox touches the upper limit of the image
+                // (means that the target is really close)
                 if(personTrackerVIT !=null)
-                if ((personTrackerVIT.tracked.box.y) <=maxUpperLimit)
-                    bboxTooBig = true;
-                else
-                    bboxTooBig = false;
-
-//                Log.e(name, "STOP!!!!!! area=" +  (personTracker.tracked.box.height*personTracker.tracked.box.width)
-//                        +"   sensors= " + BuddySDK.Sensors.USSensors().LeftUS().getDistance() + " , " + BuddySDK.Sensors.USSensors().RightUS().getDistance()
-//                        +"   ampl= " + BuddySDK.Sensors.USSensors().LeftUS().getAmplitude()+ " , " + BuddySDK.Sensors.USSensors().RightUS().getAmplitude()
-//
-//                );
+                    if ((personTrackerVIT.tracked.box.y) <= MAX_UPPER_LIMIT)
+                        bboxTooBig = true;
+                    else
+                        bboxTooBig = false;
 
 
                 // if step changed
@@ -241,33 +217,25 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                     case 5: // wait for tracking OK
 
                         if(personTrackerVIT.isTracking)
-                            step_num=10;
-
-                    case 7: // record initial torso height
-                        initialTorsoHeight = Math.max(200, personTrackerVIT.getTorsoHeight());
-                        step_num =10;
-                        break;
-
-                    case 10: // check target offaxis alignment
-
-                        step_num = 15;
+                            step_num=15;
                         break;
 
 
-                    case 15: // rotate body to align
+                    case 15: // compute linear speed to keep target close
 
-                        ackWheels = "";
-
-//                        linearSpeed =Math.max(0.0f, (float) (-0.004 * personTracker.torsoHeight  +1) );
-
-                        if (personTrackerVIT.tracked.box.y <= finalUpperLimit) {
+                        // if top of the bounding box is touching the upper edge of the image
+                        if (personTrackerVIT.tracked.box.y <= FINAL_UPPER_LIMIT) {
+                            // go backwards
                             linearSpeed = -0.15f;
                             step_num = 190;
                             break;
                         }
+
+                        // define linear speed <-> obstacle or size of the torso
                         if(obstacleL || obstacleR || obstacleM
                             ||     bboxTooBig)
-                        {   Log.i(name, "OBSTACLE L/M/R= " +
+                        {
+                            Log.d(name, "OBSTACLE L/M/R= " +
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
@@ -278,45 +246,46 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         else{ //box OK and no pbstacle
                             if (personTrackerVIT.torsoHeight<=350 && personTrackerVIT.torsoHeight>300)
                             {
-                                Log.i(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 100");
+                                Log.d(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 100");
                                 accel = 0.5f;
                                 linearSpeed = 0.15f;
                                 step_num = 110;
                             }
                             else if (personTrackerVIT.torsoHeight<=300 && personTrackerVIT.torsoHeight>250) {
-                                Log.i(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 110");
+                                Log.d(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 110");
                                 accel = 0.6f;
                                 linearSpeed = 0.3f;
                                 step_num = 120;
                             }
                             else if (personTrackerVIT.torsoHeight<=250 && personTrackerVIT.torsoHeight>210)
                             {
-                                Log.i(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 120");
+                                Log.d(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 120");
                                 accel = 1.0f;
                                 linearSpeed = 0.4f;
                                 step_num = 130;
                             }
                             else if (personTrackerVIT.torsoHeight<=210 )
                             {
-                                Log.i(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 150");
+                                Log.d(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 150");
                                 accel = 1.0f;
                                 linearSpeed = 0.56f;
                                 step_num = 140;
                             }
                             else
                             {
-                                Log.i(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 140");
+                                Log.d(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 140");
                                 accel = 0.3f;
                                 linearSpeed = 0.0f;
                                 step_num = 100;
                             }
 
-                        }
+                        } //end if no obstacle
 
                         break;
 
                     case 100://target [350;inf]
 
+                        // target is getting far
                         if (personTrackerVIT.torsoHeight<350 )
                         {
                             linearSpeed = 0.15f;
@@ -324,10 +293,11 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                             step_num = 110;
                         }
 
-
+                        // interrupt if obstacle
                         if(obstacleL || obstacleR || obstacleM
                                 ||     bboxTooBig)
-                        {   Log.i(name, "OBSTACLE L/M/R= " +
+                        {
+                            Log.d(name, "OBSTACLE L/M/R= " +
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
@@ -338,6 +308,8 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         break;
 
                     case 110 : // target [300;350]
+
+                        //target is getting closer
                         if(personTrackerVIT.torsoHeight>350)
                         {
                             linearSpeed = 0.0f;
@@ -345,15 +317,19 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                             step_num=100;
                         }
 
+                        //target is getting far
                         if(personTrackerVIT.torsoHeight<300)
                         {
                             linearSpeed = 0.3f;
                             accel = 1.0f;
                             step_num=120;
                         }
+
+                        // interrupt if obstacle
                         if(obstacleL || obstacleR || obstacleM
                                 ||     bboxTooBig)
-                        {   Log.i(name, "OBSTACLE L/M/R= " +
+                        {
+                            Log.d(name, "OBSTACLE L/M/R= " +
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
@@ -365,13 +341,14 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
                     case 120:// target [250;300]
 
+                        //target is getting closer
                         if(personTrackerVIT.torsoHeight>300)
                         {
                             linearSpeed = 0.15f;
                             accel = 0.3f;
                             step_num=110;
                         }
-
+                        //target is getting far
                         if(personTrackerVIT.torsoHeight<250)
                         {
                             linearSpeed = 0.4f;
@@ -379,9 +356,11 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                             step_num=130;
                         }
 
+                        // interrupt if obstacle
                         if(obstacleL || obstacleR || obstacleM
                                 ||     bboxTooBig)
-                        {   Log.i(name, "OBSTACLE L/M/R= " +
+                        {
+                            Log.d(name, "OBSTACLE L/M/R= " +
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
@@ -392,14 +371,14 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         break;
 
                     case 130://target [210;250]
-
+                        //target is getting closer
                         if(personTrackerVIT.torsoHeight>250)
                         {
                             linearSpeed = 0.3f;
                             accel = 0.3f;
                             step_num=120;
                         }
-
+                        //target is getting far
                         if(personTrackerVIT.torsoHeight<210)
                         {
                             linearSpeed = 0.56f;
@@ -407,8 +386,10 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                             step_num=140;
                         }
 
+                        // interrupt if obstacle
                         if(obstacleL || obstacleR || obstacleM)
-                        {   Log.i(name, "OBSTACLE L/M/R= " +
+                        {
+                            Log.d(name, "OBSTACLE L/M/R= " +
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
@@ -419,6 +400,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         break;
                     case 140:// target [0;210]
 
+                        //target is getting closer
                         if(personTrackerVIT.torsoHeight>210)
                         {
                             linearSpeed = 0.4f;
@@ -426,8 +408,10 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                             step_num=130;
                         }
 
+                        // interrupt if obstacle
                         if(obstacleL || obstacleR || obstacleM)
-                        {   Log.i(name, "OBSTACLE L/M/R= " +
+                        {
+                            Log.d(name, "OBSTACLE L/M/R= " +
                                 BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() + ","
                                 + BuddySDK.Sensors.TofSensors().FrontRight().getDistance() + "\n step -> 250");
@@ -440,7 +424,7 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
 
 
                     case 190:// going back
-                        if(personTrackerVIT.tracked.box.y>finalUpperLimit)
+                        if(personTrackerVIT.tracked.box.y> FINAL_UPPER_LIMIT)
                             step_num = 15;
 
                         if(obstacleBehind)
@@ -454,14 +438,14 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         break;
 
 
-                    case 194 : // play facia elvent to signal obstacle behind
+                    case 194 : // play facial elvent to signal obstacle behind
                         // wait for handshake
                         if (!FaceGrafcet.obstacleFaceEvtReq)
                             step_num = 195;
                         break;
 
                     case 195:// stop going back because of obstacle behind
-                        if(personTrackerVIT.tracked.box.y>finalUpperLimit) // if person is leaving
+                        if(personTrackerVIT.tracked.box.y> FINAL_UPPER_LIMIT) // if person is leaving
                         {
                             step_num = 15;
                         }
@@ -475,15 +459,18 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         }
 
                         break;
-                    case 250://
-//                        linearSpeed = 0.0f;
 
-                        if (personTrackerVIT.tracked.box.y <= finalUpperLimit) {
+                    case 250:// Obstacle-->Stopped
+
+                        // if tracked bbox touches the upper limit of the image
+                        if (personTrackerVIT.tracked.box.y <= FINAL_UPPER_LIMIT) {
+                            // go backwards
                             linearSpeed = -0.15f;
                             step_num = 190;
                             break;
                         }
 
+                        // if no more obstacle
                         if(!obstacleL && !obstacleR && !obstacleM && !bboxTooBig)
                             step_num = 15;
                         break;
@@ -503,22 +490,4 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
     }; // end new runnable
 
 
-    /**
-     Get the centroid of a bbox (from upper left corner coordinates and height/width)
-     */
-    private Point getCentroid(int x, int y, int height, int width)
-    {
-        Point centroid = new Point();
-
-        centroid.x = x + (int)(width/2);
-        centroid.y = y + (int)(height/2);
-
-        return centroid;
-    } //end getCentroid
-
-    //Point in the image with coords in pixel
-    class Point{
-        int x = 0;
-        int y = 0;
-    }
 }

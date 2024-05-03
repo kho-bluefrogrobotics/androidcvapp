@@ -4,6 +4,8 @@ package com.bfr.opencvapp.grafcet;
 import static com.bfr.opencvapp.MainActivity.personTrackerVIT;
 
 import android.util.Log;
+
+import com.bfr.opencvapp.BboxCentroid;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 /***
@@ -32,7 +34,7 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
     final float BASE_LOW_SPEED=0.15f;
     float targetangle = 0.0f;
 
-    Point target;
+    BboxCentroid target = new BboxCentroid();
     int targetX, targetY;
     public float noOffset=0.0f;
 
@@ -47,7 +49,7 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
             try {
 
                 /*** Compute target position */
-                target = getCentroid(personTrackerVIT.tracked.box.x,
+                target.getCentroid(personTrackerVIT.tracked.box.x,
                         personTrackerVIT.tracked.box.y,
                         personTrackerVIT.tracked.box.height,
                         personTrackerVIT.tracked.box.width
@@ -59,7 +61,6 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
                 // resolution of 1024x768, with a 120° aperture
                 // => 1pixel ~= 120 / sqrt(1024^2+768^2) = 0.09375
                 noOffset = (targetX-(1024/2))*0.09375f;
-
 
                 // if step changed
                 if (!(step_num == previous_step)) {
@@ -161,23 +162,4 @@ public class SpeedAngularGrafcet extends bfr_Grafcet {
         } // end run
     }; // end new runnable
 
-
-    /**
-     Get the centroid of a bbox (from upper left corner coordinates and height/width)
-     */
-    private Point getCentroid(int x, int y, int height, int width)
-    {
-        Point centroid = new Point();
-
-        centroid.x = x + (int)(width/2);
-        centroid.y = y + (int)(height/2);
-
-        return centroid;
-    } //end getCentroid
-
-    //Point in the image with coords in pixel
-    class Point{
-        int x = 0;
-        int y = 0;
-    }
 }
