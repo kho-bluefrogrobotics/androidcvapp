@@ -1,5 +1,6 @@
 package com.bfr.opencvapp.grafcet;
 
+import static com.bfr.opencvapp.MainActivity.personTrackerVIT;
 import static com.bfr.opencvapp.MainActivity.speedAngularGrafcet;
 import static com.bfr.opencvapp.MainActivity.speedLinearGrafcet;
 
@@ -8,6 +9,7 @@ import android.util.Log;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddySDK;
+import com.bfr.opencvapp.BboxCentroid;
 import com.bfr.opencvapp.utils.bfr_Grafcet;
 
 
@@ -40,8 +42,6 @@ public class AlignBodyAndFollowGrafcet extends bfr_Grafcet {
     private double time_in_curr_step = 0;
     private boolean timeout = false;
 
-
-    String ackWheels="";
     float rotspeed=1.0f;
     float linearspeed = 0.0f;
     float accel =  0.5f;
@@ -54,6 +54,64 @@ public class AlignBodyAndFollowGrafcet extends bfr_Grafcet {
     int frontTofThres = 999;
     int lateralTofThres = 999;
 
+    BboxCentroid target = new BboxCentroid();
+
+    public static float yesOffset =0.0f;
+    float YES_OFFSET_THRES = 5.0f;
+    float yesAngle =0.0f;
+    float yesSpeed = 30.0f;
+    public static float noOffset=0.0f;
+    float NO_OFFSET_THRES = 0.7f;
+    float noAngle=0.0f;
+    float noSpeed = 30.0f;
+    float BASE_SPEED = 30.0f;
+    float accFactor = 1.0f;
+
+    String ackNo="";
+    String ackYes="";
+    String ackWheels="";
+
+    private IUsbCommadRsp yesRsp = new IUsbCommadRsp.Stub(){
+        @Override
+        public void onSuccess(String success) {
+            Log.i(name, "YES --------------- : " + success);
+            ackYes = success;
+        }
+
+        @Override
+        public void onFailed(String error) {
+            Log.i(name, "YES error --------------- : " + error);
+            ackYes = error;
+        }
+    };
+
+    private IUsbCommadRsp noRsp = new IUsbCommadRsp.Stub(){
+        @Override
+        public void onSuccess(String success) {
+            Log.i(name, "NO --------------- : " + success);
+            ackNo = success;
+        }
+
+        @Override
+        public void onFailed(String error) {
+            Log.i(name, "NO error --------------- : " + error);
+            ackNo = error;
+        }
+    };
+
+    private IUsbCommadRsp wheelsRsp = new IUsbCommadRsp.Stub(){
+        @Override
+        public void onSuccess(String success) {
+            Log.i(name, "Wheels --------------- : " + success);
+            ackWheels = success;
+        }
+
+        @Override
+        public void onFailed(String error) {
+            Log.i(name, "Wheels error --------------- : " + error);
+            ackWheels = error;
+        }
+    };
 
     // runable for grafcet
     private Runnable mysequence = new Runnable()
@@ -93,10 +151,59 @@ public class AlignBodyAndFollowGrafcet extends bfr_Grafcet {
                         //wait until check box
                         if (go) {
                             // go to next step
-                            step_num = 15;
+                            step_num = 3;
                         }
                         break;
 
+
+                    case 3: // get target position
+
+                        target.getCentroid(personTrackerVIT.tracked.box.x,
+                                personTrackerVIT.tracked.box.y,
+                                personTrackerVIT.tracked.box.height,
+                                personTrackerVIT.tracked.box.width
+                        );
+                        if (personTrackerVIT.tracked.objectClass==0) // if tracking a human silouhette
+                            target.y = Math.max(0,(int) (personTrackerVIT.tracked.box.y+ personTrackerVIT.tracked.box.height/4));
+                        else // tracking a face
+                            target.y = Math.max(0,(int) (personTrackerVIT.tracked.box.y+ personTrackerVIT.tracked.box.height));
+
+                        // compute angle for the wideAngle camera
+                        // resolution of 1024x768, with a 120° aperture
+                        // => 1pixel ~= 120 / sqrt(1024^2+768^2) = 0.09375
+                        yesOffset = (target.y-(768/2))*0.09375f;
+                        noOffset = (target.x-(1024/2))*0.09375f;
+
+                        step_num = 5;
+                        break;
+
+                    case 5: // rotate head and body to align with target
+                        //reset
+                        ackYes = "";
+                        ackNo = "";
+                        ackWheels = "";
+
+                        yesAngle = Math.max(-13, BuddySDK.Actuators.getYesPosition()- yesOffset);
+                        noAngle = BuddySDK.Actuators.getNoPosition()+noOffset;
+
+                        BuddySDK.USB.buddySayYes(BASE_SPEED, yesAngle, yesRsp);
+                        BuddySDK.USB.buddySayNo(BASE_SPEED, 0, noRsp);
+                        BuddySDK.USB.rotateBuddy(40.0f, -noAngle, wheelsRsp);
+
+                        step_num = 7;
+                        break;
+
+                    case 7: // wait for end of NO mvt
+                        if(ackNo.toUpperCase().contains("TIMEOUT"))
+                            step_num = 5;
+                        if(ackNo.toUpperCase().contains("FINISHED") || timeout)
+                            step_num = 10;
+                        break;
+
+                    case 10: // wait for wheels en d of mvt
+                        if(ackWheels.toUpperCase().contains("FINISHED") || timeout)
+                            step_num = 15;
+                        break;
 
                     case 15: // Move body
 
