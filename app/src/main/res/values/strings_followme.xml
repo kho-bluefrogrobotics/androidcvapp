@@ -19,5 +19,15 @@
         <item>"Coucou! Je suis là!"</item>
         <item>"Salut! Je reste à tes côtés maintenant!"</item>
     </string-array>
+    <string-array name="come_here_arrived">
+        <item>"Voilà!"</item>
+        <item>"Tadaaaa!"</item>
+        <item>"Meuh voici"</item>
+        <item>"Dis donc, tu es encore plus beau de près!"</item>
+        <item>"Tu m'as appelé? Que puis-je faire pour toi?"</item>
+        <item>"OK, qu'est-ce qu'on fait maintenant?"</item>
+        <item>"Coucou! Je suis là!"</item>
+        <item>"Salut! Je reste à tes côtés maintenant!"</item>
+    </string-array>
 
 </resources>
