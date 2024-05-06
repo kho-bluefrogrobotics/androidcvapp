@@ -42,6 +42,7 @@
         android:layout_marginTop="180dp"
         android:background="#EDE9E9"
         android:text="record"
+        android:visibility="invisible"
         android:textColor="#000000"
         android:textSize="20sp"
         app:layout_constraintStart_toStartOf="parent"
@@ -63,7 +64,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:background="#EDE9E9"
-        android:text="Align"
+        android:text="SUIS MOI! "
+        android:textSize="18sp"
         app:layout_constraintStart_toStartOf="@+id/initButton"
         app:layout_constraintTop_toBottomOf="@+id/initButton" />
 
