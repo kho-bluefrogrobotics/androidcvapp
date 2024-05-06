@@ -83,13 +83,13 @@ public class AlignBodyAndComeHereGrafcet extends bfr_Grafcet {
         @Override
         public void onSuccess(String success) {
             Log.i(name, "YES --------------- : " + success);
-            ackWheels = success;
+            ackYes = success;
         }
 
         @Override
         public void onFailed(String error) {
             Log.i(name, "YES error --------------- : " + error);
-            ackWheels = error;
+            ackYes = error;
         }
     };
 
@@ -225,6 +225,8 @@ public class AlignBodyAndComeHereGrafcet extends bfr_Grafcet {
                             step_num = 22;
                         if(ackNo.toUpperCase().contains("TIMEOUT"))
                             step_num = 15;
+                        if(ackNo.toUpperCase().contains("FINISHED") || timeout)
+                            step_num = 27;
                         break;
 
                     case 22: // wait for Yes OK
@@ -232,6 +234,8 @@ public class AlignBodyAndComeHereGrafcet extends bfr_Grafcet {
                             step_num = 25;
                         if(ackYes.toUpperCase().contains("TIMEOUT"))
                             step_num = 15;
+                        if(ackNo.toUpperCase().contains("FINISHED") || timeout)
+                            step_num = 27;
                         break;
 
                     case 25 : // wait for end of mvt NO
@@ -305,7 +309,7 @@ public class AlignBodyAndComeHereGrafcet extends bfr_Grafcet {
                             step_num = 70;
                         }
                         break;
-                        
+
                     case 70 : //stopped -> vocal acknowledge
 
                         arrayOfStrings = context.getResources().getStringArray(R.array.come_here_arrived);
