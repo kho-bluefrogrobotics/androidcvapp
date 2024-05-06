@@ -40,7 +40,7 @@ public class TrackingNoGrafcet extends bfr_Grafcet{
     float previousOffset=0.0f;
     float noAngle=0.0f;
     float noSpeed = 30.0f;
-    float BASE_SPEED = 30.0f;
+    float BASE_SPEED = 40.0f;
     float accFactor = 1.0f;
 
     String ackNo = "";
