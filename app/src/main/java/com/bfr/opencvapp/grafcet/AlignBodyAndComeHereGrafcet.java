@@ -28,11 +28,6 @@ public class AlignBodyAndComeHereGrafcet extends bfr_Grafcet {
         super(mname);
         this.grafcet_runnable = mysequence;
 
-        FRONT_TOF_LIM_LOWSPEED = 500;
-        FRONT_TOF_LIM_HIGHSPEED = 650;
-        LATERAL_TOF_LIM_LOWSPEED = 400;
-        LATERAL_TOF_LIM_HIGHSPEED = 450;
-
         this.context = context;
 
     }
@@ -52,28 +47,13 @@ public class AlignBodyAndComeHereGrafcet extends bfr_Grafcet {
     String[] arrayOfStrings;
     String randomString;
 
-    int FRONT_TOF_LIM_LOWSPEED = 600;
-    int FRONT_TOF_LIM_HIGHSPEED = 600;
-    int LATERAL_TOF_LIM_LOWSPEED = 600;
-    int LATERAL_TOF_LIM_HIGHSPEED = 600;
-
-    int frontTofThres = 999;
-    int lateralTofThres = 999;
-
     BboxCentroid target = new BboxCentroid();
 
     public static float yesOffset =0.0f;
-    float YES_OFFSET_THRES = 5.0f;
     float yesAngle =0.0f;
-    float yesSpeed = 30.0f;
     public static float noOffset=0.0f;
-    float NO_OFFSET_THRES = 0.7f;
     float noAngle=0.0f;
-    float noSpeed = 30.0f;
     float BASE_SPEED = 30.0f;
-    float accFactor = 1.0f;
-
-    public int MAX_UPPER_LIMIT = 200;
 
     String ackNo="";
     String ackYes="";
@@ -301,7 +281,7 @@ public class AlignBodyAndComeHereGrafcet extends bfr_Grafcet {
                         step_num = 60;
                         break;
 
-                    case 60: //wait arrived at destination
+                    case 60: //wait arrived at destination (linear speed = 0)
                         if(SpeedLinearGrafcet.step_num == 250)
                         {
                             BuddySDK.USB.emergencyStopMotors(wheelsRsp);
