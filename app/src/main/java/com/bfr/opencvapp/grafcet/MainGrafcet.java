@@ -143,9 +143,9 @@ public class MainGrafcet extends bfr_Grafcet {
 
 
 
-                    case 60: //ComeHere mode
-                        TrackingNoGrafcet.go = true;
-                        TrackingYesGrafcet.go = true;
+                    case 60: //COMEHERE: mode
+                        TrackingNoGrafcet.go = false;
+                        TrackingYesGrafcet.go = false;
                         AlignBodyAndComeHereGrafcet.go = true;
                         FaceGrafcet.go = true;
 
@@ -175,6 +175,9 @@ public class MainGrafcet extends bfr_Grafcet {
                         SpeedAngularGrafcet.step_num = 0;
                         AlignBodyAndFollowGrafcet.go=false;
                         AlignBodyAndFollowGrafcet.step_num=0;
+
+                        AlignBodyAndComeHereGrafcet.go=false;
+                        AlignBodyAndComeHereGrafcet.step_num=0;
 
                         SearchPersonGrafcet.go=true;
                         SearchPersonGrafcet.step_num=0;
