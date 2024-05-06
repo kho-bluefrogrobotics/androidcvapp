@@ -304,6 +304,8 @@ public class AlignBodyAndComeHereGrafcet extends bfr_Grafcet {
                     case 60: //wait arrived at destination
                         if(SpeedLinearGrafcet.step_num == 250)
                         {
+                            BuddySDK.USB.emergencyStopMotors(wheelsRsp);
+
                             AlignBodyAndFollowGrafcet.go = false;
                             AlignBodyAndFollowGrafcet.step_num = 0;
                             step_num = 70;
