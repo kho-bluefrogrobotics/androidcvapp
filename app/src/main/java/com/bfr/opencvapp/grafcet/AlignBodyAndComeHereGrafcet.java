@@ -278,6 +278,17 @@ public class AlignBodyAndComeHereGrafcet extends bfr_Grafcet {
                         TrackingYesGrafcet.step_num = 0;
                         TrackingYesGrafcet.go = true;
 
+                        speedAngularGrafcet.go = true;
+                        speedAngularGrafcet.step_num = 0;
+
+                        speedLinearGrafcet.go = true;
+                        speedLinearGrafcet.step_num = 0;
+
+                        AlignBodyAndFollowGrafcet.go = true;
+                        AlignBodyAndFollowGrafcet.step_num = 0;
+
+                        FaceGrafcet.go = true;
+
                         step_num = 55;
                         break;
 
@@ -286,25 +297,15 @@ public class AlignBodyAndComeHereGrafcet extends bfr_Grafcet {
                         step_num = 60;
                         break;
 
-                    case 60 :  // move forward
-                        BuddySDK.USB.setBuddySpeed(0.2f,0.0f, 0.3f, wheelsRsp );
-
-                        step_num = 65;
-                        break;
-
-                    case 65 : //wait until bbox touching the top limit of the image
-
-                        // if top of the tracked bbox touches the upper limit of the image
-                        // (means that the target is really close)
-                        if ((personTrackerVIT.tracked.box.y) <=MAX_UPPER_LIMIT)
+                    case 60: //wait arrived at destination
+                        if(SpeedLinearGrafcet.step_num == 250)
                         {
-                            //stop
-                            BuddySDK.USB.emergencyStopMotors(wheelsRsp);
+                            AlignBodyAndFollowGrafcet.go = false;
+                            AlignBodyAndFollowGrafcet.step_num = 0;
                             step_num = 70;
                         }
-
                         break;
-
+                        
                     case 70 : //stopped -> vocal acknowledge
 
                         arrayOfStrings = context.getResources().getStringArray(R.array.come_here_arrived);

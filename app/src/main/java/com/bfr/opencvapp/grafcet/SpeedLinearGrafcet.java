@@ -39,16 +39,17 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
     private boolean timeout = false;
 
     public float linearSpeed = 0.0f;
+    public float COME_HERE_SPEED = 0.2f;
 
     public float accel = 0.5f;
 
     int FRONT_TOF_LIM_LOWSPEED = 600;
     int FRONT_TOF_LIM_HIGHSPEED = 600;
-    int LATERAL_TOF_LIM_LOWSPEED = 600;
-    int LATERAL_TOF_LIM_HIGHSPEED = 600;
+    int LATERAL_TOF_LIM_LOWSPEED = 500;
+    int LATERAL_TOF_LIM_HIGHSPEED = 450;
 
-    int frontTofThres = 999;
-    int lateralTofThres = 999;
+    int FONT_TOF_THRES = 999;
+    int LATERAL_TOF_THRES = 999;
 
     public boolean obstacleL = false;
     public boolean obstacleR = false;
@@ -72,17 +73,17 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                 /*** Compute obstacle detection */
                 if (linearSpeed >=0.3)
                 {
-                    frontTofThres = FRONT_TOF_LIM_HIGHSPEED;
-                    lateralTofThres = LATERAL_TOF_LIM_HIGHSPEED;
+                    FONT_TOF_THRES = FRONT_TOF_LIM_HIGHSPEED;
+                    LATERAL_TOF_THRES = LATERAL_TOF_LIM_HIGHSPEED;
                 }
                 else
                 {
-                    frontTofThres = FRONT_TOF_LIM_LOWSPEED;
-                    lateralTofThres = LATERAL_TOF_LIM_LOWSPEED;
+                    FONT_TOF_THRES = FRONT_TOF_LIM_LOWSPEED;
+                    LATERAL_TOF_THRES = LATERAL_TOF_LIM_LOWSPEED;
                 }
 
 
-                if ((BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() < lateralTofThres) )
+                if ((BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() < LATERAL_TOF_THRES) )
                 {
                     obstacleL = true;
                 }
@@ -91,12 +92,12 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                     obstacleL = false;
 
 
-                if( (BuddySDK.Sensors.TofSensors().FrontRight().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontRight().getDistance() < lateralTofThres) )
+                if( (BuddySDK.Sensors.TofSensors().FrontRight().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontRight().getDistance() < LATERAL_TOF_THRES) )
                     obstacleR = true;
                 else
                     obstacleR = false;
 
-                if( (BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() < frontTofThres) )
+                if( (BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() < FONT_TOF_THRES) )
                     obstacleM = true;
                 else
                     obstacleM = false;
@@ -248,27 +249,39 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                             {
                                 Log.d(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 100");
                                 accel = 0.5f;
-                                linearSpeed = 0.15f;
+                                if (MainActivity.followmeMode == MainActivity.FOLLOWME_MODE.FOLLOWME)
+                                    linearSpeed = 0.15f; //recommended 0.15f
+                                else // in Come Here mode
+                                    linearSpeed = COME_HERE_SPEED; //recommended 0.15f
                                 step_num = 110;
                             }
                             else if (personTrackerVIT.torsoHeight<=300 && personTrackerVIT.torsoHeight>250) {
                                 Log.d(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 110");
                                 accel = 0.6f;
-                                linearSpeed = 0.3f;
+                                if (MainActivity.followmeMode == MainActivity.FOLLOWME_MODE.FOLLOWME)
+                                    linearSpeed = 0.3f;
+                                else // in Come Here mode
+                                    linearSpeed = COME_HERE_SPEED; //recommended 0.15f
                                 step_num = 120;
                             }
                             else if (personTrackerVIT.torsoHeight<=250 && personTrackerVIT.torsoHeight>210)
                             {
                                 Log.d(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 120");
                                 accel = 1.0f;
-                                linearSpeed = 0.4f;
+                                if (MainActivity.followmeMode == MainActivity.FOLLOWME_MODE.FOLLOWME)
+                                    linearSpeed = 0.4f;
+                                else // in Come Here mode
+                                    linearSpeed = COME_HERE_SPEED; //recommended 0.15f
                                 step_num = 130;
                             }
                             else if (personTrackerVIT.torsoHeight<=210 )
                             {
                                 Log.d(name, "Torso height = " + personTrackerVIT.torsoHeight + " -> step = 150");
                                 accel = 1.0f;
-                                linearSpeed = 0.56f;
+                                if (MainActivity.followmeMode == MainActivity.FOLLOWME_MODE.FOLLOWME)
+                                    linearSpeed = 0.56f;
+                                else // in Come Here mode
+                                    linearSpeed = COME_HERE_SPEED; //recommended 0.15f
                                 step_num = 140;
                             }
                             else
@@ -288,7 +301,10 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         // target is getting far
                         if (personTrackerVIT.torsoHeight<350 )
                         {
-                            linearSpeed = 0.15f;
+                            if (MainActivity.followmeMode == MainActivity.FOLLOWME_MODE.FOLLOWME)
+                                linearSpeed = 0.15f;
+                            else // in Come Here mode
+                                linearSpeed = COME_HERE_SPEED; //recommended 0.15f
                             accel = 1.0f;
                             step_num = 110;
                         }
@@ -320,7 +336,10 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         //target is getting far
                         if(personTrackerVIT.torsoHeight<300)
                         {
-                            linearSpeed = 0.3f;
+                            if (MainActivity.followmeMode == MainActivity.FOLLOWME_MODE.FOLLOWME)
+                                linearSpeed = 0.3f;
+                            else // in Come Here mode
+                                linearSpeed = COME_HERE_SPEED; //recommended 0.15f
                             accel = 1.0f;
                             step_num=120;
                         }
@@ -344,14 +363,20 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         //target is getting closer
                         if(personTrackerVIT.torsoHeight>300)
                         {
-                            linearSpeed = 0.15f;
+                            if (MainActivity.followmeMode == MainActivity.FOLLOWME_MODE.FOLLOWME)
+                                linearSpeed = 0.15f;
+                            else // in Come Here mode
+                                linearSpeed = COME_HERE_SPEED; //recommended 0.15f
                             accel = 0.3f;
                             step_num=110;
                         }
                         //target is getting far
                         if(personTrackerVIT.torsoHeight<250)
                         {
-                            linearSpeed = 0.4f;
+                            if (MainActivity.followmeMode == MainActivity.FOLLOWME_MODE.FOLLOWME)
+                                linearSpeed = 0.4f;
+                            else // in Come Here mode
+                                linearSpeed = COME_HERE_SPEED; //recommended 0.15f
                             accel = 1.0f;
                             step_num=130;
                         }
@@ -374,14 +399,20 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         //target is getting closer
                         if(personTrackerVIT.torsoHeight>250)
                         {
-                            linearSpeed = 0.3f;
+                            if (MainActivity.followmeMode == MainActivity.FOLLOWME_MODE.FOLLOWME)
+                                linearSpeed = 0.3f;
+                            else // in Come Here mode
+                                linearSpeed = COME_HERE_SPEED; //recommended 0.15f
                             accel = 0.3f;
                             step_num=120;
                         }
                         //target is getting far
                         if(personTrackerVIT.torsoHeight<210)
                         {
-                            linearSpeed = 0.56f;
+                            if (MainActivity.followmeMode == MainActivity.FOLLOWME_MODE.FOLLOWME)
+                                linearSpeed = 0.56f;
+                            else // in Come Here mode
+                                linearSpeed = COME_HERE_SPEED; //recommended 0.15f
                             accel = 1.0f;
                             step_num=140;
                         }
@@ -403,7 +434,10 @@ public class SpeedLinearGrafcet extends bfr_Grafcet {
                         //target is getting closer
                         if(personTrackerVIT.torsoHeight>210)
                         {
-                            linearSpeed = 0.4f;
+                            if (MainActivity.followmeMode == MainActivity.FOLLOWME_MODE.FOLLOWME)
+                                linearSpeed = 0.4f;
+                            else // in Come Here mode
+                                linearSpeed = COME_HERE_SPEED; //recommended 0.15f
                             accel = 0.3f;
                             step_num=130;
                         }
