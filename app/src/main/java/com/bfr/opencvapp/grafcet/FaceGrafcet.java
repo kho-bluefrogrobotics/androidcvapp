@@ -52,7 +52,7 @@ public class FaceGrafcet extends bfr_Grafcet {
                 // if step changed
                 if (!(step_num == previous_step)) {
                     // display current step
-                    Log.d(name, "current step: " + step_num + "  ");
+                    // Log.d(name, "current step: " + step_num + "  ");
                     // update
                     previous_step = step_num;
 
