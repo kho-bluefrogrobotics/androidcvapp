@@ -78,6 +78,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     public static SpeedLinearGrafcet speedLinearGrafcet = new SpeedLinearGrafcet("SpeedLinearGrafcet");
     public static SpeedAngularGrafcet speedAngularGrafcet = new SpeedAngularGrafcet("SpeedAngularGrafcet");
 
+    public AlignBodyAndComeHereGrafcet alignBodyAndComeHereGrafcet = new AlignBodyAndComeHereGrafcet("AlignBodyAndComeHereGrafcet", this);
+
     //********************  image ***************************
 
     //Video capture
@@ -266,7 +268,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 searchPersonGrafcet.go = false;
                 searchPersonGrafcet.step_num = 0;
 
-
+                alignBodyAndComeHereGrafcet.go = false;
+                alignBodyAndComeHereGrafcet.step_num = 0;
 
 
             }
@@ -469,7 +472,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         mOpenCvCameraView.setCvCameraViewListener(this);
         mOpenCvCameraView.setAlpha(0.1F);
 
-//        mOpenCvCameraView.getHolder().setFixedSize(1,1);
+        mOpenCvCameraView.getHolder().setFixedSize(1,1);
 
         // Thresholds for Tof IR sensors
         FRONT_TOF_LIM_LOWSPEED = 500;
@@ -489,6 +492,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         alignBodyAndFollowGrafcet.start(50);
         speedAngularGrafcet.start(50);
         speedLinearGrafcet.start(50);
+
+        alignBodyAndComeHereGrafcet.start(50);
 
         BuddySDK.USB.enableSensorModule(true, new IUsbCommadRsp.Stub() {
             @Override
