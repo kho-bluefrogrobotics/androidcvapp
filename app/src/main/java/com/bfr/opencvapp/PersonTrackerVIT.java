@@ -60,9 +60,10 @@ public class PersonTrackerVIT {
 
     public int frameCount =0;
     private int _FRAME_DETECT = 50; // 15fps -> check/reset every 3-4 s
-    // hard limit for human height to track (in pixel)
+    // hard limit for human height to track (in pixel) and crop
     private int MIN_HUMAN_HEIGHT = 120;
-    private int _MIN_HEAD_SIZE = 85;
+    // hard limit for face/head size to track before switching to body
+    private int MIN_HEAD_SIZE = 85; // recommended for FOLLOW ME: 85
 
 
 
@@ -651,7 +652,7 @@ public class PersonTrackerVIT {
                             Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_faceCandidate_"+iou+".jpg",
                                     candidate);
 
-                            if( detectionBbox.height > _MIN_HEAD_SIZE)
+                            if( detectionBbox.height > MIN_HEAD_SIZE)
                             {
                                 // if IoU good enough
                                 if (iou >= IOU_THRES)
@@ -760,7 +761,7 @@ public class PersonTrackerVIT {
                             Imgcodecs.imwrite("/storage/emulated/0/Download/trackingdebug/"+System.currentTimeMillis()+"_faceCandidate_"+overlapRatio+".jpg",
                                     candidate);
 
-                            if( detectionBbox.height > _MIN_HEAD_SIZE)
+                            if( detectionBbox.height > MIN_HEAD_SIZE)
                             {
                                 if (overlapRatio>OVERLAPRATIO_THRES)
                                 {
@@ -847,7 +848,7 @@ public class PersonTrackerVIT {
                     // L1 distance to optimize computing time
                     dist =  (Math.abs(detectionCentroid.x - trackedCentroid.x) + Math.abs(detectionCentroid.y - trackedCentroid.y));
                     if ( (dist < maxDist)
-                            &&  Math.abs(detections.get(i).bottom-detections.get(i).top) >= _MIN_HEAD_SIZE ) //to manage the case that the closest object is a small head
+                            &&  Math.abs(detections.get(i).bottom-detections.get(i).top) >= MIN_HEAD_SIZE) //to manage the case that the closest object is a small head
                     {
                         // update
                         maxDist = dist;
@@ -1261,5 +1262,23 @@ public class PersonTrackerVIT {
         public int objectClass = -1;
         public float score = 0.0f;
 
+    }
+
+    /**
+     * Set minimimun face/head size to track, before switiching to upper body
+     * @param size size in pixel
+     */
+    public void setMinHeadSize(int size)
+    {
+        this.MIN_HEAD_SIZE = size;
+    }
+
+    /**
+     * Set minimimun hard limit of body size to track, to avoid cropping too much from the person detection
+     * @param size size in pixel
+     */
+    public void setMinBodySize(int size)
+    {
+        this.MIN_HUMAN_HEIGHT = size;
     }
 }
