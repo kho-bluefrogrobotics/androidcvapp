@@ -43,6 +43,13 @@ public class SearchPersonGrafcet extends bfr_Grafcet {
 
     private float noAngle=0.0f;
 
+    int FONT_TOF_THRES = 999;
+    int LATERAL_TOF_THRES = 999;
+
+    public boolean obstacleL = false;
+    public boolean obstacleR = false;
+    public boolean obstacleM = false;
+
     String ackYes="";
     String ackNo="";
     String ackWheels="";
@@ -130,22 +137,19 @@ public class SearchPersonGrafcet extends bfr_Grafcet {
 
 
                 /*** Compute obstacle detection */
-                boolean obstacleL, obstacleR, obstacleM;
-                int frontTofThres = 500;
-                int lateralTofThres = 500;
 
-                if ((BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() < lateralTofThres) )
+                if ((BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontLeft().getDistance() < LATERAL_TOF_THRES) )
                     obstacleL = true;
                 else
                     obstacleL = false;
 
 
-                if( (BuddySDK.Sensors.TofSensors().FrontRight().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontRight().getDistance() < lateralTofThres) )
+                if( (BuddySDK.Sensors.TofSensors().FrontRight().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontRight().getDistance() < LATERAL_TOF_THRES) )
                     obstacleR = true;
                 else
                     obstacleR = false;
 
-                if( (BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() < frontTofThres) )
+                if( (BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() >15 && BuddySDK.Sensors.TofSensors().FrontMiddle().getDistance() < FONT_TOF_THRES) )
                     obstacleM = true;
                 else
                     obstacleM = false;
@@ -198,7 +202,10 @@ public class SearchPersonGrafcet extends bfr_Grafcet {
 
                         // reset head position
                         BuddySDK.USB.buddySayNo(40, noAngle, noRsp);
-                        BuddySDK.USB.buddySayYes(40, 20, yesRsp);
+                        BuddySDK.USB.buddySayYes(40, 10, yesRsp);
+
+                        if(obstacleL || obstacleR || obstacleM)
+                            BuddySDK.USB.emergencyStopMotors(wheelsRsp);
 
                         step_num = 25;
                         break;
@@ -208,9 +215,6 @@ public class SearchPersonGrafcet extends bfr_Grafcet {
 
                         if(obstacleL || obstacleR || obstacleM)
                             BuddySDK.USB.emergencyStopMotors(wheelsRsp);
-
-                        if (ackWheels.toUpperCase().contains("RESPONDING")) // managing the msg "board not responding (timeout)"
-                            step_num = 20;
 
                         if (ackWheels.toUpperCase().contains("FINISHED")
                                 || BuddySDK.Actuators.getLeftWheelSpeed()<5
@@ -226,9 +230,7 @@ public class SearchPersonGrafcet extends bfr_Grafcet {
                         if (ackYes.toUpperCase().contains("RESPONDING")) // managing the msg "board not responding (timeout)"
                             step_num = 20;
 
-                        if (ackYes.toUpperCase().contains("FINISHED") ||
-                                ( Math.abs(BuddySDK.Actuators.getYesPosition()) < 22 && Math.abs(BuddySDK.Actuators.getYesPosition()) > 19 )
-                                || timeout)
+                        if (ackYes.toUpperCase().contains("FINISHED")|| timeout)
                             step_num = 28;
                         break;
 
@@ -248,20 +250,33 @@ public class SearchPersonGrafcet extends bfr_Grafcet {
                         break;
 
                     case 29:// calc no Angle
+
+                        //if tracking OK skip
+                        if(personTrackerVIT.isTracking) {
+                            step_num = 100;
+                            break;
+                        }
                         if(BuddySDK.Actuators.getNoPosition()>=0)
-                            noAngle = -50.0f;
+                            noAngle = -40.0f;
                         else
-                            noAngle = 50.0f;
+                            noAngle = 40.0f;
                         step_num = 30;
                         break;
 
                     case 30: // turn head No
                         ackNo = "";
-                        BuddySDK.USB.buddySayNo(50.0f, noAngle, noRsp);
+                        BuddySDK.USB.buddySayNo(20.0f, noAngle, noRsp);
                         step_num=32;
                         break;
 
                     case 32: // wait for OK
+
+                        //if tracking OK skip
+                        if(personTrackerVIT.isTracking) {
+                            step_num = 100;
+                            break;
+                        }
+
                         if (ackNo.toUpperCase().contains("RESPONDING")) // managing the msg "board not responding (timeout)"
                             step_num = 30;
 
@@ -271,20 +286,24 @@ public class SearchPersonGrafcet extends bfr_Grafcet {
                         break;
 
                     case 33 : //wait for end of mvt
-                        if(ackNo.toUpperCase().contains("FINISHED") || timeout)
-                            step_num = 40;
-                        break;
 
+                        //if tracking OK skip
+                        if(personTrackerVIT.isTracking) {
+                            step_num = 100;
+                            break;
+                        }
+
+                        if(ackNo.toUpperCase().contains("FINISHED") || timeout)
+                            step_num = 50;
+                        break;
 
 
                     case 40: // Align body and Head
 
-                        // if tracking again advertise user
-                        if(personTrackerVIT.isTracking)
-                        {
-                            arrayOfStrings = context.getResources().getStringArray(R.array.search_person_found);
-                            randomString = arrayOfStrings[new Random().nextInt(arrayOfStrings.length)];
-                            BuddySDK.Speech.startSpeaking(randomString);
+                        //if tracking OK skip
+                        if(personTrackerVIT.isTracking) {
+                            step_num = 100;
+                            break;
                         }
 
                         ackWheels = "";
@@ -329,24 +348,30 @@ public class SearchPersonGrafcet extends bfr_Grafcet {
                         }
                         break;
 
-                    case 50 : // make U Turn
+                    case 50 : // make the body move
+                        int[] buddyAngles={-90, -40, 90, 50, 180};
+                        int index = new Random().nextInt(5);
                         //reset
                         ackWheels = "";
-                        BuddySDK.USB.rotateBuddy(100.0f, 180.0f, wheelsRsp);
+                        BuddySDK.USB.rotateBuddy(100.0f, (float)buddyAngles[index], wheelsRsp);
                         step_num = 53;
                         break;
 
                     case 53 : //wait for FINISHED
                         if(ackWheels.toUpperCase().contains("FINISHED") || timeout)
                         {
-                            noAngle = (int)Math.floor(Math.random() * (60 +60 + 1) -60);
-                            step_num = 30;
+                            step_num = 29;
                         }
+                        break;
 
                     case 100:// wait for tracking OK
 
                         if(personTrackerVIT.isTracking)
                         {
+                            //Stop movement
+                            BuddySDK.USB.buddyStopNoMove(noRsp);
+                            BuddySDK.USB.emergencyStopMotors(wheelsRsp);
+
                             arrayOfStrings = context.getResources().getStringArray(R.array.search_person_found);
                             randomString = arrayOfStrings[new Random().nextInt(arrayOfStrings.length)];
                             BuddySDK.Speech.startSpeaking(randomString);
