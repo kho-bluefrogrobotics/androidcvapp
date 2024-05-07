@@ -103,11 +103,21 @@ public class MainGrafcet extends bfr_Grafcet {
                     case 10:// redirect to WatchMe Follow or ComeHere
 
                         if(MainActivity.followmeMode == MainActivity.FOLLOWME_MODE.COMEHERE)
+                        {
                             step_num = 60;
+                            personTrackerVIT.setMinHeadSize(40);
+                        }
+
                         else if(MainActivity.followmeMode == MainActivity.FOLLOWME_MODE.FOLLOWME)
+                        {
                             step_num = 20;
+                            personTrackerVIT.setMinHeadSize(85);
+                        }
                         else
+                        {
                             step_num = 40;
+                            personTrackerVIT.setMinHeadSize(40);
+                        }
 
                         break;
 
