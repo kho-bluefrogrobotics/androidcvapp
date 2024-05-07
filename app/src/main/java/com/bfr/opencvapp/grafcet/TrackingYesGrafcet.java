@@ -116,7 +116,7 @@ public class TrackingYesGrafcet extends bfr_Grafcet{
                     //reset
                     yesAck = "";
 
-                    yesAngle = Math.max(-13, BuddySDK.Actuators.getYesPosition()- yesOffset);
+                    yesAngle = Math.max(-5, BuddySDK.Actuators.getYesPosition()- yesOffset);
 
                     Log.d(name, "rotating to " + yesAngle + " (offset=" + yesOffset +") with Yes position = " + BuddySDK.Actuators.getYesPosition() + " at " + yesSpeed);
 
