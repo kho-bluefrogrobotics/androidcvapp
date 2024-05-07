@@ -170,15 +170,15 @@ public class SearchPersonGrafcet extends bfr_Grafcet {
                         arrayOfStrings = context.getResources().getStringArray(R.array.user_lost);
                         randomString = arrayOfStrings[new Random().nextInt(arrayOfStrings.length)];
                         BuddySDK.Speech.startSpeaking(randomString);
-                        BuddySDK.USB.setBuddySpeed(0.0f, 0.0f, 0.2f,   wheelsRsp);
-                        step_num = 20;
+                        BuddySDK.USB.setBuddySpeed(0.0f, 0.0f, 0.3f,   wheelsRsp);
+                        step_num = 7;
                         break;
 
 
                     case 7: // wait a bit to give a chance to the tracking
                         if(personTrackerVIT.isTracking)
                             step_num=900;
-                        if (System.currentTimeMillis()-time_in_curr_step > 500)
+                        if (System.currentTimeMillis()-time_in_curr_step > 1000)
                             step_num = 10;
                         break;
 
