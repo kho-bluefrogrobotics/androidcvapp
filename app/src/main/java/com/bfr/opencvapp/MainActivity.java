@@ -312,10 +312,14 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
 
 
-        if(!gestureRecognition.isStarted)
-            gestureRecognition.start();
+            gestureRecognition.recognize(frame);
 
-
+            Imgproc.putText(frame, gestureRecognition.result,
+                        new Point(100, 100),2, 3,
+                        new Scalar(0, 0, 0), 5);
+                Imgproc.putText(frame, gestureRecognition.result,
+                        new Point(100, 100),2, 3,
+                        new Scalar(0, 255, 0), 2);
 
 //
 //        //convert to bitmap

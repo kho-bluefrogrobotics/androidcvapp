@@ -184,8 +184,8 @@ public class MultiDetector {
                                                float doubleCheckThres,
                                                boolean withDisplay) {
 
-        Log.i(TAG, "Starting Multidetector recognition" +
-                " humanThres=" + humanThres + " faceThres=" + faceThres + " handThes=" + handThres);
+//        Log.i(TAG, "Starting Multidetector recognition" +
+//                " humanThres=" + humanThres + " faceThres=" + faceThres + " handThes=" + handThres);
 
         ArrayList<Detection> detections = new ArrayList<Detection>();
         boolean isReallyHuman = true;
@@ -196,7 +196,6 @@ public class MultiDetector {
 
             // check input size
             Mat resizedFrame = new Mat();
-            Imgcodecs.imwrite("/sdcard/Download/000.jpg", frame);
             if(frame.rows()!=INPUT_SIZE.height || frame.cols()!=INPUT_SIZE.width)
                 Imgproc.resize(frame, resizedFrame, new Size(INPUT_SIZE.width,INPUT_SIZE.height));
             else
@@ -238,7 +237,7 @@ public class MultiDetector {
                 int detectedClass = (int) out_labels[0][i];
                 float score = out_score[0][i];
 
-                Log.d(TAG, "Object detected : class=" + detectedClass + " score=" + score);
+
 
                 // filter by class
                 if ( (detectedClass == 0 &&  score > humanThres)  // human detection
@@ -246,6 +245,7 @@ public class MultiDetector {
                         || (detectedClass == 2 &&  score > handThres) ) // hand detection
                 {
 
+                    Log.d(TAG, "Object detected : class=" + detectedClass + " score=" + score);
                     // position in % of the image
                     final float ymin = bboxes[0][i][0];
                     final float xmin = bboxes[0][i][1];
