@@ -48,6 +48,7 @@ import org.opencv.videoio.VideoWriter;
 import com.bfr.opencvapp.utils.BuddyData;
 import com.bfr.opencvapp.utils.FaceRecognizer;
 import com.bfr.opencvapp.utils.FacialIdentity;
+import com.bfr.opencvapp.utils.HandPoseEstimator;
 import com.bfr.opencvapp.utils.IdentitiesDatabase;
 import com.bfr.opencvapp.utils.MLKitFaceDetector;
 
@@ -103,9 +104,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     MultiDetector multiDetector;
     ArrayList<MultiDetector.Recognition> tfliteDetections = new ArrayList<MultiDetector.Recognition>();
     int left, right, top, bottom;
-    // Neural net for detection
-    private FaceRecognizer faceRecognizerObj;
 
+    HandPoseEstimator handPoseEstimator;
     // for saving face
     boolean isSavingFace = false;
     boolean started = false;
@@ -206,93 +206,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             }
         });
 
-        findViewById(R.id.candidatesBtn).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
 
-                // display all candidates
-                int k=5;
-                ArrayList<FacialIdentity> candidates = faceRecognizerObj.getTopKResults(k);
-                toDisplay="";
-                for (int c=0; c<k; c++)
-                {
-                    toDisplay = toDisplay + "\n" + candidates.get(c).name.split("_")[0] + " "+ String.format(java.util.Locale.US,"%.4f", candidates.get(c).recogScore);
-                }
-                //display UI
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getApplicationContext(), toDisplay , Toast.LENGTH_LONG).show();
-                    }
-                }); // end UI
-            }
-        });
-
-        preprocessCheckbox.setChecked(true);
-        preprocessCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                faceRecognizerObj.withPreprocess = isChecked;
-            }
-        });
-
-        showAll.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                // display all stored identities
-                toDisplay="";
-                for (int c=0; c<faceRecognizerObj.getSavedIdentities().size(); c+=2)
-                {
-                    try {
-                        toDisplay = toDisplay +
-                                c + " - " +faceRecognizerObj.getSavedIdentities().get(c).name.split("_")[0]
-                                + "    " + (c+1) + " - " +faceRecognizerObj.getSavedIdentities().get(c+1).name.split("_")[0] + "\n";
-                    }
-                    catch (Exception e)
-                    {
-                        Log.e(TAG, e.toString());
-                    }
-
-                }
-                // adjusting to odd number (add last one)
-                if (faceRecognizerObj.getSavedIdentities().size()%2!=0)
-                    toDisplay = toDisplay  +
-                            (faceRecognizerObj.getSavedIdentities().size()-1) + " - " +faceRecognizerObj.getSavedIdentities().get(faceRecognizerObj.getSavedIdentities().size()-1)
-                            .name.split("_")[0]+"\n";
-
-                //display UI
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getApplicationContext(), toDisplay , Toast.LENGTH_LONG).show();
-                    }
-                }); // end UI
-
-            } // end onClick
-        });
-
-        removeIdx.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try{
-                    faceRecognizerObj.removeSavedIdentity(Integer.parseInt( personNameExitText.getText().toString() ) );
-                }
-                catch(Exception e)
-                {
-                    Toast.makeText(getApplicationContext(), "ERROR: " + e.toString() , Toast.LENGTH_LONG).show();
-                }
-
-
-            } // end onClick
-        });
-
-        findViewById(R.id.loadBtn).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                faceRecognizerObj.loadFaces();
-            }
-        });
 
     } // End onCreate
 
@@ -354,6 +268,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         frame = new Mat();
         // init face detector
         multiDetector = new MultiDetector(context);
+
+        handPoseEstimator = new HandPoseEstimator(context);
+
         //init face recognizer
 //        faceRecognizerObj = new FaceRecognizer();
 
@@ -415,23 +332,34 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             bottom = (int)(tfliteDetections.get(i).bottom* rows);
 
             Scalar color = new Scalar(0,0,0);
-            if (detectedClass==0)
-            // Draw rectangle around detected face.
-                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                    new Scalar(0, 255, 0), 3);
-            else if (detectedClass==1)// Draw rectangle around detected face.
-                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                    new Scalar(0, 0, 255), 3);
-            else if (detectedClass==2)// Draw rectangle around detected face.
-                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                        new Scalar(255, 0, 0), 3);
+//            if (detectedClass==0)
+//            // Draw rectangle around detected face.
+//                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+//                    new Scalar(0, 255, 0), 3);
+//            else if (detectedClass==1)// Draw rectangle around detected face.
+//                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+//                    new Scalar(0, 0, 255), 3);
+            if (detectedClass==2)// Draw rectangle around detected hand.
+            {
 
-            Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
-                    new Point(left-2, top-12),1, 2,
-                    new Scalar(0, 0, 0), 5);
-            Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
-                    new Point(left-2, top-12),1, 2,
-                    new Scalar(0, 255, 0), 2);
+                Rect handROI = new Rect( left, top, (right-left), (bottom-top));
+                Mat handMat = frame.submat(handROI);
+                handPoseEstimator.recognizeImage(handMat);
+                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                        new Scalar(0, 0, 255), 3);
+                Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
+                        new Point(left-2, top-12),1, 2,
+                        new Scalar(0, 0, 0), 5);
+                Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
+                        new Point(left-2, top-12),1, 2,
+                        new Scalar(0, 255, 0), 2);
+            }
+
+
+//                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+//                        new Scalar(255, 0, 0), 3);
+
+
 
 
          } // next detection
