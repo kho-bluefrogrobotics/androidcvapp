@@ -344,7 +344,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                 Rect handROI = new Rect( left, top, (right-left), (bottom-top));
                 Mat handMat = frame.submat(handROI);
-                handPoseEstimator.recognizeImage(handMat);
+                float[][] landmarks = handPoseEstimator.recognizeImage(handMat);
+
                 Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
                         new Scalar(0, 0, 255), 3);
                 Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
@@ -353,6 +354,11 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
                         new Point(left-2, top-12),1, 2,
                         new Scalar(0, 255, 0), 2);
+
+                int x = (int) (landmarks[0][24]);
+                int y = (int) (landmarks[0][25]);
+                Imgproc.circle(handMat, new Point(x,y), 5, new Scalar(0,255,0), 5);
+
             }
 
 

@@ -66,7 +66,8 @@ public class HandPoseEstimator {
     private int objId = 0;
 
     //where to find the models
-    final String MODEL_NAME = "hand_landmark_lite.tflite";
+//    final String MODEL_NAME = "hand_landmark_lite.tflite";
+    final String MODEL_NAME = "hand_landmark_full.tflite";
     private final String MODELS_DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
 
     private Interpreter tfLite;
@@ -167,10 +168,11 @@ public class HandPoseEstimator {
      * @param frame original image in Mat format
      * @return array of detections
      */
-    public void recognizeImage(Mat frame) {
+    public float[][] recognizeImage(Mat frame) {
 
         Log.i(TAG, "Starting Hand pose estimation" );
 
+        float[][] landmarks = null;
 
         boolean isReallyHuman = true;
 
@@ -195,14 +197,14 @@ public class HandPoseEstimator {
             // assigning output
             Map<Integer, Object> outputMap = new HashMap<>();
 
-            // SSD outputs 4 maps corresponding to 50 object detections
-            // 1) a fp32{1,50} map of the 50 scores of confidence
+            //
+            // 1) a fp32{1,63} map of the 21 landmarks * (x, y, z) coords in PIXEL , z takes the origin at the wrist
             outputMap.put(0, new float[1][63]);
-            // 2) a fp32{1,50,4} map of 50x4 values for xmin, ymin, xmax, ymax in [0;1]
+            // 2) a fp32{1,1} map representing the probability of presence of a hand
             outputMap.put(1, new float[1][1]);
-            // 3) not used
+            // 3) a fp32{1,1} map representing the handedness  <0.5: Left hand , >0.5:Right hand
             outputMap.put(2, new float[1][1]);
-            // 4) a fp32{1,50} map of the 50 labels of the detected class
+            // 4) a fp32{1,63} map of the 21 landmarks * (x, y, z) coords in world coordinates
             outputMap.put(3, new float[1][63]);
 
 
@@ -210,11 +212,14 @@ public class HandPoseEstimator {
             // Run inference
             tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
 
-            Log.d(TAG, "Inference done");
+
             //explicit names for better readibility of output
-            float[][]  out_score= (float [][]) outputMap.get(0);
-            float[][] bboxes = (float[][]) outputMap.get(1);
-            float[][] out_labels = (float[][]) outputMap.get(3);
+            float[][]  handPresence= (float [][]) outputMap.get(1);
+            float[][] handeness = (float[][]) outputMap.get(2);
+            landmarks = (float[][]) outputMap.get(0);
+
+            Log.d(TAG, "Inference done; confidence = " + handPresence[0][0] + " LorR="+ handeness[0][0]);
+            Log.d(TAG, "tip index Point = " + landmarks[0][8*3] + ","+ landmarks[0][8*3 + 1]);
 
             //init for display only
             objId = 0;
@@ -229,6 +234,7 @@ public class HandPoseEstimator {
             e.printStackTrace();
         }
 
+        return landmarks;
     }
 
 
