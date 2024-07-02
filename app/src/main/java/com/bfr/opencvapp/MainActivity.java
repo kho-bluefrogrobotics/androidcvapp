@@ -45,9 +45,11 @@ import org.opencv.objdetect.FaceRecognizerSF;
 
 import org.opencv.videoio.VideoWriter;
 
+import com.bfr.opencvapp.objdetect.Detection;
 import com.bfr.opencvapp.utils.BuddyData;
 import com.bfr.opencvapp.utils.FaceRecognizer;
 import com.bfr.opencvapp.utils.FacialIdentity;
+import com.bfr.opencvapp.utils.GestureRecognition;
 import com.bfr.opencvapp.utils.HandPoseEstimator;
 import com.bfr.opencvapp.utils.IdentitiesDatabase;
 import com.bfr.opencvapp.utils.MLKitFaceDetector;
@@ -67,6 +69,7 @@ import java.util.Locale;
 import com.bfr.buddysdk.sdk.BuddySDK;
 
 import com.bfr.opencvapp.grafcet.*;
+import com.bfr.opencvapp.utils.MotionDetector;
 import com.bfr.opencvapp.utils.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteFaceRecognizer;
 import com.bfr.opencvapp.utils.TfLiteReIdentifier;
@@ -102,10 +105,14 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
     //Tflite Multidetector
     MultiDetector multiDetector;
-    ArrayList<MultiDetector.Recognition> tfliteDetections = new ArrayList<MultiDetector.Recognition>();
+    ArrayList<Detection> tfliteDetections = new ArrayList<Detection>();
     int left, right, top, bottom;
 
     HandPoseEstimator handPoseEstimator;
+
+    MotionDetector motionDetector;
+
+    GestureRecognition gestureRecognition;
     // for saving face
     boolean isSavingFace = false;
     boolean started = false;
@@ -231,9 +238,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
     @Override
     public void onPause() {
         super.onPause();
-        //stop grafcet
-        mTrackingGrafcet.stop();
-        mTrackingYesGrafcet.stop();
+        //stop grafce
     }
 
     @Override
@@ -243,9 +248,6 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         OpenCVLoader.initDebug();
         mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
 
-        //restart grafcet
-        mTrackingGrafcet.start();
-        mTrackingYesGrafcet.start();
     }
 
 
@@ -269,8 +271,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // init face detector
         multiDetector = new MultiDetector(context);
 
-        handPoseEstimator = new HandPoseEstimator(context);
+        handPoseEstimator = new HandPoseEstimator();
 
+        motionDetector = new MotionDetector();
         //init face recognizer
 //        faceRecognizerObj = new FaceRecognizer();
 
@@ -279,6 +282,10 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //                25.0D, new Size(800, 600));
 //        videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
 //                25.0D,  new Size( 800,600));
+
+
+        gestureRecognition = new GestureRecognition("GestureRecog", multiDetector, handPoseEstimator, motionDetector);
+        gestureRecognition.init(frame);
 
         started = true;
     }
@@ -303,120 +310,122 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // color conversion
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
-        elapsedTime = System.currentTimeMillis();
 
 
-        //convert to bitmap
-        Mat resizedFrame = new Mat();
-        Imgproc.resize(frame, resizedFrame, new Size(320,320));
-        Bitmap bitmapImagefull = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(resizedFrame, bitmapImagefull);
+        if(!gestureRecognition.isStarted)
+            gestureRecognition.start();
 
-        //Human detection
-        tfliteDetections = multiDetector.recognizeImage(bitmapImagefull);
-        Log.i(TAG, "elapsed time face detect with tflite : " + (System.currentTimeMillis()-elapsedTime)  );
-            elapsedTime = System.currentTimeMillis();
 
-        for (int i = 0; i < tfliteDetections.size(); ++i) {
 
-            double confidence = tfliteDetections.get(i).confidence;
-            double detectedClass = tfliteDetections.get(i).getDetectedClass();
-
-            // for display only
-            cols = frame.cols();
-            rows = frame.rows();
-
-            left = (int)(tfliteDetections.get(i).left * cols);
-            top = (int)(tfliteDetections.get(i).top * rows);
-            right = (int)(tfliteDetections.get(i).right * cols);
-            bottom = (int)(tfliteDetections.get(i).bottom* rows);
-
-            Scalar color = new Scalar(0,0,0);
-//            if (detectedClass==0)
-//            // Draw rectangle around detected face.
+//
+//        //convert to bitmap
+//        Mat resizedFrame = new Mat();
+//        Imgproc.resize(frame, resizedFrame, new Size(320,320));
+//        Bitmap bitmapImagefull = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
+//        Utils.matToBitmap(resizedFrame, bitmapImagefull);
+//
+//        //Human detection
+//        tfliteDetections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.3f, 0.0f, false);
+//        Log.i(TAG, "elapsed time face detect with tflite : " + (System.currentTimeMillis()-elapsedTime)  );
+//            elapsedTime = System.currentTimeMillis();
+//
+//        for (int i = 0; i < tfliteDetections.size(); ++i) {
+//
+//            double confidence = tfliteDetections.get(i).confidence;
+//            double detectedClass = tfliteDetections.get(i).getDetectedClass();
+//
+//            // for display only
+//            cols = frame.cols();
+//            rows = frame.rows();
+//
+//            left = (int)(tfliteDetections.get(i).left * cols);
+//            top = (int)(tfliteDetections.get(i).top * rows);
+//            right = (int)(tfliteDetections.get(i).right * cols);
+//            bottom = (int)(tfliteDetections.get(i).bottom* rows);
+//
+//            Scalar color = new Scalar(0,0,0);
+////            if (detectedClass==0)
+////            // Draw rectangle around detected face.
+////                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+////                    new Scalar(0, 255, 0), 3);
+////            else if (detectedClass==1)// Draw rectangle around detected face.
+////                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+////                    new Scalar(0, 0, 255), 3);
+//            if (detectedClass==2)// Draw rectangle around detected hand.
+//            {
+//
+//                Rect handROI = new Rect( left, top, (right-left), (bottom-top));
+//                Mat handMat = frame.submat(handROI);
+//                HandPoseEstimator.HandPose handPose =  handPoseEstimator.recognizeImage(handMat);
+//
+//
+////                Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
+////                        new Point(left-2, top-12),1, 2,
+////                        new Scalar(0, 0, 0), 5);
+////                Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
+////                        new Point(left-2, top-12),1, 2,
+////                        new Scalar(0, 255, 0), 2);
+//
+//                int x = (int) (handPose.landmarks[24]);
+//                int y = (int) (handPose.landmarks[25]);
+//                Imgproc.circle(handMat, new Point(x,y), 5, new Scalar(0,255,0), 5);
+//
+//                /** How to know a finger is opened : compute the hypotenuse  of the tip and 2nd phalanx
+//                 * if the hypotenuse of the tip of the finger < to the hypotenuse of the 2nd phalanx => the finger is open
+//                 * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L209
+//                 * for a point (x1, y1) the hypotenuse = sqrt(x1^2 + y1^2)
+//                 * However here, we compute from the origin = wrist , id 0
+//                 * for instance, the first finger tip has the id 8 , and the 2nd phalanx id 6
+//                 * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L205
+//                 */
+//
+//                // hypotenuse = square root of (  (x[1st finger tip] - x[wrist] )^2 + (y[1st finger tip] - y[wrist] )^2)
+//                double hypTip = Math.sqrt( (handPose.landmarks[8 *3] -  handPose.landmarks[0])*(handPose.landmarks[8*3] -  handPose.landmarks[0])
+//                                            + (handPose.landmarks[8*3 + 1] -  handPose.landmarks[0])*(handPose.landmarks[8*3 + 1] -  handPose.landmarks[0]) );
+//
+//                double hypPhalanx = Math.sqrt( (handPose.landmarks[6 *3] -  handPose.landmarks[0])*(handPose.landmarks[6*3] -  handPose.landmarks[0])
+//                        + (handPose.landmarks[6*3 + 1] -  handPose.landmarks[0])*(handPose.landmarks[6*3 + 1] -  handPose.landmarks[0]) );
+//
+//                String fingerStatus = "";
+//                Scalar colorBox = null;
+//
+//
+////                Imgproc.putText(frame, fingerStatus,
+////                        new Point(left-2, top-12),1, 2,
+////                        new Scalar(0, 0, 0), 5);
+////                Imgproc.putText(frame, fingerStatus,
+////                        new Point(left-2, top-12),1, 2,
+////                        new Scalar(0, 255, 0), 2);
+//
+//                if (hypTip < hypPhalanx)
+//                    fingerStatus = "close";
+//                else
+//                    fingerStatus = "open";
+//
+//                if (handPose.isFront())
+//                    colorBox = new Scalar(0,255,0);
+//                else
+//                    colorBox = new Scalar(255,0,0);
+//
+//
 //                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-//                    new Scalar(0, 255, 0), 3);
-//            else if (detectedClass==1)// Draw rectangle around detected face.
-//                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-//                    new Scalar(0, 0, 255), 3);
-            if (detectedClass==2)// Draw rectangle around detected hand.
-            {
-
-                Rect handROI = new Rect( left, top, (right-left), (bottom-top));
-                Mat handMat = frame.submat(handROI);
-                HandPoseEstimator.HandPose handPose =  handPoseEstimator.recognizeImage(handMat);
-
-
-//                Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
-//                        new Point(left-2, top-12),1, 2,
-//                        new Scalar(0, 0, 0), 5);
-//                Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
-//                        new Point(left-2, top-12),1, 2,
-//                        new Scalar(0, 255, 0), 2);
-
-                int x = (int) (handPose.landmarks[24]);
-                int y = (int) (handPose.landmarks[25]);
-                Imgproc.circle(handMat, new Point(x,y), 5, new Scalar(0,255,0), 5);
-
-                /** How to know a finger is opened : compute the hypotenuse  of the tip and 2nd phalanx
-                 * if the hypotenuse of the tip of the finger < to the hypotenuse of the 2nd phalanx => the finger is open
-                 * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L209
-                 * for a point (x1, y1) the hypotenuse = sqrt(x1^2 + y1^2)
-                 * However here, we compte from the origin = wrist , id 0
-                 * for instance, the first finger tip has the id 8 , and the 2nd phalanx id 6
-                 * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L205
-                 */
-
-                // hypotenuse = square root of (  (x[1st finger tip] - x[wrist] )^2 + (y[1st finger tip] - y[wrist] )^2)
-                double hypTip = Math.sqrt( (handPose.landmarks[8 *3] -  handPose.landmarks[0])*(handPose.landmarks[8*3] -  handPose.landmarks[0])
-                                            + (handPose.landmarks[8*3 + 1] -  handPose.landmarks[0])*(handPose.landmarks[8*3 + 1] -  handPose.landmarks[0]) );
-
-                double hypPhalanx = Math.sqrt( (handPose.landmarks[6 *3] -  handPose.landmarks[0])*(handPose.landmarks[6*3] -  handPose.landmarks[0])
-                        + (handPose.landmarks[6*3 + 1] -  handPose.landmarks[0])*(handPose.landmarks[6*3 + 1] -  handPose.landmarks[0]) );
-
-                String fingerStatus = "";
-                Scalar colorBox = null;
-
-
+//                        colorBox, 3);
+//
 //                Imgproc.putText(frame, fingerStatus,
 //                        new Point(left-2, top-12),1, 2,
 //                        new Scalar(0, 0, 0), 5);
 //                Imgproc.putText(frame, fingerStatus,
 //                        new Point(left-2, top-12),1, 2,
 //                        new Scalar(0, 255, 0), 2);
+//
+//
+//            }
+//
+//
+////                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+////                        new Scalar(255, 0, 0), 3);
 
-                if (hypTip < hypPhalanx)
-                    fingerStatus = "close";
-                else
-                    fingerStatus = "open";
-
-                if (handPose.isFront())
-                    colorBox = new Scalar(0,255,0);
-                else
-                    colorBox = new Scalar(255,0,0);
-
-
-                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                        colorBox, 3);
-
-                Imgproc.putText(frame, fingerStatus,
-                        new Point(left-2, top-12),1, 2,
-                        new Scalar(0, 0, 0), 5);
-                Imgproc.putText(frame, fingerStatus,
-                        new Point(left-2, top-12),1, 2,
-                        new Scalar(0, 255, 0), 2);
-
-
-            }
-
-
-//                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-//                        new Scalar(255, 0, 0), 3);
-
-
-
-
-         } // next detection
+//         } // next detection
 
         }
         catch (Exception e)

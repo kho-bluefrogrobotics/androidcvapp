@@ -79,7 +79,7 @@ public class HandPoseEstimator {
     // confidence level of human detection for doublecheck with Movenet
     public float humanConfidence = 0.0f;
 
-    public HandPoseEstimator(Context context){
+    public HandPoseEstimator(){
 
         try{
             displayMat = new Mat();
@@ -95,11 +95,6 @@ public class HandPoseEstimator {
                 GpuDelegate gpuDelegate = new GpuDelegate(delegateOptions);
                 options.addDelegate(gpuDelegate);
                 Log.i(TAG, "Multidetector Interpreter on GPU");
-            }
-            else if (WITH_DSP){
-                hexagonDelegate = new HexagonDelegate(context);
-                options.addDelegate(hexagonDelegate);
-                Log.i(TAG, "Multidetector Interpreter on HEXAGONE");
             }
             else{
                 options.setUseXNNPACK(true);
@@ -206,8 +201,7 @@ public class HandPoseEstimator {
             // 4) a fp32{1,63} map of the 21 landmarks * (x, y, z) coords in world coordinates
             outputMap.put(3, new float[1][63]);
 
-
-            Log.d(TAG, "Inference NOW!");
+//            Log.d(TAG, "Inference NOW!");
             // Run inference
             tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
 
@@ -215,9 +209,8 @@ public class HandPoseEstimator {
             handPose.handPresence = ((float [][]) Objects.requireNonNull(outputMap.get(1)))[0][0];
             handPose.handeness = ((float [][]) Objects.requireNonNull(outputMap.get(2)))[0][0];
 
-
-            Log.d(TAG, "Inference done; confidence = " +  handPose.handPresence + " LorR="+ handPose.handeness);
-            Log.d(TAG, "tip index Point = " + handPose.landmarks[8*3] + ","+ handPose.landmarks[8*3 + 1]);
+//            Log.d(TAG, "Inference done; confidence = " +  handPose.handPresence + " LorR="+ handPose.handeness);
+//            Log.d(TAG, "tip index Point = " + handPose.landmarks[8*3] + ","+ handPose.landmarks[8*3 + 1]);
 
             //init for display only
             objId = 0;
@@ -274,6 +267,31 @@ public class HandPoseEstimator {
             }
             return this.front;
         }
-    }
+
+        public boolean isOpen()
+        {
+            /** How to know a finger is opened : compute the hypotenuse  of the tip and 2nd phalanx
+             * if the hypotenuse of the tip of the finger < to the hypotenuse of the 2nd phalanx => the finger is open
+             * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L209
+             * for a point (x1, y1) the hypotenuse = sqrt(x1^2 + y1^2)
+             * However here, we compute from the origin = wrist , id 0
+             * for instance, the first finger tip has the id 8 , and the 2nd phalanx id 6
+             * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L205
+             */
+
+            // hypotenuse = square root of (  (x[1st finger tip] - x[wrist] )^2 + (y[1st finger tip] - y[wrist] )^2)
+            double hypTip = Math.sqrt( (landmarks[8 *3] -  landmarks[0])*(landmarks[8*3] -  landmarks[0])
+                    + (landmarks[8*3 + 1] -  landmarks[0])*(landmarks[8*3 + 1] -  landmarks[0]) );
+
+            double hypPhalanx = Math.sqrt( (landmarks[6 *3] -  landmarks[0])*(landmarks[6*3] -  landmarks[0])
+                    + (landmarks[6*3 + 1] -  landmarks[0])*(landmarks[6*3 + 1] -  landmarks[0]) );
+
+            if (hypTip < hypPhalanx)
+                return  false;
+            else
+                return true;
+        } //end isOpen
+
+    } //end hadpose class
 
 }
