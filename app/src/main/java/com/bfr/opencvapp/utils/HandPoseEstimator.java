@@ -33,6 +33,7 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /** Hand Face Human object detector based on a Mobilenetv2-SSD network*/
 public class HandPoseEstimator {
@@ -168,13 +169,11 @@ public class HandPoseEstimator {
      * @param frame original image in Mat format
      * @return array of detections
      */
-    public float[][] recognizeImage(Mat frame) {
+    public HandPose recognizeImage(Mat frame) {
 
         Log.i(TAG, "Starting Hand pose estimation" );
 
-        float[][] landmarks = null;
-
-        boolean isReallyHuman = true;
+        HandPose handPose = new HandPose();
 
         try
         {
@@ -212,14 +211,13 @@ public class HandPoseEstimator {
             // Run inference
             tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
 
+            handPose.landmarks = ((float[][]) outputMap.get(0))[0];
+            handPose.handPresence = ((float [][]) Objects.requireNonNull(outputMap.get(1)))[0][0];
+            handPose.handeness = ((float [][]) Objects.requireNonNull(outputMap.get(2)))[0][0];
 
-            //explicit names for better readibility of output
-            float[][]  handPresence= (float [][]) outputMap.get(1);
-            float[][] handeness = (float[][]) outputMap.get(2);
-            landmarks = (float[][]) outputMap.get(0);
 
-            Log.d(TAG, "Inference done; confidence = " + handPresence[0][0] + " LorR="+ handeness[0][0]);
-            Log.d(TAG, "tip index Point = " + landmarks[0][8*3] + ","+ landmarks[0][8*3 + 1]);
+            Log.d(TAG, "Inference done; confidence = " +  handPose.handPresence + " LorR="+ handPose.handeness);
+            Log.d(TAG, "tip index Point = " + handPose.landmarks[8*3] + ","+ handPose.landmarks[8*3 + 1]);
 
             //init for display only
             objId = 0;
@@ -234,10 +232,48 @@ public class HandPoseEstimator {
             e.printStackTrace();
         }
 
-        return landmarks;
+        return handPose;
     }
 
 
+    /**
+    class returned by pose estimation
+     containing
+     - 63 landmarks *3 coords [x, y, z]; where x, y in PIXEL from the upper left corener of the input image, and z respective to the wrist
+     - probability of hand presence
+     - handedness: <0.5=left hand, >0.5 right hand
 
+     */
+    public class HandPose{
+
+        public float handPresence= 0.0f;
+        public float handeness = 0.0f;
+        public float[] landmarks = null;
+
+        private boolean front = false;
+
+        // front: true = palm towards the camera, false= back of the hand towards the camera
+        public boolean isFront()
+        {
+            // if left hand
+            if (handeness <0.5)
+            {
+                //if index base [5] is at the right of the pinkie base[17]
+                if (landmarks[5*3] < landmarks[17*3])
+                    this.front = true;
+                else
+                    this.front = false;
+            }
+            else // right hand
+            {
+                    //if index base [5] is at the left  of the pinkie base[17]
+                if (landmarks[5*3] > landmarks[17*3])
+                    this.front = true;
+                else
+                    this.front = false;
+            }
+            return this.front;
+        }
+    }
 
 }

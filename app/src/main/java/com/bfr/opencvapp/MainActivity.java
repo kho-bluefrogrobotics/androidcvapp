@@ -344,7 +344,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                 Rect handROI = new Rect( left, top, (right-left), (bottom-top));
                 Mat handMat = frame.submat(handROI);
-                float[][] landmarks = handPoseEstimator.recognizeImage(handMat);
+                HandPoseEstimator.HandPose handPose =  handPoseEstimator.recognizeImage(handMat);
 
                 Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
                         new Scalar(0, 0, 255), 3);
@@ -355,8 +355,8 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //                        new Point(left-2, top-12),1, 2,
 //                        new Scalar(0, 255, 0), 2);
 
-                int x = (int) (landmarks[0][24]);
-                int y = (int) (landmarks[0][25]);
+                int x = (int) (handPose.landmarks[24]);
+                int y = (int) (handPose.landmarks[25]);
                 Imgproc.circle(handMat, new Point(x,y), 5, new Scalar(0,255,0), 5);
 
                 /** How to know a finger is opened : compute the hypotenuse  of the tip and 2nd phalanx
@@ -369,24 +369,37 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                  */
 
                 // hypotenuse = square root of (  (x[1st finger tip] - x[wrist] )^2 + (y[1st finger tip] - y[wrist] )^2)
-                double hypTip = Math.sqrt( (landmarks[0][8 *3] -  landmarks[0][0])*(landmarks[0][8*3] -  landmarks[0][0])
-                                            + (landmarks[0][8*3 + 1] -  landmarks[0][0])*(landmarks[0][8*3 + 1] -  landmarks[0][0]) );
+                double hypTip = Math.sqrt( (handPose.landmarks[8 *3] -  handPose.landmarks[0])*(handPose.landmarks[8*3] -  handPose.landmarks[0])
+                                            + (handPose.landmarks[8*3 + 1] -  handPose.landmarks[0])*(handPose.landmarks[8*3 + 1] -  handPose.landmarks[0]) );
 
-                double hypPhalanx = Math.sqrt( (landmarks[0][6 *3] -  landmarks[0][0])*(landmarks[0][6*3] -  landmarks[0][0])
-                        + (landmarks[0][6*3 + 1] -  landmarks[0][0])*(landmarks[0][6*3 + 1] -  landmarks[0][0]) );
+                double hypPhalanx = Math.sqrt( (handPose.landmarks[6 *3] -  handPose.landmarks[0])*(handPose.landmarks[6*3] -  handPose.landmarks[0])
+                        + (handPose.landmarks[6*3 + 1] -  handPose.landmarks[0])*(handPose.landmarks[6*3 + 1] -  handPose.landmarks[0]) );
 
                 String fingerStatus = "";
 
-                if (hypTip < hypPhalanx)
-                    fingerStatus = "close";
+//                if (hypTip < hypPhalanx)
+//                    fingerStatus = "close";
+//                else
+//                    fingerStatus = "open";
+//                Imgproc.putText(frame, fingerStatus,
+//                        new Point(left-2, top-12),1, 2,
+//                        new Scalar(0, 0, 0), 5);
+//                Imgproc.putText(frame, fingerStatus,
+//                        new Point(left-2, top-12),1, 2,
+//                        new Scalar(0, 255, 0), 2);
+
+
+                if (handPose.isFront())
+                    fingerStatus = "Front";
                 else
-                    fingerStatus = "open";
+                    fingerStatus = "back";
                 Imgproc.putText(frame, fingerStatus,
                         new Point(left-2, top-12),1, 2,
                         new Scalar(0, 0, 0), 5);
                 Imgproc.putText(frame, fingerStatus,
                         new Point(left-2, top-12),1, 2,
                         new Scalar(0, 255, 0), 2);
+
             }
 
 
