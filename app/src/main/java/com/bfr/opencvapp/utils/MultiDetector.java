@@ -38,8 +38,8 @@ public class MultiDetector {
     private final float THRES_HAND = 0.3f;
     private final String[] LABELS = {"Human", "Face", "Hand"};
     private final int NUM_THREADS = 4;
-    private boolean WITH_NNAPI = true;
-    private boolean WITH_GPU = false;
+    private boolean WITH_NNAPI = false;
+    private boolean WITH_GPU = true;
     private boolean WITH_DSP = false;
 
     //where to find the models

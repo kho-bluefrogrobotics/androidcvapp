@@ -346,8 +346,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                 Mat handMat = frame.submat(handROI);
                 HandPoseEstimator.HandPose handPose =  handPoseEstimator.recognizeImage(handMat);
 
-                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                        new Scalar(0, 0, 255), 3);
+
 //                Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
 //                        new Point(left-2, top-12),1, 2,
 //                        new Scalar(0, 0, 0), 5);
@@ -376,11 +375,9 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                         + (handPose.landmarks[6*3 + 1] -  handPose.landmarks[0])*(handPose.landmarks[6*3 + 1] -  handPose.landmarks[0]) );
 
                 String fingerStatus = "";
+                Scalar colorBox = null;
 
-//                if (hypTip < hypPhalanx)
-//                    fingerStatus = "close";
-//                else
-//                    fingerStatus = "open";
+
 //                Imgproc.putText(frame, fingerStatus,
 //                        new Point(left-2, top-12),1, 2,
 //                        new Scalar(0, 0, 0), 5);
@@ -388,17 +385,27 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 //                        new Point(left-2, top-12),1, 2,
 //                        new Scalar(0, 255, 0), 2);
 
+                if (hypTip < hypPhalanx)
+                    fingerStatus = "close";
+                else
+                    fingerStatus = "open";
 
                 if (handPose.isFront())
-                    fingerStatus = "Front";
+                    colorBox = new Scalar(0,255,0);
                 else
-                    fingerStatus = "back";
+                    colorBox = new Scalar(255,0,0);
+
+
+                Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                        colorBox, 3);
+
                 Imgproc.putText(frame, fingerStatus,
                         new Point(left-2, top-12),1, 2,
                         new Scalar(0, 0, 0), 5);
                 Imgproc.putText(frame, fingerStatus,
                         new Point(left-2, top-12),1, 2,
                         new Scalar(0, 255, 0), 2);
+
 
             }
 
