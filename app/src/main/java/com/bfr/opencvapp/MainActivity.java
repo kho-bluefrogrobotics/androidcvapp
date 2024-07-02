@@ -348,17 +348,45 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
                 Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
                         new Scalar(0, 0, 255), 3);
-                Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
-                        new Point(left-2, top-12),1, 2,
-                        new Scalar(0, 0, 0), 5);
-                Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
-                        new Point(left-2, top-12),1, 2,
-                        new Scalar(0, 255, 0), 2);
+//                Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
+//                        new Point(left-2, top-12),1, 2,
+//                        new Scalar(0, 0, 0), 5);
+//                Imgproc.putText(frame, String.format(java.util.Locale.US,"%.4f", confidence),
+//                        new Point(left-2, top-12),1, 2,
+//                        new Scalar(0, 255, 0), 2);
 
                 int x = (int) (landmarks[0][24]);
                 int y = (int) (landmarks[0][25]);
                 Imgproc.circle(handMat, new Point(x,y), 5, new Scalar(0,255,0), 5);
 
+                /** How to know a finger is opened : compute the hypotenuse  of the tip and 2nd phalanx
+                 * if the hypotenuse of the tip of the finger < to the hypotenuse of the 2nd phalanx => the finger is open
+                 * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L209
+                 * for a point (x1, y1) the hypotenuse = sqrt(x1^2 + y1^2)
+                 * However here, we compte from the origin = wrist , id 0
+                 * for instance, the first finger tip has the id 8 , and the 2nd phalanx id 6
+                 * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L205
+                 */
+
+                // hypotenuse = square root of (  (x[1st finger tip] - x[wrist] )^2 + (y[1st finger tip] - y[wrist] )^2)
+                double hypTip = Math.sqrt( (landmarks[0][8 *3] -  landmarks[0][0])*(landmarks[0][8*3] -  landmarks[0][0])
+                                            + (landmarks[0][8*3 + 1] -  landmarks[0][0])*(landmarks[0][8*3 + 1] -  landmarks[0][0]) );
+
+                double hypPhalanx = Math.sqrt( (landmarks[0][6 *3] -  landmarks[0][0])*(landmarks[0][6*3] -  landmarks[0][0])
+                        + (landmarks[0][6*3 + 1] -  landmarks[0][0])*(landmarks[0][6*3 + 1] -  landmarks[0][0]) );
+
+                String fingerStatus = "";
+
+                if (hypTip < hypPhalanx)
+                    fingerStatus = "close";
+                else
+                    fingerStatus = "open";
+                Imgproc.putText(frame, fingerStatus,
+                        new Point(left-2, top-12),1, 2,
+                        new Scalar(0, 0, 0), 5);
+                Imgproc.putText(frame, fingerStatus,
+                        new Point(left-2, top-12),1, 2,
+                        new Scalar(0, 255, 0), 2);
             }
 
 
