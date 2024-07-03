@@ -1,27 +1,20 @@
 package com.bfr.opencvapp.utils;
 
 
-import android.os.RemoteException;
+import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.*;
+
 import android.util.Log;
 
 import com.bfr.opencvapp.objdetect.Detection;
-import com.bfr.usbservice.IUsbCommadRsp;
 
 import org.opencv.core.Mat;
-import org.opencv.core.Point;
 import org.opencv.core.Rect;
-import org.opencv.core.Scalar;
 import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.imgproc.Imgproc;
-import org.opencv.videoio.VideoWriter;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class GestureRecognition {
 
@@ -151,7 +144,7 @@ public class GestureRecognition {
 //                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
 //                    new Scalar(0, 255, 0), 3);
 
-                    if (handPose.isOpen())
+                    if (handPose.isOpen(INDEX))
                     {
                         // init frame index for buffer recording
                         imNum =0;

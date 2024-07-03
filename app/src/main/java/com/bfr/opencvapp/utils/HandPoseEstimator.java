@@ -1,13 +1,6 @@
 package com.bfr.opencvapp.utils;
 
 
-import static com.bfr.opencvapp.utils.Utils.Color.*;
-import static com.bfr.opencvapp.utils.Utils.Color._BLACK;
-import static com.bfr.opencvapp.utils.Utils.Color._BLUE;
-import static com.bfr.opencvapp.utils.Utils.Color._GREEN;
-import static com.bfr.opencvapp.utils.Utils.Color._RED;
-
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Build;
 import android.util.Log;
@@ -17,8 +10,6 @@ import android.util.Log;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
-import org.opencv.core.Rect;
-import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.tensorflow.lite.HexagonDelegate;
@@ -30,7 +21,6 @@ import org.tensorflow.lite.nnapi.NnApiDelegate;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -75,6 +65,15 @@ public class HandPoseEstimator {
     private HexagonDelegate hexagonDelegate;
 
 
+    /** finger open or not*/
+    enum FINGER{
+        THUMB,
+        INDEX,
+        MIDDLE,
+        RING,
+        PINKIE
+    }
+    int[][] PHALANX_ID = new int[][]{{4,5}, {8,6}, {12,10}, {16,14}, {20, 18}};
 
     // confidence level of human detection for doublecheck with Movenet
     public float humanConfidence = 0.0f;
@@ -268,23 +267,25 @@ public class HandPoseEstimator {
             return this.front;
         }
 
-        public boolean isOpen()
+        /** How to know a finger is opened : compute the hypotenuse  of the tip and 2nd phalanx
+         * if the hypotenuse of the tip of the finger < to the hypotenuse of the 2nd phalanx => the finger is open
+         * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L209
+         * for a point (x1, y1) the hypotenuse = sqrt(x1^2 + y1^2)
+         * However here, we compute from the origin = wrist , id 0
+         * for instance, the first finger tip has the id 8 , and the 2nd phalanx id 6
+         * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L205
+         */
+        public boolean isOpen(FINGER finger)
         {
-            /** How to know a finger is opened : compute the hypotenuse  of the tip and 2nd phalanx
-             * if the hypotenuse of the tip of the finger < to the hypotenuse of the 2nd phalanx => the finger is open
-             * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L209
-             * for a point (x1, y1) the hypotenuse = sqrt(x1^2 + y1^2)
-             * However here, we compute from the origin = wrist , id 0
-             * for instance, the first finger tip has the id 8 , and the 2nd phalanx id 6
-             * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L205
-             */
+            int TIP = PHALANX_ID[finger.ordinal()][0];
+            int SECOND_PHALANX = PHALANX_ID[finger.ordinal()][0];
 
             // hypotenuse = square root of (  (x[1st finger tip] - x[wrist] )^2 + (y[1st finger tip] - y[wrist] )^2)
-            double hypTip = Math.sqrt( (landmarks[8 *3] -  landmarks[0])*(landmarks[8*3] -  landmarks[0])
-                    + (landmarks[8*3 + 1] -  landmarks[0])*(landmarks[8*3 + 1] -  landmarks[0]) );
+            double hypTip = Math.sqrt( (landmarks[TIP *3] -  landmarks[0])*(landmarks[TIP*3] -  landmarks[0])
+                    + (landmarks[TIP*3 + 1] -  landmarks[0])*(landmarks[TIP*3 + 1] -  landmarks[0]) );
 
-            double hypPhalanx = Math.sqrt( (landmarks[6 *3] -  landmarks[0])*(landmarks[6*3] -  landmarks[0])
-                    + (landmarks[6*3 + 1] -  landmarks[0])*(landmarks[6*3 + 1] -  landmarks[0]) );
+            double hypPhalanx = Math.sqrt( (landmarks[SECOND_PHALANX *3] -  landmarks[0])*(landmarks[SECOND_PHALANX*3] -  landmarks[0])
+                    + (landmarks[SECOND_PHALANX*3 + 1] -  landmarks[0])*(landmarks[SECOND_PHALANX*3 + 1] -  landmarks[0]) );
 
             if (hypTip < hypPhalanx)
                 return  false;
