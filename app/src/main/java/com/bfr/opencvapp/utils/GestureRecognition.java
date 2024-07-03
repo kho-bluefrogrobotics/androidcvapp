@@ -15,7 +15,10 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoWriter;
 
+import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -24,14 +27,14 @@ public class GestureRecognition {
 
     public GestureRecognition(String mname, MultiDetector multiDetector, HandPoseEstimator handPoseEstimator, MotionDetector motionDetector) {
         this.name = mname;
-//        this.grafcet_runnable = mysequence;
 
         this.multiDetector = multiDetector;
         this.handPoseEstimator = handPoseEstimator;
         this.motionDetector = motionDetector;
     }
 
-    GestureRecogSequence gestureRecogSequence;
+    String name = "";
+
     // detectors
     MultiDetector multiDetector = new MultiDetector();
     ArrayList<Detection> detections = new ArrayList<Detection>();
@@ -42,11 +45,13 @@ public class GestureRecognition {
 
     // number of frames for optical flow
     final int NUMOFFRAMES= 10;
+    // buffer to store the sequence of frame for optical flow analysis
+    ArrayList<Mat> matArray = new ArrayList<Mat>();
 
     // input frame; reminder the arguements are passed as reference in java
     Mat frame;
 
-    String name = "";
+
 
     public boolean isStarted = false;
 
@@ -58,8 +63,6 @@ public class GestureRecognition {
 
     private int previous_step = 0;
 
-    // Scheduler for grafcet
-    private ScheduledExecutorService myscheduler ;
 
     // coords of the detected hand bbox
     int left, right, top, bottom;
@@ -75,16 +78,12 @@ public class GestureRecognition {
     public void init(Mat frame)
     {
         this.frame = frame;
-        gestureRecogSequence = new GestureRecogSequence();
     }
 
     public void start()
     {
         isStarted = true;
         try{
-            myscheduler = Executors.newScheduledThreadPool(1);
-            // start scheduled task
-            myscheduler.scheduleWithFixedDelay(gestureRecogSequence, 0, 10, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -94,7 +93,7 @@ public class GestureRecognition {
     {
         isStarted = false;
         try{
-            myscheduler.shutdown();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -154,6 +153,7 @@ public class GestureRecognition {
 
                     if (handPose.isOpen())
                     {
+                        // init frame index for buffer recording
                         imNum =0;
                         step_num = 100;
                     }
@@ -172,10 +172,26 @@ public class GestureRecognition {
                     //break;
 
                 case 100: // Open hand start record video for optical flow
-                    Log.d(name, "recording for optical flow im num:" + imNum );
-                    Imgcodecs.imwrite("/sdcard/Download/" + String.format("%02d", imNum) + "_gestRecog.jpg", frame);
+                    Log.d(name, "recording for optical flow im num:" + imNum +" to " + matArray.size() );
+//                    Imgcodecs.imwrite("/sdcard/Download/" + String.format("%02d", imNum) + "_gestRecog.jpg", frame);
+
+                    //add at the end if needed
+                    if (matArray.size()<=imNum)
+                    {
+                        Log.d(name, "adding:" + imNum +" to " + matArray.size() );
+                        matArray.add(frame.clone());
+                    }
+                    else // record Mat
+                    {
+                        Log.d(name, "setting:" + imNum +" to " + matArray.size() );
+                        matArray.set(imNum, frame.clone());
+                    }
+
+
+                    //increment index
                     imNum +=1;
 
+                    // next step if recording complete
                     if (imNum>=NUMOFFRAMES)
                         step_num = 110;
                     break;
@@ -193,7 +209,10 @@ public class GestureRecognition {
 
                     // Analyse from n-th frame to waith for hand stabilization
                     for(int i=5; i<NUMOFFRAMES;i++) {
-                        Mat img = Imgcodecs.imread("/sdcard/Download/" + String.format("%02d", i)  + "_gestRecog.jpg");
+//                        Mat img = Imgcodecs.imread("/sdcard/Download/" + String.format("%02d", i)  + "_gestRecog.jpg");
+
+                        // get frame from recorded buffer
+                        Mat img = matArray.get(i);
                         motionDetector.detectMotion(img, false);
                         //record if motion or not at this frame
                         motion = motion || motionDetector.detectedMotion ;
@@ -209,12 +228,14 @@ public class GestureRecognition {
                         {
                             Log.d(name, "COUCOU");
                             result = "COUCOU";
+                            debugRecord("coucou");
                             step_num = 5;
                         }
                         else
                         {
                             Log.d(name, "COME HERE");
                             result = "COME HERE";
+                            debugRecord("comehere");
                             step_num = 5;
                         }
 
@@ -224,6 +245,7 @@ public class GestureRecognition {
                     {
                         result = "STOP";
                         Log.d(name, "STOP");
+                        debugRecord("stop");
                         step_num = 900;
                     }
 
@@ -250,29 +272,22 @@ public class GestureRecognition {
     }
 
 
-
-    // Define the sequence of recognition
-    public class GestureRecogSequence implements Runnable {
-
-
-
-
-
-        GestureRecogSequence()
-        {
-
-            rows = frame.rows();
-            cols = frame.cols();
+    void debugRecord(String folder)
+    {
+        Date date = new Date();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyMMddHHmmssSSS");
+        String strDate= formatter.format(date);
+        // create folder if doesn't exist
+        File saveDir = new File("", "/sdcard/Download/"+ folder + "/" + strDate);
+        if(!saveDir.exists()) {
+            // create folder
+            saveDir.mkdirs();
         }
-
-        @Override
-        public void run() {
-
-
-        } //end run
-
-    } //end runnable class
-
-
-
+        
+        for (int i = 0; i<matArray.size(); i++)
+        {
+            Log.d(name, "Saving image " + i);
+            Imgcodecs.imwrite("/sdcard/Download/"+ folder + "/" + strDate+"/" + String.format("%02d", i) + "_gestRecog.jpg", matArray.get(i));
+        }
+    } // end record debug
 }
