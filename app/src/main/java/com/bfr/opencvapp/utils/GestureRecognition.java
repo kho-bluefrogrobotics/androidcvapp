@@ -213,7 +213,7 @@ public class GestureRecognition {
 
                         // get frame from recorded buffer
                         Mat img = matArray.get(i);
-                        motionDetector.detectMotion(img, false);
+                        motionDetector.detectMotion(img.clone(), false);
                         //record if motion or not at this frame
                         motion = motion || motionDetector.detectedMotion ;
                     }
@@ -283,7 +283,7 @@ public class GestureRecognition {
             // create folder
             saveDir.mkdirs();
         }
-        
+
         for (int i = 0; i<matArray.size(); i++)
         {
             Log.d(name, "Saving image " + i);
