@@ -36,7 +36,7 @@ public class MotionDetector {
     // relative position in the image, in % (with origin at the top left corner of the image)
     public float motionX, motionY;
     // Threshold for motion detection
-    public float motionThres = 10.0f;
+    public float motionThres = 8.0f;
     // if optical flow > Thres
     public boolean detectedMotion = false;
 

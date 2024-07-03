@@ -37,10 +37,11 @@ public class GestureRecognition {
     ArrayList<Detection> detections = new ArrayList<Detection>();
 
     HandPoseEstimator handPoseEstimator = new HandPoseEstimator();
+    HandPoseEstimator.HandPose handPose = null;
     MotionDetector motionDetector = new MotionDetector();
 
     // number of frames for optical flow
-    final int NUMOFFRAMES= 5;
+    final int NUMOFFRAMES= 10;
 
     // input frame; reminder the arguements are passed as reference in java
     Mat frame;
@@ -147,17 +148,25 @@ public class GestureRecognition {
                     bottom = (int)(detections.get(0).bottom* rows);
                     Rect handROI = new Rect( left, top, (right-left), (bottom-top));
                     Mat handMat = frame.submat(handROI);
-                    HandPoseEstimator.HandPose handPose =  handPoseEstimator.recognizeImage(handMat);
+                    handPose =  handPoseEstimator.recognizeImage(handMat);
 //                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
 //                    new Scalar(0, 255, 0), 3);
 
-                    if (handPose.isOpen() && handPose.isFront())
+                    if (handPose.isOpen())
                     {
                         imNum =0;
                         step_num = 100;
                     }
                     else {
-                        step_num = 5;
+
+                        if(handPose.isFront())
+                        {
+                            result = "STOP";
+                            Log.d(name, "STOP");
+                            step_num = 900; // wait for no hands in the image
+                        }
+                        else
+                            step_num = 5;
                         break;
                     }
                     //break;
@@ -182,7 +191,8 @@ public class GestureRecognition {
                 case 115: // optical flow analysis
                     Log.d(name, "Optical flow estimation");
 
-                    for(int i=0; i<NUMOFFRAMES;i++) {
+                    // Analyse from n-th frame to waith for hand stabilization
+                    for(int i=5; i<NUMOFFRAMES;i++) {
                         Mat img = Imgcodecs.imread("/sdcard/Download/" + String.format("%02d", i)  + "_gestRecog.jpg");
                         motionDetector.detectMotion(img, false);
                         //record if motion or not at this frame
@@ -195,18 +205,36 @@ public class GestureRecognition {
 
                     if (motion)
                     {
-                        Log.d(name, "COUCOU");
-                        result = "COUCOU";
+                        if (handPose.isFront())
+                        {
+                            Log.d(name, "COUCOU");
+                            result = "COUCOU";
+                            step_num = 5;
+                        }
+                        else
+                        {
+                            Log.d(name, "COME HERE");
+                            result = "COME HERE";
+                            step_num = 5;
+                        }
+
                     }
 
                     else
                     {
                         result = "STOP";
                         Log.d(name, "STOP");
+                        step_num = 900;
                     }
 
 
-                    step_num = 5;
+                    break;
+
+                case 900 : //wait for no hands
+                    detections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.7f, 0.0f, false);
+
+                    if(detections.size()==0)
+                        step_num = 5;
                     break;
 
                 default :
