@@ -311,13 +311,12 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
 
-
             gestureRecognition.recognize(frame);
 
-            Imgproc.putText(frame, gestureRecognition.result,
+            Imgproc.putText(frame, gestureRecognition.result + gestureRecognition.handPose.angle,
                         new Point(100, 100),2, 3,
                         new Scalar(0, 0, 0), 5);
-                Imgproc.putText(frame, gestureRecognition.result,
+                Imgproc.putText(frame, gestureRecognition.result + gestureRecognition.handPose.angle,
                         new Point(100, 100),2, 3,
                         new Scalar(0, 255, 0), 2);
 

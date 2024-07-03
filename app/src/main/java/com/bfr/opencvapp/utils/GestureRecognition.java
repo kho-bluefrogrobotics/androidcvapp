@@ -33,7 +33,7 @@ public class GestureRecognition {
     ArrayList<Detection> detections = new ArrayList<Detection>();
 
     HandPoseEstimator handPoseEstimator = new HandPoseEstimator();
-    HandPoseEstimator.HandPose handPose = null;
+    public HandPoseEstimator.HandPose handPose = null;
     MotionDetector motionDetector = new MotionDetector();
 
     // number of frames for optical flow
@@ -133,25 +133,40 @@ public class GestureRecognition {
 
                 case 10: // Pose estimation
 
-                    Log.d(name, "Hand pose Estimation");
-                    left = (int)(detections.get(0).left * cols);
-                    top = (int)(detections.get(0).top * rows);
-                    right = (int)(detections.get(0).right * cols);
-                    bottom = (int)(detections.get(0).bottom* rows);
-                    Rect handROI = new Rect( left, top, (right-left), (bottom-top));
-                    Mat handMat = frame.submat(handROI);
-                    handPose =  handPoseEstimator.recognizeImage(handMat);
+                    try{
+                        Log.d(name, "Hand pose Estimation");
+                        left = (int)(detections.get(0).left * cols);
+                        top = (int)(detections.get(0).top * rows);
+                        right = (int)(detections.get(0).right * cols);
+                        bottom = (int)(detections.get(0).bottom* rows);
+                        Rect handROI = new Rect( left+1, top+1, (right-left)-1, (bottom-top)-1);
+                        Mat handMat = frame.submat(handROI);
+                        handPose =  handPoseEstimator.recognizeImage(handMat);
+
+
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        step_num = 5;
+                    }
+
 //                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
 //                    new Scalar(0, 255, 0), 3);
 
-                    if (handPose.isOpen(INDEX))
+                    Log.d(name, "Finger status : " + handPose.isOpen(THUMB) + " "+ handPose.isOpen(INDEX) + " "+ handPose.isOpen(MIDDLE) + " "+ handPose.isOpen(PINKIE) + " ");
+
+                    //
+                    if (handPose.isOpen(INDEX) ) // hand is open
                     {
                         // init frame index for buffer recording
                         imNum =0;
                         step_num = 100;
                     }
+                    else if (!handPose.isOpen(INDEX) && handPose.isOpen(RING) && handPose.isOpen(THUMB) ) // all fingers closed beside thumb
+                    {
+                        step_num = 200;
+                    }
                     else {
-
                         if(handPose.isFront())
                         {
                             result = "STOP";
@@ -162,21 +177,20 @@ public class GestureRecognition {
                             step_num = 5;
                         break;
                     }
-                    //break;
 
                 case 100: // Open hand start record video for optical flow
-                    Log.d(name, "recording for optical flow im num:" + imNum +" to " + matArray.size() );
+//                    Log.d(name, "recording for optical flow im num:" + imNum +" to " + matArray.size() );
 //                    Imgcodecs.imwrite("/sdcard/Download/" + String.format("%02d", imNum) + "_gestRecog.jpg", frame);
 
                     //add at the end if needed
                     if (matArray.size()<=imNum)
                     {
-                        Log.d(name, "adding:" + imNum +" to " + matArray.size() );
+//                        Log.d(name, "adding:" + imNum +" to " + matArray.size() );
                         matArray.add(frame.clone());
                     }
                     else // record Mat
                     {
-                        Log.d(name, "setting:" + imNum +" to " + matArray.size() );
+//                        Log.d(name, "setting:" + imNum +" to " + matArray.size() );
                         matArray.set(imNum, frame.clone());
                     }
 
@@ -231,9 +245,7 @@ public class GestureRecognition {
                             debugRecord("comehere");
                             step_num = 5;
                         }
-
                     }
-
                     else
                     {
                         result = "STOP";
@@ -245,6 +257,23 @@ public class GestureRecognition {
 
                     break;
 
+                case 200 : // close hands
+
+                    handPose.fingerOrientation(THUMB);
+
+                    if (handPose.angle >= 0)
+                    {
+                        Log.d(name, "POSITIVE");
+                        result = "POSITIVE";
+                        step_num = 5;
+                    }
+                    else {
+                        Log.d(name, "NEGATIVE");
+                        result = "NEGATIVE";
+                        step_num = 5;
+                    }
+
+                    break;
                 case 900 : //wait for no hands
                     detections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.7f, 0.0f, false);
 
@@ -279,7 +308,7 @@ public class GestureRecognition {
 
         for (int i = 0; i<matArray.size(); i++)
         {
-            Log.d(name, "Saving image " + i);
+//            Log.d(name, "Saving image " + i);
             Imgcodecs.imwrite("/sdcard/Download/"+ folder + "/" + strDate+"/" + String.format("%02d", i) + "_gestRecog.jpg", matArray.get(i));
         }
     } // end record debug

@@ -221,7 +221,7 @@ public class HandPoseEstimator {
 
 
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e("ERROR", Log.getStackTraceString(e));
         }
 
         return handPose;
@@ -278,7 +278,10 @@ public class HandPoseEstimator {
         public boolean isOpen(FINGER finger)
         {
             int TIP = PHALANX_ID[finger.ordinal()][0];
-            int SECOND_PHALANX = PHALANX_ID[finger.ordinal()][0];
+            int SECOND_PHALANX = PHALANX_ID[finger.ordinal()][1];
+
+//            int[] vec1 = new int[]{(int)(landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]), (int)(landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) };
+//            Log.d("ccoucou", "vect=" + vec1[0] + "," + vec1[1] +"    " + landmarks[TIP *3] + "," + landmarks[TIP *3+1] );
 
             // hypotenuse = square root of (  (x[1st finger tip] - x[wrist] )^2 + (y[1st finger tip] - y[wrist] )^2)
             double hypTip = Math.sqrt( (landmarks[TIP *3] -  landmarks[0])*(landmarks[TIP*3] -  landmarks[0])
@@ -293,6 +296,46 @@ public class HandPoseEstimator {
                 return true;
         } //end isOpen
 
-    } //end hadpose class
+
+        public int angle = 0;
+        /**
+         * returns the orientation of the finger as an angle in degrees [0-359]. 0 is horizontal, in anti-clockwise direction (so 90° si upward and
+         * @param finger
+         * @return
+         */
+        public int fingerOrientation(FINGER finger)
+        {
+//            Log.d("ccoucou", "finger orientation");
+//            int TIP = PHALANX_ID[finger.ordinal()][0];
+//            int SECOND_PHALANX = PHALANX_ID[finger.ordinal()][1];
+            int TIP = 4;
+            int SECOND_PHALANX = 2;
+
+            int[] vec1 = new int[]{(int)(landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]), (int)(landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) };
+//            int[] vec2 = new int[]{1,0 };
+
+
+            // dot product = x1*x2 + y1*y2
+//            double dotProduct = (landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3])* (landmarks[SECOND_PHALANX *3] -  landmarks[0]);
+//            double angleRad= Math.atan2( ( (landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]) ),   (landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) );
+
+//            double norm = Math.sqrt(vec1[0]*vec1[0] + vec1[1]*vec1[1]);
+//            double dotProduct = ( vec1[0] * vec2[0]  + vec1[1]* vec2[1] )/ norm;
+
+
+            double angleRad = Math.atan2(vec1[1], vec1[0]);
+
+            this .angle = (int)Math.toDegrees(angleRad);
+
+//            Log.d("ccoucou", "TIP=" + (int)landmarks[TIP *3] + "," + (int)landmarks[TIP *3+1] + " PHALANX= " + (int)landmarks[SECOND_PHALANX *3] + "," + (int)landmarks[SECOND_PHALANX *3+1]);
+//            Log.d("ccoucou", "vect1=" + vec1[0] + "," + vec1[1] + " dotproduct= " + dotProduct + "norm=" + norm + " ==>angle in rad = " + angleRad + " in deg = " + this.angle);
+
+            // image is oriented with y towards bottom -> invert sign
+            return  - this.angle;
+
+        } //end finger orientation
+
+
+    } //end headpose class
 
 }
