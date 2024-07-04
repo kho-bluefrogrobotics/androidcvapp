@@ -209,7 +209,7 @@ public class HandPoseEstimator {
             handPose.handeness = ((float [][]) Objects.requireNonNull(outputMap.get(2)))[0][0];
 
 //            Log.d(TAG, "Inference done; confidence = " +  handPose.handPresence + " LorR="+ handPose.handeness);
-//            Log.d(TAG, "tip index Point = " + handPose.landmarks[8*3] + ","+ handPose.landmarks[8*3 + 1]);
+            Log.d(TAG, "tip index Point = " + handPose.landmarks[8*3] + ","+ handPose.landmarks[8*3 + 1]);
 
             //init for display only
             objId = 0;
@@ -285,12 +285,16 @@ public class HandPoseEstimator {
 
             // hypotenuse = square root of (  (x[1st finger tip] - x[wrist] )^2 + (y[1st finger tip] - y[wrist] )^2)
             double hypTip = Math.sqrt( (landmarks[TIP *3] -  landmarks[0])*(landmarks[TIP*3] -  landmarks[0])
-                    + (landmarks[TIP*3 + 1] -  landmarks[0])*(landmarks[TIP*3 + 1] -  landmarks[0]) );
+                    + (landmarks[TIP*3 + 1] -  landmarks[1])*(landmarks[TIP*3 + 1] -  landmarks[1]) );
 
             double hypPhalanx = Math.sqrt( (landmarks[SECOND_PHALANX *3] -  landmarks[0])*(landmarks[SECOND_PHALANX*3] -  landmarks[0])
-                    + (landmarks[SECOND_PHALANX*3 + 1] -  landmarks[0])*(landmarks[SECOND_PHALANX*3 + 1] -  landmarks[0]) );
+                    + (landmarks[SECOND_PHALANX*3 + 1] -  landmarks[1])*(landmarks[SECOND_PHALANX*3 + 1] -  landmarks[1]) );
 
-            if (hypTip < hypPhalanx)
+            Log.d("ccoucou", "hypTip=" + hypTip );
+            Log.d("ccoucou", "hypPhalanx=" + hypPhalanx );
+            Log.d("ccoucou", "Interm Calc=" + (landmarks[TIP *3] -  landmarks[0]) + " + " + (landmarks[TIP*3 + 1] -  landmarks[1]) );
+
+            if (hypTip <= hypPhalanx)
                 return  false;
             else
                 return true;

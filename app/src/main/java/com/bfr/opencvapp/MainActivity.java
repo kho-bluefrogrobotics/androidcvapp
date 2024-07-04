@@ -320,6 +320,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
                         new Point(100, 100),2, 3,
                         new Scalar(0, 255, 0), 2);
 
+
 //
 //        //convert to bitmap
 //        Mat resizedFrame = new Mat();

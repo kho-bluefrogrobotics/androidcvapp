@@ -8,8 +8,11 @@ import android.util.Log;
 import com.bfr.opencvapp.objdetect.Detection;
 
 import org.opencv.core.Mat;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -139,11 +142,34 @@ public class GestureRecognition {
                         top = (int)(detections.get(0).top * rows);
                         right = (int)(detections.get(0).right * cols);
                         bottom = (int)(detections.get(0).bottom* rows);
-                        Rect handROI = new Rect( left+1, top+1, (right-left)-1, (bottom-top)-1);
+                        Rect handROI = new Rect( left, top, (right-left), (bottom-top));
                         Mat handMat = frame.submat(handROI);
                         handPose =  handPoseEstimator.recognizeImage(handMat);
 
 
+                        int[] landmarks = new int[]{0, 1,2,3,4,5,6,7,8, 17};
+                        int x, y;
+                        for (int l=0; l<20; l++)
+                        {
+//                            x = (int) (handPose.landmarks[landmarks[l] *3]* (right-left)/224);
+                            x = (int) (handPose.landmarks[l *3]* (right-left)/224);
+//                            y = (int) (handPose.landmarks[landmarks[l] * 3+1]* (bottom-top)/224);
+                            y = (int) (handPose.landmarks[l * 3+1]* (bottom-top)/224);
+                            Imgproc.circle(handMat, new Point(x,y), 5, new Scalar(0,255,0), 5);
+                        }
+//                        int x = (int) (handPose.landmarks[0] * (right-left)/224);
+//                        int y = (int) (handPose.landmarks[1]* (bottom-top)/224);
+//                        Imgproc.circle(handMat, new Point(x,y), 5, new Scalar(255,0,0), 5);
+//                        x = (int) (handPose.landmarks[24]* (right-left)/224);
+//                        y = (int) (handPose.landmarks[25]* (bottom-top)/224);
+//                        Imgproc.circle(handMat, new Point(x,y), 5, new Scalar(0,255,0), 5);
+//
+//                        x = (int) (handPose.landmarks[5*3]* (right-left)/224);
+//                        y = (int) (handPose.landmarks[5*3+1]* (bottom-top)/224);
+//                        Imgproc.circle(handMat, new Point(x,y), 5, new Scalar(255,0,0), 5);
+
+                        Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                    new Scalar(0, 255, 0), 3);
 
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -153,30 +179,33 @@ public class GestureRecognition {
 //                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
 //                    new Scalar(0, 255, 0), 3);
 
-                    Log.d(name, "Finger status : " + handPose.isOpen(THUMB) + " "+ handPose.isOpen(INDEX) + " "+ handPose.isOpen(MIDDLE) + " "+ handPose.isOpen(PINKIE) + " ");
+//                    Log.d(name, "Finger status : " + handPose.isOpen(THUMB) + " "+ handPose.isOpen(INDEX) + " "+ handPose.isOpen(MIDDLE) + " "+ handPose.isOpen(PINKIE) + " ");
+                    Log.d(name, "Finger status : " + handPose.isOpen(INDEX) );
+                    step_num = 5;
+                    break;
 
                     //
-                    if (handPose.isOpen(INDEX) ) // hand is open
-                    {
-                        // init frame index for buffer recording
-                        imNum =0;
-                        step_num = 100;
-                    }
-                    else if (!handPose.isOpen(INDEX) && handPose.isOpen(RING) && handPose.isOpen(THUMB) ) // all fingers closed beside thumb
-                    {
-                        step_num = 200;
-                    }
-                    else {
-                        if(handPose.isFront())
-                        {
-                            result = "STOP";
-                            Log.d(name, "STOP");
-                            step_num = 900; // wait for no hands in the image
-                        }
-                        else
-                            step_num = 5;
-                        break;
-                    }
+//                    if (handPose.isOpen(INDEX) ) // hand is open
+//                    {
+//                        // init frame index for buffer recording
+//                        imNum =0;
+//                        step_num = 100;
+//                    }
+//                    else if (!handPose.isOpen(INDEX) && handPose.isOpen(RING) && handPose.isOpen(THUMB) ) // all fingers closed beside thumb
+//                    {
+//                        step_num = 200;
+//                    }
+//                    else {
+//                        if(handPose.isFront())
+//                        {
+//                            result = "STOP";
+//                            Log.d(name, "STOP");
+//                            step_num = 900; // wait for no hands in the image
+//                        }
+//                        else
+//                            step_num = 5;
+//                        break;
+//                    }
 
                 case 100: // Open hand start record video for optical flow
 //                    Log.d(name, "recording for optical flow im num:" + imNum +" to " + matArray.size() );
