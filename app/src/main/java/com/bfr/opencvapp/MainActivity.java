@@ -28,6 +28,7 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
@@ -52,6 +53,10 @@ import com.bfr.buddysdk.BuddyActivity;
 import com.bfr.buddysdk.BuddySDK;
 
 import com.bfr.opencvapp.grafcet.*;
+import com.bfr.opencvapp.objdetect.Detection;
+import com.bfr.opencvapp.utils.GestureRecognition;
+import com.bfr.opencvapp.utils.HandPoseEstimator;
+import com.bfr.opencvapp.utils.MotionDetector;
 import com.bfr.opencvapp.utils.TfLiteMidas;
 import com.bfr.opencvapp.utils.TfLiteYoloXHumanHeadHands;
 
@@ -104,12 +109,15 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
 
     //Tflite Multidetector
-    MultiDetector detector;
-    ArrayList<MultiDetector.Recognition> tfliteDetections = new ArrayList<MultiDetector.Recognition>();
+    com.bfr.opencvapp.utils.MultiDetector multiDetector;
+    ArrayList<Detection> tfliteDetections = new ArrayList<Detection>();
     int left, right, top, bottom;
 
-    // Pose estimator
-    TfLiteBlazePose blazePose;
+    HandPoseEstimator handPoseEstimator;
+
+    MotionDetector motionDetector;
+
+    GestureRecognition gestureRecognition;
 
     public static PersonTrackerVIT personTrackerVIT;
     Rect tracked;
@@ -395,11 +403,11 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         Log.w("MainActivity", "Camera view started");
 
-        detector = new MultiDetector(this);
-        blazePose = new TfLiteBlazePose(context);
-        humanHeadHandsDetector = new TfLiteYoloXHumanHeadHands(context);
+//        detector = new MultiDetector(this);
+//        blazePose = new TfLiteBlazePose(context);
+//        humanHeadHandsDetector = new TfLiteYoloXHumanHeadHands(context);
 
-        personTrackerVIT = new PersonTrackerVIT(detector, humanHeadHandsDetector);
+//        personTrackerVIT = new PersonTrackerVIT(detector, humanHeadHandsDetector);
 
         tracked = new Rect();
 
@@ -407,7 +415,29 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         videoCapture.set(CAP_PROP_POS_FRAMES, 10);
         frame = new Mat();
 
-        personTrackerVIT.startTorsoHeightEstimation();
+//        personTrackerVIT.startTorsoHeightEstimation();
+
+        frame = new Mat();
+        // init face detector
+        multiDetector = new com.bfr.opencvapp.utils.MultiDetector(context);
+
+        handPoseEstimator = new HandPoseEstimator(context);
+
+        motionDetector = new MotionDetector();
+        //init face recognizer
+//        faceRecognizerObj = new FaceRecognizer();
+
+//        // Init write video file
+//        videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
+//                25.0D, new Size(800, 600));
+//        videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
+//                25.0D,  new Size( 800,600));
+
+
+        gestureRecognition = new GestureRecognition("GestureRecog", multiDetector, handPoseEstimator, motionDetector);
+        gestureRecognition.init(frame);
+
+//        started = true;
 
     }
 
@@ -416,7 +446,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         // cature frame from camera
         frame = inputFrame.rgba();
-        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2BGR);
+        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
 //        videoCapture.read(frame);
 
@@ -425,11 +455,17 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         try
         {
-            personTrackerVIT.visualTracking(frame, true);
-            personTrackerVIT.readyToDisplay =false;
 
-            Imgproc.cvtColor( personTrackerVIT.displayMat,  personTrackerVIT.displayMat, Imgproc.COLOR_RGB2BGR);
-            return personTrackerVIT.displayMat;
+            gestureRecognition.recognize(frame);
+
+            Imgproc.putText(frame, gestureRecognition.result,
+                    new Point(100, 100),2, 3,
+                    new Scalar(0, 0, 0), 5);
+            Imgproc.putText(frame, gestureRecognition.result,
+                    new Point(100, 100),2, 3,
+                    new Scalar(0, 255, 0), 2);
+
+            return frame;
         }
         catch (Exception e)
         {
@@ -472,7 +508,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         mOpenCvCameraView.setCvCameraViewListener(this);
         mOpenCvCameraView.setAlpha(0.1F);
 
-        mOpenCvCameraView.getHolder().setFixedSize(1,1);
+//        mOpenCvCameraView.getHolder().setFixedSize(1,1);
 
         // Thresholds for Tof IR sensors
         FRONT_TOF_LIM_LOWSPEED = 500;
@@ -480,20 +516,20 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         LATERAL_TOF_LIM_LOWSPEED = 450;
         LATERAL_TOF_LIM_HIGHSPEED = 550;
 
-        trackingNoGrafcet.start(40);
-        trackingYesGrafcet.start(40);
-        alignGrafcet.start(20);
-
-        searchPersonGrafcet.start();
-
-        faceGrafcet.start(500);
-
-        mainGrafcet.start();
-        alignBodyAndFollowGrafcet.start(50);
-        speedAngularGrafcet.start(50);
-        speedLinearGrafcet.start(50);
-
-        alignBodyAndComeHereGrafcet.start(50);
+//        trackingNoGrafcet.start(40);
+//        trackingYesGrafcet.start(40);
+//        alignGrafcet.start(20);
+//
+//        searchPersonGrafcet.start();
+//
+//        faceGrafcet.start(500);
+//
+//        mainGrafcet.start();
+//        alignBodyAndFollowGrafcet.start(50);
+//        speedAngularGrafcet.start(50);
+//        speedLinearGrafcet.start(50);
+//
+//        alignBodyAndComeHereGrafcet.start(50);
 
         BuddySDK.USB.enableSensorModule(true, new IUsbCommadRsp.Stub() {
             @Override
