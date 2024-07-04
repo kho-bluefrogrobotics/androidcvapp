@@ -11,6 +11,7 @@ import android.util.Log;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
+import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.tensorflow.lite.HexagonDelegate;
@@ -22,16 +23,22 @@ import org.tensorflow.lite.nnapi.NnApiDelegate;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 
 import com.google.mediapipe.framework.image.BitmapImageBuilder;
 import com.google.mediapipe.framework.image.MPImage;
+import com.google.mediapipe.tasks.components.containers.Category;
+import com.google.mediapipe.tasks.components.containers.NormalizedLandmark;
 import com.google.mediapipe.tasks.core.BaseOptions;
+import com.google.mediapipe.tasks.core.Delegate;
 import com.google.mediapipe.tasks.vision.core.RunningMode;
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker;
+import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult;
 
 
 /** Hand Face Human object detector based on a Mobilenetv2-SSD network*/
@@ -74,6 +81,8 @@ public class HandPoseEstimator {
 
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
+
+    HandLandmarker handLandmarker;
 
     Context context;
 
@@ -128,7 +137,20 @@ public class HandPoseEstimator {
             tfLite = new Interpreter(tfliteModel, options );
 
 
+            /** Mediapipe */
 
+            BaseOptions.Builder baseOptionsBuilder = BaseOptions.builder()
+                    .setModelAssetPath("nnmodels/hand_landmarker.task")
+                    .setDelegate(Delegate.GPU);
+            BaseOptions baseOptions  = baseOptionsBuilder.build();
+
+            HandLandmarker.HandLandmarkerOptions.Builder handOptionsBuilder = HandLandmarker.HandLandmarkerOptions.builder()
+                    .setBaseOptions(baseOptions)
+                    .setRunningMode(RunningMode.IMAGE);
+
+            HandLandmarker.HandLandmarkerOptions handOptions  = handOptionsBuilder.build();
+
+            handLandmarker = HandLandmarker.createFromOptions(context, handOptions);
 
         }
         catch (Exception e)
@@ -184,66 +206,92 @@ public class HandPoseEstimator {
 
         HandPose handPose = new HandPose();
 
-        try
-        {
-            displayMat = frame.clone();
+        //convert to bitmap
+        Mat resizedFrame = new Mat();
+//        Imgproc.resize(frame, resizedFrame, new Size(320,320));
+        Bitmap bitmapImagefull = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(frame, bitmapImagefull);
 
-            // check input size
-            Mat resizedFrame = new Mat();
-            if(frame.rows()!=INPUT_SIZE.height || frame.cols()!=INPUT_SIZE.width)
-                Imgproc.resize(frame, resizedFrame, new Size(INPUT_SIZE.width,INPUT_SIZE.height));
-            else
-                resizedFrame = frame.clone();
 
-            //convert to bitmap
-            Bitmap bitmapImg = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(resizedFrame, bitmapImg);
-            // assigning memory of input
-            ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmapImg);
-            Object[] inputArray = {byteBuffer};
+        MPImage mpImage = new BitmapImageBuilder(bitmapImagefull).build() ;
 
-            // assigning output
-            Map<Integer, Object> outputMap = new HashMap<>();
+        HandLandmarkerResult handLandmarkerResult =handLandmarker.detect(mpImage);
 
-            //
-            // 1) a fp32{1,63} map of the 21 landmarks * (x, y, z) coords in PIXEL , z takes the origin at the wrist
-//            outputMap.put(0, new float[1][63]);
-            outputMap.put(0, new float[1][1]);
-            // 2) a fp32{1,1} map representing the probability of presence of a hand
-//            outputMap.put(1, new float[1][1]);
-            outputMap.put(1, new float[1][63]);
-            // 3) a fp32{1,1} map representing the handedness  <0.5: Left hand , >0.5:Right hand
+        Log.i(TAG, "Result size ="+ handLandmarkerResult.landmarks().get(0).size());
+
+        handPose.landmarks = handLandmarkerResult.landmarks().get(0);
+        handPose.handeness = handLandmarkerResult.handednesses().get(0);
+
+//        for(int k=0; k<20; k++)
+//        {
+//            int x = (int) (handLandmarkerResult.landmarks().get(0).get(k).x() * frame.cols());
+//            int y = (int) (handLandmarkerResult.landmarks().get(0).get(k).y()* frame.rows());
+//            Imgproc.circle(frame, new Point(x,y), 5, new Scalar(0,255,0), 5);
+//        }
+
+
+
+//
+//        try
+//        {
+//            displayMat = frame.clone();
+//
+//            // check input size
+//            Mat resizedFrame = new Mat();
+//            if(frame.rows()!=INPUT_SIZE.height || frame.cols()!=INPUT_SIZE.width)
+//                Imgproc.resize(frame, resizedFrame, new Size(INPUT_SIZE.width,INPUT_SIZE.height));
+//            else
+//                resizedFrame = frame.clone();
+//
+//            //convert to bitmap
+//            Bitmap bitmapImg = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
+//            Utils.matToBitmap(resizedFrame, bitmapImg);
+//            // assigning memory of input
+//            ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmapImg);
+//            Object[] inputArray = {byteBuffer};
+//
+//            // assigning output
+//            Map<Integer, Object> outputMap = new HashMap<>();
+//
+//            //
+//            // 1) a fp32{1,63} map of the 21 landmarks * (x, y, z) coords in PIXEL , z takes the origin at the wrist
+////            outputMap.put(0, new float[1][63]);
+//            outputMap.put(0, new float[1][1]);
+//            // 2) a fp32{1,1} map representing the probability of presence of a hand
+////            outputMap.put(1, new float[1][1]);
+//            outputMap.put(1, new float[1][63]);
+//            // 3) a fp32{1,1} map representing the handedness  <0.5: Left hand , >0.5:Right hand
+////            outputMap.put(2, new float[1][1]);
 //            outputMap.put(2, new float[1][1]);
-            outputMap.put(2, new float[1][1]);
-            // 4) a fp32{1,63} map of the 21 landmarks * (x, y, z) coords in world coordinates
-            outputMap.put(3, new float[1][63]);
-
-//            Log.d(TAG, "Inference NOW!");
-            // Run inference
-            tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
-
-//            handPose.landmarks = ((float[][]) outputMap.get(0))[0];
-            handPose.landmarks = ((float[][]) outputMap.get(3))[0];
-//            handPose.handPresence = ((float [][]) Objects.requireNonNull(outputMap.get(1)))[0][0];
-            handPose.handPresence = ((float [][]) Objects.requireNonNull(outputMap.get(0)))[0][0];
+//            // 4) a fp32{1,63} map of the 21 landmarks * (x, y, z) coords in world coordinates
+//            outputMap.put(3, new float[1][63]);
+//
+////            Log.d(TAG, "Inference NOW!");
+//            // Run inference
+//            tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
+//
+////            handPose.landmarks = ((float[][]) outputMap.get(0))[0];
+//            handPose.landmarks = ((float[][]) outputMap.get(3))[0];
+////            handPose.handPresence = ((float [][]) Objects.requireNonNull(outputMap.get(1)))[0][0];
+//            handPose.handPresence = ((float [][]) Objects.requireNonNull(outputMap.get(0)))[0][0];
+////            handPose.handeness = ((float [][]) Objects.requireNonNull(outputMap.get(2)))[0][0];
 //            handPose.handeness = ((float [][]) Objects.requireNonNull(outputMap.get(2)))[0][0];
-            handPose.handeness = ((float [][]) Objects.requireNonNull(outputMap.get(2)))[0][0];
+//
+////            Log.d(TAG, "Inference done; confidence = " +  handPose.handPresence + " LorR="+ handPose.handeness);
+//            Log.d(TAG, "tip index Point = " + handPose.landmarks[8*3] + ","+ handPose.landmarks[8*3 + 1]);
+//
+//            //init for display only
+//            objId = 0;
+//            // for each detection
+//            for (int i = 0; i < OUTPUT_MAPS_SIZE[0]; i++)
+//            {
+//
+//            } // next detection
 
-//            Log.d(TAG, "Inference done; confidence = " +  handPose.handPresence + " LorR="+ handPose.handeness);
-            Log.d(TAG, "tip index Point = " + handPose.landmarks[8*3] + ","+ handPose.landmarks[8*3 + 1]);
 
-            //init for display only
-            objId = 0;
-            // for each detection
-            for (int i = 0; i < OUTPUT_MAPS_SIZE[0]; i++)
-            {
-
-            } // next detection
-
-
-        } catch (Exception e) {
-            Log.e("ERROR", Log.getStackTraceString(e));
-        }
+//        } catch (Exception e) {
+//            Log.e("ERROR", Log.getStackTraceString(e));
+//        }
 
         return handPose;
     }
@@ -260,8 +308,8 @@ public class HandPoseEstimator {
     public class HandPose{
 
         public float handPresence= 0.0f;
-        public float handeness = 0.0f;
-        public float[] landmarks = null;
+        public List<Category> handeness = new ArrayList<>();
+        public List<NormalizedLandmark> landmarks = null;
 
         private boolean front = false;
 
@@ -269,10 +317,11 @@ public class HandPoseEstimator {
         public boolean isFront()
         {
             // if left hand
-            if (handeness <0.5)
+            if (handeness.get(0).categoryName().toUpperCase().contains("LEFT")
+                    && handeness.get(0).score() >0.5)
             {
                 //if index base [5] is at the right of the pinkie base[17]
-                if (landmarks[5*3] < landmarks[17*3])
+                if (landmarks.get(5).x() < landmarks.get(17).x())
                     this.front = true;
                 else
                     this.front = false;
@@ -280,7 +329,7 @@ public class HandPoseEstimator {
             else // right hand
             {
                     //if index base [5] is at the left  of the pinkie base[17]
-                if (landmarks[5*3] > landmarks[17*3])
+                if (landmarks.get(5).x() > landmarks.get(17).x())
                     this.front = true;
                 else
                     this.front = false;
@@ -305,15 +354,15 @@ public class HandPoseEstimator {
 //            Log.d("ccoucou", "vect=" + vec1[0] + "," + vec1[1] +"    " + landmarks[TIP *3] + "," + landmarks[TIP *3+1] );
 
             // hypotenuse = square root of (  (x[1st finger tip] - x[wrist] )^2 + (y[1st finger tip] - y[wrist] )^2)
-            double hypTip = Math.sqrt( (landmarks[TIP *3] -  landmarks[0])*(landmarks[TIP*3] -  landmarks[0])
-                    + (landmarks[TIP*3 + 1] -  landmarks[1])*(landmarks[TIP*3 + 1] -  landmarks[1]) );
+            double hypTip = Math.sqrt( (landmarks.get(TIP).x() -  landmarks.get(0).x())*(landmarks.get(TIP).x() -  landmarks.get(0).x())
+                    + (landmarks.get(TIP).y() -  landmarks.get(0).y())*(landmarks.get(TIP).y() -  landmarks.get(0).y()) );
 
-            double hypPhalanx = Math.sqrt( (landmarks[SECOND_PHALANX *3] -  landmarks[0])*(landmarks[SECOND_PHALANX*3] -  landmarks[0])
-                    + (landmarks[SECOND_PHALANX*3 + 1] -  landmarks[1])*(landmarks[SECOND_PHALANX*3 + 1] -  landmarks[1]) );
+            double hypPhalanx = Math.sqrt( (landmarks.get(SECOND_PHALANX).x() -  landmarks.get(0).x())*(landmarks.get(SECOND_PHALANX).x() -  landmarks.get(0).x())
+                + (landmarks.get(SECOND_PHALANX).y() -  landmarks.get(0).y())*(landmarks.get(SECOND_PHALANX).y() -  landmarks.get(0).y()) );
 
             Log.d("ccoucou", "hypTip=" + hypTip );
             Log.d("ccoucou", "hypPhalanx=" + hypPhalanx );
-            Log.d("ccoucou", "Interm Calc=" + (landmarks[TIP *3] -  landmarks[0]) + " + " + (landmarks[TIP*3 + 1] -  landmarks[1]) );
+//            Log.d("ccoucou", "Interm Calc=" + (landmarks[TIP *3] -  landmarks[0]) + " + " + (landmarks[TIP*3 + 1] -  landmarks[1]) );
 
             if (hypTip <= hypPhalanx)
                 return  false;
@@ -336,7 +385,7 @@ public class HandPoseEstimator {
             int TIP = 4;
             int SECOND_PHALANX = 2;
 
-            int[] vec1 = new int[]{(int)(landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]), (int)(landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) };
+//            int[] vec1 = new int[]{(int)(landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]), (int)(landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) };
 //            int[] vec2 = new int[]{1,0 };
 
 
@@ -348,9 +397,9 @@ public class HandPoseEstimator {
 //            double dotProduct = ( vec1[0] * vec2[0]  + vec1[1]* vec2[1] )/ norm;
 
 
-            double angleRad = Math.atan2(vec1[1], vec1[0]);
+//            double angleRad = Math.atan2(vec1[1], vec1[0]);
 
-            this .angle = (int)Math.toDegrees(angleRad);
+//            this .angle = (int)Math.toDegrees(angleRad);
 
 //            Log.d("ccoucou", "TIP=" + (int)landmarks[TIP *3] + "," + (int)landmarks[TIP *3+1] + " PHALANX= " + (int)landmarks[SECOND_PHALANX *3] + "," + (int)landmarks[SECOND_PHALANX *3+1]);
 //            Log.d("ccoucou", "vect1=" + vec1[0] + "," + vec1[1] + " dotproduct= " + dotProduct + "norm=" + norm + " ==>angle in rad = " + angleRad + " in deg = " + this.angle);
