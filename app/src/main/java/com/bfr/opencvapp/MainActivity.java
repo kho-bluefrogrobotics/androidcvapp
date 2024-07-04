@@ -73,6 +73,13 @@ import com.bfr.opencvapp.utils.MotionDetector;
 import com.bfr.opencvapp.utils.MultiDetector;
 import com.bfr.opencvapp.utils.TfLiteFaceRecognizer;
 import com.bfr.opencvapp.utils.TfLiteReIdentifier;
+import com.google.mediapipe.framework.image.BitmapImageBuilder;
+import com.google.mediapipe.framework.image.MPImage;
+import com.google.mediapipe.tasks.core.BaseOptions;
+import com.google.mediapipe.tasks.core.Delegate;
+import com.google.mediapipe.tasks.vision.core.RunningMode;
+import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker;
+import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult;
 import com.google.mlkit.vision.face.Face;
 
 
@@ -84,7 +91,7 @@ import org.tensorflow.lite.gpu.GpuDelegate;
 
 public class MainActivity extends CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
-    private static final String TAG = "FaceReidentifier_app";
+    private static final String TAG = "Gesture Recog App";
 
     private CameraBridgeViewBase mOpenCvCameraView;
 
@@ -271,7 +278,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         // init face detector
         multiDetector = new MultiDetector(context);
 
-        handPoseEstimator = new HandPoseEstimator();
+        handPoseEstimator = new HandPoseEstimator(context);
 
         motionDetector = new MotionDetector();
         //init face recognizer
@@ -288,7 +295,26 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         gestureRecognition.init(frame);
 
         started = true;
+
+
+        /** Mediapipe */
+
+        BaseOptions.Builder baseOptionsBuilder = BaseOptions.builder()
+                .setModelAssetPath("nnmodels/hand_landmarker.task")
+                .setDelegate(Delegate.GPU);
+        BaseOptions baseOptions  = baseOptionsBuilder.build();
+
+        HandLandmarker.HandLandmarkerOptions.Builder handOptionsBuilder = HandLandmarker.HandLandmarkerOptions.builder()
+                .setBaseOptions(baseOptions)
+                .setRunningMode(RunningMode.IMAGE);
+
+        HandLandmarker.HandLandmarkerOptions handOptions  = handOptionsBuilder.build();
+
+        handLandmarker = HandLandmarker.createFromOptions(context, handOptions);
+
     }
+
+    HandLandmarker handLandmarker;
 
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
@@ -311,14 +337,52 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
 
-            gestureRecognition.recognize(frame);
+            //convert to bitmap
+        Mat resizedFrame = new Mat();
+//        Imgproc.resize(frame, resizedFrame, new Size(320,320));
+        Bitmap bitmapImagefull = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(frame, bitmapImagefull);
 
-            Imgproc.putText(frame, gestureRecognition.result + gestureRecognition.handPose.angle,
-                        new Point(100, 100),2, 3,
-                        new Scalar(0, 0, 0), 5);
-                Imgproc.putText(frame, gestureRecognition.result + gestureRecognition.handPose.angle,
-                        new Point(100, 100),2, 3,
-                        new Scalar(0, 255, 0), 2);
+
+        MPImage mpImage = new BitmapImageBuilder(bitmapImagefull).build() ;
+
+        HandLandmarkerResult handLandmarkerResult =handLandmarker.detect(mpImage);
+
+        Log.i(TAG, "Result size ="+ handLandmarkerResult.landmarks().get(0).size());
+
+        for(int k=0; k<20; k++)
+        {
+            int x = (int) (handLandmarkerResult.landmarks().get(0).get(k).x() * frame.cols());
+            int y = (int) (handLandmarkerResult.landmarks().get(0).get(k).y()* frame.rows());
+            Imgproc.circle(frame, new Point(x,y), 5, new Scalar(0,255,0), 5);
+        }
+
+
+
+
+
+//            gestureRecognition.recognize(frame);
+//
+//            Imgproc.putText(frame, gestureRecognition.result + gestureRecognition.handPose.angle,
+//                        new Point(100, 100),2, 3,
+//                        new Scalar(0, 0, 0), 5);
+//                Imgproc.putText(frame, gestureRecognition.result + gestureRecognition.handPose.angle,
+//                        new Point(100, 100),2, 3,
+//                        new Scalar(0, 255, 0), 2);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 //

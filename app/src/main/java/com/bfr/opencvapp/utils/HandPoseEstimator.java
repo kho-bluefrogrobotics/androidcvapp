@@ -1,6 +1,7 @@
 package com.bfr.opencvapp.utils;
 
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Build;
 import android.util.Log;
@@ -24,6 +25,14 @@ import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+
+
+import com.google.mediapipe.framework.image.BitmapImageBuilder;
+import com.google.mediapipe.framework.image.MPImage;
+import com.google.mediapipe.tasks.core.BaseOptions;
+import com.google.mediapipe.tasks.vision.core.RunningMode;
+import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker;
+
 
 /** Hand Face Human object detector based on a Mobilenetv2-SSD network*/
 public class HandPoseEstimator {
@@ -66,6 +75,7 @@ public class HandPoseEstimator {
     private Interpreter tfLite;
     private HexagonDelegate hexagonDelegate;
 
+    Context context;
 
     /** finger open or not*/
     enum FINGER{
@@ -80,7 +90,7 @@ public class HandPoseEstimator {
     // confidence level of human detection for doublecheck with Movenet
     public float humanConfidence = 0.0f;
 
-    public HandPoseEstimator(){
+    public HandPoseEstimator(Context context){
 
         try{
             displayMat = new Mat();
@@ -116,6 +126,9 @@ public class HandPoseEstimator {
             //Init interpreter
             File tfliteModel = new File(MODELS_DIR +MODEL_NAME);
             tfLite = new Interpreter(tfliteModel, options );
+
+
+
 
         }
         catch (Exception e)

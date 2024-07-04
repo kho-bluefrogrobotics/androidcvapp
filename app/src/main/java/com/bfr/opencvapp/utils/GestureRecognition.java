@@ -3,6 +3,7 @@ package com.bfr.opencvapp.utils;
 
 import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.*;
 
+import android.content.Context;
 import android.util.Log;
 
 import com.bfr.opencvapp.objdetect.Detection;
@@ -35,7 +36,7 @@ public class GestureRecognition {
     MultiDetector multiDetector = new MultiDetector();
     ArrayList<Detection> detections = new ArrayList<Detection>();
 
-    HandPoseEstimator handPoseEstimator = new HandPoseEstimator();
+    HandPoseEstimator handPoseEstimator;
     public HandPoseEstimator.HandPose handPose = null;
     MotionDetector motionDetector = new MotionDetector();
 
