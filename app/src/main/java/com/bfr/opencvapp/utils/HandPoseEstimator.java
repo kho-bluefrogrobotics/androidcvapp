@@ -321,7 +321,7 @@ public class HandPoseEstimator {
                     && handeness.get(0).score() >0.5)
             {
                 //if index base [5] is at the right of the pinkie base[17]
-                if (landmarks.get(5).x() < landmarks.get(17).x())
+                if (landmarks.get(5).x() > landmarks.get(17).x())
                     this.front = true;
                 else
                     this.front = false;
@@ -329,7 +329,7 @@ public class HandPoseEstimator {
             else // right hand
             {
                     //if index base [5] is at the left  of the pinkie base[17]
-                if (landmarks.get(5).x() > landmarks.get(17).x())
+                if (landmarks.get(5).x() < landmarks.get(17).x())
                     this.front = true;
                 else
                     this.front = false;
@@ -391,7 +391,7 @@ public class HandPoseEstimator {
 
             // dot product = x1*x2 + y1*y2
 //            double dotProduct = (landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3])* (landmarks[SECOND_PHALANX *3] -  landmarks[0]);
-//            double angleRad= Math.atan2( ( (landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]) ),   (landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) );
+            double angleRad= Math.atan2( (landmarks.get(TIP).y() -  landmarks.get(SECOND_PHALANX).y()) ,  (landmarks.get(TIP).x() -  landmarks.get(SECOND_PHALANX).x()) );
 
 //            double norm = Math.sqrt(vec1[0]*vec1[0] + vec1[1]*vec1[1]);
 //            double dotProduct = ( vec1[0] * vec2[0]  + vec1[1]* vec2[1] )/ norm;
@@ -399,13 +399,13 @@ public class HandPoseEstimator {
 
 //            double angleRad = Math.atan2(vec1[1], vec1[0]);
 
-//            this .angle = (int)Math.toDegrees(angleRad);
+            this.angle = -(int)Math.toDegrees(angleRad);
 
 //            Log.d("ccoucou", "TIP=" + (int)landmarks[TIP *3] + "," + (int)landmarks[TIP *3+1] + " PHALANX= " + (int)landmarks[SECOND_PHALANX *3] + "," + (int)landmarks[SECOND_PHALANX *3+1]);
 //            Log.d("ccoucou", "vect1=" + vec1[0] + "," + vec1[1] + " dotproduct= " + dotProduct + "norm=" + norm + " ==>angle in rad = " + angleRad + " in deg = " + this.angle);
 
             // image is oriented with y towards bottom -> invert sign
-            return  - this.angle;
+            return  this.angle;
 
         } //end finger orientation
 

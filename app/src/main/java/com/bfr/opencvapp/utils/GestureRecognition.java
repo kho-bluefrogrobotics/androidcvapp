@@ -156,6 +156,11 @@ public class GestureRecognition {
 
                         Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
                                 new Scalar(0, 255, 0), 3);
+
+                        handPose.fingerOrientation(THUMB);
+
+
+
 //                        int x, y;
 //                        for (int l=0; l<20; l++)
 //                        {
@@ -171,29 +176,39 @@ public class GestureRecognition {
                     }
 
 
-                    Log.d(name, "Finger status : " + handPose.isOpen(THUMB) + " "+ handPose.isOpen(INDEX) + " "+ handPose.isOpen(MIDDLE) + " "+ handPose.isOpen(PINKIE) + " ");
-                    //
-                    if (handPose.isOpen(THUMB) && handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING)) // hand is open
-                    {
-                        // init frame index for buffer recording
-                        imNum =0;
-                        step_num = 100;
-                    }
-                    else if (!handPose.isOpen(INDEX) && !handPose.isOpen(RING) && handPose.isOpen(THUMB) ) // all fingers closed beside thumb
-                    {
-                        step_num = 200;
-                    }
-                    else {
-                        if(handPose.isFront())
-                        {
-                            result = "STOP";
-                            Log.d(name, "STOP");
-                            step_num = 900; // wait for no hands in the image
-                        }
-                        else
-                            step_num = 5;
-                        break;
-                    }
+
+
+                    step_num = 10;
+                    break;
+
+
+
+
+
+//
+//                    Log.d(name, "Finger status : " + handPose.isOpen(THUMB) + " "+ handPose.isOpen(INDEX) + " "+ handPose.isOpen(MIDDLE) + " "+ handPose.isOpen(PINKIE) + " ");
+//                    //
+//                    if (handPose.isOpen(THUMB) && handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING)) // hand is open
+//                    {
+//                        // init frame index for buffer recording
+//                        imNum =0;
+//                        step_num = 100;
+//                    }
+//                    else if (!handPose.isOpen(INDEX) && !handPose.isOpen(RING) && handPose.isOpen(THUMB) ) // all fingers closed beside thumb
+//                    {
+//                        step_num = 200;
+//                    }
+//                    else {
+//                        if(handPose.isFront())
+//                        {
+//                            result = "STOP";
+//                            Log.d(name, "STOP");
+//                            step_num = 900; // wait for no hands in the image
+//                        }
+//                        else
+//                            step_num = 5;
+//                        break;
+//                    }
 
                 case 100: // Open hand start record video for optical flow
 //                    Log.d(name, "recording for optical flow im num:" + imNum +" to " + matArray.size() );

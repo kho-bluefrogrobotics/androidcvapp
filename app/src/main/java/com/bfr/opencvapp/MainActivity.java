@@ -331,10 +331,10 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
 
             gestureRecognition.recognize(frame);
 
-            Imgproc.putText(frame, gestureRecognition.result + gestureRecognition.handPose.angle,
+            Imgproc.putText(frame, gestureRecognition.result + " " + gestureRecognition.handPose.angle,
                         new Point(100, 100),2, 3,
                         new Scalar(0, 0, 0), 5);
-                Imgproc.putText(frame, gestureRecognition.result + gestureRecognition.handPose.angle,
+                Imgproc.putText(frame, gestureRecognition.result + " " + gestureRecognition.handPose.angle,
                         new Point(100, 100),2, 3,
                         new Scalar(0, 255, 0), 2);
 
