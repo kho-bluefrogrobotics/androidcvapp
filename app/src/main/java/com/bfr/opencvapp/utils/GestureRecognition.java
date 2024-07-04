@@ -114,37 +114,38 @@ public class GestureRecognition {
 
 
             // which grafcet step?
-            switch (step_num) {
-                case 0: // Wait for checkbox
+            if(step_num==0) { // Wait for checkbox
                     //wait until check box
                     if (go) {
                         // go to next step
                         step_num = 5;
                     }
-                    break;
+                    return;
+                }
 
-                case 5 : // Human face hand detection
 
-                    detections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.7f, 0.0f, false);
+            if(step_num==5) { // Human face hand detection
 
-                    if(detections.size()>0)
-                    {
-                        Log.d(name, "detected objs : " + detections.size() + "   id=" + detections.get(0).getDetectedClass() + " ; " + detections.get(0).getConfidence());
-                        step_num = 10;
-                    }
-                    else
-                        break;
+                detections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.7f, 0.0f, false);
 
-//                    break;
+                if (detections.size() > 0) {
+                    Log.d(name, "detected objs : " + detections.size() + "   id=" + detections.get(0).getDetectedClass() + " ; " + detections.get(0).getConfidence());
+                    step_num = 10;
+                } else {
+                    Log.d(name, "No OBJ detected");
 
-                case 10: // Pose estimation
+                    return;
+                }
 
-                    try{
-                        Log.d(name, "Hand pose Estimation");
-                        left = Math.max( 1, (int)(detections.get(0).left * cols));
-                        top = Math.max(1, (int)(detections.get(0).top * rows));
-                        right = Math.min(frame.cols()-1, (int)(detections.get(0).right * cols));
-                        bottom = Math.min(frame.rows()-1, (int)(detections.get(0).bottom* rows));
+            }
+            if(step_num==10) { // Pose estimation
+
+                try {
+                    Log.d(name, "Hand pose Estimation");
+                    left = Math.max(1, (int) (detections.get(0).left * cols));
+                    top = Math.max(1, (int) (detections.get(0).top * rows));
+                    right = Math.min(frame.cols() - 1, (int) (detections.get(0).right * cols));
+                    bottom = Math.min(frame.rows() - 1, (int) (detections.get(0).bottom * rows));
 
 
 //                        Mat black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
@@ -152,13 +153,10 @@ public class GestureRecognition {
 //                        Mat handMat = frame.submat(handROI);
 //                        black.copyTo(handMat);
 
-                        handPose =  handPoseEstimator.recognizeImage(frame);
+                    handPose = handPoseEstimator.recognizeImage(frame);
 
-                        Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                                new Scalar(0, 255, 0), 3);
-
-                        handPose.fingerOrientation(THUMB);
-
+                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
+                            new Scalar(0, 255, 0), 3);
 
 
 //                        int x, y;
@@ -170,154 +168,144 @@ public class GestureRecognition {
 //                        }
 
 
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        step_num = 5;
-                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    step_num = 5;
+                    return;
+                }
 
 
+                Log.d(name, "Finger status : " + handPose.isOpen(THUMB) + " " + handPose.isOpen(INDEX) + " " + handPose.isOpen(MIDDLE) + " " + handPose.isOpen(PINKIE) + " ");
+                //
+                if (handPose.isOpen(THUMB) && handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING)) // hand is open
+                {
+                    Log.d(name, "Hand is open -> 100 : ");
 
-
-                    step_num = 10;
-                    break;
-
-
-
-
-
-//
-//                    Log.d(name, "Finger status : " + handPose.isOpen(THUMB) + " "+ handPose.isOpen(INDEX) + " "+ handPose.isOpen(MIDDLE) + " "+ handPose.isOpen(PINKIE) + " ");
-//                    //
-//                    if (handPose.isOpen(THUMB) && handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING)) // hand is open
-//                    {
-//                        // init frame index for buffer recording
-//                        imNum =0;
-//                        step_num = 100;
-//                    }
-//                    else if (!handPose.isOpen(INDEX) && !handPose.isOpen(RING) && handPose.isOpen(THUMB) ) // all fingers closed beside thumb
-//                    {
-//                        step_num = 200;
-//                    }
-//                    else {
-//                        if(handPose.isFront())
-//                        {
-//                            result = "STOP";
-//                            Log.d(name, "STOP");
-//                            step_num = 900; // wait for no hands in the image
-//                        }
-//                        else
-//                            step_num = 5;
-//                        break;
-//                    }
-
-                case 100: // Open hand start record video for optical flow
-//                    Log.d(name, "recording for optical flow im num:" + imNum +" to " + matArray.size() );
-//                    Imgcodecs.imwrite("/sdcard/Download/" + String.format("%02d", imNum) + "_gestRecog.jpg", frame);
-
-                    //add at the end if needed
-                    if (matArray.size()<=imNum)
-                    {
-//                        Log.d(name, "adding:" + imNum +" to " + matArray.size() );
-                        matArray.add(frame.clone());
-                    }
-                    else // record Mat
-                    {
-//                        Log.d(name, "setting:" + imNum +" to " + matArray.size() );
-                        matArray.set(imNum, frame.clone());
-                    }
-
-
-                    //increment index
-                    imNum +=1;
-
-                    // next step if recording complete
-                    if (imNum>=NUMOFFRAMES)
-                        step_num = 110;
-                    break;
-
-                case 110: //end of record video
-
-                    // init motion deteciton
-                    motionDetector.frameCount = 0;
-                    motion = false;
-                    step_num = 115;
-                    //break;
-
-                case 115: // optical flow analysis
-                    Log.d(name, "Optical flow estimation");
-
-                    // Analyse from n-th frame to waith for hand stabilization
-                    for(int i=5; i<NUMOFFRAMES;i++) {
-//                        Mat img = Imgcodecs.imread("/sdcard/Download/" + String.format("%02d", i)  + "_gestRecog.jpg");
-
-                        // get frame from recorded buffer
-                        Mat img = matArray.get(i);
-                        motionDetector.detectMotion(img.clone(), false);
-                        //record if motion or not at this frame
-                        motion = motion || motionDetector.detectedMotion ;
-                    }
-
-                    step_num = 120;
-                    break;
-                case 120 : // motion result
-
-                    if (motion)
-                    {
-                        if (handPose.isFront())
-                        {
-                            Log.d(name, "COUCOU");
-                            result = "COUCOU";
-                            debugRecord("coucou");
-                            step_num = 5;
-                        }
-                        else
-                        {
-                            Log.d(name, "COME HERE");
-                            result = "COME HERE";
-                            debugRecord("comehere");
-                            step_num = 5;
-                        }
-                    }
-                    else
-                    {
+                    // init frame index for buffer recording
+                    imNum = 0;
+                    step_num = 100;
+                } else if (!handPose.isOpen(INDEX) && !handPose.isOpen(RING) && handPose.isOpen(THUMB)) // all fingers closed beside thumb
+                {
+                    Log.d(name, "Thumbs open -> 200 : ");
+                    step_num = 200;
+                } else {
+                    Log.d(name, "ELSE : ");
+                    if (handPose.isFront()) {
+                        Log.d(name, "FRONT -> 900 : ");
                         result = "STOP";
                         Log.d(name, "STOP");
-                        debugRecord("stop");
-                        step_num = 900;
+                        step_num = 900; // wait for no hands in the image
+                    } else {
+                        Log.d(name, "Else back -> 5 : ");
+                        step_num = 5;
+                        return;
                     }
 
+                }
+            }
 
-                    break;
+            if(step_num==100) { // Open hand start record video for optical flow
+                Log.d(name, "Recording for optical flow : ");
 
-                case 200 : // close hands
+                //add at the end if needed
+                if (matArray.size() <= imNum) {
+//                        Log.d(name, "adding:" + imNum +" to " + matArray.size() );
+                    matArray.add(frame.clone());
+                } else // record Mat
+                {
+//                        Log.d(name, "setting:" + imNum +" to " + matArray.size() );
+                    matArray.set(imNum, frame.clone());
+                }
 
-                    handPose.fingerOrientation(THUMB);
 
-                    if (handPose.angle >= 0)
-                    {
-                        Log.d(name, "POSITIVE");
-                        result = "POSITIVE";
+                //increment index
+                imNum += 1;
+
+                // next step if recording complete
+                if (imNum >= NUMOFFRAMES)
+                    step_num = 110;
+                return;
+            }
+
+            if(step_num==110) { //end of record video
+
+                Log.d(name, "End of recording : ");
+
+                // init motion deteciton
+                motionDetector.frameCount = 0;
+                motion = false;
+                step_num = 115;
+                //break;
+            }
+
+            if(step_num==115) { // optical flow analysis
+                Log.d(name, "Optical flow estimation");
+
+                // Analyse from n-th frame to waith for hand stabilization
+                for (int i = 5; i < NUMOFFRAMES; i++) {
+//                        Mat img = Imgcodecs.imread("/sdcard/Download/" + String.format("%02d", i)  + "_gestRecog.jpg");
+
+                    // get frame from recorded buffer
+                    Mat img = matArray.get(i);
+                    motionDetector.detectMotion(img.clone(), false);
+                    //record if motion or not at this frame
+                    motion = motion || motionDetector.detectedMotion;
+                }
+
+                step_num = 120;
+                return;
+            }
+
+            if(step_num==120) { // motion result
+
+                if (motion) {
+                    if (handPose.isFront()) {
+                        Log.d(name, "COUCOU");
+                        result = "COUCOU";
+                        debugRecord("coucou");
+                        step_num = 5;
+                    } else {
+                        Log.d(name, "COME HERE");
+                        result = "COME HERE";
+                        debugRecord("comehere");
                         step_num = 5;
                     }
-                    else {
-                        Log.d(name, "NEGATIVE");
-                        result = "NEGATIVE";
-                        step_num = 5;
-                    }
+                } else {
+                    result = "STOP";
+                    Log.d(name, "STOP");
+                    debugRecord("stop");
+                    step_num = 900;
+                }
 
-                    break;
-                case 900 : //wait for no hands
-                    detections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.7f, 0.0f, false);
 
-                    if(detections.size()==0)
-                        step_num = 5;
-                    break;
+                return;
+            }
 
-                default :
-                    // go to next step
-                    step_num = 0;
-                    break;
-            } //End switch
+            if(step_num==200) { // close hands
+
+                handPose.fingerOrientation(THUMB);
+
+                if (handPose.angle >= 0) {
+                    Log.d(name, "POSITIVE");
+                    result = "POSITIVE";
+                    step_num = 5;
+                } else {
+                    Log.d(name, "NEGATIVE");
+                    result = "NEGATIVE";
+                    step_num = 5;
+                }
+
+                return;
+            }
+
+            if(step_num==900) { //wait for no hands
+                detections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.7f, 0.0f, false);
+
+                if (detections.size() == 0)
+                    step_num = 5;
+                return;
+            }
+
 
         } catch (Exception e) {
             Log.e(name, "ERROR :" + Log.getStackTraceString(e));
