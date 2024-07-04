@@ -58,7 +58,9 @@ public class HandPoseEstimator {
 
     //where to find the models
 //    final String MODEL_NAME = "hand_landmark_lite.tflite";
-    final String MODEL_NAME = "hand_landmark_full.tflite";
+//    final String MODEL_NAME = "hand_landmark_full.tflite";
+//    final String MODEL_NAME = "hand_landmark_sparse.tflite";
+    final String MODEL_NAME = "model_full_fp32.tflite";
     private final String MODELS_DIR = "/sdcard/Android/data/com.bfr.opencvapp/files/nnmodels/";
 
     private Interpreter tfLite;
@@ -192,10 +194,13 @@ public class HandPoseEstimator {
 
             //
             // 1) a fp32{1,63} map of the 21 landmarks * (x, y, z) coords in PIXEL , z takes the origin at the wrist
-            outputMap.put(0, new float[1][63]);
+//            outputMap.put(0, new float[1][63]);
+            outputMap.put(0, new float[1][1]);
             // 2) a fp32{1,1} map representing the probability of presence of a hand
-            outputMap.put(1, new float[1][1]);
+//            outputMap.put(1, new float[1][1]);
+            outputMap.put(1, new float[1][63]);
             // 3) a fp32{1,1} map representing the handedness  <0.5: Left hand , >0.5:Right hand
+//            outputMap.put(2, new float[1][1]);
             outputMap.put(2, new float[1][1]);
             // 4) a fp32{1,63} map of the 21 landmarks * (x, y, z) coords in world coordinates
             outputMap.put(3, new float[1][63]);
@@ -204,8 +209,11 @@ public class HandPoseEstimator {
             // Run inference
             tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
 
-            handPose.landmarks = ((float[][]) outputMap.get(0))[0];
-            handPose.handPresence = ((float [][]) Objects.requireNonNull(outputMap.get(1)))[0][0];
+//            handPose.landmarks = ((float[][]) outputMap.get(0))[0];
+            handPose.landmarks = ((float[][]) outputMap.get(3))[0];
+//            handPose.handPresence = ((float [][]) Objects.requireNonNull(outputMap.get(1)))[0][0];
+            handPose.handPresence = ((float [][]) Objects.requireNonNull(outputMap.get(0)))[0][0];
+//            handPose.handeness = ((float [][]) Objects.requireNonNull(outputMap.get(2)))[0][0];
             handPose.handeness = ((float [][]) Objects.requireNonNull(outputMap.get(2)))[0][0];
 
 //            Log.d(TAG, "Inference done; confidence = " +  handPose.handPresence + " LorR="+ handPose.handeness);
