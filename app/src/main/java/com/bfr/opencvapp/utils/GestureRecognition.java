@@ -57,18 +57,21 @@ public class GestureRecognition {
 
     public boolean isStarted = false;
 
-    // Static variable (to manage the grafcet from outside)
-    public static int step_num =0;
-    public static boolean go = true;
-    final static int INTERVAL_MIN = 350;
-
-
+    // recognition sequence vars (steps,...)
+    public int step_num =0;
     private int previous_step = 0;
+    public boolean go = true;
 
 
     // coords of the detected hand bbox
     int left, right, top, bottom;
+    //Thres for minimum size of hand to analyse, in % of the image
+    // Suggestion 0.2 for narrow-angle camera, 0.15 for wide-angle camera
+    float THRES_HAND_WIDTH = 0.20f;
+    // id of the first largest hand visible
+    int handID=-1;
 
+    //dims of the input image
     int rows, cols;
 
     int imNum=0;
@@ -106,6 +109,7 @@ public class GestureRecognition {
     {
         rows = frame.rows();
         cols = frame.cols();
+
         try{
             // if step changed
             if( !(step_num == previous_step)) {
@@ -117,7 +121,8 @@ public class GestureRecognition {
 
 
             // which grafcet step?
-            if(step_num==0) { // Wait for checkbox
+
+            /***/if(step_num==0) { // Wait for go
                     //wait until check box
                     if (go) {
                         // go to next step
@@ -127,28 +132,50 @@ public class GestureRecognition {
                 }
 
 
-            if(step_num==5) { // Human face hand detection
+            /***/if(step_num==5) { // hands detection
 
+                //detecting hands only
                 detections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.7f, 0.0f, false);
 
                 if (detections.size() > 0) {
-                    Log.d(name, "detected objs : " + detections.size() + "   id=" + detections.get(0).getDetectedClass() + " ; " + detections.get(0).getConfidence());
-                    step_num = 10;
-                } else {
-                    Log.d(name, "No OBJ detected");
+//                    Log.d(name, "detected objs : " + detections.size() + "   id=" + detections.get(0).getDetectedClass() + " ; " + detections.get(0).getConfidence());
+                        Log.d(name, "detected size : " + (detections.get(0).right - detections.get(0).left));
 
+                        // reset
+                        handID = -1;
+
+                        // for each detection
+                        for(int h=0; h<detections.size();h++)
+                        {
+                            // if detected object is big enough
+                            if( (detections.get(h).right - detections.get(h).left)>THRES_HAND_WIDTH )
+                            {
+                                //remember the index
+                                handID = h;
+                                //next step
+                                step_num =10;
+                                // interrupt
+                                break;
+                            } //end if obj big enough
+                        } // next object
+                } //end if obj. detected
+                else
+                    // no obj. detected -> end
                     return;
-                }
 
+                //if object detected but not big enough -> end
+                if (handID<0)
+                    return;
             }
-            if(step_num==10) { // Pose estimation
+
+            /***/if(step_num==10) { // Pose estimation
 
                 try {
                     Log.d(name, "Hand pose Estimation");
-                    left = Math.max(1, (int) (detections.get(0).left * cols));
-                    top = Math.max(1, (int) (detections.get(0).top * rows));
-                    right = Math.min(frame.cols() - 1, (int) (detections.get(0).right * cols));
-                    bottom = Math.min(frame.rows() - 1, (int) (detections.get(0).bottom * rows));
+                    left = Math.max(1, (int) (detections.get(handID).left * cols));
+                    top = Math.max(1, (int) (detections.get(handID).top * rows));
+                    right = Math.min(frame.cols() - 1, (int) (detections.get(handID).right * cols));
+                    bottom = Math.min(frame.rows() - 1, (int) (detections.get(handID).bottom * rows));
 
 
 //                        Mat black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
@@ -207,7 +234,7 @@ public class GestureRecognition {
                 }
             }
 
-            if(step_num==100) { // Open hand start record video for optical flow
+            /***/if(step_num==100) { // Open hand start record video for optical flow
                 Log.d(name, "Recording for optical flow : ");
 
                 //add at the end if needed
@@ -230,7 +257,7 @@ public class GestureRecognition {
                 return;
             }
 
-            if(step_num==110) { //end of record video
+            /***/if(step_num==110) { //end of record video
 
                 Log.d(name, "End of recording : ");
 
@@ -241,7 +268,7 @@ public class GestureRecognition {
                 //break;
             }
 
-            if(step_num==115) { // optical flow analysis
+            /***/if(step_num==115) { // optical flow analysis
                 Log.d(name, "Optical flow estimation");
 
                 // Analyse from n-th frame to waith for hand stabilization
@@ -259,30 +286,31 @@ public class GestureRecognition {
                 return;
             }
 
-            if(step_num==120) { // motion result
+            /***/if(step_num==120) { // motion result
 
                 if (motion) {
                     if (handPose.isFront()) {
                         Log.d(name, "COUCOU");
                         result = "COUCOU";
+                        BuddySDK.Speech.startSpeaking("Coucou");
                         debugRecord("coucou");
                         step_num = 5;
                     } else {
                         Log.d(name, "COME HERE");
                         result = "COME HERE";
-                        BuddySDK.Vision.stopCamera(new IVisionRsp.Stub() {
-                            @Override
-                            public void onSuccess(String s) throws RemoteException {
-
-                            }
-
-                            @Override
-                            public void onFailed(String s) throws RemoteException {
-
-                            }
-                        });
-                        BuddySDK.Speech.startSpeaking("Coucou");
-                        BuddySDK.Companion.raiseEvent("startFollow");
+//                        BuddySDK.Vision.stopCamera(new IVisionRsp.Stub() {
+//                            @Override
+//                            public void onSuccess(String s) throws RemoteException {
+//
+//                            }
+//
+//                            @Override
+//                            public void onFailed(String s) throws RemoteException {
+//
+//                            }
+//                        });
+                        BuddySDK.Speech.startSpeaking("J'arrive");
+//                        BuddySDK.Companion.raiseEvent("startFollow");
                         debugRecord("comehere");
                         step_num = 5;
                     }
@@ -297,7 +325,7 @@ public class GestureRecognition {
                 return;
             }
 
-            if(step_num==200) { // close hands
+            /***/if(step_num==200) { // close hands
 
                 handPose.fingerOrientation(THUMB);
 
@@ -314,7 +342,7 @@ public class GestureRecognition {
                 return;
             }
 
-            if(step_num==900) { //wait for no hands
+            /***/if(step_num==900) { //wait for no hands
                 detections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.7f, 0.0f, false);
 
                 if (detections.size() == 0)
