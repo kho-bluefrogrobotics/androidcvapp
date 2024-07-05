@@ -227,11 +227,12 @@ public class GestureRecognition {
                 //
                 if (handPose.isOpen(THUMB) && handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING)) // hand is open
                 {
-                    Log.d(name, "Hand is open -> 100 : ");
+
 
                     // init frame index for buffer recording
                     imNum = 0;
                     step_num = 100;
+                    Log.d(name, "Hand is open -> 100 : ");
                 } else if (!handPose.isOpen(INDEX) && !handPose.isOpen(RING) && handPose.isOpen(THUMB)) // all fingers closed beside thumb
                 {
                     Log.d(name, "Thumbs open -> 200 : ");
@@ -270,9 +271,15 @@ public class GestureRecognition {
                 imNum += 1;
 
                 // next step if recording complete
-                if (imNum >= NUMOFFRAMES)
+                if (imNum >= NUMOFFRAMES) {
+                    Log.d(name, "END of recording ("+imNum+") -> step 110");
                     step_num = 110;
-                return;
+                }
+                else // need the next frame to continue recording
+                {
+                    return;
+                }
+
             }
 
             /***/if(step_num==110) { //end of record video
@@ -297,8 +304,7 @@ public class GestureRecognition {
                     // get frame from recorded buffer
                     Mat img = matArray.get(i);
                     motionDetector.detectMotion(img.clone(), false);
-                    Imgcodecs.imwrite("/sdcard/Download/" + String.format("%02d", i) + "_gestRecog.jpg", matArray.get(i));
-                    Log.w(name, "Measured opt flow="+ motionDetector.motionOptFlow);
+
                     //record if motion or not at this frame
 //                    motion = motion || motionDetector.detectedMotion;
 
@@ -315,7 +321,7 @@ public class GestureRecognition {
                 // if motion detected
                 if (optFlow > THRES_OPT_FLOW) {
 
-                    Log.d(name, "Motion optical flow = " + optFlow);
+                    Log.w(name, "Measured opt flow="+ optFlow);
 
                     if (handPose.isFront()) {
                         Log.d(name, "COUCOU");
