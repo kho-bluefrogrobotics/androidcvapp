@@ -7,6 +7,8 @@ import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.PINKIE;
 import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.RING;
 import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.THUMB;
 
+import static org.opencv.core.CvType.CV_8UC3;
+
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -16,6 +18,7 @@ import com.bfr.opencvapp.objdetect.Detection;
 
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
@@ -74,11 +77,16 @@ public class GestureRecognition {
     //dims of the input image
     int rows, cols;
 
+    // index of image to record for optical flow
     int imNum=0;
+
 
     // motion
     boolean motion = false;
     public String result = "";
+
+    //
+    public Mat displaymat;
 
     public void init(Mat frame)
     {
@@ -177,11 +185,18 @@ public class GestureRecognition {
                     right = Math.min(frame.cols() - 1, (int) (detections.get(handID).right * cols));
                     bottom = Math.min(frame.rows() - 1, (int) (detections.get(handID).bottom * rows));
 
+                    // ROI of hand
+                    Rect handROI = new Rect( left, top, (right-left), (bottom-top));
+                    // black background
+                    Mat black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
+                    Mat roiInBlack = black.submat(handROI); // subimage at hand roi in black image
+                    Mat handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
+                    // copy hand crop to black background
+                    handMat.copyTo(roiInBlack);
 
-//                        Mat black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
-//                        Rect handROI = new Rect( left, top, (right-left), (bottom-top));
-//                        Mat handMat = frame.submat(handROI);
-//                        black.copyTo(handMat);
+                    frame = black;
+
+                    displaymat = black.clone();
 
                     handPose = handPoseEstimator.recognizeImage(frame);
 
