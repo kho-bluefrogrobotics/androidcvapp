@@ -403,9 +403,8 @@ public class HandPoseEstimator {
         } //end isOpen
 
 
-        public int angle = 0;
         /**
-         * returns the orientation of the finger as an angle in degrees [0-359]. 0 is horizontal, in anti-clockwise direction (so 90° si upward and
+         * returns the orientation of the finger as an angle in degrees [0-359]. 0 is horizontal, in anti-clockwise direction (so 90° si upward and -90° if downward)
          * @param finger
          * @return
          */
@@ -429,13 +428,11 @@ public class HandPoseEstimator {
 
 //            double angleRad = Math.atan2(vec1[1], vec1[0]);
 
-            this.angle = -(int)Math.toDegrees(angleRad);
+            // image is oriented with y towards bottom -> invert sign
+            return -(int)Math.toDegrees(angleRad);
 
 //            Log.d("ccoucou", "TIP=" + (int)landmarks[TIP *3] + "," + (int)landmarks[TIP *3+1] + " PHALANX= " + (int)landmarks[SECOND_PHALANX *3] + "," + (int)landmarks[SECOND_PHALANX *3+1]);
 //            Log.d("ccoucou", "vect1=" + vec1[0] + "," + vec1[1] + " dotproduct= " + dotProduct + "norm=" + norm + " ==>angle in rad = " + angleRad + " in deg = " + this.angle);
-
-            // image is oriented with y towards bottom -> invert sign
-            return  this.angle;
 
         } //end finger orientation
 

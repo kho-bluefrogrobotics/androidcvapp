@@ -349,11 +349,12 @@ public class GestureRecognition {
                 }
                 else // back of the hand
                 {
+                    //fingers upward
+                    if( handPose.fingerOrientation(INDEX) >0) {
+                        if (optFlow > THRES_OPT_FLOW_COME_HERE) {
 
-                    if (optFlow > THRES_OPT_FLOW_COME_HERE) {
-
-                        Log.d(name, "COME HERE");
-                        result = "COME HERE";
+                            Log.d(name, "COME HERE");
+                            result = "COME HERE";
 //                        BuddySDK.Vision.stopCamera(new IVisionRsp.Stub() {
 //                            @Override
 //                            public void onSuccess(String s) throws RemoteException {
@@ -365,15 +366,44 @@ public class GestureRecognition {
 //
 //                            }
 //                        });
-                        BuddySDK.Speech.startSpeaking("J'arrive");
+                            BuddySDK.Speech.startSpeaking("J'arrive");
 //                        BuddySDK.Companion.raiseEvent("startFollow");
-                        debugRecord("comehere");
-                    } //end if motion
-                    else //back of hand and no motion
-                    {
-                        step_num = 5;
-                        return;
+                            debugRecord("comehere");
+                        } //end if motion
+                        else //back of hand and no motion
+                        {
+                            step_num = 5;
+                            return;
+                        }
                     }
+                    else // fingers downward
+                    {
+                        if (optFlow > THRES_OPT_FLOW_COME_HERE) {
+
+                            Log.d(name, "GO AWAY");
+                            result = "GO AWAY";
+//                        BuddySDK.Vision.stopCamera(new IVisionRsp.Stub() {
+//                            @Override
+//                            public void onSuccess(String s) throws RemoteException {
+//
+//                            }
+//
+//                            @Override
+//                            public void onFailed(String s) throws RemoteException {
+//
+//                            }
+//                        });
+                            BuddySDK.Speech.startSpeaking("Je m'en vais");
+//                        BuddySDK.Companion.raiseEvent("startFollow");
+                            debugRecord("goaway");
+                        } //end if motion
+                        else //back of hand and no motion
+                        {
+                            step_num = 5;
+                            return;
+                        }
+                    }
+
 
                 } //end if front or back of hand
 
@@ -383,7 +413,7 @@ public class GestureRecognition {
             }
 
             /***/if(step_num==200) { // close hands
-                
+
 
                 if (handPose.fingerOrientation(THUMB) >= 0) {
                     Log.d(name, "POSITIVE");
