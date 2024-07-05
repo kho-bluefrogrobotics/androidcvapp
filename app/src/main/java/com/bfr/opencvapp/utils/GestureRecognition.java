@@ -238,12 +238,12 @@ public class GestureRecognition {
                     Log.d(name, "Thumbs open -> 200 : ");
                     step_num = 200;
                 } else {
-                    Log.d(name, "ELSE : ");
+                    Log.d(name, "ELSE : Finger status OTHER ");
                     if (handPose.isFront()) {
                         Log.d(name, "FRONT -> 900 : ");
                         result = "STOP";
                         Log.d(name, "STOP");
-                        step_num = 900; // wait for no hands in the image
+                        step_num = 5; // wait for no hands in the image
                     } else {
                         Log.d(name, "Else back -> 5 : ");
                         step_num = 5;
