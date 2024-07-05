@@ -80,9 +80,10 @@ public class GestureRecognition {
     // index of image to record for optical flow
     int imNum=0;
 
-
     // motion
-    boolean motion = false;
+//    boolean motion = false;
+    float optFlow = 0.0f;
+    float THRES_OPT_FLOW = 15.f; // Thres for decting motion
     public String result = "";
 
     //
@@ -180,11 +181,13 @@ public class GestureRecognition {
 
                 try {
                     Log.d(name, "Hand pose Estimation");
-                    left = Math.max(1, (int) (detections.get(handID).left * cols));
+
+                    left = Math.max(1, (int) (detections.get(handID).left * cols ));
                     top = Math.max(1, (int) (detections.get(handID).top * rows));
                     right = Math.min(frame.cols() - 1, (int) (detections.get(handID).right * cols));
                     bottom = Math.min(frame.rows() - 1, (int) (detections.get(handID).bottom * rows));
 
+                    //**** Crop hand image
                     // ROI of hand
                     Rect handROI = new Rect( left, top, (right-left), (bottom-top));
                     // black background
@@ -194,15 +197,16 @@ public class GestureRecognition {
                     // copy hand crop to black background
                     handMat.copyTo(roiInBlack);
 
-                    frame = black;
+                    frame = black.clone();
 
-                    displaymat = black.clone();
+                    // to keep to debug
+                    // displaymat = black.clone();
 
+                    //hand pose estimation
                     handPose = handPoseEstimator.recognizeImage(frame);
 
                     Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
                             new Scalar(0, 255, 0), 3);
-
 
 //                        int x, y;
 //                        for (int l=0; l<20; l++)
@@ -211,7 +215,6 @@ public class GestureRecognition {
 //                            y = (int) (handPose.landmarks.get(l).y()* frame.rows());
 //                            Imgproc.circle(frame, new Point(x,y), 5, new Scalar(0,255,0), 5);
 //                        }
-
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -276,9 +279,6 @@ public class GestureRecognition {
 
                 Log.d(name, "End of recording : ");
 
-                // init motion deteciton
-                motionDetector.frameCount = 0;
-                motion = false;
                 step_num = 115;
                 //break;
             }
@@ -286,15 +286,24 @@ public class GestureRecognition {
             /***/if(step_num==115) { // optical flow analysis
                 Log.d(name, "Optical flow estimation");
 
+                // init motion deteciton
+                motionDetector.frameCount = 0;
+                optFlow = 0.0f;
+
                 // Analyse from n-th frame to waith for hand stabilization
-                for (int i = 5; i < NUMOFFRAMES; i++) {
+                for (int i = 4; i < NUMOFFRAMES; i++) {
 //                        Mat img = Imgcodecs.imread("/sdcard/Download/" + String.format("%02d", i)  + "_gestRecog.jpg");
 
                     // get frame from recorded buffer
                     Mat img = matArray.get(i);
                     motionDetector.detectMotion(img.clone(), false);
+                    Imgcodecs.imwrite("/sdcard/Download/" + String.format("%02d", i) + "_gestRecog.jpg", matArray.get(i));
+                    Log.w(name, "Measured opt flow="+ motionDetector.motionOptFlow);
                     //record if motion or not at this frame
-                    motion = motion || motionDetector.detectedMotion;
+//                    motion = motion || motionDetector.detectedMotion;
+
+                    if(motionDetector.motionOptFlow > optFlow)
+                        optFlow = motionDetector.motionOptFlow;
                 }
 
                 step_num = 120;
@@ -303,13 +312,17 @@ public class GestureRecognition {
 
             /***/if(step_num==120) { // motion result
 
-                if (motion) {
+                // if motion detected
+                if (optFlow > THRES_OPT_FLOW) {
+
+                    Log.d(name, "Motion optical flow = " + optFlow);
+
                     if (handPose.isFront()) {
                         Log.d(name, "COUCOU");
                         result = "COUCOU";
                         BuddySDK.Speech.startSpeaking("Coucou");
                         debugRecord("coucou");
-                        step_num = 5;
+//                        step_num = 5;
                     } else {
                         Log.d(name, "COME HERE");
                         result = "COME HERE";
@@ -327,17 +340,18 @@ public class GestureRecognition {
                         BuddySDK.Speech.startSpeaking("J'arrive");
 //                        BuddySDK.Companion.raiseEvent("startFollow");
                         debugRecord("comehere");
-                        step_num = 5;
+//                        step_num = 5;
                     }
                 } else {
                     result = "STOP";
                     Log.d(name, "STOP");
+                    BuddySDK.Speech.startSpeaking("STOP");
                     debugRecord("stop");
-                    step_num = 900;
+
                 }
 
+                step_num = 900;
 
-                return;
             }
 
             /***/if(step_num==200) { // close hands
@@ -357,11 +371,14 @@ public class GestureRecognition {
                 return;
             }
 
-            /***/if(step_num==900) { //wait for no hands
+            /***/if(step_num==900) { //wait for no hands in region of analysis
                 detections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.7f, 0.0f, false);
 
                 if (detections.size() == 0)
+                {
+                    Log.d(name, "No more hand -> reset to step 5");
                     step_num = 5;
+                }
                 return;
             }
 
