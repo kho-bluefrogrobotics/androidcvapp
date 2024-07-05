@@ -349,6 +349,7 @@ public class GestureRecognition {
                 }
                 else // back of the hand
                 {
+
                     if (optFlow > THRES_OPT_FLOW_COME_HERE) {
 
                         Log.d(name, "COME HERE");
@@ -382,10 +383,9 @@ public class GestureRecognition {
             }
 
             /***/if(step_num==200) { // close hands
+                
 
-                handPose.fingerOrientation(THUMB);
-
-                if (handPose.angle >= 0) {
+                if (handPose.fingerOrientation(THUMB) >= 0) {
                     Log.d(name, "POSITIVE");
                     result = "POSITIVE";
                     step_num = 5;

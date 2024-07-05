@@ -86,7 +86,7 @@ public class HandPoseEstimator {
         RING,
         PINKIE
     }
-    int[][] PHALANX_ID = new int[][]{{4,5}, {8,6}, {12,10}, {16,14}, {20, 18}};
+    int[][] PHALANX_ID = new int[][]{{4,2}, {8,6}, {12,10}, {16,14}, {20, 18}};
 
     // confidence level of human detection for doublecheck with Movenet
     public float humanConfidence = 0.0f;
@@ -368,10 +368,9 @@ public class HandPoseEstimator {
         }
 
         /** How to know a finger is opened : compute the hypotenuse  of the tip and 2nd phalanx
-         * if the hypotenuse of the tip of the finger < to the hypotenuse of the 2nd phalanx => the finger is open
+         * if the dist [tip of the finger to the wrist] < the dist [2nd phalanx to the wrist]  => the finger is open
          * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L209
-         * for a point (x1, y1) the hypotenuse = sqrt(x1^2 + y1^2)
-         * However here, we compute from the origin = wrist , id 0
+         * for a point (x1, y1) the dist is simply  = sqrt(x1^2 + y1^2)
          * for instance, the first finger tip has the id 8 , and the 2nd phalanx id 6
          * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L205
          */
@@ -380,21 +379,24 @@ public class HandPoseEstimator {
             int TIP = PHALANX_ID[finger.ordinal()][0];
             int SECOND_PHALANX = PHALANX_ID[finger.ordinal()][1];
 
+            //THUMB particular case : open or not depends on the distance from the tip to the basis of the index
+            if(finger==FINGER.THUMB)
+                SECOND_PHALANX = 5;
+
 //            int[] vec1 = new int[]{(int)(landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]), (int)(landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) };
 //            Log.d("ccoucou", "vect=" + vec1[0] + "," + vec1[1] +"    " + landmarks[TIP *3] + "," + landmarks[TIP *3+1] );
 
-            // hypotenuse = square root of (  (x[1st finger tip] - x[wrist] )^2 + (y[1st finger tip] - y[wrist] )^2)
-            double hypTip = Math.sqrt( (landmarks.get(TIP).x() -  landmarks.get(0).x())*(landmarks.get(TIP).x() -  landmarks.get(0).x())
+            double distTip = Math.sqrt( (landmarks.get(TIP).x() -  landmarks.get(0).x())*(landmarks.get(TIP).x() -  landmarks.get(0).x())
                     + (landmarks.get(TIP).y() -  landmarks.get(0).y())*(landmarks.get(TIP).y() -  landmarks.get(0).y()) );
 
-            double hypPhalanx = Math.sqrt( (landmarks.get(SECOND_PHALANX).x() -  landmarks.get(0).x())*(landmarks.get(SECOND_PHALANX).x() -  landmarks.get(0).x())
+            double distPhalanx = Math.sqrt( (landmarks.get(SECOND_PHALANX).x() -  landmarks.get(0).x())*(landmarks.get(SECOND_PHALANX).x() -  landmarks.get(0).x())
                 + (landmarks.get(SECOND_PHALANX).y() -  landmarks.get(0).y())*(landmarks.get(SECOND_PHALANX).y() -  landmarks.get(0).y()) );
 
-            Log.d("ccoucou", "hypTip=" + hypTip );
-            Log.d("ccoucou", "hypPhalanx=" + hypPhalanx );
+//            Log.d("ccoucou", "distTip=" + distTip );
+//            Log.d("ccoucou", "distPhalanx=" + distPhalanx );
 //            Log.d("ccoucou", "Interm Calc=" + (landmarks[TIP *3] -  landmarks[0]) + " + " + (landmarks[TIP*3 + 1] -  landmarks[1]) );
 
-            if (hypTip <= hypPhalanx)
+            if (distTip <= distPhalanx)
                 return  false;
             else
                 return true;
@@ -410,10 +412,8 @@ public class HandPoseEstimator {
         public int fingerOrientation(FINGER finger)
         {
 //            Log.d("ccoucou", "finger orientation");
-//            int TIP = PHALANX_ID[finger.ordinal()][0];
-//            int SECOND_PHALANX = PHALANX_ID[finger.ordinal()][1];
-            int TIP = 4;
-            int SECOND_PHALANX = 2;
+            int TIP = PHALANX_ID[finger.ordinal()][0];
+            int SECOND_PHALANX = PHALANX_ID[finger.ordinal()][1];
 
 //            int[] vec1 = new int[]{(int)(landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]), (int)(landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) };
 //            int[] vec2 = new int[]{1,0 };
