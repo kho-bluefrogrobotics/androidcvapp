@@ -306,24 +306,62 @@ public class HandPoseEstimator {
         private boolean front = false;
 
         // front: true = palm towards the camera, false= back of the hand towards the camera
+        public void front()
+        {
+            // vector of the knucle line, from the base of the pinkie to the base of the index
+            int[] knucleLine = new int[]{ (int)( (landmarks.get(17).x() - landmarks.get(5).x())  * 1024), (int)((landmarks.get(17).y() - landmarks.get(5).y())*768 )};
+            // vector of the palm, from the wrist to the base of the index
+            int[] plamLine = new int[]{ (int)( (landmarks.get(0).x() - landmarks.get(5).x()) *1024), (int)( (landmarks.get(0).y() - landmarks.get(5).y())*768 )};
+
+            Log.w("vecto", "Result =" +  knucleLine[0]+"x"+plamLine[1] +"-"+ plamLine[0]+"x"+knucleLine[1] +"=" +(knucleLine[0]*plamLine[1]-plamLine[0]*knucleLine[1]));
+
+            //z component of the cross product, not normalized
+            int z=(knucleLine[0]*plamLine[1]-plamLine[0]*knucleLine[1]);
+
+            // if left hand
+            if (handeness.get(0).categoryName().toUpperCase().contains("LEFT")){
+                if(z<0)
+                    Log.w("sideH", "LEFT FRONT");
+                else
+                    Log.w("sideH", "LEFT BACK");
+            }
+            else{
+                if(z>0)
+                    Log.w("sideH", "RIGHT FRONT");
+                else
+                    Log.w("sideH", "RIGHT BACK");
+            }
+
+        }
+
+        // front: true = palm towards the camera, false= back of the hand towards the camera
         public boolean isFront()
         {
+            // vector of the knucle line, from the base of the pinkie to the base of the index
+            int[] knucleLine = new int[]{ (int)( (landmarks.get(17).x() - landmarks.get(5).x())  * 1024), (int)((landmarks.get(17).y() - landmarks.get(5).y())*768 )};
+            // vector of the palm, from the wrist to the base of the index
+            int[] plamLine = new int[]{ (int)( (landmarks.get(0).x() - landmarks.get(5).x()) *1024), (int)( (landmarks.get(0).y() - landmarks.get(5).y())*768 )};
+
+//            Log.w("vecto", "Result =" +  knucleLine[0]+"x"+plamLine[1] +"-"+ plamLine[0]+"x"+knucleLine[1] +"=" +(knucleLine[0]*plamLine[1]-plamLine[0]*knucleLine[1]));
+
+            //z component of the cross product, not normalized
+            int z=(knucleLine[0]*plamLine[1]-plamLine[0]*knucleLine[1]);
+
             // if left hand
-            if (handeness.get(0).categoryName().toUpperCase().contains("LEFT")
-                    && handeness.get(0).score() >0.5)
-            {
-                //if index base [5] is at the right of the pinkie base[17]
-                if (landmarks.get(5).x() > landmarks.get(17).x())
+            if (handeness.get(0).categoryName().toUpperCase().contains("LEFT")){
+                if(z<0)
+//                    Log.w("sideH", "LEFT FRONT");
                     this.front = true;
                 else
+//                    Log.w("sideH", "LEFT BACK");
                     this.front = false;
             }
-            else // right hand
-            {
-                    //if index base [5] is at the left  of the pinkie base[17]
-                if (landmarks.get(5).x() < landmarks.get(17).x())
+            else{
+                if(z>0)
+//                    Log.w("sideH", "RIGHT FRONT");
                     this.front = true;
                 else
+//                    Log.w("sideH", "RIGHT BACK");
                     this.front = false;
             }
             return this.front;

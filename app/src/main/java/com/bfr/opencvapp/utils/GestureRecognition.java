@@ -212,6 +212,10 @@ public class GestureRecognition {
                     Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
                             new Scalar(0, 255, 0), 3);
 
+
+
+
+
 //                        int x, y;
 //                        for (int l=0; l<20; l++)
 //                        {
@@ -253,7 +257,8 @@ public class GestureRecognition {
                         return;
                     }
 
-                }
+                } //endif hand is open
+
             }
 
             /***/if(step_num==100) { // Open hand start record video for optical flow
