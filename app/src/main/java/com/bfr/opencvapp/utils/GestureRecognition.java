@@ -9,10 +9,8 @@ import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.THUMB;
 
 import static org.opencv.core.CvType.CV_8UC3;
 
-import android.os.RemoteException;
 import android.util.Log;
 
-import com.bfr.buddy.vision.shared.IVisionRsp;
 import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.objdetect.Detection;
 
@@ -68,9 +66,9 @@ public class GestureRecognition {
 
     // coords of the detected hand bbox
     int left, right, top, bottom;
-    //Thres for minimum size of hand to analyse, in % of the image
+    //Thres for minimum size of hand to analyse, in % of the image area
     // Suggestion 0.2 for narrow-angle camera, 0.15 for wide-angle camera
-    float THRES_HAND_WIDTH = 0.20f;
+    float THRES_HAND_AREA = 0.05f ;
     // id of the first largest hand visible
     int handID=-1;
 
@@ -148,7 +146,7 @@ public class GestureRecognition {
 
                 if (detections.size() > 0) {
 //                    Log.d(name, "detected objs : " + detections.size() + "   id=" + detections.get(0).getDetectedClass() + " ; " + detections.get(0).getConfidence());
-                        Log.d(name, "detected size : " + (detections.get(0).right - detections.get(0).left));
+                        Log.d(name, "detected size : " + (detections.get(0).right - detections.get(0).left) * (detections.get(0).bottom - detections.get(0).top));
 
                         // reset
                         handID = -1;
@@ -157,8 +155,9 @@ public class GestureRecognition {
                         for(int h=0; h<detections.size();h++)
                         {
                             // if detected object is big enough
-                            if( (detections.get(h).right - detections.get(h).left)>THRES_HAND_WIDTH )
+                            if( (detections.get(h).right - detections.get(h).left) * (detections.get(h).bottom - detections.get(h).top)> THRES_HAND_AREA)
                             {
+                                Log.w(name, "detected size : " + (detections.get(h).right - detections.get(h).left) * (detections.get(h).bottom - detections.get(h).top));
                                 //remember the index
                                 handID = h;
                                 //next step
@@ -227,7 +226,6 @@ public class GestureRecognition {
                 //
                 if (handPose.isOpen(THUMB) && handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING)) // hand is open
                 {
-
 
                     // init frame index for buffer recording
                     imNum = 0;
