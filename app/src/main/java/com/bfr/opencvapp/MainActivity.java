@@ -459,11 +459,11 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             gestureRecognition.recognize(frame);
 
             Imgproc.putText(frame, gestureRecognition.result,
-                    new Point(100, 100),2, 3,
-                    new Scalar(0, 0, 0), 5);
+                    new Point(150, 150),2, 3,
+                    new Scalar(0, 0, 0), 10);
             Imgproc.putText(frame, gestureRecognition.result,
-                    new Point(100, 100),2, 3,
-                    new Scalar(0, 255, 0), 2);
+                    new Point(150, 150),2, 3,
+                    new Scalar(0, 255, 0), 5);
 
             return frame;
         }

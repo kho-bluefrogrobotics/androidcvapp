@@ -67,7 +67,7 @@ public class GestureRecognition {
     // coords of the detected hand bbox
     int left, right, top, bottom;
     // margin to crop the hand in pixel
-    int MARGIN = 15;
+    int MARGIN = 10;
 
     //Thres for minimum size of hand to analyse, in % of the image area
     // Suggestion 0.2 for narrow-angle camera, 0.15 for wide-angle camera
