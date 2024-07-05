@@ -66,6 +66,9 @@ public class GestureRecognition {
 
     // coords of the detected hand bbox
     int left, right, top, bottom;
+    // margin to crop the hand in pixel
+    int MARGIN = 15;
+
     //Thres for minimum size of hand to analyse, in % of the image area
     // Suggestion 0.2 for narrow-angle camera, 0.15 for wide-angle camera
     float THRES_HAND_AREA = 0.05f ;
@@ -81,7 +84,9 @@ public class GestureRecognition {
     // motion
 //    boolean motion = false;
     float optFlow = 0.0f;
-    float THRES_OPT_FLOW = 15.f; // Thres for decting motion
+    // thres for optical flow
+    float THRES_OPT_FLOW_COUCOU = 15.f;
+    float THRES_OPT_FLOW_COME_HERE = 10.0f;
     public String result = "";
 
     //
@@ -181,10 +186,10 @@ public class GestureRecognition {
                 try {
                     Log.d(name, "Hand pose Estimation");
 
-                    left = Math.max(1, (int) (detections.get(handID).left * cols ));
-                    top = Math.max(1, (int) (detections.get(handID).top * rows));
-                    right = Math.min(frame.cols() - 1, (int) (detections.get(handID).right * cols));
-                    bottom = Math.min(frame.rows() - 1, (int) (detections.get(handID).bottom * rows));
+                    left = Math.max(1, (int) (detections.get(handID).left * cols )- MARGIN);
+                    top = Math.max(1, (int) (detections.get(handID).top * rows) -MARGIN);
+                    right = Math.min(frame.cols() - 1, (int) (detections.get(handID).right * cols) + MARGIN);
+                    bottom = Math.min(frame.rows() - 1, (int) (detections.get(handID).bottom * rows) +MARGIN);
 
                     //**** Crop hand image
                     // ROI of hand
@@ -316,18 +321,31 @@ public class GestureRecognition {
 
             /***/if(step_num==120) { // motion result
 
-                // if motion detected
-                if (optFlow > THRES_OPT_FLOW) {
+                Log.w(name, "Measured opt flow="+ optFlow);
 
-                    Log.w(name, "Measured opt flow="+ optFlow);
-
-                    if (handPose.isFront()) {
+                // if seeing palm
+                if (handPose.isFront()) {
+                    if (optFlow > THRES_OPT_FLOW_COUCOU)
+                    {
                         Log.d(name, "COUCOU");
                         result = "COUCOU";
                         BuddySDK.Speech.startSpeaking("Coucou");
                         debugRecord("coucou");
-//                        step_num = 5;
-                    } else {
+                    }
+                    else // palm and not moving
+                    {
+                        result = "STOP";
+                        Log.d(name, "STOP");
+                        BuddySDK.Speech.startSpeaking("STOP");
+                        debugRecord("stop");
+
+                    }
+
+                }
+                else // back of the hand
+                {
+                    if (optFlow > THRES_OPT_FLOW_COME_HERE) {
+
                         Log.d(name, "COME HERE");
                         result = "COME HERE";
 //                        BuddySDK.Vision.stopCamera(new IVisionRsp.Stub() {
@@ -344,15 +362,15 @@ public class GestureRecognition {
                         BuddySDK.Speech.startSpeaking("J'arrive");
 //                        BuddySDK.Companion.raiseEvent("startFollow");
                         debugRecord("comehere");
-//                        step_num = 5;
+                    } //end if motion
+                    else //back of hand and no motion
+                    {
+                        step_num = 5;
+                        return;
                     }
-                } else {
-                    result = "STOP";
-                    Log.d(name, "STOP");
-                    BuddySDK.Speech.startSpeaking("STOP");
-                    debugRecord("stop");
 
-                }
+                } //end if front or back of hand
+
 
                 step_num = 900;
 
