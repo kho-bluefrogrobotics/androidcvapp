@@ -45,6 +45,8 @@ public class GestureRecognition {
     HandPoseEstimator handPoseEstimator;
     public HandPoseEstimator.HandPose handPose = null;
     MotionDetector motionDetector;
+    // index of img to reset
+    int resetImNb = 0;
 
     // number of frames for optical flow
     final int NUMOFFRAMES= 10;
@@ -129,7 +131,8 @@ public class GestureRecognition {
 
                 if (detections.size() > 0) {
 //                    Log.d(name, "detected objs : " + detections.size() + "   id=" + detections.get(0).getDetectedClass() + " ; " + detections.get(0).getConfidence());
-                        Log.d(name, "detected size : " + (detections.get(0).right - detections.get(0).left) * (detections.get(0).bottom - detections.get(0).top));
+
+//                    Log.d(name, "detected size : " + (detections.get(0).right - detections.get(0).left) * (detections.get(0).bottom - detections.get(0).top));
 
                         // reset
                         handID = -1;
@@ -190,7 +193,8 @@ public class GestureRecognition {
 
                 //hand pose estimation
                 handPose = handPoseEstimator.recognizeImage(frame);
-                handPose.isOpen(THUMB);
+                if(handPose!=null)
+                handPose.handOrientation();
                 step_num = 5;
                 return;
             }
@@ -247,7 +251,7 @@ public class GestureRecognition {
 
                 Log.d(name, "Finger status : " + handPose.isOpen(THUMB) + " " + handPose.isOpen(INDEX) + " " + handPose.isOpen(MIDDLE) + " " + handPose.isOpen(RING) + " " + handPose.isOpen(PINKIE));
                 //
-                if (handPose.isOpen(THUMB) && handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING) && handPose.isOpen(PINKIE)) // hand is open
+                if (handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING) && handPose.isOpen(PINKIE)) // hand is open
                 {
                     // init frame index for buffer recording
                     imNum = 0;
@@ -261,7 +265,7 @@ public class GestureRecognition {
                     step_num = 200;
                 }
                 // index, thumb and pinkie open
-                else if(handPose.isOpen(THUMB) && handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && handPose.isOpen(PINKIE))
+                else if(handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && handPose.isOpen(PINKIE))
                 {
                     Log.d(name, "Rock'n roll ->250 : ");
                     step_num = 250;
@@ -292,7 +296,7 @@ public class GestureRecognition {
                 }
                 else {
                     Log.d(name, "ELSE : Finger status OTHER ");
-                    if (handPose.isFront()) {
+                    if (handPose.isFront() && handPose.handOrientation()<=40 ) {
                         Log.d(name, "FRONT -> 900 : ");
                         result = "STOP";
                         Log.d(name, "STOP");
@@ -357,7 +361,7 @@ public class GestureRecognition {
 
                     // get frame from recorded buffer
                     Mat img = matArray.get(i);
-                    motionDetector.detectMotion(img.clone(), false);
+                    motionDetector.detectMotion(img, false);
 
                     //record if motion or not at this frame
 //                    motion = motion || motionDetector.detectedMotion;
@@ -453,8 +457,12 @@ public class GestureRecognition {
 
                 } //end if front or back of hand
 
+                //reset
+                resetImNb = 0;
 
                 step_num = 900;
+
+                return;
 
             }
 
@@ -517,8 +525,118 @@ public class GestureRecognition {
             }
 
             /***/if(step_num==900) { //wait for no hands in region of analysis
-                detections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.7f, 0.0f, false);
 
+                handPose = handPoseEstimator.recognizeImage(frame);
+
+                // No more detected hand
+                if (handPose == null) {
+                    step_num = 5;
+                    return;
+                }
+
+                //if previously detected a COME HERE
+                if(result.toUpperCase().contains("COME"))
+                {
+                    //reset if hand not open
+                    if ( !handPose.isOpen(INDEX)
+                            || !handPose.isOpen(MIDDLE)
+                            || !handPose.isOpen(RING)
+                            || !handPose.isOpen(PINKIE)
+                            || handPose.fingerOrientation(INDEX) <=0 //or hand not upwards (= GO AWAY)
+                            || handPose.isFront()) // or hand front(COUCOU or STOP)
+                    {
+                        Log.d(name, "Hand pose changed : "
+                               + handPose.isOpen(INDEX) + " "
+                                + handPose.isOpen(MIDDLE) + " "
+                                + handPose.isOpen(RING) + " "
+                                + handPose.isOpen(PINKIE) + " "
+                                + handPose.isFront() + " -> 10 ") ;
+
+                        step_num = 10;
+                        return;
+                    } //end if hand changed
+
+                }
+                else if(result.toUpperCase().contains("AWAY")) {
+
+                    //reset if hand not open
+                    if ( !handPose.isOpen(INDEX)
+                            || !handPose.isOpen(MIDDLE)
+                            || !handPose.isOpen(RING)
+                            || !handPose.isOpen(PINKIE)
+                            || handPose.fingerOrientation(INDEX) >0 //or hand upwards (= COME Here)
+                            || handPose.isFront()) // or hand front(COUCOU or STOP)
+                    {
+                        step_num = 10;
+                        return;
+                    } //end if hand changed
+
+                }
+                else if(result.toUpperCase().contains("COUCOU")) {
+                    //reset if hand not open
+                    if (!handPose.isOpen(INDEX)
+                            || !handPose.isOpen(MIDDLE)
+                            || !handPose.isOpen(RING)
+                            || !handPose.isOpen(PINKIE)
+                            || !handPose.isFront()) // or hand Back(COME HERE or GO AWAY)
+                    {
+                        Log.d(name, "Hand pose changed : "
+                                + handPose.isOpen(INDEX) + " "
+                                + handPose.isOpen(MIDDLE) + " "
+                                + handPose.isOpen(RING) + " "
+                                + handPose.isOpen(PINKIE) + " "
+                                + handPose.isFront() + " -> 10 ") ;
+
+                        step_num = 10;
+                        return;
+                    } //end if hand changed
+                }
+                else if(result.toUpperCase().contains("STOP")) {
+                    //reset if hand not open
+                    if (!handPose.isOpen(INDEX)
+                            || !handPose.isOpen(MIDDLE)
+                            || !handPose.isOpen(RING)
+                            || !handPose.isOpen(PINKIE)
+                            || !handPose.isFront()) // or hand Back(COME HERE or GO AWAY)
+                    {
+                        Log.d(name, "Hand pose changed : "
+                                + handPose.isOpen(INDEX) + " "
+                                + handPose.isOpen(MIDDLE) + " "
+                                + handPose.isOpen(RING) + " "
+                                + handPose.isOpen(PINKIE) + " "
+                                + handPose.isFront() + " -> 10 ") ;
+
+                        step_num = 10;
+                        return;
+                    } //end if hand changed
+
+                    // detect motion
+                    motionDetector.detectMotion(frame, false);
+
+                    resetImNb += 1;
+                    // take a few images for optical flow
+                    if(resetImNb<=2){
+                        Log.d(name, "Optical flow on im: " + resetImNb);
+                        return;
+                    }
+                    else //reset and loop if enough images
+                        resetImNb =0;
+
+                    if(motionDetector.motionOptFlow > THRES_OPT_FLOW_COUCOU)  // Presence of mvt => COUCOU?
+                    {
+                        Log.d(name, "Previously detected STOP and motion detected ("+motionDetector.motionOptFlow+") -> reset to 10");
+                        step_num = 10;
+                        return;
+                    }
+
+                }
+                else{
+                    // reset
+                    step_num = 5;
+                    return;
+                } //end if result = COME or else
+
+                //
                 if (detections.size() == 0)
                 {
                     Log.d(name, "No more hand -> reset to step 5");

@@ -82,7 +82,7 @@ public class MotionDetector {
             // save previous frame
             prevFrame = currFrame;
             // cature frame from camera
-            currFrame = frame;
+            currFrame = frame.clone();
             // convert to gray
             Imgproc.cvtColor(currFrame, currFrame, Imgproc.COLOR_BGR2GRAY);
             // resize for better performances
@@ -154,7 +154,7 @@ public class MotionDetector {
         else //1st frame
         {
             // cature frame from camera
-            currFrame = frame;
+            currFrame = frame.clone();
 
             // reset
             motionOptFlow = 0.0f;

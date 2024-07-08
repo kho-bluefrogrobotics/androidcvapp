@@ -209,6 +209,13 @@ public class HandPoseEstimator {
 
         HandLandmarkerResult handLandmarkerResult =handLandmarker.detect(mpImage);
 
+        if (handLandmarkerResult.landmarks().size()<=0)
+        {
+            Log.w(TAG, "NO HAND DETECTED");
+            return null;
+        }
+
+
         Log.i(TAG, "Result size ="+ handLandmarkerResult.landmarks().get(0).size());
 
         handPose.landmarks = handLandmarkerResult.landmarks().get(0);
@@ -401,27 +408,40 @@ public class HandPoseEstimator {
                 else
                     return true;
             }
-            else // THUMB is an exception : the open state of the thumb is with the dist of the tip to the base of the middle finger
+            else // THUMB is an exception :
+            // the open state of the thumb is comaparing  the dist of the tip to the base of the index finger the dist of the first two knuckles
             {
                 double THRES_DIST_TIP_PHALANX = 0.1;
                 int TIP = 4;
-                int SECOND_PHALANX = 9;
+                int INDEX_BASE = 5;
+                int MIDDLE_BASE = 9;
 
 //            int[] vec1 = new int[]{(int)(landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]), (int)(landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) };
 //            Log.d("ccoucou", "vect=" + vec1[0] + "," + vec1[1] +"    " + landmarks[TIP *3] + "," + landmarks[TIP *3+1] );
 
-                double distTip = Math.sqrt( (landmarks.get(TIP).x() -  landmarks.get(SECOND_PHALANX).x())*(landmarks.get(TIP).x() -  landmarks.get(SECOND_PHALANX).x())
-                        + (landmarks.get(TIP).y() -  landmarks.get(SECOND_PHALANX).y())*(landmarks.get(TIP).y() -  landmarks.get(SECOND_PHALANX).y()) );
+                double distTip = Math.sqrt( (landmarks.get(TIP).x() -  landmarks.get(INDEX_BASE).x())*(landmarks.get(TIP).x() -  landmarks.get(INDEX_BASE).x())
+                        + (landmarks.get(TIP).y() -  landmarks.get(INDEX_BASE).y())*(landmarks.get(TIP).y() -  landmarks.get(INDEX_BASE).y()) );
+                double distKnuckle = Math.sqrt( (landmarks.get(MIDDLE_BASE).x() -  landmarks.get(INDEX_BASE).x())*(landmarks.get(MIDDLE_BASE).x() -  landmarks.get(INDEX_BASE).x())
+                        + (landmarks.get(MIDDLE_BASE).y() -  landmarks.get(INDEX_BASE).y())*(landmarks.get(MIDDLE_BASE).y() -  landmarks.get(INDEX_BASE).y()) );
 
-            Log.d("ccoucou", "distTip=" + distTip );
+
 //            Log.d("ccoucou", "distPhalanx=" + distPhalanx );
 //            Log.d("ccoucou", "Interm Calc=" + (landmarks[TIP *3] -  landmarks[0]) + " + " + (landmarks[TIP*3 + 1] -  landmarks[1]) );
 
                 // if tip of the thumb is close to the base of the middle finger
-                if (distTip <= THRES_DIST_TIP_PHALANX)
+                if (distTip <= 2*distKnuckle)
+                {
+                    String.format("%1$,.2f", distTip);
+                    Log.d("ccoucou", "distTip=" + String.format("%1$,.4f", distTip) + "distPhalanx=" + String.format("%1$,.4f", distKnuckle)  + "=> CLOSE");
                     return  false;
+                }
+
                 else
+                {
+                    Log.d("ccoucou", "distTip=" + String.format("%1$,.4f", distTip) + "distPhalanx=" + String.format("%1$,.4f", distKnuckle)  + "=> OPEN");
                     return true;
+                }
+
             }
 
         } //end isOpen
@@ -460,6 +480,42 @@ public class HandPoseEstimator {
 
         } //end finger orientation
 
+
+        /**
+         * returns the orientation hand as an angle in degrees [0-359]. 0 is horizontal, in anti-clockwise direction (so 90° si upward and -90° if downward)
+         * @return the hand rotation
+         */
+        public int handOrientation()
+        {
+//            Log.d("ccoucou", "finger orientation");
+            int TIP = 17;
+            int SECOND_PHALANX = 5;
+
+//            int[] vec1 = new int[]{(int)(landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]), (int)(landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) };
+//            int[] vec2 = new int[]{1,0 };
+
+
+            // dot product = x1*x2 + y1*y2
+//            double dotProduct = (landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3])* (landmarks[SECOND_PHALANX *3] -  landmarks[0]);
+//            double angleRad= Math.atan2( landmarks.get(TIP).y() -  landmarks.get(SECOND_PHALANX).y() ,  landmarks.get(TIP).x() -  landmarks.get(SECOND_PHALANX).x() );
+            double angleRad= Math.atan2( Math.abs(landmarks.get(TIP).y() -  landmarks.get(SECOND_PHALANX).y() ) , Math.abs( landmarks.get(TIP).x() -  landmarks.get(SECOND_PHALANX).x() ) );
+
+//            double norm = Math.sqrt(vec1[0]*vec1[0] + vec1[1]*vec1[1]);
+//            double dotProduct = ( vec1[0] * vec2[0]  + vec1[1]* vec2[1] )/ norm;
+
+
+//            double angleRad = Math.atan2(vec1[1], vec1[0]);
+
+            // image is oriented with y towards bottom -> invert sign
+            Log.d("ccoucou", "HandOrientation=" + ( ((int)Math.toDegrees(angleRad) ) %360) );
+//
+
+            return (int)Math.toDegrees(angleRad);
+
+//            Log.d("ccoucou", "TIP=" + (int)landmarks[TIP *3] + "," + (int)landmarks[TIP *3+1] + " PHALANX= " + (int)landmarks[SECOND_PHALANX *3] + "," + (int)landmarks[SECOND_PHALANX *3+1]);
+//            Log.d("ccoucou", "vect1=" + vec1[0] + "," + vec1[1] + " dotproduct= " + dotProduct + "norm=" + norm + " ==>angle in rad = " + angleRad + " in deg = " + this.angle);
+
+        } //end finger orientation
 
     } //end headpose class
 
