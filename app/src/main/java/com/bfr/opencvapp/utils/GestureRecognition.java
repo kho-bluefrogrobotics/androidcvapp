@@ -518,7 +518,8 @@ public class GestureRecognition {
             /***/if(step_num==290) { // Pointing
 
                 Log.d(name, "Pointing");
-                result = "POINTING";
+                int fingerAngle = handPose.fingerOrientation(INDEX);
+                result = "POINTING  " + fingerAngle  ;
                 step_num = 5;
 
                 return;
