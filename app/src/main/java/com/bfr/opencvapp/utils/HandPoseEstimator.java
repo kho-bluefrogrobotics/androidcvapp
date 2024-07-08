@@ -94,7 +94,7 @@ public class HandPoseEstimator {
     public HandPoseEstimator(Context context){
 
         try{
-            displayMat = new Mat();
+//            displayMat = new Mat();
 
             Interpreter.Options options = (new Interpreter.Options());
             CompatibilityList compatList = new CompatibilityList();
@@ -376,30 +376,54 @@ public class HandPoseEstimator {
          */
         public boolean isOpen(FINGER finger)
         {
-            int TIP = PHALANX_ID[finger.ordinal()][0];
-            int SECOND_PHALANX = PHALANX_ID[finger.ordinal()][1];
 
-            //THUMB particular case : open or not depends on the distance from the tip to the basis of the index
-            if(finger==FINGER.THUMB)
-                SECOND_PHALANX = 5;
+            // For all fingers EXCEPT thumb
+            if (finger != FINGER.THUMB)
+            {
+                int TIP = PHALANX_ID[finger.ordinal()][0];
+                int SECOND_PHALANX = PHALANX_ID[finger.ordinal()][1];
 
 //            int[] vec1 = new int[]{(int)(landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]), (int)(landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) };
 //            Log.d("ccoucou", "vect=" + vec1[0] + "," + vec1[1] +"    " + landmarks[TIP *3] + "," + landmarks[TIP *3+1] );
 
-            double distTip = Math.sqrt( (landmarks.get(TIP).x() -  landmarks.get(0).x())*(landmarks.get(TIP).x() -  landmarks.get(0).x())
-                    + (landmarks.get(TIP).y() -  landmarks.get(0).y())*(landmarks.get(TIP).y() -  landmarks.get(0).y()) );
+                double distTip = Math.sqrt( (landmarks.get(TIP).x() -  landmarks.get(0).x())*(landmarks.get(TIP).x() -  landmarks.get(0).x())
+                        + (landmarks.get(TIP).y() -  landmarks.get(0).y())*(landmarks.get(TIP).y() -  landmarks.get(0).y()) );
 
-            double distPhalanx = Math.sqrt( (landmarks.get(SECOND_PHALANX).x() -  landmarks.get(0).x())*(landmarks.get(SECOND_PHALANX).x() -  landmarks.get(0).x())
-                + (landmarks.get(SECOND_PHALANX).y() -  landmarks.get(0).y())*(landmarks.get(SECOND_PHALANX).y() -  landmarks.get(0).y()) );
+                double distPhalanx = Math.sqrt( (landmarks.get(SECOND_PHALANX).x() -  landmarks.get(0).x())*(landmarks.get(SECOND_PHALANX).x() -  landmarks.get(0).x())
+                        + (landmarks.get(SECOND_PHALANX).y() -  landmarks.get(0).y())*(landmarks.get(SECOND_PHALANX).y() -  landmarks.get(0).y()) );
 
 //            Log.d("ccoucou", "distTip=" + distTip );
 //            Log.d("ccoucou", "distPhalanx=" + distPhalanx );
 //            Log.d("ccoucou", "Interm Calc=" + (landmarks[TIP *3] -  landmarks[0]) + " + " + (landmarks[TIP*3 + 1] -  landmarks[1]) );
 
-            if (distTip <= distPhalanx)
-                return  false;
-            else
-                return true;
+                if (distTip <= distPhalanx)
+                    return  false;
+                else
+                    return true;
+            }
+            else // THUMB is an exception : the open state of the thumb is with the dist of the tip to the base of the middle finger
+            {
+                double THRES_DIST_TIP_PHALANX = 0.1;
+                int TIP = 4;
+                int SECOND_PHALANX = 9;
+
+//            int[] vec1 = new int[]{(int)(landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]), (int)(landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) };
+//            Log.d("ccoucou", "vect=" + vec1[0] + "," + vec1[1] +"    " + landmarks[TIP *3] + "," + landmarks[TIP *3+1] );
+
+                double distTip = Math.sqrt( (landmarks.get(TIP).x() -  landmarks.get(SECOND_PHALANX).x())*(landmarks.get(TIP).x() -  landmarks.get(SECOND_PHALANX).x())
+                        + (landmarks.get(TIP).y() -  landmarks.get(SECOND_PHALANX).y())*(landmarks.get(TIP).y() -  landmarks.get(SECOND_PHALANX).y()) );
+
+            Log.d("ccoucou", "distTip=" + distTip );
+//            Log.d("ccoucou", "distPhalanx=" + distPhalanx );
+//            Log.d("ccoucou", "Interm Calc=" + (landmarks[TIP *3] -  landmarks[0]) + " + " + (landmarks[TIP*3 + 1] -  landmarks[1]) );
+
+                // if tip of the thumb is close to the base of the middle finger
+                if (distTip <= THRES_DIST_TIP_PHALANX)
+                    return  false;
+                else
+                    return true;
+            }
+
         } //end isOpen
 
 

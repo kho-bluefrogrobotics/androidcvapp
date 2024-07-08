@@ -83,7 +83,6 @@ public class MultiDetector {
     public MultiDetector(Context context){
 
         try{
-            displayMat = new Mat();
 
             Interpreter.Options options = (new Interpreter.Options());
             CompatibilityList compatList = new CompatibilityList();
@@ -294,6 +293,7 @@ public class MultiDetector {
                         /********* display*/
                         if (withDisplay)
                         {
+
                             if( ((detectedClass == 0 && isReallyHuman) || detectedClass >0 ) )
                             {
                                 //left

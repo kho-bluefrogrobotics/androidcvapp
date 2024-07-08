@@ -50,13 +50,17 @@ public class MotionDetector {
 
 
     public MotionDetector(){
-        magnitude = new Mat();
-        angle = new Mat();
-        magnNorm = new Mat();
     }
 
    public void detectMotion(Mat frame, boolean constructVisualizationImage)
     {
+        if (magnitude==null)
+            magnitude = new Mat();
+        if(angle ==null)
+            angle = new Mat();
+        if (magnNorm ==null)
+            magnNorm = new Mat();
+
         if(wDebug)
             Log.d(TAG, "Begining of detection at " + System.currentTimeMillis());
 

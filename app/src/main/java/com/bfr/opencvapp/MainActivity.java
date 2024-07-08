@@ -338,6 +338,35 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             folder.mkdirs();
         }
 
+
+
+        try {
+            copyAssets();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        tracked = new Rect();
+
+//        videoCapture = new VideoCapture("/sdcard/Download/240408130327_trackingDebug.avi");
+//        videoCapture.set(CAP_PROP_POS_FRAMES, 10);
+//        frame = new Mat();
+
+//        personTrackerVIT.startTorsoHeightEstimation();
+
+        // init face detector
+        multiDetector = new com.bfr.opencvapp.utils.MultiDetector(context);
+
+        handPoseEstimator = new HandPoseEstimator(context);
+
+        motionDetector = new MotionDetector();
+        gestureRecognition = new GestureRecognition("GestureRecog", multiDetector, handPoseEstimator, motionDetector);
+
+
+
+
     } // End onCreate
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
@@ -393,15 +422,11 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         TfLiteMidas mytfliterecog;
     public void onCameraViewStarted(int width, int height) {
 
-        try {
-            copyAssets();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
 
         Log.w("MainActivity", "Camera view started");
+
+        frame = new Mat();
+
 
 //        detector = new MultiDetector(this);
 //        blazePose = new TfLiteBlazePose(context);
@@ -409,21 +434,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
 //        personTrackerVIT = new PersonTrackerVIT(detector, humanHeadHandsDetector);
 
-        tracked = new Rect();
 
-        videoCapture = new VideoCapture("/sdcard/Download/240408130327_trackingDebug.avi");
-        videoCapture.set(CAP_PROP_POS_FRAMES, 10);
-        frame = new Mat();
-
-//        personTrackerVIT.startTorsoHeightEstimation();
-
-        frame = new Mat();
-        // init face detector
-        multiDetector = new com.bfr.opencvapp.utils.MultiDetector(context);
-
-        handPoseEstimator = new HandPoseEstimator(context);
-
-        motionDetector = new MotionDetector();
         //init face recognizer
 //        faceRecognizerObj = new FaceRecognizer();
 
@@ -434,8 +445,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //                25.0D,  new Size( 800,600));
 
 
-        gestureRecognition = new GestureRecognition("GestureRecog", multiDetector, handPoseEstimator, motionDetector);
-        gestureRecognition.init(frame);
+
 
 //        started = true;
 

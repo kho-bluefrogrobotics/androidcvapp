@@ -39,12 +39,12 @@ public class GestureRecognition {
     String name = "";
 
     // detectors
-    MultiDetector multiDetector = new MultiDetector();
+    MultiDetector multiDetector;
     ArrayList<Detection> detections = new ArrayList<Detection>();
 
     HandPoseEstimator handPoseEstimator;
     public HandPoseEstimator.HandPose handPose = null;
-    MotionDetector motionDetector = new MotionDetector();
+    MotionDetector motionDetector;
 
     // number of frames for optical flow
     final int NUMOFFRAMES= 10;
@@ -92,29 +92,6 @@ public class GestureRecognition {
     //
     public Mat displaymat;
 
-    public void init(Mat frame)
-    {
-        this.frame = frame;
-    }
-
-    public void start()
-    {
-        isStarted = true;
-        try{
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void stop()
-    {
-        isStarted = false;
-        try{
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
 
     public void recognize(Mat frame)
@@ -144,6 +121,7 @@ public class GestureRecognition {
                 }
 
 
+
             /***/if(step_num==5) { // hands detection
 
                 //detecting hands only
@@ -167,18 +145,54 @@ public class GestureRecognition {
                                 handID = h;
                                 //next step
                                 step_num =10;
+//                                step_num =6;
                                 // interrupt
                                 break;
                             } //end if obj big enough
                         } // next object
                 } //end if obj. detected
                 else
+                {
                     // no obj. detected -> end
+//                    result = "";
                     return;
+                }
 
                 //if object detected but not big enough -> end
                 if (handID<0)
                     return;
+            }
+
+
+            if(step_num == 6)
+            {
+                Log.d(name, "Hand pose Estimation");
+
+                left = Math.max(1, (int) (detections.get(handID).left * cols )- MARGIN);
+                top = Math.max(1, (int) (detections.get(handID).top * rows) -MARGIN);
+                right = Math.min(frame.cols() - 1, (int) (detections.get(handID).right * cols) + MARGIN);
+                bottom = Math.min(frame.rows() - 1, (int) (detections.get(handID).bottom * rows) +MARGIN);
+
+                //**** Crop hand image
+                // ROI of hand
+                Rect handROI = new Rect( left, top, (right-left), (bottom-top));
+                // black background
+                Mat black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
+                Mat roiInBlack = black.submat(handROI); // subimage at hand roi in black image
+                Mat handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
+                // copy hand crop to black background
+                handMat.copyTo(roiInBlack);
+
+                frame = black.clone();
+
+                // to keep to debug
+                // displaymat = black.clone();
+
+                //hand pose estimation
+                handPose = handPoseEstimator.recognizeImage(frame);
+                handPose.isOpen(THUMB);
+                step_num = 5;
+                return;
             }
 
             /***/if(step_num==10) { // Pose estimation
@@ -216,13 +230,13 @@ public class GestureRecognition {
 
 
 
-//                        int x, y;
-//                        for (int l=0; l<20; l++)
-//                        {
-//                            x = (int) (handPose.landmarks.get(l).x()* frame.cols());
-//                            y = (int) (handPose.landmarks.get(l).y()* frame.rows());
-//                            Imgproc.circle(frame, new Point(x,y), 5, new Scalar(0,255,0), 5);
-//                        }
+                        int x, y;
+                        for (int l=0; l<20; l++)
+                        {
+                            x = (int) (handPose.landmarks.get(l).x()* frame.cols());
+                            y = (int) (handPose.landmarks.get(l).y()* frame.rows());
+                            Imgproc.circle(frame, new Point(x,y), 5, new Scalar(0,255,0), 5);
+                        }
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -231,20 +245,46 @@ public class GestureRecognition {
                 }
 
 
-                Log.d(name, "Finger status : " + handPose.isOpen(THUMB) + " " + handPose.isOpen(INDEX) + " " + handPose.isOpen(MIDDLE) + " " + handPose.isOpen(PINKIE) + " ");
+                Log.d(name, "Finger status : " + handPose.isOpen(THUMB) + " " + handPose.isOpen(INDEX) + " " + handPose.isOpen(MIDDLE) + " " + handPose.isOpen(RING) + " " + handPose.isOpen(PINKIE));
                 //
-                if (handPose.isOpen(THUMB) && handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING)) // hand is open
+                if (handPose.isOpen(THUMB) && handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING) && handPose.isOpen(PINKIE)) // hand is open
                 {
-
                     // init frame index for buffer recording
                     imNum = 0;
                     step_num = 100;
                     Log.d(name, "Hand is open -> 100 : ");
-                } else if (!handPose.isOpen(INDEX) && !handPose.isOpen(RING) && handPose.isOpen(THUMB)) // all fingers closed beside thumb
+                }
+                // Thumbs open
+                else if (!handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && handPose.isOpen(THUMB) && !handPose.isOpen(PINKIE)) // all fingers closed beside thumb
                 {
                     Log.d(name, "Thumbs open -> 200 : ");
                     step_num = 200;
-                } else {
+                }
+                // index, thumb and pinkie open
+                else if(handPose.isOpen(THUMB) && handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && handPose.isOpen(PINKIE))
+                {
+                    Log.d(name, "Rock'n roll ->250 : ");
+                    step_num = 250;
+                }
+                // just thumb and pinkie open
+                else if(handPose.isOpen(THUMB) && !handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && handPose.isOpen(PINKIE))
+                {
+                    Log.d(name, "Allo -> 260 : ");
+                    step_num = 260;
+                }
+                // allfingers closed except middle finger
+                else if(!handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && !handPose.isOpen(PINKIE))
+                {
+                    Log.d(name, "F*** -> 270 : ");
+                    step_num = 270;
+                }
+                // index and middle finger open
+                else if(handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && !handPose.isOpen(PINKIE))
+                {
+                    Log.d(name, "Peace -> 270 : ");
+                    step_num = 270;
+                }
+                else {
                     Log.d(name, "ELSE : Finger status OTHER ");
                     if (handPose.isFront()) {
                         Log.d(name, "FRONT -> 900 : ");
@@ -412,7 +452,7 @@ public class GestureRecognition {
 
             }
 
-            /***/if(step_num==200) { // close hands
+            /***/if(step_num==200) { // Thumb up down
 
 
                 if (handPose.fingerOrientation(THUMB) >= 0) {
@@ -424,6 +464,32 @@ public class GestureRecognition {
                     result = "NEGATIVE";
                     step_num = 5;
                 }
+
+                return;
+            }
+
+            /***/if(step_num==250) { // Rock'n roll
+
+                    Log.d(name, "RockNRoll");
+                    result = "RockNRoll";
+                    step_num = 5;
+
+                return;
+            }
+
+            /***/if(step_num==260) { // Allo
+
+                Log.d(name, "ALLO");
+                result = "ALLO";
+                step_num = 5;
+
+                return;
+            }
+            /***/if(step_num==270) { // Allo
+
+                Log.d(name, "F*** You");
+                result = "F*** YOU";
+                step_num = 5;
 
                 return;
             }
