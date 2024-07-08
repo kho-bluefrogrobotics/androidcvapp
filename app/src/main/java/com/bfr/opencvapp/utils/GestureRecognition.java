@@ -282,7 +282,13 @@ public class GestureRecognition {
                 else if(handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && !handPose.isOpen(PINKIE))
                 {
                     Log.d(name, "Peace -> 270 : ");
-                    step_num = 270;
+                    step_num = 280;
+                }
+                // only Index open
+                else if(handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && !handPose.isOpen(PINKIE))
+                {
+                    Log.d(name, "Pointing -> 280 : ");
+                    step_num = 290;
                 }
                 else {
                     Log.d(name, "ELSE : Finger status OTHER ");
@@ -485,10 +491,26 @@ public class GestureRecognition {
 
                 return;
             }
-            /***/if(step_num==270) { // Allo
+            /***/if(step_num==270) { // F You
 
                 Log.d(name, "F*** You");
                 result = "F*** YOU";
+                step_num = 5;
+
+                return;
+            }
+            /***/if(step_num==280) { // Peace
+
+                Log.d(name, "Peace");
+                result = "PEACE";
+                step_num = 5;
+
+                return;
+            }
+            /***/if(step_num==290) { // Pointing
+
+                Log.d(name, "Pointing");
+                result = "POINTING";
                 step_num = 5;
 
                 return;
