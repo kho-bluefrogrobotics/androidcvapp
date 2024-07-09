@@ -369,7 +369,7 @@ public class GestureRecognition {
                 optFlow = 0.0f;
 
                 // Analyse from n-th frame to waith for hand stabilization
-                for (int i = 4; i < NUMOFFRAMES; i++) {
+                for (int i = 6; i < NUMOFFRAMES; i++) {
 //                        Mat img = Imgcodecs.imread("/sdcard/Download/" + String.format("%02d", i)  + "_gestRecog.jpg");
 
                     // get frame from recorded buffer

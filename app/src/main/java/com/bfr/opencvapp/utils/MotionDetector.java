@@ -28,7 +28,7 @@ public class MotionDetector {
     Mat flow;
     Mat magnitude, angle , magnNorm;
     // resize for better performances
-    Size mSize = new Size(480, 320);
+    Size mSize = new Size(320, 240);
 
     // movement detection
     // camera is processing opticalFlow
