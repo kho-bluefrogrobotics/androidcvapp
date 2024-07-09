@@ -26,6 +26,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
+import com.bfr.opencvapp.utils.IGestureRsp;
+
 public class GestureRecognition {
 
     public GestureRecognition(String mname, MultiDetector multiDetector, HandPoseEstimator handPoseEstimator, MotionDetector motionDetector) {
@@ -94,6 +96,14 @@ public class GestureRecognition {
     //
     public Mat displaymat;
 
+    // callback
+    private IGestureRsp gestureRsp;
+    private Gesture gesture = new Gesture();
+
+    public void registerGestureRecog(IGestureRsp gestureRsp)
+    {
+        this.gestureRsp = gestureRsp;
+    }
 
 
     public void recognize(Mat frame)
@@ -299,6 +309,9 @@ public class GestureRecognition {
                     if (handPose.isFront() && handPose.handOrientation()<=40 ) {
                         Log.d(name, "FRONT -> 900 : ");
                         result = "STOP";
+                        gesture.result = result;
+                        gesture.orientation = 0;
+                        gestureRsp.onSuccess(gesture);
                         Log.d(name, "STOP");
                         step_num = 5; // wait for no hands in the image
                     } else {
@@ -384,6 +397,9 @@ public class GestureRecognition {
                     {
                         Log.d(name, "COUCOU");
                         result = "COUCOU";
+                        gesture.result = result;
+                        gesture.orientation = 0;
+                        gestureRsp.onSuccess(gesture);
                         BuddySDK.Speech.startSpeaking("Coucou");
                         debugRecord("coucou");
                     }
@@ -391,6 +407,9 @@ public class GestureRecognition {
                     {
                         result = "STOP";
                         Log.d(name, "STOP");
+                        gesture.result = result;
+                        gesture.orientation = 0;
+                        gestureRsp.onSuccess(gesture);
                         BuddySDK.Speech.startSpeaking("STOP");
                         debugRecord("stop");
 
@@ -405,6 +424,11 @@ public class GestureRecognition {
 
                             Log.d(name, "COME HERE");
                             result = "COME HERE";
+
+                            gesture.result = result;
+                            gesture.orientation = 0;
+                            gestureRsp.onSuccess(gesture);
+
 //                        BuddySDK.Vision.stopCamera(new IVisionRsp.Stub() {
 //                            @Override
 //                            public void onSuccess(String s) throws RemoteException {
@@ -432,6 +456,11 @@ public class GestureRecognition {
 
                             Log.d(name, "GO AWAY");
                             result = "GO AWAY";
+
+                            gesture.result = result;
+                            gesture.orientation = 0;
+                            gestureRsp.onSuccess(gesture);
+
 //                        BuddySDK.Vision.stopCamera(new IVisionRsp.Stub() {
 //                            @Override
 //                            public void onSuccess(String s) throws RemoteException {
@@ -472,10 +501,20 @@ public class GestureRecognition {
                 if (handPose.fingerOrientation(THUMB) >= 0) {
                     Log.d(name, "POSITIVE");
                     result = "POSITIVE";
+
+                    gesture.result = result;
+                    gesture.orientation = 0;
+                    gestureRsp.onSuccess(gesture);
+
                     step_num = 5;
                 } else {
                     Log.d(name, "NEGATIVE");
                     result = "NEGATIVE";
+
+                    gesture.result = result;
+                    gesture.orientation = 0;
+                    gestureRsp.onSuccess(gesture);
+
                     step_num = 5;
                 }
 
@@ -486,6 +525,11 @@ public class GestureRecognition {
 
                     Log.d(name, "RockNRoll");
                     result = "RockNRoll";
+
+                gesture.result = result;
+                gesture.orientation = 0;
+                gestureRsp.onSuccess(gesture);
+
                     step_num = 5;
 
                 return;
@@ -495,6 +539,11 @@ public class GestureRecognition {
 
                 Log.d(name, "ALLO");
                 result = "ALLO";
+
+                gesture.result = result;
+                gesture.orientation = 0;
+                gestureRsp.onSuccess(gesture);
+
                 step_num = 5;
 
                 return;
@@ -503,6 +552,11 @@ public class GestureRecognition {
 
                 Log.d(name, "F*** You");
                 result = "F*** YOU";
+
+                gesture.result = result;
+                gesture.orientation = 0;
+                gestureRsp.onSuccess(gesture);
+
                 step_num = 5;
 
                 return;
@@ -511,6 +565,11 @@ public class GestureRecognition {
 
                 Log.d(name, "Peace");
                 result = "PEACE";
+
+                gesture.result = result;
+                gesture.orientation = 0;
+                gestureRsp.onSuccess(gesture);
+
                 step_num = 5;
 
                 return;
@@ -519,7 +578,12 @@ public class GestureRecognition {
 
                 Log.d(name, "Pointing");
                 int fingerAngle = handPose.fingerOrientation(INDEX);
-                result = "POINTING  " + fingerAngle  ;
+                result = "POINTING"  ;
+
+                gesture.result = result;
+                gesture.orientation = fingerAngle;
+                gestureRsp.onSuccess(gesture);
+
                 step_num = 5;
 
                 return;
@@ -553,8 +617,7 @@ public class GestureRecognition {
                                 + handPose.isOpen(PINKIE) + " "
                                 + handPose.isFront() + " -> 10 ") ;
 
-                        step_num = 10;
-                        return;
+                        step_num = 901;
                     } //end if hand changed
 
                 }
@@ -568,8 +631,7 @@ public class GestureRecognition {
                             || handPose.fingerOrientation(INDEX) >0 //or hand upwards (= COME Here)
                             || handPose.isFront()) // or hand front(COUCOU or STOP)
                     {
-                        step_num = 10;
-                        return;
+                        step_num = 901;
                     } //end if hand changed
 
                 }
@@ -588,8 +650,8 @@ public class GestureRecognition {
                                 + handPose.isOpen(PINKIE) + " "
                                 + handPose.isFront() + " -> 10 ") ;
 
-                        step_num = 10;
-                        return;
+                        step_num = 901;
+
                     } //end if hand changed
                 }
                 else if(result.toUpperCase().contains("STOP")) {
@@ -607,8 +669,8 @@ public class GestureRecognition {
                                 + handPose.isOpen(PINKIE) + " "
                                 + handPose.isFront() + " -> 10 ") ;
 
-                        step_num = 10;
-                        return;
+                        step_num = 901;
+
                     } //end if hand changed
 
                     // detect motion
@@ -646,6 +708,12 @@ public class GestureRecognition {
                 return;
             }
 
+            /***/if (step_num==901) // stabilization
+            {
+                Thread.sleep(1000);
+                step_num = 10;
+                return;
+            }
 
         } catch (Exception e) {
             Log.e(name, "ERROR :" + Log.getStackTraceString(e));
@@ -672,4 +740,12 @@ public class GestureRecognition {
             Imgcodecs.imwrite("/sdcard/Download/"+ folder + "/" + strDate+"/" + String.format("%02d", i) + "_gestRecog.jpg", matArray.get(i));
         }
     } // end record debug
-}
+
+
+    public interface EventListener {
+
+        String onTrigger();
+    }
+
+
+    }

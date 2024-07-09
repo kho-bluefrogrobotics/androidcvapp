@@ -54,8 +54,10 @@ import com.bfr.buddysdk.BuddySDK;
 
 import com.bfr.opencvapp.grafcet.*;
 import com.bfr.opencvapp.objdetect.Detection;
+import com.bfr.opencvapp.utils.Gesture;
 import com.bfr.opencvapp.utils.GestureRecognition;
 import com.bfr.opencvapp.utils.HandPoseEstimator;
+import com.bfr.opencvapp.utils.IGestureRsp;
 import com.bfr.opencvapp.utils.MotionDetector;
 import com.bfr.opencvapp.utils.TfLiteMidas;
 import com.bfr.opencvapp.utils.TfLiteYoloXHumanHeadHands;
@@ -364,10 +366,21 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         motionDetector = new MotionDetector();
         gestureRecognition = new GestureRecognition("GestureRecog", multiDetector, handPoseEstimator, motionDetector);
 
-
+        gestureRecognition.registerGestureRecog(new IGestureRsp() {
+            @Override
+            public void onSuccess(Gesture gesture) {
+                Log.d(TAG, "Recognised gesture : " + gesture.result);
+                resultGesture = gesture.result;
+                if (resultGesture.toUpperCase().contains("POINTING")){
+                    resultGesture += " " + gesture.orientation;
+                }
+            }
+        });
 
 
     } // End onCreate
+
+    String resultGesture = "";
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -468,10 +481,17 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
             gestureRecognition.recognize(frame);
 
-            Imgproc.putText(frame, gestureRecognition.result,
+//            Imgproc.putText(frame, gestureRecognition.result,
+//                    new Point(150, 150),2, 3,
+//                    new Scalar(0, 0, 0), 10);
+//            Imgproc.putText(frame, gestureRecognition.result,
+//                    new Point(150, 150),2, 3,
+//                    new Scalar(0, 255, 0), 5);
+
+            Imgproc.putText(frame, resultGesture,
                     new Point(150, 150),2, 3,
                     new Scalar(0, 0, 0), 10);
-            Imgproc.putText(frame, gestureRecognition.result,
+            Imgproc.putText(frame, resultGesture,
                     new Point(150, 150),2, 3,
                     new Scalar(0, 255, 0), 5);
 
