@@ -26,15 +26,15 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
-import com.bfr.opencvapp.utils.IGestureRsp;
-
 public class GestureRecognition {
 
-    public GestureRecognition(String mname, MultiDetector multiDetector, HandPoseEstimator handPoseEstimator, MotionDetector motionDetector) {
+    public GestureRecognition(String mname, MultiDetector multiDetector, HandPoseEstimator handPoseEstimator, GestureMotionDetect gestureMotionDetect,
+    MotionDetector motionDetector) {
         this.name = mname;
 
         this.multiDetector = multiDetector;
         this.handPoseEstimator = handPoseEstimator;
+        this.gestureMotionDetect = gestureMotionDetect;
         this.motionDetector = motionDetector;
     }
 
@@ -55,7 +55,7 @@ public class GestureRecognition {
     // buffer to store the sequence of frame for optical flow analysis
     ArrayList<Mat> matArray = new ArrayList<Mat>();
 
-
+    GestureMotionDetect gestureMotionDetect;
 
     public boolean isStarted = false;
 
@@ -162,6 +162,22 @@ public class GestureRecognition {
                                 Log.w(name, "detected size : " + (detections.get(h).right - detections.get(h).left) * (detections.get(h).bottom - detections.get(h).top));
                                 //remember the index
                                 handID = h;
+
+
+                                left = Math.max(1, (int) (detections.get(handID).left * cols )- MARGIN);
+//                    top = Math.max(1, (int) (detections.get(handID).top * rows) -MARGIN);
+                                top = 1;
+                                right = Math.min(frame.cols() - 1, (int) (detections.get(handID).right * cols) + MARGIN);
+//                    bottom = Math.min(frame.rows() - 1, (int) (detections.get(handID).bottom * rows) +MARGIN);
+                                bottom = rows;
+
+                                //**** Crop hand image
+                                // ROI of hand
+                                handROI = new Rect( left, top, (right-left), (bottom-top));
+                                gestureMotionDetect.handROI =handROI;
+                                // start motion detection
+                                Log.w(name, "Req for motion detection ");
+                                gestureMotionDetect.go = true;
                                 //next step
                                 step_num =10;
 //                                step_num =6;
@@ -221,16 +237,7 @@ public class GestureRecognition {
                 try {
                     Log.d(name, "Hand pose Estimation");
 
-                    left = Math.max(1, (int) (detections.get(handID).left * cols )- MARGIN);
-//                    top = Math.max(1, (int) (detections.get(handID).top * rows) -MARGIN);
-                    top = 1;
-                    right = Math.min(frame.cols() - 1, (int) (detections.get(handID).right * cols) + MARGIN);
-//                    bottom = Math.min(frame.rows() - 1, (int) (detections.get(handID).bottom * rows) +MARGIN);
-                    bottom = rows;
 
-                    //**** Crop hand image
-                    // ROI of hand
-                    handROI = new Rect( left, top, (right-left), (bottom-top));
                     // black background
                     black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
                     roiInBlack = black.submat(handROI); // subimage at hand roi in black image
@@ -340,81 +347,14 @@ public class GestureRecognition {
 
             }
 
-            /***/if(step_num==100) { // Open hand start record video for optical flow
-                Log.d(name, "Recording for optical flow : ");
-
-                //**** Crop hand image
-                // ROI of hand
-//                handROI = new Rect( left, top, (right-left), (bottom-top));
-//                // black background
-//                black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
-//                roiInBlack = black.submat(handROI); // subimage at hand roi in black image
-                handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
-                // copy hand crop to black background
-                handMat.copyTo(roiInBlack);
-
-
-                frame = black.clone();
-
-                //add at the end if needed
-                if (matArray.size() <= imNum) {
-//                        Log.d(name, "adding:" + imNum +" to " + matArray.size() );
-                    matArray.add(frame.clone());
-                } else // record Mat
-                {
-//                        Log.d(name, "setting:" + imNum +" to " + matArray.size() );
-                    matArray.set(imNum, frame.clone());
+            /***/if(step_num==100) { // wait for end of motion detection
+                if(!gestureMotionDetect.go) {
+                    step_num = 120;
+                    Log.i(name, "current step: " + step_num + "  ");
                 }
-
-
-                //increment index
-                imNum += 1;
-
-                // next step if recording complete
-                if (imNum >= NUMOFFRAMES) {
-                    Log.d(name, "END of recording ("+imNum+") -> step 110");
-                    step_num = 110;
-                }
-                else // need the next frame to continue recording
-                {
-                    return;
-                }
-
             }
 
-            /***/if(step_num==110) { //end of record video
 
-                Log.d(name, "End of recording : ");
-
-                step_num = 115;
-                //break;
-            }
-
-            /***/if(step_num==115) { // optical flow analysis
-                Log.d(name, "Optical flow estimation");
-
-                // init motion deteciton
-                motionDetector.frameCount = 0;
-                optFlow = 0.0f;
-
-                // Analyse from n-th frame to waith for hand stabilization
-                for (int i = 6; i < NUMOFFRAMES; i++) {
-//                        Mat img = Imgcodecs.imread("/sdcard/Download/" + String.format("%02d", i)  + "_gestRecog.jpg");
-
-                    // get frame from recorded buffer
-                    Mat img = matArray.get(i);
-                    motionDetector.detectMotion(img, false);
-
-                    //record if motion or not at this frame
-//                    motion = motion || motionDetector.detectedMotion;
-
-                    if(motionDetector.motionOptFlow > optFlow)
-                        optFlow = motionDetector.motionOptFlow;
-                }
-
-                step_num = 120;
-                return;
-            }
 
             /***/if(step_num==120) { // motion result
 
@@ -422,7 +362,7 @@ public class GestureRecognition {
 
                 // if seeing palm
                 if (handPose.isFront()) {
-                    if (optFlow > THRES_OPT_FLOW_COUCOU)
+                    if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COUCOU)
                     {
                         Log.d(name, "COUCOU");
                         result = "COUCOU";
@@ -449,7 +389,7 @@ public class GestureRecognition {
                 {
                     //fingers upward
                     if( handPose.fingerOrientation(INDEX) >0) {
-                        if (optFlow > THRES_OPT_FLOW_COME_HERE) {
+                        if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COME_HERE) {
 
                             Log.d(name, "COME HERE");
                             result = "COME HERE";
@@ -481,7 +421,7 @@ public class GestureRecognition {
                     }
                     else // fingers downward
                     {
-                        if (optFlow > THRES_OPT_FLOW_COME_HERE) {
+                        if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COME_HERE) {
 
                             Log.d(name, "GO AWAY");
                             result = "GO AWAY";

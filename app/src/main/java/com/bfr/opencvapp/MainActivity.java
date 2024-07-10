@@ -2,7 +2,6 @@ package com.bfr.opencvapp;
 
 
 import static org.opencv.core.CvType.*;
-import static org.opencv.videoio.Videoio.CAP_PROP_POS_FRAMES;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -65,6 +64,7 @@ import com.bfr.opencvapp.utils.Gesture;
 import com.bfr.opencvapp.utils.GestureRecognition;
 import com.bfr.opencvapp.utils.HandPoseEstimator;
 import com.bfr.opencvapp.utils.IGestureRsp;
+import com.bfr.opencvapp.utils.GestureMotionDetect;
 import com.bfr.opencvapp.utils.MotionDetector;
 import com.bfr.opencvapp.utils.TfLiteMidas;
 import com.bfr.opencvapp.utils.TfLiteYoloXHumanHeadHands;
@@ -127,6 +127,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     MotionDetector motionDetector;
 
     GestureRecognition gestureRecognition;
+    GestureMotionDetect gestureMotionDetect;
 
     public static PersonTrackerVIT personTrackerVIT;
     Rect tracked;
@@ -406,7 +407,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             e.printStackTrace();
         }
 
-        gestureRecognition = new GestureRecognition("GestureRecog", multiDetector, handPoseEstimator, motionDetector);
+        gestureMotionDetect = new GestureMotionDetect("GestureMotionDetector", motionDetector);
+        gestureRecognition = new GestureRecognition("GestureRecog", multiDetector, handPoseEstimator, gestureMotionDetect, motionDetector);
 
         gestureRecognition.registerGestureRecog(new IGestureRsp() {
             @Override
@@ -460,6 +462,25 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             }
         }
     };
+
+
+    // Scheduler for visual tracking
+    private ScheduledExecutorService motionGestureScheduler ;
+    // Runnable for visual tracking
+    Runnable motionGestureRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                //process
+                gestureMotionDetect.recognize(getLastImg());
+                // notify as last cv method called to display result
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    };
+
 
     @Override
     public void onPause() {
@@ -531,6 +552,21 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 gestureScheduler = Executors.newScheduledThreadPool(1);
                 // 40ms period to grab a frame at 25fps
                 gestureScheduler.scheduleWithFixedDelay(gestureRunnable, 0, 35, TimeUnit.MILLISECONDS);
+            }
+            catch (Exception e)
+            {
+                Log.e(TAG, "ERROR stopping gesture recognition: " + Log.getStackTraceString(e));
+            }
+        } //end if scheduler ready
+
+        // start scheduled task
+        if(motionGestureScheduler==null || motionGestureScheduler.isShutdown())
+        {
+            try{
+                //init thread
+                motionGestureScheduler = Executors.newScheduledThreadPool(1);
+                // 40ms period to grab a frame at 25fps
+                motionGestureScheduler.scheduleWithFixedDelay(motionGestureRunnable, 0, 35, TimeUnit.MILLISECONDS);
             }
             catch (Exception e)
             {
