@@ -112,6 +112,9 @@ public class GestureMotionDetect {
             /***/if(step_num==0) { // Wait for go
                     //wait until check box
                     if (go) {
+                        // reset
+                        //increment index
+                        imNum = 0;
                         // go to next step
                         step_num =100;
                     }

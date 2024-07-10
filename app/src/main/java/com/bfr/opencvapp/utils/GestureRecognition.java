@@ -358,7 +358,7 @@ public class GestureRecognition {
 
             /***/if(step_num==120) { // motion result
 
-                Log.w(name, "Measured opt flow="+ optFlow);
+                Log.w(name, "Measured opt flow="+ gestureMotionDetect.optFlow);
 
                 // if seeing palm
                 if (handPose.isFront()) {

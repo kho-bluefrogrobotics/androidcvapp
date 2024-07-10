@@ -29,7 +29,7 @@ public class MotionDetector {
     Mat flow;
     Mat magnitude, angle , magnNorm;
     // resize for better performances
-    Size mSize = new Size(320, 140);
+    Size mSize = new Size(480, 320);
 
     // movement detection
     // camera is processing opticalFlow
@@ -90,8 +90,8 @@ public class MotionDetector {
             // resize for better performances
             Imgproc.resize(currFrame, currFrame, mSize);
 
-            Imgcodecs.imwrite("/sdcard/Download/" + System.currentTimeMillis()+"_prev.jpg", prevFrame);
-            Imgcodecs.imwrite("/sdcard/Download/" + System.currentTimeMillis()+"_curr.jpg", currFrame);
+//            Imgcodecs.imwrite("/sdcard/Download/" + System.currentTimeMillis()+"_prev.jpg", prevFrame);
+//            Imgcodecs.imwrite("/sdcard/Download/" + System.currentTimeMillis()+"_curr.jpg", currFrame);
 
             //flow
             flow = new Mat(currFrame.size(), CvType.CV_32FC2);
