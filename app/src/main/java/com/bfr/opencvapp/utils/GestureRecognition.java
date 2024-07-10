@@ -55,9 +55,6 @@ public class GestureRecognition {
     // buffer to store the sequence of frame for optical flow analysis
     ArrayList<Mat> matArray = new ArrayList<Mat>();
 
-    // input frame; reminder the arguements are passed as reference in java
-    Mat frame;
-
 
 
     public boolean isStarted = false;
@@ -71,7 +68,13 @@ public class GestureRecognition {
     // coords of the detected hand bbox
     int left, right, top, bottom;
     // margin to crop the hand in pixel
-    int MARGIN = 10;
+    int MARGIN = 20;
+    Rect handROI;
+    // black background
+    Mat black;
+    Mat roiInBlack; // subimage at hand roi in black image
+    Mat handMat; // subimage at hand roi in original image containing the crop of the hand
+
 
     //Thres for minimum size of hand to analyse, in % of the image area
     // Suggestion 0.2 for narrow-angle camera, 0.15 for wide-angle camera
@@ -108,8 +111,9 @@ public class GestureRecognition {
     }
 
 
-    public void recognize(Mat frame)
+    public void recognize(Mat input)
     {
+        Mat frame = input.clone();
         rows = frame.rows();
         cols = frame.cols();
 
@@ -161,6 +165,7 @@ public class GestureRecognition {
                                 //next step
                                 step_num =10;
 //                                step_num =6;
+                                Log.i(name, "current step: " + step_num + "  ");
                                 // interrupt
                                 break;
                             } //end if obj big enough
@@ -179,37 +184,37 @@ public class GestureRecognition {
             }
 
 
-            if(step_num == 6)
-            {
-                Log.d(name, "Hand pose Estimation");
-
-                left = Math.max(1, (int) (detections.get(handID).left * cols )- MARGIN);
-                top = Math.max(1, (int) (detections.get(handID).top * rows) -MARGIN);
-                right = Math.min(frame.cols() - 1, (int) (detections.get(handID).right * cols) + MARGIN);
-                bottom = Math.min(frame.rows() - 1, (int) (detections.get(handID).bottom * rows) +MARGIN);
-
-                //**** Crop hand image
-                // ROI of hand
-                Rect handROI = new Rect( left, top, (right-left), (bottom-top));
-                // black background
-                Mat black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
-                Mat roiInBlack = black.submat(handROI); // subimage at hand roi in black image
-                Mat handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
-                // copy hand crop to black background
-                handMat.copyTo(roiInBlack);
-
-                frame = black.clone();
-
-                // to keep to debug
-                // displaymat = black.clone();
-
-                //hand pose estimation
-                handPose = handPoseEstimator.recognizeImage(frame);
-                if(handPose!=null)
-                handPose.handOrientation();
-                step_num = 5;
-                return;
-            }
+//            if(step_num == 6)
+//            {
+//                Log.d(name, "Hand pose Estimation");
+//
+//                left = Math.max(1, (int) (detections.get(handID).left * cols )- MARGIN);
+//                top = Math.max(1, (int) (detections.get(handID).top * rows) -MARGIN);
+//                right = Math.min(frame.cols() - 1, (int) (detections.get(handID).right * cols) + MARGIN);
+//                bottom = Math.min(frame.rows() - 1, (int) (detections.get(handID).bottom * rows) +MARGIN);
+//
+//                //**** Crop hand image
+//                // ROI of hand
+//                handROI = new Rect( left, top, (right-left), (bottom-top));
+//                // black background
+//                black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
+//                roiInBlack = black.submat(handROI); // subimage at hand roi in black image
+//                handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
+//                // copy hand crop to black background
+//                handMat.copyTo(roiInBlack);
+//
+//                frame = black.clone();
+//
+//                // to keep to debug
+//                // displaymat = black.clone();
+//
+//                //hand pose estimation
+//                handPose = handPoseEstimator.recognizeImage(frame);
+//                if(handPose!=null)
+//                handPose.handOrientation();
+//                step_num = 5;
+//                return;
+//            }
 
             /***/if(step_num==10) { // Pose estimation
 
@@ -217,21 +222,25 @@ public class GestureRecognition {
                     Log.d(name, "Hand pose Estimation");
 
                     left = Math.max(1, (int) (detections.get(handID).left * cols )- MARGIN);
-                    top = Math.max(1, (int) (detections.get(handID).top * rows) -MARGIN);
+//                    top = Math.max(1, (int) (detections.get(handID).top * rows) -MARGIN);
+                    top = 1;
                     right = Math.min(frame.cols() - 1, (int) (detections.get(handID).right * cols) + MARGIN);
-                    bottom = Math.min(frame.rows() - 1, (int) (detections.get(handID).bottom * rows) +MARGIN);
+//                    bottom = Math.min(frame.rows() - 1, (int) (detections.get(handID).bottom * rows) +MARGIN);
+                    bottom = rows;
 
                     //**** Crop hand image
                     // ROI of hand
-                    Rect handROI = new Rect( left, top, (right-left), (bottom-top));
+                    handROI = new Rect( left, top, (right-left), (bottom-top));
                     // black background
-                    Mat black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
-                    Mat roiInBlack = black.submat(handROI); // subimage at hand roi in black image
-                    Mat handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
+                    black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
+                    roiInBlack = black.submat(handROI); // subimage at hand roi in black image
+                    handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
                     // copy hand crop to black background
                     handMat.copyTo(roiInBlack);
 
                     frame = black.clone();
+
+                    Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2RGB);
 
                     // to keep to debug
                     // displaymat = black.clone();
@@ -239,11 +248,15 @@ public class GestureRecognition {
                     //hand pose estimation
                     handPose = handPoseEstimator.recognizeImage(frame);
 
+                    if (handPose == null)
+                    {
+                        Log.d(name, "NO HAND for POSE ESTIMATION");
+                        debugSaveImg("NOHAND", frame);
+                        step_num = 5;
+                        return;
+                    }
                     Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
                             new Scalar(0, 255, 0), 3);
-
-
-
 
 
                         int x, y;
@@ -315,6 +328,7 @@ public class GestureRecognition {
                         gesture.orientation = 0;
                         gestureRsp.onSuccess(gesture);
                         Log.d(name, "STOP");
+                        debugSaveImg(result, frame);
                         step_num = 5; // wait for no hands in the image
                     } else {
                         Log.d(name, "Else back -> 5 : ");
@@ -328,6 +342,19 @@ public class GestureRecognition {
 
             /***/if(step_num==100) { // Open hand start record video for optical flow
                 Log.d(name, "Recording for optical flow : ");
+
+                //**** Crop hand image
+                // ROI of hand
+//                handROI = new Rect( left, top, (right-left), (bottom-top));
+//                // black background
+//                black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
+//                roiInBlack = black.submat(handROI); // subimage at hand roi in black image
+                handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
+                // copy hand crop to black background
+                handMat.copyTo(roiInBlack);
+
+
+                frame = black.clone();
 
                 //add at the end if needed
                 if (matArray.size() <= imNum) {
@@ -508,6 +535,8 @@ public class GestureRecognition {
                     gesture.orientation = 0;
                     gestureRsp.onSuccess(gesture);
 
+                    debugSaveImg(result, frame);
+
                     step_num = 5;
                 } else {
                     Log.d(name, "NEGATIVE");
@@ -516,6 +545,8 @@ public class GestureRecognition {
                     gesture.result = result;
                     gesture.orientation = 0;
                     gestureRsp.onSuccess(gesture);
+
+                    debugSaveImg(result, frame);
 
                     step_num = 5;
                 }
@@ -532,6 +563,8 @@ public class GestureRecognition {
                 gesture.orientation = 0;
                 gestureRsp.onSuccess(gesture);
 
+                debugSaveImg(result, frame);
+
                     step_num = 5;
 
                 return;
@@ -546,6 +579,8 @@ public class GestureRecognition {
                 gesture.orientation = 0;
                 gestureRsp.onSuccess(gesture);
 
+                debugSaveImg(result, frame);
+
                 step_num = 5;
 
                 return;
@@ -558,6 +593,8 @@ public class GestureRecognition {
                 gesture.result = result;
                 gesture.orientation = 0;
                 gestureRsp.onSuccess(gesture);
+
+                debugSaveImg(result, frame);
 
                 step_num = 5;
 
@@ -572,6 +609,8 @@ public class GestureRecognition {
                 gesture.orientation = 0;
                 gestureRsp.onSuccess(gesture);
 
+                debugSaveImg(result, frame);
+
                 step_num = 5;
 
                 return;
@@ -585,6 +624,8 @@ public class GestureRecognition {
                 gesture.result = result;
                 gesture.orientation = fingerAngle;
                 gestureRsp.onSuccess(gesture);
+
+                debugSaveImg(result, frame);
 
                 step_num = 5;
 
@@ -726,6 +767,7 @@ public class GestureRecognition {
 
     void debugRecord(String folder)
     {
+
         Date date = new Date();
         SimpleDateFormat formatter = new SimpleDateFormat("yyMMddHHmmssSSS");
         String strDate= formatter.format(date);
@@ -741,13 +783,27 @@ public class GestureRecognition {
 //            Log.d(name, "Saving image " + i);
             Imgcodecs.imwrite("/sdcard/Download/"+ folder + "/" + strDate+"/" + String.format("%02d", i) + "_gestRecog.jpg", matArray.get(i));
         }
+
     } // end record debug
 
 
-    public interface EventListener {
+    void debugSaveImg(String folder, Mat img)
+    {
 
-        String onTrigger();
-    }
+        Date date = new Date();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyMMddHHmmssSSS");
+        String strDate= formatter.format(date);
+        // create folder if doesn't exist
+        File saveDir = new File("", "/sdcard/Download/"+ folder + "/" + strDate);
+        if(!saveDir.exists()) {
+            // create folder
+            saveDir.mkdirs();
+        }
+            Imgcodecs.imwrite("/sdcard/Download/"+ folder + "/" + strDate+"/_gestRecog.jpg", img);
+
+
+    } // end record debug
+
 
 
     }

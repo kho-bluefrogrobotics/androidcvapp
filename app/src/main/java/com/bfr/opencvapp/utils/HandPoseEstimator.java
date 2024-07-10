@@ -20,6 +20,8 @@ import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Size;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
 import org.tensorflow.lite.HexagonDelegate;
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.CompatibilityList;
@@ -27,6 +29,8 @@ import org.tensorflow.lite.gpu.GpuDelegate;
 import org.tensorflow.lite.nnapi.NnApiDelegate;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -106,12 +110,12 @@ public class HandPoseEstimator {
                 delegateOptions.setQuantizedModelsAllowed(false);
                 GpuDelegate gpuDelegate = new GpuDelegate(delegateOptions);
                 options.addDelegate(gpuDelegate);
-                Log.i(TAG, "Multidetector Interpreter on GPU");
+                Log.i(TAG, "Handpose Interpreter on GPU");
             }
             else{
                 options.setUseXNNPACK(true);
                 WITH_NNAPI = false;
-                Log.i(TAG, "Multidetector Interpreter on CPU");
+                Log.i(TAG, "Handpose Interpreter on CPU");
             }
 
             if (WITH_NNAPI) {
@@ -138,7 +142,13 @@ public class HandPoseEstimator {
 
             HandLandmarker.HandLandmarkerOptions.Builder handOptionsBuilder = HandLandmarker.HandLandmarkerOptions.builder()
                     .setBaseOptions(baseOptions)
+                    .setNumHands(1)
+                    .setMinHandDetectionConfidence(0.2f)
+                    .setMinTrackingConfidence(0.01f)
+                    .setMinHandPresenceConfidence(0.01f)
                     .setRunningMode(RunningMode.IMAGE);
+
+
 
             HandLandmarker.HandLandmarkerOptions handOptions  = handOptionsBuilder.build();
 
@@ -147,7 +157,7 @@ public class HandPoseEstimator {
         }
         catch (Exception e)
         {
-            Log.e(TAG, "Error Creating the MultiDetector " + Log.getStackTraceString(e) );
+            Log.e(TAG, "Error Creating the Handpose " + Log.getStackTraceString(e) );
         }
 
     }
@@ -199,12 +209,19 @@ public class HandPoseEstimator {
         HandPose handPose = new HandPose();
 
         //convert to bitmap
-        Mat resizedFrame = new Mat();
+        Mat input = frame.clone();
 //        Imgproc.resize(frame, resizedFrame, new Size(320,320));
+        Imgproc.cvtColor(input, input, Imgproc.COLOR_RGB2BGR);
         Bitmap bitmapImagefull = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(frame, bitmapImagefull);
+        Utils.matToBitmap(input, bitmapImagefull);
 
-
+        try (FileOutputStream out = new FileOutputStream("/sdcard/Download/111.png")) {
+            bitmapImagefull.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+            // PNG is a lossless format, the compression factor (100) is ignored
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Imgcodecs.imwrite("/sdcard/Download/111.jpg", input);
         MPImage mpImage = new BitmapImageBuilder(bitmapImagefull).build() ;
 
         HandLandmarkerResult handLandmarkerResult =handLandmarker.detect(mpImage);

@@ -48,8 +48,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
@@ -362,12 +365,47 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
 //        personTrackerVIT.startTorsoHeightEstimation();
 
+
         // init face detector
-        multiDetector = new com.bfr.opencvapp.utils.MultiDetector(context);
+        Runnable initMultiDetector = new Runnable() {
+            @Override
+            public void run() {
+                multiDetector = new com.bfr.opencvapp.utils.MultiDetector(context);
+            }
+        };
 
-        handPoseEstimator = new HandPoseEstimator(context);
+        // init Handpose
+        Runnable initHandPose = new Runnable() {
+            @Override
+            public void run() {
+                handPoseEstimator = new HandPoseEstimator(context);
+            }
+        };
 
-        motionDetector = new MotionDetector();
+        Runnable initMotion = new Runnable() {
+            @Override
+            public void run() {
+                motionDetector = new MotionDetector();
+            }
+        };
+
+        //
+        ExecutorService executorService =
+                new ThreadPoolExecutor(1, 3, 0L, TimeUnit.MILLISECONDS,
+                        new LinkedBlockingQueue<Runnable>());
+
+        executorService.submit(initMultiDetector);
+        executorService.submit(initHandPose);
+        executorService.submit(initMotion);
+
+        //wait for end of tasks
+        executorService.shutdown();
+        try {
+            executorService.awaitTermination(50000, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         gestureRecognition = new GestureRecognition("GestureRecog", multiDetector, handPoseEstimator, motionDetector);
 
         gestureRecognition.registerGestureRecog(new IGestureRsp() {
@@ -492,7 +530,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 //init thread
                 gestureScheduler = Executors.newScheduledThreadPool(1);
                 // 40ms period to grab a frame at 25fps
-                gestureScheduler.scheduleWithFixedDelay(gestureRunnable, 0, 40, TimeUnit.MILLISECONDS);
+                gestureScheduler.scheduleWithFixedDelay(gestureRunnable, 0, 35, TimeUnit.MILLISECONDS);
             }
             catch (Exception e)
             {
@@ -544,14 +582,15 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //                    new Point(150, 150),2, 3,
 //                    new Scalar(0, 255, 0), 5);
 
-            Imgproc.putText(frame, resultGesture,
+            Mat display = frame.clone();
+            Imgproc.putText(display, resultGesture,
                     new Point(150, 150),2, 3,
                     new Scalar(0, 0, 0), 10);
-            Imgproc.putText(frame, resultGesture,
+            Imgproc.putText(display, resultGesture,
                     new Point(150, 150),2, 3,
                     new Scalar(0, 255, 0), 5);
 
-            return frame;
+            return display;
         }
         catch (Exception e)
         {

@@ -32,6 +32,10 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /** Hand Face Human object detector based on a Mobilenetv2-SSD network*/
 public class MultiDetector {
@@ -84,46 +88,75 @@ public class MultiDetector {
 
         try{
 
-            Interpreter.Options options = (new Interpreter.Options());
-            CompatibilityList compatList = new CompatibilityList();
-
-            options.setNumThreads(NUM_THREADS);
-
-            if (WITH_GPU) {
-                GpuDelegate.Options delegateOptions = compatList.getBestOptionsForThisDevice();
-                delegateOptions.setQuantizedModelsAllowed(false);
-                GpuDelegate gpuDelegate = new GpuDelegate(delegateOptions);
-                options.addDelegate(gpuDelegate);
-                Log.i(TAG, "Multidetector Interpreter on GPU");
-            }
-            else if (WITH_DSP){
-                hexagonDelegate = new HexagonDelegate(context);
-                options.addDelegate(hexagonDelegate);
-                Log.i(TAG, "Multidetector Interpreter on HEXAGONE");
-            }
-            else{
-                options.setUseXNNPACK(true);
-                WITH_NNAPI = false;
-                Log.i(TAG, "Multidetector Interpreter on CPU");
-            }
-
-            if (WITH_NNAPI) {
-                NnApiDelegate nnApiDelegate = null;
-                // Initialize interpreter with NNAPI delegate for Android Pie or above
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    nnApiDelegate = new NnApiDelegate();
-                    options.addDelegate(nnApiDelegate);
-                    options.setUseNNAPI(true);
+            Runnable initTfMove = new Runnable() {
+                @Override
+                public void run() {
+                    //movenet model to doublecheck human silouhette
+                    movenetDetector = new TfLiteMovenet(context);
                 }
+            };
+
+            Runnable initTflite = new Runnable() {
+                @Override
+                public void run() {
+                    Interpreter.Options options = (new Interpreter.Options());
+                    CompatibilityList compatList = new CompatibilityList();
+
+                    options.setNumThreads(NUM_THREADS);
+
+                    if (WITH_GPU) {
+                        GpuDelegate.Options delegateOptions = compatList.getBestOptionsForThisDevice();
+                        delegateOptions.setQuantizedModelsAllowed(false);
+                        GpuDelegate gpuDelegate = new GpuDelegate(delegateOptions);
+                        options.addDelegate(gpuDelegate);
+                        Log.i(TAG, "Multidetector Interpreter on GPU");
+                    }
+                    else if (WITH_DSP){
+                        hexagonDelegate = new HexagonDelegate(context);
+                        options.addDelegate(hexagonDelegate);
+                        Log.i(TAG, "Multidetector Interpreter on HEXAGONE");
+                    }
+                    else{
+                        options.setUseXNNPACK(true);
+                        WITH_NNAPI = false;
+                        Log.i(TAG, "Multidetector Interpreter on CPU");
+                    }
+
+                    if (WITH_NNAPI) {
+                        NnApiDelegate nnApiDelegate = null;
+                        // Initialize interpreter with NNAPI delegate for Android Pie or above
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            nnApiDelegate = new NnApiDelegate();
+                            options.addDelegate(nnApiDelegate);
+                            options.setUseNNAPI(true);
+                        }
+                    }
+
+                    //Init interpreter
+                    File tfliteModel = new File(MODELS_DIR +MODEL_NAME);
+                    tfLite = new Interpreter(tfliteModel, options );
+
+                }
+            };
+
+            //
+            ExecutorService executorService =
+                    new ThreadPoolExecutor(1, 3, 0L, TimeUnit.MILLISECONDS,
+                            new LinkedBlockingQueue<Runnable>());
+
+            executorService.submit(initTfMove);
+            executorService.submit(initTflite);
+
+            //wait for end of tasks
+            executorService.shutdown();
+            try {
+                executorService.awaitTermination(50000, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
 
-            //Init interpreter
-            File tfliteModel = new File(MODELS_DIR +MODEL_NAME);
-            tfLite = new Interpreter(tfliteModel, options );
 
 
-            //movenet model to doublecheck human silouhette
-            movenetDetector = new TfLiteMovenet(context);
         }
         catch (Exception e)
         {
