@@ -89,8 +89,10 @@ public class GestureRecognition {
 //    boolean motion = false;
     float optFlow = 0.0f;
     // thres for optical flow
-    float THRES_OPT_FLOW_COUCOU = 15.f;
-    float THRES_OPT_FLOW_COME_HERE = 10.0f;
+//    float THRES_OPT_FLOW_COUCOU = 15.f;
+    float THRES_OPT_FLOW_COUCOU = 10.0f;
+//    float THRES_OPT_FLOW_COME_HERE = 10.0f;
+    float THRES_OPT_FLOW_COME_HERE = 4.0f;
     public String result = "";
 
     //

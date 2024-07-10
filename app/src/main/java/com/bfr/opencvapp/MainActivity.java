@@ -47,6 +47,10 @@ import java.io.OutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddyActivity;
@@ -380,6 +384,9 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
     } // End onCreate
 
+    // List of captured images in Mat format (we just keep 1)
+    List<Mat> matList = new ArrayList<Mat>();
+
     String resultGesture = "";
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
@@ -399,6 +406,22 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         }
     };
 
+    // Scheduler for visual tracking
+    private ScheduledExecutorService gestureScheduler ;
+    // Runnable for visual tracking
+    Runnable gestureRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                //process
+                gestureRecognition.recognize(getLastImg());
+                // notify as last cv method called to display result
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    };
 
     @Override
     public void onPause() {
@@ -462,8 +485,30 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
 //        started = true;
 
+        // start scheduled task
+        if(gestureScheduler==null || gestureScheduler.isShutdown())
+        {
+            try{
+                //init thread
+                gestureScheduler = Executors.newScheduledThreadPool(1);
+                // 40ms period to grab a frame at 25fps
+                gestureScheduler.scheduleWithFixedDelay(gestureRunnable, 0, 40, TimeUnit.MILLISECONDS);
+            }
+            catch (Exception e)
+            {
+                Log.e(TAG, "ERROR stopping gesture recognition: " + Log.getStackTraceString(e));
+            }
+        } //end if scheduler ready
+
     }
 
+   private Mat getLastImg()
+    {
+        synchronized (matList)
+        {
+            return matList.get(matList.size()-1);
+        }
+    }
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
@@ -476,10 +521,21 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         if (recording)
             videoWriter.write(personTrackerVIT.displayMat);
 
+
+        synchronized (matList)
+        {
+            // convert to rgb
+            // add image in buffer list
+            matList.add(frame);
+            //remove oldest entry
+            if(matList.size()>1)
+                matList.remove(0);
+        }
+
         try
         {
 
-            gestureRecognition.recognize(frame);
+//            gestureRecognition.recognize(frame);
 
 //            Imgproc.putText(frame, gestureRecognition.result,
 //                    new Point(150, 150),2, 3,

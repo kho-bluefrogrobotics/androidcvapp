@@ -25,7 +25,7 @@
             android:layout_height="match_parent"
             android:alpha="0.1"
             android:visibility="visible"
-            opencv:camera_id="1"
+            opencv:camera_id="0"
             opencv:show_fps="false" />
         <!--  Wide angle camera : id=0 ; Narrow angle camera: id = 1             android:background="@color/white"   -->
 
