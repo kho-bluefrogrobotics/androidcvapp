@@ -143,7 +143,7 @@ public class HandPoseEstimator {
             HandLandmarker.HandLandmarkerOptions.Builder handOptionsBuilder = HandLandmarker.HandLandmarkerOptions.builder()
                     .setBaseOptions(baseOptions)
                     .setNumHands(1)
-                    .setMinHandDetectionConfidence(0.2f)
+                    .setMinHandDetectionConfidence(0.5f)
                     .setMinTrackingConfidence(0.01f)
                     .setMinHandPresenceConfidence(0.01f)
                     .setRunningMode(RunningMode.IMAGE);
