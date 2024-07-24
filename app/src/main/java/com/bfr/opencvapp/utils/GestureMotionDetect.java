@@ -179,6 +179,7 @@ public class GestureMotionDetect {
                 motionDetector.frameCount = 0;
                 optFlow = 0.0f;
 
+
                 // Analyse from n-th frame to waith for hand stabilization
                 for (int i = 6; i < NUMOFFRAMES; i++) {
 //                        Mat img = Imgcodecs.imread("/sdcard/Download/" + String.format("%02d", i)  + "_gestRecog.jpg");
@@ -190,11 +191,14 @@ public class GestureMotionDetect {
                     //record if motion or not at this frame
 //                    motion = motion || motionDetector.detectedMotion;
 
-                    if(motionDetector.motionOptFlow > optFlow)
-                        optFlow = motionDetector.motionOptFlow;
+//                    if(motionDetector.motionOptFlow > optFlow)
+//                        optFlow = motionDetector.motionOptFlow;
+
+                    //sum
+                    optFlow += motionDetector.motionOptFlow;
                 }
 
-
+                optFlow = optFlow / NUMOFFRAMES;
 
                 if (optFlow > THRES_OPT_FLOW_COUCOU) {
                     Log.d(name, "Motion detected");

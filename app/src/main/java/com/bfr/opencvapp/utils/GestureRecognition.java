@@ -93,7 +93,8 @@ public class GestureRecognition {
     float optFlow = 0.0f;
     // thres for optical flow
 //    float THRES_OPT_FLOW_COUCOU = 15.f;
-    float THRES_OPT_FLOW_COUCOU = 30.0f;
+    float THRES_OPT_FLOW_COUCOU = 35.0f;
+    float THRES_PROPORTIONAL_OPT_FLOW_COUCOU = 0.015f;
 //    float THRES_OPT_FLOW_COME_HERE = 10.0f;
     float THRES_OPT_FLOW_COME_HERE = 4.0f;
     public String result = "";
@@ -166,16 +167,18 @@ public class GestureRecognition {
                                 handID = h;
 
 
-                                left = Math.max(1, (int) (detections.get(handID).left * cols )- MARGIN);
-//                    top = Math.max(1, (int) (detections.get(handID).top * rows) -MARGIN);
-                                top = 1;
-                                right = Math.min(frame.cols() - 1, (int) (detections.get(handID).right * cols) + MARGIN);
-//                    bottom = Math.min(frame.rows() - 1, (int) (detections.get(handID).bottom * rows) +MARGIN);
-                                bottom = rows;
+                                left =  (int) (detections.get(handID).left * cols );
+                                int leftWMargin = Math.max(1, (int) (detections.get(handID).left * cols )- MARGIN);
+                    top = Math.max(1, (int) (detections.get(handID).top * rows) -MARGIN);
+//                                top = 1;
+                                right = (int) (detections.get(handID).right * cols);
+                                int rightWMargin = Math.min(frame.cols() - 1, right + MARGIN);
+                    bottom = Math.min(frame.rows() - 1, (int) (detections.get(handID).bottom * rows) +MARGIN);
+//                                bottom = rows;
 
                                 //**** Crop hand image
                                 // ROI of hand
-                                handROI = new Rect( left, top, (right-left), (bottom-top));
+                                handROI = new Rect( leftWMargin, 1, (rightWMargin-leftWMargin), (rows-1));
                                 gestureMotionDetect.handROI =handROI;
                                 // start motion detection
                                 Log.w(name, "Req for motion detection ");
@@ -359,13 +362,19 @@ public class GestureRecognition {
 
             /***/if(step_num==120) { // motion result
 
-                Log.w(name, "Measured opt flow="+ gestureMotionDetect.optFlow);
+                int widthcrop = right-left;
+                int heightcrop = bottom - top;
+                int area = widthcrop*heightcrop;
+                float proportion = gestureMotionDetect.optFlow/(float)widthcrop;
+
 
                 // if seeing palm
                 if (handPose.isFront()) {
-                    if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COUCOU)
+//                    if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COUCOU)
+                    if (proportion > THRES_PROPORTIONAL_OPT_FLOW_COUCOU)
                     {
                         Log.d(name, "COUCOU");
+                        Log.w(name, "COUCOU Measured opt flow="+ gestureMotionDetect.optFlow + "length=" + widthcrop+ " proportion=" + proportion);
                         result = "COUCOU";
                         gesture.result = result;
                         gesture.orientation = 0;
@@ -377,6 +386,7 @@ public class GestureRecognition {
                     {
                         result = "STOP";
                         Log.d(name, "STOP");
+                        Log.w(name, "STOP Measured opt flow="+ gestureMotionDetect.optFlow +  "length=" + widthcrop+ " proportion=" + proportion);
                         gesture.result = result;
                         gesture.orientation = 0;
                         gestureRsp.onSuccess(gesture);
