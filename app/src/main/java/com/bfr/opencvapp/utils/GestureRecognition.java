@@ -93,7 +93,7 @@ public class GestureRecognition {
     float optFlow = 0.0f;
     // thres for optical flow
 //    float THRES_OPT_FLOW_COUCOU = 15.f;
-    float THRES_OPT_FLOW_COUCOU = 10.0f;
+    float THRES_OPT_FLOW_COUCOU = 30.0f;
 //    float THRES_OPT_FLOW_COME_HERE = 10.0f;
     float THRES_OPT_FLOW_COME_HERE = 4.0f;
     public String result = "";
@@ -114,6 +114,8 @@ public class GestureRecognition {
     public void recognize(Mat input)
     {
         Mat frame = input.clone();
+
+        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2RGB);
         rows = frame.rows();
         cols = frame.cols();
 
@@ -247,7 +249,6 @@ public class GestureRecognition {
 
                     frame = black.clone();
 
-                    Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2RGB);
 
                     // to keep to debug
                     // displaymat = black.clone();
@@ -574,16 +575,26 @@ public class GestureRecognition {
 
             /***/if(step_num==900) { //wait for no hands in region of analysis
 
+                // black background
+                black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
+                roiInBlack = black.submat(handROI); // subimage at hand roi in black image
+                handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
+                // copy hand crop to black background
+                handMat.copyTo(roiInBlack);
+
+                frame = black.clone();
                 handPose = handPoseEstimator.recognizeImage(frame);
 
                 // No more detected hand
                 if (handPose == null) {
+                    Log.d(name, "No more hand");
+                    Imgcodecs.imwrite("/sdcard/Download/nomorehand"+ System.currentTimeMillis()+".jpg", frame);
                     step_num = 5;
                     return;
                 }
 
                 //if previously detected a COME HERE
-                if(result.toUpperCase().contains("COME"))
+                if(gesture.result.toUpperCase().contains("COME"))
                 {
                     //reset if hand not open
                     if ( !handPose.isOpen(INDEX)
@@ -604,7 +615,7 @@ public class GestureRecognition {
                     } //end if hand changed
 
                 }
-                else if(result.toUpperCase().contains("AWAY")) {
+                else if(gesture.result.toUpperCase().contains("AWAY")) {
 
                     //reset if hand not open
                     if ( !handPose.isOpen(INDEX)
@@ -618,7 +629,7 @@ public class GestureRecognition {
                     } //end if hand changed
 
                 }
-                else if(result.toUpperCase().contains("COUCOU")) {
+                else if(gesture.result.toUpperCase().contains("COUCOU")) {
                     //reset if hand not open
                     if (!handPose.isOpen(INDEX)
                             || !handPose.isOpen(MIDDLE)
@@ -637,7 +648,7 @@ public class GestureRecognition {
 
                     } //end if hand changed
                 }
-                else if(result.toUpperCase().contains("STOP")) {
+                else if(gesture.result.toUpperCase().contains("STOP")) {
                     //reset if hand not open
                     if (!handPose.isOpen(INDEX)
                             || !handPose.isOpen(MIDDLE)
@@ -677,6 +688,7 @@ public class GestureRecognition {
 
                 }
                 else{
+                    Log.d(name, "Nothing recognized ? -> reset to 5");
                     // reset
                     step_num = 5;
                     return;
@@ -707,6 +719,7 @@ public class GestureRecognition {
 
     void debugRecord(String folder)
     {
+        ArrayList<Mat> matArray = GestureMotionDetect.matArray;
 
         Date date = new Date();
         SimpleDateFormat formatter = new SimpleDateFormat("yyMMddHHmmssSSS");

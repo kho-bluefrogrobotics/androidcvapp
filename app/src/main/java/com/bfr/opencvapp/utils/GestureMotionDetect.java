@@ -32,7 +32,7 @@ public class GestureMotionDetect {
     // number of frames for optical flow
     final int NUMOFFRAMES= 10;
     // buffer to store the sequence of frame for optical flow analysis
-    ArrayList<Mat> matArray = new ArrayList<Mat>();
+    public static ArrayList<Mat> matArray = new ArrayList<Mat>();
 
 
 
@@ -72,7 +72,7 @@ public class GestureMotionDetect {
     public float optFlow = 0.0f;
     // thres for optical flow
 //    float THRES_OPT_FLOW_COUCOU = 15.f;
-    float THRES_OPT_FLOW_COUCOU = 10.0f;
+    float THRES_OPT_FLOW_COUCOU = 30.0f;
 //    float THRES_OPT_FLOW_COME_HERE = 10.0f;
     float THRES_OPT_FLOW_COME_HERE = 4.0f;
     public String result = "";

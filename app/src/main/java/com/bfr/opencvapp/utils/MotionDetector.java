@@ -121,7 +121,8 @@ public class MotionDetector {
             Imgproc.cvtColor(hsv8, bgr, Imgproc.COLOR_HSV2BGR);
 
             Log.d(TAG, "Farneback optical flow Max = " + Core.minMaxLoc(magnitude).maxVal
-                    + " at " + Core.minMaxLoc(magnitude).maxLoc );
+                    + " at " + Core.minMaxLoc(magnitude).maxLoc
+            + "\n angle =" + Core.minMaxLoc(angle).maxVal);
             // assign values
             motionOptFlow = (float) Core.minMaxLoc(magnitude).maxVal;
             // relative position in the image
