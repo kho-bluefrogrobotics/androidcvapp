@@ -215,13 +215,13 @@ public class HandPoseEstimator {
         Bitmap bitmapImagefull = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(input, bitmapImagefull);
 
-        try (FileOutputStream out = new FileOutputStream("/sdcard/Download/111.png")) {
-            bitmapImagefull.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
-            // PNG is a lossless format, the compression factor (100) is ignored
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        Imgcodecs.imwrite("/sdcard/Download/111.jpg", input);
+//        try (FileOutputStream out = new FileOutputStream("/sdcard/Download/111.png")) {
+//            bitmapImagefull.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+//            // PNG is a lossless format, the compression factor (100) is ignored
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        Imgcodecs.imwrite("/sdcard/Download/111.jpg", input);
         MPImage mpImage = new BitmapImageBuilder(bitmapImagefull).build() ;
 
         HandLandmarkerResult handLandmarkerResult =handLandmarker.detect(mpImage);

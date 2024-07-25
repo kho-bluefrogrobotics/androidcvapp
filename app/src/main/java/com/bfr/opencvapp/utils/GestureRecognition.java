@@ -365,16 +365,18 @@ public class GestureRecognition {
                 int widthcrop = right-left;
                 int heightcrop = bottom - top;
                 int area = widthcrop*heightcrop;
-                float proportion = gestureMotionDetect.optFlow/(float)widthcrop;
+                float proportionh = gestureMotionDetect.optFlow/(float)widthcrop;
+                float proportionv = gestureMotionDetect.optFlow/(float)heightcrop;
 
 
                 // if seeing palm
                 if (handPose.isFront()) {
 //                    if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COUCOU)
-                    if (proportion > THRES_PROPORTIONAL_OPT_FLOW_COUCOU)
+                    if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU)
                     {
                         Log.d(name, "COUCOU");
-                        Log.w(name, "COUCOU Measured opt flow="+ gestureMotionDetect.optFlow + "length=" + widthcrop+ " proportion=" + proportion);
+                        Log.w(name, "COUCOU Measured opt flow="+ gestureMotionDetect.optFlow + "length=" + widthcrop+
+                                "\nproportionh=" + proportionh + " proportionv=" + proportionv);
                         result = "COUCOU";
                         gesture.result = result;
                         gesture.orientation = 0;
@@ -386,8 +388,8 @@ public class GestureRecognition {
                     {
                         result = "STOP";
                         Log.d(name, "STOP");
-                        Log.w(name, "STOP Measured opt flow="+ gestureMotionDetect.optFlow +  "length=" + widthcrop+ " proportion=" + proportion);
-                        gesture.result = result;
+                        Log.w(name, "STOP Measured opt flow="+ gestureMotionDetect.optFlow + "length=" + widthcrop+
+                                "\nproportionh=" + proportionh + " proportionv=" + proportionv);gesture.result = result;
                         gesture.orientation = 0;
                         gestureRsp.onSuccess(gesture);
                         BuddySDK.Speech.startSpeaking("STOP");
@@ -400,7 +402,8 @@ public class GestureRecognition {
                 {
                     //fingers upward
                     if( handPose.fingerOrientation(INDEX) >0) {
-                        if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COME_HERE) {
+//                        if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COME_HERE) {
+                        if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU) {
 
                             Log.d(name, "COME HERE");
                             result = "COME HERE";
@@ -432,7 +435,8 @@ public class GestureRecognition {
                     }
                     else // fingers downward
                     {
-                        if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COME_HERE) {
+//                        if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COME_HERE) {
+                        if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU) {
 
                             Log.d(name, "GO AWAY");
                             result = "GO AWAY";
@@ -598,7 +602,7 @@ public class GestureRecognition {
                 // No more detected hand
                 if (handPose == null) {
                     Log.d(name, "No more hand");
-                    Imgcodecs.imwrite("/sdcard/Download/nomorehand"+ System.currentTimeMillis()+".jpg", frame);
+//                    Imgcodecs.imwrite("/sdcard/Download/nomorehand"+ System.currentTimeMillis()+".jpg", frame);
                     step_num = 5;
                     return;
                 }
