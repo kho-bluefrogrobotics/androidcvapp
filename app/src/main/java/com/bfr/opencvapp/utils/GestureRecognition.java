@@ -78,7 +78,7 @@ public class GestureRecognition {
 
     //Thres for minimum size of hand to analyse, in % of the image area
     // Suggestion 0.2 for narrow-angle camera, 0.15 for wide-angle camera
-    float THRES_HAND_AREA = 0.05f ;
+    float THRES_HAND_AREA = 0.02f ;
     // id of the first largest hand visible
     int handID=-1;
 
@@ -368,7 +368,7 @@ public class GestureRecognition {
                 float proportionh = gestureMotionDetect.optFlow/(float)widthcrop;
                 float proportionv = gestureMotionDetect.optFlow/(float)heightcrop;
 
-
+                Log.d(name, "Calculating is front or not" );
                 // if seeing palm
                 if (handPose.isFront()) {
 //                    if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COUCOU)

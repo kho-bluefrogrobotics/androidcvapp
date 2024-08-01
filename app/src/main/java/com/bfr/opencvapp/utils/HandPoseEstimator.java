@@ -40,7 +40,7 @@ import java.util.List;
 /** Hand Face Human object detector based on a Mobilenetv2-SSD network*/
 public class HandPoseEstimator {
 
-    private final String TAG = "HandPose";
+    private final String TAG = "Gesture HandPose";
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
@@ -369,11 +369,13 @@ public class HandPoseEstimator {
 //            Log.w("vecto", "Result =" +  knucleLine[0]+"x"+plamLine[1] +"-"+ plamLine[0]+"x"+knucleLine[1] +"=" +(knucleLine[0]*plamLine[1]-plamLine[0]*knucleLine[1]));
 
             //z component of the cross product, not normalized
+            //the crosproduct represent the orthogonal vector to the knucleline and the vector index-wrist
             int z=(knucleLine[0]*plamLine[1]-plamLine[0]*knucleLine[1]);
 
+            Log.d(TAG, "IsFront: hand=" + handeness.get(0).categoryName() + " z=" + z );
             // if left hand
             if (handeness.get(0).categoryName().toUpperCase().contains("LEFT")){
-                if(z<0)
+                if(z<-7000)
 //                    Log.w("sideH", "LEFT FRONT");
                     this.front = true;
                 else
@@ -381,7 +383,7 @@ public class HandPoseEstimator {
                     this.front = false;
             }
             else{
-                if(z>0)
+                if(z>7000)
 //                    Log.w("sideH", "RIGHT FRONT");
                     this.front = true;
                 else
@@ -426,7 +428,7 @@ public class HandPoseEstimator {
                     return true;
             }
             else // THUMB is an exception :
-            // the open state of the thumb is comaparing  the dist of the tip to the base of the index finger the dist of the first two knuckles
+            // the open state of the thumb is obtained by comparing the dist of the tip to the base of the index finger the dist of the first two knuckles
             {
                 double THRES_DIST_TIP_PHALANX = 0.1;
                 int TIP = 4;
