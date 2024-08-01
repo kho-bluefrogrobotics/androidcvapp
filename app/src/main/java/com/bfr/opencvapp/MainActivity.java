@@ -321,6 +321,7 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             Mat magnitude = new Mat(), angle = new Mat(), magn_norm = new Mat();
             Core.cartToPolar(flow_parts.get(0), flow_parts.get(1), magnitude, angle,true);
             Core.normalize(magnitude, magn_norm,0.0,1.0, Core.NORM_MINMAX);
+//            float factor = (float) ((1.0/360.0)*(180.0/255.0));
             float factor = (float) ((1.0/360.0)*(180.0/255.0));
             Mat new_angle = new Mat();
             Core.multiply(angle, new Scalar(factor), new_angle);
@@ -334,8 +335,63 @@ public class MainActivity extends CameraActivity implements CameraBridgeViewBase
             hsv.convertTo(hsv8, CvType.CV_8U, 255.0);
             Imgproc.cvtColor(hsv8, bgr, Imgproc.COLOR_HSV2BGR);
 
-            Log.i("Franeback", "Max = " + Core.minMaxLoc(magnitude).maxVal
-                    + " at " + Core.minMaxLoc(magnitude).maxLoc );
+            try{
+
+                Point optFlowPos = new Point( Core.minMaxLoc(magnitude).maxLoc.x,  Core.minMaxLoc(magnitude).maxLoc.y);
+
+                int MARGIN = 15;
+                Rect ROI = new Rect(
+                        (int)optFlowPos.x-MARGIN,
+                        (int)optFlowPos.y-MARGIN,
+                        MARGIN,
+                        MARGIN
+                );
+                Log.i("Franeback", "Max = " + Core.minMaxLoc(magnitude).maxVal
+//                        + " at " + Core.minMaxLoc(magnitude).maxLoc
+//                        + " angle="+new_angle.get((int) Core.minMaxLoc(magnitude).maxLoc.x, (int) Core.minMaxLoc(magnitude).maxLoc.y)[0]
+//                        + " angle="+bgr.get((int)optFlowPos.x, (int)optFlowPos.y)[2]
+//                        + " angle="+Core.minMaxLoc(new_angle).maxVal
+                        + " angle="+Core.mean(bgr)
+
+                );
+
+                float meanB = (float) Core.mean(bgr).val[2];
+                float meanG = (float) Core.mean(bgr).val[1];
+                float meanR = (float) Core.mean(bgr).val[0];
+                Imgproc.circle(bgr, optFlowPos, 5, new Scalar(255,0,255), 5);
+                Imgproc.rectangle(bgr, ROI, new Scalar(0,255,0) , 5);
+
+                Imgproc.putText(bgr, String.format(java.util.Locale.US, "%.1f", meanR),
+                        new Point(100, 100),
+                        2, 2, new Scalar(255,255,255), 5);
+                Imgproc.putText(bgr, String.format(java.util.Locale.US, "%.1f", meanR),
+                        new Point(100, 100),
+                        2, 2, new Scalar(0,255,0), 2);
+
+                Imgproc.putText(bgr, String.format(java.util.Locale.US, "%.1f", meanG),
+                        new Point(100, 150),
+                        2, 2, new Scalar(255,255,255), 5);
+                Imgproc.putText(bgr, String.format(java.util.Locale.US, "%.1f", meanG),
+                        new Point(100, 150),
+                        2, 2, new Scalar(0,255,0), 2);
+
+                Imgproc.putText(bgr, String.format(java.util.Locale.US, "%.1f", meanB),
+                        new Point(100, 200),
+                        2, 2, new Scalar(255,255,255), 5);
+                Imgproc.putText(bgr, String.format(java.util.Locale.US, "%.1f", meanB),
+                        new Point(100, 200),
+                        2, 2, new Scalar(0,255,0), 2);
+
+                /**
+                 * user facing Buddy and going left : 3rd canal (blue) increases
+                 * going right: 2 first canals (Red and Green) increases
+                 * going up : first canal (red)
+                 * going down : 2nd canal (green)
+                 * */
+            } catch (Exception e) {
+
+            }
+
 
 //            if(BuddySDK.isInitialized)
 //            if(Core.minMaxLoc(magnitude).maxVal> 3.0)
