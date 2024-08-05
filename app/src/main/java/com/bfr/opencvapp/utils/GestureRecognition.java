@@ -29,13 +29,15 @@ import java.util.Date;
 public class GestureRecognition {
 
     public GestureRecognition(String mname, MultiDetector multiDetector, HandPoseEstimator handPoseEstimator, GestureMotionDetect gestureMotionDetect,
-    MotionDetector motionDetector) {
+    MotionDetector motionDetector, HumanPoseEstimator humanPoseEstimator) {
         this.name = mname;
 
         this.multiDetector = multiDetector;
         this.handPoseEstimator = handPoseEstimator;
         this.gestureMotionDetect = gestureMotionDetect;
         this.motionDetector = motionDetector;
+
+        this.humanPoseEstimator = humanPoseEstimator;
     }
 
     String name = "";
@@ -47,6 +49,12 @@ public class GestureRecognition {
     HandPoseEstimator handPoseEstimator;
     public HandPoseEstimator.HandPose handPose = null;
     MotionDetector motionDetector;
+
+
+    HumanPoseEstimator humanPoseEstimator;
+    public HumanPoseEstimator.HumanPose humanPose = null;
+
+
     // index of img to reset
     int resetImNb = 0;
 
@@ -144,6 +152,14 @@ public class GestureRecognition {
 
 
             /***/if(step_num==5) { // hands detection
+
+
+
+                HumanPoseEstimator.HumanPose pose = humanPoseEstimator.recognizeImage(frame);
+
+
+                if(true)
+                    return;
 
                 //detecting hands only
                 detections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.4f, 0.0f, false);

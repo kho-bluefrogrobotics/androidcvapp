@@ -37,7 +37,7 @@ import java.util.List;
 /** Hand Face Human object detector based on a Mobilenetv2-SSD network*/
 public class HumanPoseEstimator {
 
-    private final String TAG = "Gesture HandPose";
+    private final String TAG = "HumanPose";
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
@@ -127,7 +127,7 @@ public class HumanPoseEstimator {
 
             //Init interpreter
             File tfliteModel = new File(MODELS_DIR +MODEL_NAME);
-            tfLite = new Interpreter(tfliteModel, options );
+//            tfLite = new Interpreter(tfliteModel, options );
 
 
             /** Mediapipe */
@@ -201,7 +201,7 @@ public class HumanPoseEstimator {
      */
     public HumanPose recognizeImage(Mat frame) {
 
-        Log.i(TAG, "Starting Hand pose estimation" );
+        Log.i(TAG, "Starting Human pose estimation" );
 
         HumanPose humanPose = new HumanPose();
 
@@ -531,6 +531,7 @@ public class HumanPoseEstimator {
 //            Log.d("ccoucou", "vect1=" + vec1[0] + "," + vec1[1] + " dotproduct= " + dotProduct + "norm=" + norm + " ==>angle in rad = " + angleRad + " in deg = " + this.angle);
 
         } //end finger orientation
+
 
     } //end headpose class
 

@@ -92,7 +92,7 @@ public class MultiDetector {
                 @Override
                 public void run() {
                     //movenet model to doublecheck human silouhette
-                    movenetDetector = new TfLiteMovenet(context);
+//                    movenetDetector = new TfLiteMovenet(context);
                 }
             };
 
@@ -134,7 +134,7 @@ public class MultiDetector {
 
                     //Init interpreter
                     File tfliteModel = new File(MODELS_DIR +MODEL_NAME);
-                    tfLite = new Interpreter(tfliteModel, options );
+//                    tfLite = new Interpreter(tfliteModel, options );
 
                 }
             };

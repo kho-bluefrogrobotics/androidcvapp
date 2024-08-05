@@ -130,7 +130,7 @@ public class HandPoseEstimator {
 
             //Init interpreter
             File tfliteModel = new File(MODELS_DIR +MODEL_NAME);
-            tfLite = new Interpreter(tfliteModel, options );
+//            tfLite = new Interpreter(tfliteModel, options );
 
 
             /** Mediapipe */

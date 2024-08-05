@@ -63,6 +63,7 @@ import com.bfr.opencvapp.objdetect.Detection;
 import com.bfr.opencvapp.utils.Gesture;
 import com.bfr.opencvapp.utils.GestureRecognition;
 import com.bfr.opencvapp.utils.HandPoseEstimator;
+import com.bfr.opencvapp.utils.HumanPoseEstimator;
 import com.bfr.opencvapp.utils.IGestureRsp;
 import com.bfr.opencvapp.utils.GestureMotionDetect;
 import com.bfr.opencvapp.utils.MotionDetector;
@@ -123,6 +124,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     int left, right, top, bottom;
 
     HandPoseEstimator handPoseEstimator;
+
+    HumanPoseEstimator humanPoseEstimator;
 
     MotionDetector motionDetector;
 
@@ -350,13 +353,13 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
 
 
-        try {
-            copyAssets();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
+//        try {
+//            copyAssets();
+//        }
+//        catch (Exception e)
+//        {
+//            e.printStackTrace();
+//        }
 
         tracked = new Rect();
 
@@ -367,19 +370,26 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //        personTrackerVIT.startTorsoHeightEstimation();
 
 
-        // init face detector
-        Runnable initMultiDetector = new Runnable() {
-            @Override
-            public void run() {
-                multiDetector = new com.bfr.opencvapp.utils.MultiDetector(context);
-            }
-        };
+//        // init face detector
+//        Runnable initMultiDetector = new Runnable() {
+//            @Override
+//            public void run() {
+//                multiDetector = new com.bfr.opencvapp.utils.MultiDetector(context);
+//            }
+//        };
 
-        // init Handpose
-        Runnable initHandPose = new Runnable() {
+//        // init Handpose
+//        Runnable initHandPose = new Runnable() {
+//            @Override
+//            public void run() {
+//                handPoseEstimator = new HandPoseEstimator(context);
+//            }
+//        };
+
+        Runnable initHumanPose = new Runnable() {
             @Override
             public void run() {
-                handPoseEstimator = new HandPoseEstimator(context);
+                humanPoseEstimator = new HumanPoseEstimator(context);
             }
         };
 
@@ -392,11 +402,12 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         //
         ExecutorService executorService =
-                new ThreadPoolExecutor(1, 3, 0L, TimeUnit.MILLISECONDS,
+                new ThreadPoolExecutor(1, 4, 0L, TimeUnit.MILLISECONDS,
                         new LinkedBlockingQueue<Runnable>());
 
-        executorService.submit(initMultiDetector);
-        executorService.submit(initHandPose);
+//        executorService.submit(initMultiDetector);
+        executorService.submit(initHumanPose);
+//        executorService.submit(initHandPose);
         executorService.submit(initMotion);
 
         //wait for end of tasks
@@ -408,7 +419,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         }
 
         gestureMotionDetect = new GestureMotionDetect("GestureMotionDetector", motionDetector);
-        gestureRecognition = new GestureRecognition("GestureRecog", multiDetector, handPoseEstimator, gestureMotionDetect, motionDetector);
+        gestureRecognition = new GestureRecognition("GestureRecog", multiDetector, handPoseEstimator, gestureMotionDetect, motionDetector, humanPoseEstimator);
 
         gestureRecognition.registerGestureRecog(new IGestureRsp() {
             @Override
@@ -586,6 +597,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
+        Log.w("MainActivity", "Camera frame ready");
         // cature frame from camera
         frame = inputFrame.rgba();
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
