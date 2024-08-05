@@ -626,6 +626,11 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                     new Point(150, 150),2, 3,
                     new Scalar(0, 255, 0), 5);
 
+            // hand detection
+            Imgproc.rectangle(display, new Point(gestureRecognition.left, gestureRecognition.top),
+                    new Point(gestureRecognition.right, gestureRecognition.bottom),
+                    new Scalar(0,255,0), 3);
+
             return display;
         }
         catch (Exception e)

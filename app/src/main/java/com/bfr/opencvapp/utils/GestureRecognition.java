@@ -66,7 +66,7 @@ public class GestureRecognition {
 
 
     // coords of the detected hand bbox
-    int left, right, top, bottom;
+    public int left, right, top, bottom;
     // margin to crop the hand in pixel
     int MARGIN = 20;
     Rect handROI;
@@ -146,7 +146,7 @@ public class GestureRecognition {
             /***/if(step_num==5) { // hands detection
 
                 //detecting hands only
-                detections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.7f, 0.0f, false);
+                detections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.4f, 0.0f, false);
 
                 if (detections.size() > 0) {
 //                    Log.d(name, "detected objs : " + detections.size() + "   id=" + detections.get(0).getDetectedClass() + " ; " + detections.get(0).getConfidence());
@@ -259,6 +259,11 @@ public class GestureRecognition {
                     //hand pose estimation
                     handPose = handPoseEstimator.recognizeImage(frame);
 
+                    handPose.isFront();
+                    if (true){
+                        step_num = 5;
+                        return;
+                    }
                     if (handPose == null)
                     {
                         Log.d(name, "NO HAND for POSE ESTIMATION");
