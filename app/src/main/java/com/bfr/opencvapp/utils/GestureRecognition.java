@@ -145,7 +145,10 @@ public class GestureRecognition {
                     //wait until check box
                     if (go) {
                         // go to next step
-                        step_num = 5;
+
+                        handROI = new Rect(1,1, 1020, 765);
+
+                        step_num = 10;
                     }
                     return;
                 }
@@ -154,7 +157,9 @@ public class GestureRecognition {
 
             /***/if(step_num==5) { // hands detection
 
-
+                step_num = 10;
+                if(true)
+                return;
                 humanPose = humanPoseEstimator.recognizeImage(frame);
 
                 //if human detection
@@ -296,11 +301,6 @@ public class GestureRecognition {
                     //hand pose estimation
                     handPose = handPoseEstimator.recognizeImage(frame);
 
-                    handPose.isFront();
-                    if (true){
-                        step_num = 5;
-                        return;
-                    }
                     if (handPose == null)
                     {
                         Log.d(name, "NO HAND for POSE ESTIMATION");
@@ -416,7 +416,6 @@ public class GestureRecognition {
 //                    if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COUCOU)
                     if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU)
                     {
-                        Log.d(name, "COUCOU");
                         Log.w(name, "COUCOU Measured opt flow="+ gestureMotionDetect.optFlow + "length=" + widthcrop+
                                 "\nproportionh=" + proportionh + " proportionv=" + proportionv);
                         result = "COUCOU";
@@ -429,7 +428,7 @@ public class GestureRecognition {
                     else // palm and not moving
                     {
                         result = "STOP";
-                        Log.d(name, "STOP");
+
                         Log.w(name, "STOP Measured opt flow="+ gestureMotionDetect.optFlow + "length=" + widthcrop+
                                 "\nproportionh=" + proportionh + " proportionv=" + proportionv);gesture.result = result;
                         gesture.orientation = 0;

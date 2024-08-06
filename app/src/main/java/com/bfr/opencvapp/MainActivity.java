@@ -371,21 +371,21 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //        personTrackerVIT.startTorsoHeightEstimation();
 
 
-//        // init face detector
-//        Runnable initMultiDetector = new Runnable() {
-//            @Override
-//            public void run() {
-//                multiDetector = new com.bfr.opencvapp.utils.MultiDetector(context);
-//            }
-//        };
+        // init face detector
+        Runnable initMultiDetector = new Runnable() {
+            @Override
+            public void run() {
+                multiDetector = new com.bfr.opencvapp.utils.MultiDetector(context);
+            }
+        };
 
-//        // init Handpose
-//        Runnable initHandPose = new Runnable() {
-//            @Override
-//            public void run() {
-//                handPoseEstimator = new HandPoseEstimator(context);
-//            }
-//        };
+        // init Handpose
+        Runnable initHandPose = new Runnable() {
+            @Override
+            public void run() {
+                handPoseEstimator = new HandPoseEstimator(context);
+            }
+        };
 
         Runnable initHumanPose = new Runnable() {
             @Override
@@ -406,9 +406,9 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 new ThreadPoolExecutor(1, 4, 0L, TimeUnit.MILLISECONDS,
                         new LinkedBlockingQueue<Runnable>());
 
-//        executorService.submit(initMultiDetector);
+        executorService.submit(initMultiDetector);
         executorService.submit(initHumanPose);
-//        executorService.submit(initHandPose);
+        executorService.submit(initHandPose);
         executorService.submit(initMotion);
 
         //wait for end of tasks
@@ -598,7 +598,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
-        Log.w("MainActivity", "Camera frame ready");
+//        Log.w("MainActivity", "Camera frame ready");
         // cature frame from camera
         frame = inputFrame.rgba();
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
@@ -617,59 +617,60 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             if(matList.size()>1)
                 matList.remove(0);
         }
-//
-//        try
-//        {
-//
-////            gestureRecognition.recognize(frame);
-//
-////            Imgproc.putText(frame, gestureRecognition.result,
-////                    new Point(150, 150),2, 3,
-////                    new Scalar(0, 0, 0), 10);
-////            Imgproc.putText(frame, gestureRecognition.result,
-////                    new Point(150, 150),2, 3,
-////                    new Scalar(0, 255, 0), 5);
-//
-//            Mat display = frame.clone();
-//            Imgproc.putText(display, resultGesture,
+
+        try
+        {
+
+//            gestureRecognition.recognize(frame);
+
+//            Imgproc.putText(frame, gestureRecognition.result,
 //                    new Point(150, 150),2, 3,
 //                    new Scalar(0, 0, 0), 10);
-//            Imgproc.putText(display, resultGesture,
+//            Imgproc.putText(frame, gestureRecognition.result,
 //                    new Point(150, 150),2, 3,
 //                    new Scalar(0, 255, 0), 5);
-//
-//            // hand detection
-//            Imgproc.rectangle(display, new Point(gestureRecognition.left, gestureRecognition.top),
-//                    new Point(gestureRecognition.right, gestureRecognition.bottom),
-//                    new Scalar(0,255,0), 3);
-//
-//            return display;
-//        }
-//        catch (Exception e)
-//        {
-//            return new Mat(768,1024, CV_8UC3, new Scalar(0, 0, 0));
-//
-//        }
 
-        try{
-            gestureRecognition.recognize(frame);
+            Mat display = frame.clone();
+            Imgproc.putText(display, resultGesture,
+                    new Point(150, 150),2, 3,
+                    new Scalar(0, 0, 0), 10);
+            Imgproc.putText(display, resultGesture,
+                    new Point(150, 150),2, 3,
+                    new Scalar(0, 255, 0), 5);
 
-            Mat display= gestureRecognition.humanPose.display(frame).clone();
+            // hand detection
+            Imgproc.rectangle(display, new Point(gestureRecognition.left, gestureRecognition.top),
+                    new Point(gestureRecognition.right, gestureRecognition.bottom),
+                    new Scalar(0,255,0), 3);
 
-            int H_MARGIN = 300;
-            int V_MARGIN = 350;
-            int x1 = gestureRecognition.humanPose.x(RIGHT_WRIST) -H_MARGIN;
-            int y1 = Math.max(gestureRecognition.humanPose.y(RIGHT_INDEX)-V_MARGIN, 5);
-            int x2 = gestureRecognition.humanPose.x(RIGHT_WRIST) +H_MARGIN;
-            int y2 = Math.min(gestureRecognition.humanPose.y(RIGHT_WRIST)+V_MARGIN, 765);
-            Imgproc.rectangle(display, new Point(x1, y1), new Point(x2, y2),
-                   new Scalar(255, 255, 0), 5 );
             return display;
-        } catch (Exception e) {
-            Log.e(TAG, Log.getStackTraceString(e));
-            return new Mat(768,1024, CV_8UC3, new Scalar(0, 0, 0));
         }
-    } // end function
+        catch (Exception e)
+        {
+            return new Mat(768,1024, CV_8UC3, new Scalar(0, 0, 0));
+
+        }
+
+//        try{
+//            gestureRecognition.recognize(frame);
+
+//            Mat display= gestureRecognition.humanPose.display(frame).clone();
+//
+//            int H_MARGIN = 300;
+//            int V_MARGIN = 350;
+//            int x1 = gestureRecognition.humanPose.x(RIGHT_WRIST) -H_MARGIN;
+//            int y1 = Math.max(gestureRecognition.humanPose.y(RIGHT_INDEX)-V_MARGIN, 5);
+//            int x2 = gestureRecognition.humanPose.x(RIGHT_WRIST) +H_MARGIN;
+//            int y2 = Math.min(gestureRecognition.humanPose.y(RIGHT_WRIST)+V_MARGIN, 765);
+//            Imgproc.rectangle(display, new Point(x1, y1), new Point(x2, y2),
+//                   new Scalar(255, 255, 0), 5 );
+//            return frame;
+//        } catch (Exception e) {
+//            Log.e(TAG, Log.getStackTraceString(e));
+//            return new Mat(768,1024, CV_8UC3, new Scalar(0, 0, 0));
+//        }
+
+    } // end onCameraFrame
 
     public void onCameraViewStopped() {
         videoWriter.release();
