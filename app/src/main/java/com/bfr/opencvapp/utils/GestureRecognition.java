@@ -155,7 +155,7 @@ public class GestureRecognition {
 
 
 
-                HumanPoseEstimator.HumanPose pose = humanPoseEstimator.recognizeImage(frame);
+                humanPose = humanPoseEstimator.recognizeImage(frame);
 
 
                 if(true)

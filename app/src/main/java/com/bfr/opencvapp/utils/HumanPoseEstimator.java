@@ -19,6 +19,7 @@ import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
+import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.tensorflow.lite.HexagonDelegate;
@@ -88,6 +89,29 @@ public class HumanPoseEstimator {
         PINKIE
     }
     int[][] PHALANX_ID = new int[][]{{4,2}, {8,6}, {12,10}, {16,14}, {20, 18}};
+
+    /*** Body landmarks*/
+    int NOSE = 0;
+    int LEFT_EYE = 2;
+    int RIGHT_EYE = 5;
+    int LEFT_EAR = 7;
+    int RIGHT_EAR = 8;
+    int MOUTH_LEFT = 9;
+    int MOUTH_RIGHT = 10;
+    int LEFT_SHOULDER = 11;
+    int RIGHT_SHOULDER = 12;
+    int LEFT_HIP = 11;
+    int RIGHT_HIP = 24;
+    int LEFT_WRIST = 15;
+    int RIGHT_WRIST = 16;
+    int LEFT_THUMB = 21;
+    int RIGHT_THUMB = 22;
+    int LEFT_INDEX = 19;
+    int RIGHT_INDEX = 20;
+    int LEFT_PINKY = 17;
+    int RIGHT_PINKY = 18;
+
+
 
     // confidence level of human detection for doublecheck with Movenet
     public float humanConfidence = 0.0f;
@@ -325,6 +349,37 @@ public class HumanPoseEstimator {
 
         private boolean front = false;
 
+
+        private int x(int landmark)
+        {
+            return (int)(landmarks.get(landmark).x()*1024);
+        }
+        private int y(int landmark)
+        {
+            return (int)(landmarks.get(landmark).y()*768);
+        }
+        public Mat display(Mat frame)
+        {
+            Mat displayMat=frame.clone();
+
+//            Imgproc.circle(displayMat, new Point((int)(landmarks.get(LEFT_EYE).x()*frame.cols()), (int)(landmarks.get(LEFT_EYE).y()*frame.rows())), 10, new Scalar(0,255, 0),5);
+            Imgproc.circle(displayMat, new Point(x(LEFT_EYE), y(LEFT_EYE)), 7, new Scalar(0,255, 0),5);
+            Imgproc.circle(displayMat, new Point(x(RIGHT_EYE), y(RIGHT_EYE)), 7, new Scalar(0,255, 0),5);
+
+            if(landmarks.get(LEFT_WRIST).visibility().get()>0.6f)
+            {
+                Imgproc.circle(displayMat, new Point(x(LEFT_WRIST), y(LEFT_WRIST)), 7, new Scalar(0,0, 255),5);
+                Imgproc.circle(displayMat, new Point(x(LEFT_THUMB), y(LEFT_THUMB)), 7, new Scalar(0,0, 255),5);
+                Imgproc.circle(displayMat, new Point(x(LEFT_INDEX), y(LEFT_INDEX)), 7, new Scalar(0,0, 255),5);
+            }
+
+            if(landmarks.get(RIGHT_WRIST).visibility().get()>0.6f) {
+                Imgproc.circle(displayMat, new Point(x(RIGHT_WRIST), y(RIGHT_WRIST)), 7, new Scalar(255, 0, 0), 5);
+                Imgproc.circle(displayMat, new Point(x(RIGHT_THUMB), y(RIGHT_THUMB)), 7, new Scalar(255, 0, 0), 5);
+                Imgproc.circle(displayMat, new Point(x(RIGHT_INDEX), y(RIGHT_INDEX)), 7, new Scalar(255, 0, 0), 5);
+            }
+            return displayMat;
+        }
         // front: true = palm towards the camera, false= back of the hand towards the camera
         public void front()
         {

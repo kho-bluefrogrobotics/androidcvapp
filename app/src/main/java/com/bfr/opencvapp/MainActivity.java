@@ -607,7 +607,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         if (recording)
             videoWriter.write(personTrackerVIT.displayMat);
 
-
         synchronized (matList)
         {
             // convert to rgb
@@ -617,41 +616,47 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             if(matList.size()>1)
                 matList.remove(0);
         }
-
-        try
-        {
-
-//            gestureRecognition.recognize(frame);
-
-//            Imgproc.putText(frame, gestureRecognition.result,
+//
+//        try
+//        {
+//
+////            gestureRecognition.recognize(frame);
+//
+////            Imgproc.putText(frame, gestureRecognition.result,
+////                    new Point(150, 150),2, 3,
+////                    new Scalar(0, 0, 0), 10);
+////            Imgproc.putText(frame, gestureRecognition.result,
+////                    new Point(150, 150),2, 3,
+////                    new Scalar(0, 255, 0), 5);
+//
+//            Mat display = frame.clone();
+//            Imgproc.putText(display, resultGesture,
 //                    new Point(150, 150),2, 3,
 //                    new Scalar(0, 0, 0), 10);
-//            Imgproc.putText(frame, gestureRecognition.result,
+//            Imgproc.putText(display, resultGesture,
 //                    new Point(150, 150),2, 3,
 //                    new Scalar(0, 255, 0), 5);
+//
+//            // hand detection
+//            Imgproc.rectangle(display, new Point(gestureRecognition.left, gestureRecognition.top),
+//                    new Point(gestureRecognition.right, gestureRecognition.bottom),
+//                    new Scalar(0,255,0), 3);
+//
+//            return display;
+//        }
+//        catch (Exception e)
+//        {
+//            return new Mat(768,1024, CV_8UC3, new Scalar(0, 0, 0));
+//
+//        }
 
-            Mat display = frame.clone();
-            Imgproc.putText(display, resultGesture,
-                    new Point(150, 150),2, 3,
-                    new Scalar(0, 0, 0), 10);
-            Imgproc.putText(display, resultGesture,
-                    new Point(150, 150),2, 3,
-                    new Scalar(0, 255, 0), 5);
-
-            // hand detection
-            Imgproc.rectangle(display, new Point(gestureRecognition.left, gestureRecognition.top),
-                    new Point(gestureRecognition.right, gestureRecognition.bottom),
-                    new Scalar(0,255,0), 3);
-
-            return display;
-        }
-        catch (Exception e)
-        {
+        try{
+            gestureRecognition.recognize(frame);
+            return gestureRecognition.humanPose.display(frame);
+        } catch (Exception e) {
+            Log.e(TAG, Log.getStackTraceString(e));
             return new Mat(768,1024, CV_8UC3, new Scalar(0, 0, 0));
-
         }
-
-
     } // end function
 
     public void onCameraViewStopped() {
