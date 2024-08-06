@@ -1,6 +1,8 @@
 package com.bfr.opencvapp.utils;
 
 
+import static com.bfr.opencvapp.utils.HumanPoseLandmarks.*;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Build;
@@ -89,28 +91,6 @@ public class HumanPoseEstimator {
         PINKIE
     }
     int[][] PHALANX_ID = new int[][]{{4,2}, {8,6}, {12,10}, {16,14}, {20, 18}};
-
-    /*** Body landmarks*/
-    int NOSE = 0;
-    int LEFT_EYE = 2;
-    int RIGHT_EYE = 5;
-    int LEFT_EAR = 7;
-    int RIGHT_EAR = 8;
-    int MOUTH_LEFT = 9;
-    int MOUTH_RIGHT = 10;
-    int LEFT_SHOULDER = 11;
-    int RIGHT_SHOULDER = 12;
-    int LEFT_HIP = 11;
-    int RIGHT_HIP = 24;
-    int LEFT_WRIST = 15;
-    int RIGHT_WRIST = 16;
-    int LEFT_THUMB = 21;
-    int RIGHT_THUMB = 22;
-    int LEFT_INDEX = 19;
-    int RIGHT_INDEX = 20;
-    int LEFT_PINKY = 17;
-    int RIGHT_PINKY = 18;
-
 
 
     // confidence level of human detection for doublecheck with Movenet
@@ -350,11 +330,11 @@ public class HumanPoseEstimator {
         private boolean front = false;
 
 
-        private int x(int landmark)
+        public int x(int landmark)
         {
             return (int)(landmarks.get(landmark).x()*1024);
         }
-        private int y(int landmark)
+        public int y(int landmark)
         {
             return (int)(landmarks.get(landmark).y()*768);
         }

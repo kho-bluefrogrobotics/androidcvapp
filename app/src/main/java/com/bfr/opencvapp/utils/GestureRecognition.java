@@ -6,6 +6,7 @@ import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.MIDDLE;
 import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.PINKIE;
 import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.RING;
 import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.THUMB;
+import static com.bfr.opencvapp.utils.HumanPoseLandmarks.*;
 
 import static org.opencv.core.CvType.CV_8UC3;
 
@@ -76,7 +77,7 @@ public class GestureRecognition {
     // coords of the detected hand bbox
     public int left, right, top, bottom;
     // margin to crop the hand in pixel
-    int MARGIN = 20;
+    final int MARGIN = 50;
     Rect handROI;
     // black background
     Mat black;
@@ -154,72 +155,92 @@ public class GestureRecognition {
             /***/if(step_num==5) { // hands detection
 
 
-
                 humanPose = humanPoseEstimator.recognizeImage(frame);
 
+                //if human detection
+                if (humanPose != null) {
 
-                if(true)
-                    return;
-
-                //detecting hands only
-                detections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.4f, 0.0f, false);
-
-                if (detections.size() > 0) {
-//                    Log.d(name, "detected objs : " + detections.size() + "   id=" + detections.get(0).getDetectedClass() + " ; " + detections.get(0).getConfidence());
-
-//                    Log.d(name, "detected size : " + (detections.get(0).right - detections.get(0).left) * (detections.get(0).bottom - detections.get(0).top));
-
-                        // reset
-                        handID = -1;
-
-                        // for each detection
-                        for(int h=0; h<detections.size();h++)
-                        {
-                            // if detected object is big enough
-                            if( (detections.get(h).right - detections.get(h).left) * (detections.get(h).bottom - detections.get(h).top)> THRES_HAND_AREA)
-                            {
-                                Log.w(name, "detected size : " + (detections.get(h).right - detections.get(h).left) * (detections.get(h).bottom - detections.get(h).top));
-                                //remember the index
-                                handID = h;
-
-
-                                left =  (int) (detections.get(handID).left * cols );
-                                int leftWMargin = Math.max(1, (int) (detections.get(handID).left * cols )- MARGIN);
-                    top = Math.max(1, (int) (detections.get(handID).top * rows) -MARGIN);
-//                                top = 1;
-                                right = (int) (detections.get(handID).right * cols);
-                                int rightWMargin = Math.min(frame.cols() - 1, right + MARGIN);
-                    bottom = Math.min(frame.rows() - 1, (int) (detections.get(handID).bottom * rows) +MARGIN);
-//                                bottom = rows;
-
-                                //**** Crop hand image
-                                // ROI of hand
-                                handROI = new Rect( leftWMargin, 1, (rightWMargin-leftWMargin), (rows-1));
-                                gestureMotionDetect.handROI =handROI;
-                                // start motion detection
-                                Log.w(name, "Req for motion detection ");
-                                gestureMotionDetect.go = true;
-                                //next step
-                                step_num =10;
+                    if (humanPose.landmarks.get(LEFT_WRIST).visibility().get() > 0.7
+                            || humanPose.landmarks.get(RIGHT_WRIST).visibility().get() > 0.7) {
+                        //**** Crop hand image
+                        // ROI of hand
+                        handROI = new Rect(humanPose.x(LEFT_WRIST), 1, humanPose.x(LEFT_WRIST)+MARGIN, (rows - 1));
+                        gestureMotionDetect.handROI = handROI;
+                        // start motion detection
+                        Log.w(name, "Req for motion detection ");
+                        gestureMotionDetect.go = true;
+                        //next step
+                        step_num = 10;
 //                                step_num =6;
-                                Log.i(name, "current step: " + step_num + "  ");
-                                // interrupt
-                                break;
-                            } //end if obj big enough
-                        } // next object
-                } //end if obj. detected
-                else
-                {
-                    // no obj. detected -> end
-//                    result = "";
+                        Log.i(name, "current step: " + step_num + "  ");
+                    }
+                } else {
+                    Log.d(name, "No human found");
                     return;
                 }
 
-                //if object detected but not big enough -> end
-                if (handID<0)
+                if (true)
                     return;
-            }
 
+//                //detecting hands only
+//                detections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.4f, 0.0f, false);
+//
+//                if (detections.size() > 0) {
+//
+////                    Log.d(name, "detected size : " + (detections.get(0).right - detections.get(0).left) * (detections.get(0).bottom - detections.get(0).top));
+//
+//                        // reset
+//                        handID = -1;
+//
+//                        // for each detection
+//                        for(int h=0; h<detections.size();h++)
+//                        {
+//                            // if detected object is big enough
+//                            if( (detections.get(h).right - detections.get(h).left) * (detections.get(h).bottom - detections.get(h).top)> THRES_HAND_AREA)
+//                            {
+//                                Log.w(name, "detected size : " + (detections.get(h).right - detections.get(h).left) * (detections.get(h).bottom - detections.get(h).top));
+//                                //remember the index
+//                                handID = h;
+//
+//
+//                                left =  (int) (detections.get(handID).left * cols );
+//                                int leftWMargin = Math.max(1, (int) (detections.get(handID).left * cols )- MARGIN);
+//                    top = Math.max(1, (int) (detections.get(handID).top * rows) -MARGIN);
+////                                top = 1;
+//                                right = (int) (detections.get(handID).right * cols);
+//                                int rightWMargin = Math.min(frame.cols() - 1, right + MARGIN);
+//                    bottom = Math.min(frame.rows() - 1, (int) (detections.get(handID).bottom * rows) +MARGIN);
+////                                bottom = rows;
+//
+//                                //**** Crop hand image
+//                                // ROI of hand
+//                                handROI = new Rect( leftWMargin, 1, (rightWMargin-leftWMargin), (rows-1));
+//                                gestureMotionDetect.handROI =handROI;
+//                                // start motion detection
+//                                Log.w(name, "Req for motion detection ");
+//                                gestureMotionDetect.go = true;
+//                                //next step
+//                                step_num =10;
+////                                step_num =6;
+//                                Log.i(name, "current step: " + step_num + "  ");
+//                                // interrupt
+//                                break;
+//                            } //end if obj big enough
+//                        } // next object
+//                } //end if obj. detected
+//                else
+//                {
+//                    // no obj. detected -> end
+////                    result = "";
+//                    return;
+//                }
+//
+//                //if object detected but not big enough -> end
+//                if (handID<0)
+//                    return;
+//            }
+
+            } //end if step_num
 
 //            if(step_num == 6)
 //            {

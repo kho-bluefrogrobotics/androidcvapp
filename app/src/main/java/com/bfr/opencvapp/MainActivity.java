@@ -1,6 +1,7 @@
 package com.bfr.opencvapp;
 
 
+import static com.google.mlkit.vision.pose.PoseLandmark.*;
 import static org.opencv.core.CvType.*;
 
 import android.Manifest;
@@ -652,7 +653,18 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         try{
             gestureRecognition.recognize(frame);
-            return gestureRecognition.humanPose.display(frame);
+
+            Mat display= gestureRecognition.humanPose.display(frame).clone();
+
+            int H_MARGIN = 300;
+            int V_MARGIN = 350;
+            int x1 = gestureRecognition.humanPose.x(RIGHT_WRIST) -H_MARGIN;
+            int y1 = Math.max(gestureRecognition.humanPose.y(RIGHT_INDEX)-V_MARGIN, 5);
+            int x2 = gestureRecognition.humanPose.x(RIGHT_WRIST) +H_MARGIN;
+            int y2 = Math.min(gestureRecognition.humanPose.y(RIGHT_WRIST)+V_MARGIN, 765);
+            Imgproc.rectangle(display, new Point(x1, y1), new Point(x2, y2),
+                   new Scalar(255, 255, 0), 5 );
+            return display;
         } catch (Exception e) {
             Log.e(TAG, Log.getStackTraceString(e));
             return new Mat(768,1024, CV_8UC3, new Scalar(0, 0, 0));
