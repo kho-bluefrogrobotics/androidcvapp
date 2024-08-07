@@ -463,14 +463,15 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     Runnable gestureRunnable = new Runnable() {
         @Override
         public void run() {
-            try {
+//            try {
                 //process
                 gestureRecognition.recognize(getLastImg());
                 // notify as last cv method called to display result
 
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//                finish();
+//            }
         }
     };
 
@@ -621,18 +622,18 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             gestureRecognition.recognize(frame);
 
             Mat display = frame.clone();
-            Imgproc.putText(display, resultGesture,
-                    new Point(150, 150),2, 3,
-                    new Scalar(0, 0, 0), 10);
-            Imgproc.putText(display, resultGesture,
-                    new Point(150, 150),2, 3,
-                    new Scalar(0, 255, 0), 5);
+                Imgproc.putText(display, resultGesture,
+                        new Point(150, 150), 2, 3,
+                        new Scalar(0, 0, 0), 10);
+                Imgproc.putText(display, resultGesture,
+                        new Point(150, 150), 2, 3,
+                        new Scalar(0, 255, 0), 5);
 
-            // hand detection
+                // hand detection
 //            Log.d("coucou2", "Main " + gestureRecognition.left + " " + gestureRecognition.top + " " + gestureRecognition.right + " " + gestureRecognition.bottom);
-            Imgproc.rectangle(display, new Point(gestureRecognition.left, gestureRecognition.top),
-                    new Point(gestureRecognition.right, gestureRecognition.bottom),
-                    new Scalar(0,0,255), 10);
+                Imgproc.rectangle(display, new Point(gestureRecognition.left, gestureRecognition.top),
+                        new Point(gestureRecognition.right, gestureRecognition.bottom),
+                        new Scalar(0, 0, 255), 10);
 
             return display;
         }

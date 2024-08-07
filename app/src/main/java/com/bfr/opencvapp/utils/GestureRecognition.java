@@ -123,15 +123,14 @@ public class GestureRecognition {
         this.gestureRsp = gestureRsp;
     }
 
-    public void recognize(Mat input)
-    {
+    public void recognize(Mat input)  {
         Mat frame = input.clone();
 
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2RGB);
         rows = frame.rows();
         cols = frame.cols();
 
-        try{
+//        try{
             // if step changed
             if( !(step_num == previous_step)) {
                 // display current step
@@ -788,14 +787,19 @@ public class GestureRecognition {
 
             /***/if (step_num==901) // stabilization
             {
-                Thread.sleep(1000);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 step_num = 10;
                 return;
             }
 
-        } catch (Exception e) {
-            Log.e(name, "ERROR :" + Log.getStackTraceString(e));
-        }
+//        } catch (Exception e) {
+//            Log.e(name, "ERROR :" + Log.getStackTraceString(e));
+//            throw new Exception();
+//        }
 
     }
 
