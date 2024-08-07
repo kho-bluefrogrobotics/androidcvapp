@@ -17,7 +17,9 @@ public class HumanPoseLandmarks {
     static int LEFT_SHOULDER = 11;
     static int RIGHT_SHOULDER = 12;
     static int LEFT_HIP = 11;
+    static int LEFT_ELBOW = 13;
     static int RIGHT_HIP = 24;
+    static int RIGHT_ELBOW = 14;
     static int LEFT_WRIST = 15;
     static int RIGHT_WRIST = 16;
     static int LEFT_THUMB = 21;

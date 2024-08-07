@@ -224,44 +224,44 @@ public class GestureMotionDetect {
     }
 
 
-    void debugRecord(String folder)
-    {
-
-        Date date = new Date();
-        SimpleDateFormat formatter = new SimpleDateFormat("yyMMddHHmmssSSS");
-        String strDate= formatter.format(date);
-        // create folder if doesn't exist
-        File saveDir = new File("", "/sdcard/Download/"+ folder + "/" + strDate);
-        if(!saveDir.exists()) {
-            // create folder
-            saveDir.mkdirs();
-        }
-
-        for (int i = 0; i<matArray.size(); i++)
-        {
-//            Log.d(name, "Saving image " + i);
-            Imgcodecs.imwrite("/sdcard/Download/"+ folder + "/" + strDate+"/" + String.format("%02d", i) + "_gestRecog.jpg", matArray.get(i));
-        }
-
-    } // end record debug
-
-
-    void debugSaveImg(String folder, Mat img)
-    {
-
-        Date date = new Date();
-        SimpleDateFormat formatter = new SimpleDateFormat("yyMMddHHmmssSSS");
-        String strDate= formatter.format(date);
-        // create folder if doesn't exist
-        File saveDir = new File("", "/sdcard/Download/"+ folder + "/" + strDate);
-        if(!saveDir.exists()) {
-            // create folder
-            saveDir.mkdirs();
-        }
-            Imgcodecs.imwrite("/sdcard/Download/"+ folder + "/" + strDate+"/_gestRecog.jpg", img);
+//    void debugRecord(String folder)
+//    {
+//
+//        Date date = new Date();
+//        SimpleDateFormat formatter = new SimpleDateFormat("yyMMddHHmmssSSS");
+//        String strDate= formatter.format(date);
+//        // create folder if doesn't exist
+//        File saveDir = new File("", "/sdcard/Download/"+ folder + "/" + strDate);
+//        if(!saveDir.exists()) {
+//            // create folder
+//            saveDir.mkdirs();
+//        }
+//
+//        for (int i = 0; i<matArray.size(); i++)
+//        {
+////            Log.d(name, "Saving image " + i);
+//            Imgcodecs.imwrite("/sdcard/Download/"+ folder + "/" + strDate+"/" + String.format("%02d", i) + "_gestRecog.jpg", matArray.get(i));
+//        }
+//
+//    } // end record debug
 
 
-    } // end record debug
+//    void debugSaveImg(String folder, Mat img)
+//    {
+//
+//        Date date = new Date();
+//        SimpleDateFormat formatter = new SimpleDateFormat("yyMMddHHmmssSSS");
+//        String strDate= formatter.format(date);
+//        // create folder if doesn't exist
+//        File saveDir = new File("", "/sdcard/Download/"+ folder + "/" + strDate);
+//        if(!saveDir.exists()) {
+//            // create folder
+//            saveDir.mkdirs();
+//        }
+//            Imgcodecs.imwrite("/sdcard/Download/"+ folder + "/" + strDate+"/_gestRecog.jpg", img);
+//
+//
+//    } // end record debug
 
 
 

@@ -147,9 +147,7 @@ public class GestureRecognition {
                     if (go) {
                         // go to next step
 
-                        handROI = new Rect(1,1, 1020, 765);
-
-                        step_num = 10;
+                        step_num = 5;
                     }
                     return;
                 }
@@ -157,10 +155,10 @@ public class GestureRecognition {
 
 
             /***/if(step_num==5) { // hands detection
-
-                step_num = 10;
-                if(true)
-                return;
+                Log.i(name, "current step: " + step_num + "  ");
+//                step_num = 5;
+//                if(true)
+//                    return;
                 humanPose = humanPoseEstimator.recognizeImage(frame);
 
                 //if human detection
@@ -169,14 +167,18 @@ public class GestureRecognition {
                     if (humanPose.landmarks.get(LEFT_WRIST).visibility().get() > 0.7
                             || humanPose.landmarks.get(RIGHT_WRIST).visibility().get() > 0.7) {
                         //**** Crop hand image
-                        // ROI of hand
-                        handROI = new Rect(humanPose.x(LEFT_WRIST), 1, humanPose.x(LEFT_WRIST)+MARGIN, (rows - 1));
-                        gestureMotionDetect.handROI = handROI;
-                        // start motion detection
-                        Log.w(name, "Req for motion detection ");
-                        gestureMotionDetect.go = true;
+
+                        Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_WRIST).x()*1024, humanPose.landmarks.get(LEFT_WRIST).y()*768),
+                                5, new Scalar(0,255,0), 10);
+                        Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_ELBOW).x()*1024, humanPose.landmarks.get(LEFT_ELBOW).y()*768),
+                                5, new Scalar(0,255,250), 10);
+
+                        Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_WRIST).x()*1024, humanPose.landmarks.get(RIGHT_WRIST).y()*768),
+                                5, new Scalar(0,255,0), 10);
+                        Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_ELBOW).x()*1024, humanPose.landmarks.get(RIGHT_ELBOW).y()*768),
+                                5, new Scalar(0,255,250), 10);
                         //next step
-                        step_num = 10;
+                        step_num = 5;
 //                                step_num =6;
                         Log.i(name, "current step: " + step_num + "  ");
                     }

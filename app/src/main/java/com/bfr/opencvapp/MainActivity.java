@@ -604,8 +604,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
 //        videoCapture.read(frame);
 
-//        if (recording)
-//            videoWriter.write(personTrackerVIT.displayMat);
 
         synchronized (matList)
         {
@@ -620,14 +618,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         try
         {
 
-//            gestureRecognition.recognize(frame);
-
-//            Imgproc.putText(frame, gestureRecognition.result,
-//                    new Point(150, 150),2, 3,
-//                    new Scalar(0, 0, 0), 10);
-//            Imgproc.putText(frame, gestureRecognition.result,
-//                    new Point(150, 150),2, 3,
-//                    new Scalar(0, 255, 0), 5);
+            gestureRecognition.recognize(frame);
 
             Mat display = frame.clone();
             Imgproc.putText(display, resultGesture,
