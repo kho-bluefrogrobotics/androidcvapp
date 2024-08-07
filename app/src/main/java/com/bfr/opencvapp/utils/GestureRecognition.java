@@ -41,6 +41,7 @@ public class GestureRecognition {
         this.motionDetector = motionDetector;
 
         this.humanPoseEstimator = humanPoseEstimator;
+        this.handROI = new Rect(0,0,0,0);
     }
 
     String name = "";
