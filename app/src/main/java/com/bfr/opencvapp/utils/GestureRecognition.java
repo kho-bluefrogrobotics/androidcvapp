@@ -332,7 +332,7 @@ public class GestureRecognition {
 
                     Log.d("coucou2", "GestureRecog " + left + " " + top + " " + right + " " + bottom);
 
-//                    gestureMotionDetect.go = true;
+                    gestureMotionDetect.go = true;
 
 
                 } catch (Exception e) {

@@ -19,7 +19,7 @@ public class GestureMotionDetect {
 
     public GestureMotionDetect(String mname, MotionDetector motionDetector) {
         this.name = mname;
-        Log.d(name, "GestureMotionDetector object creation");
+        Log.d(name, "GestureMotionDetector object creation : " + name);
         this.motionDetector = motionDetector;
     }
 
@@ -132,12 +132,18 @@ public class GestureMotionDetect {
                 //**** Crop hand image
                 // ROI of hand
 //                handROI = new Rect( left, top, (right-left), (bottom-top));
-                // black background
-                black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
-                roiInBlack = black.submat(handROI); // subimage at hand roi in black image
-                handMat = input.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
+                try{
+                    // black background
+                    black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
+                    roiInBlack = black.submat(handROI); // subimage at hand roi in black image
+                    handMat = input.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
 //                 copy hand crop to black background
-                handMat.copyTo(roiInBlack);
+                    handMat.copyTo(roiInBlack);
+                } catch (Exception e) {
+                    go = false;
+                    step_num = 0;
+                }
+
 //
 //
 //                frame = black.clone();

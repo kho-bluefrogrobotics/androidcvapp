@@ -59,7 +59,6 @@ import com.bfr.buddy.usb.shared.IUsbCommadRsp;
 import com.bfr.buddysdk.BuddyActivity;
 import com.bfr.buddysdk.BuddySDK;
 
-import com.bfr.opencvapp.grafcet.*;
 import com.bfr.opencvapp.objdetect.Detection;
 import com.bfr.opencvapp.utils.Gesture;
 import com.bfr.opencvapp.utils.GestureRecognition;
@@ -68,8 +67,8 @@ import com.bfr.opencvapp.utils.HumanPoseEstimator;
 import com.bfr.opencvapp.utils.IGestureRsp;
 import com.bfr.opencvapp.utils.GestureMotionDetect;
 import com.bfr.opencvapp.utils.MotionDetector;
-import com.bfr.opencvapp.utils.TfLiteMidas;
-import com.bfr.opencvapp.utils.TfLiteYoloXHumanHeadHands;
+//import com.bfr.opencvapp.utils.TfLiteMidas;
+//import com.bfr.opencvapp.utils.TfLiteYoloXHumanHeadHands;
 
 
 public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -83,18 +82,18 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     private String dir = "/sdcard/Android/data/com.bfr.opencvapp/files/";
 
 
-    TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNoGrafcet");
-    TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
-    MainGrafcet mainGrafcet = new MainGrafcet("MainGrafcet");
-    public AlignBodyGrafcet alignGrafcet = new AlignBodyGrafcet("BodyAlign") ;
-    public FaceGrafcet faceGrafcet = new FaceGrafcet("FaceGrafcet") ;
-    public static InitGrafcet initGrafcet = new InitGrafcet("InitGrafcet");
-    public SearchPersonGrafcet searchPersonGrafcet = new SearchPersonGrafcet("SearchPersonGrafcet", this);
-    public static AlignBodyAndFollowGrafcet alignBodyAndFollowGrafcet = new AlignBodyAndFollowGrafcet("AlignBodyFollowGrafcet");
-    public static SpeedLinearGrafcet speedLinearGrafcet = new SpeedLinearGrafcet("SpeedLinearGrafcet");
-    public static SpeedAngularGrafcet speedAngularGrafcet = new SpeedAngularGrafcet("SpeedAngularGrafcet");
+//    TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNoGrafcet");
+//    TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");
+//    MainGrafcet mainGrafcet = new MainGrafcet("MainGrafcet");
+//    public AlignBodyGrafcet alignGrafcet = new AlignBodyGrafcet("BodyAlign") ;
+//    public FaceGrafcet faceGrafcet = new FaceGrafcet("FaceGrafcet") ;
+//    public static InitGrafcet initGrafcet = new InitGrafcet("InitGrafcet");
+//    public SearchPersonGrafcet searchPersonGrafcet = new SearchPersonGrafcet("SearchPersonGrafcet", this);
+////    public static AlignBodyAndFollowGrafcet alignBodyAndFollowGrafcet = new AlignBodyAndFollowGrafcet("AlignBodyFollowGrafcet");
+//    public static SpeedLinearGrafcet speedLinearGrafcet = new SpeedLinearGrafcet("SpeedLinearGrafcet");
+//    public static SpeedAngularGrafcet speedAngularGrafcet = new SpeedAngularGrafcet("SpeedAngularGrafcet");
 
-    public AlignBodyAndComeHereGrafcet alignBodyAndComeHereGrafcet = new AlignBodyAndComeHereGrafcet("AlignBodyAndComeHereGrafcet", this);
+//    public AlignBodyAndComeHereGrafcet alignBodyAndComeHereGrafcet = new AlignBodyAndComeHereGrafcet("AlignBodyAndComeHereGrafcet", this);
 
     //********************  image ***************************
 
@@ -133,10 +132,10 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     GestureRecognition gestureRecognition;
     GestureMotionDetect gestureMotionDetect;
 
-    public static PersonTrackerVIT personTrackerVIT;
+//    public static PersonTrackerVIT personTrackerVIT;
     Rect tracked;
 
-    TfLiteYoloXHumanHeadHands humanHeadHandsDetector;
+//    TfLiteYoloXHumanHeadHands humanHeadHandsDetector;
 
     // context
     Context context = this;
@@ -207,59 +206,59 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //                alignGrafcet.go=b;
 
 
-                if(!b)
-                {
-                    BuddySDK.USB.enableWheels(0, 0, new IUsbCommadRsp.Stub() {
-                        @Override
-                        public void onSuccess(String s) throws RemoteException {
-                        }
-
-                        @Override
-                        public void onFailed(String s) throws RemoteException {
-                        }
-                    });
-                    BuddySDK.USB.enableYesMove(0, new IUsbCommadRsp.Stub() {
-                        @Override
-                        public void onSuccess(String s) throws RemoteException {
-                        }
-
-                        @Override
-                        public void onFailed(String s) throws RemoteException {
-                        }
-                    });
-                    BuddySDK.USB.enableNoMove(0, new IUsbCommadRsp.Stub() {
-                        @Override
-                        public void onSuccess(String s) throws RemoteException {
-                        }
-
-                        @Override
-                        public void onFailed(String s) throws RemoteException {}
-                    });
-
-                    trackingNoGrafcet.go = false;
-                    trackingNoGrafcet.step_num = 0;
-
-                    trackingYesGrafcet.go = false;
-                    trackingYesGrafcet.step_num = 0;
-                    alignGrafcet.go = false;
-                    alignGrafcet.step_num = 0;
-
-                    mainGrafcet.go = false;
-                    mainGrafcet.step_num = 0;
-
-                    alignBodyAndFollowGrafcet.go=false;
-                    alignBodyAndFollowGrafcet.step_num=0;
-
-
-                    speedLinearGrafcet.go=false;
-                    speedLinearGrafcet.step_num=0;
-
-
-                    searchPersonGrafcet.go = false;
-                    searchPersonGrafcet.step_num = 0;
-                }
-                else
-                    mainGrafcet.go= true;
+//                if(!b)
+//                {
+//                    BuddySDK.USB.enableWheels(0, 0, new IUsbCommadRsp.Stub() {
+//                        @Override
+//                        public void onSuccess(String s) throws RemoteException {
+//                        }
+//
+//                        @Override
+//                        public void onFailed(String s) throws RemoteException {
+//                        }
+//                    });
+//                    BuddySDK.USB.enableYesMove(0, new IUsbCommadRsp.Stub() {
+//                        @Override
+//                        public void onSuccess(String s) throws RemoteException {
+//                        }
+//
+//                        @Override
+//                        public void onFailed(String s) throws RemoteException {
+//                        }
+//                    });
+//                    BuddySDK.USB.enableNoMove(0, new IUsbCommadRsp.Stub() {
+//                        @Override
+//                        public void onSuccess(String s) throws RemoteException {
+//                        }
+//
+//                        @Override
+//                        public void onFailed(String s) throws RemoteException {}
+//                    });
+//
+//                    trackingNoGrafcet.go = false;
+//                    trackingNoGrafcet.step_num = 0;
+//
+//                    trackingYesGrafcet.go = false;
+//                    trackingYesGrafcet.step_num = 0;
+//                    alignGrafcet.go = false;
+//                    alignGrafcet.step_num = 0;
+//
+//                    mainGrafcet.go = false;
+//                    mainGrafcet.step_num = 0;
+//
+//                    alignBodyAndFollowGrafcet.go=false;
+//                    alignBodyAndFollowGrafcet.step_num=0;
+//
+//
+//                    speedLinearGrafcet.go=false;
+//                    speedLinearGrafcet.step_num=0;
+//
+//
+//                    searchPersonGrafcet.go = false;
+//                    searchPersonGrafcet.step_num = 0;
+//                }
+//                else
+//                    mainGrafcet.go= true;
 
             }
         });
@@ -267,31 +266,31 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         initButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+//
+//                trackingNoGrafcet.go = false;
+//                trackingNoGrafcet.step_num = 0;
+//
+//                trackingYesGrafcet.go = false;
+//                trackingYesGrafcet.step_num = 0;
+//                alignGrafcet.go = false;
+//                alignGrafcet.step_num = 0;
+//
+//                mainGrafcet.go = false;
+//                mainGrafcet.step_num = 0;
+//
+//                alignBodyAndFollowGrafcet.go=false;
+//                alignBodyAndFollowGrafcet.step_num=0;
+//
+//
+//                speedLinearGrafcet.go=false;
+//                speedLinearGrafcet.step_num=0;
+//
+//
+//                searchPersonGrafcet.go = false;
+//                searchPersonGrafcet.step_num = 0;
 
-                trackingNoGrafcet.go = false;
-                trackingNoGrafcet.step_num = 0;
-
-                trackingYesGrafcet.go = false;
-                trackingYesGrafcet.step_num = 0;
-                alignGrafcet.go = false;
-                alignGrafcet.step_num = 0;
-
-                mainGrafcet.go = false;
-                mainGrafcet.step_num = 0;
-
-                alignBodyAndFollowGrafcet.go=false;
-                alignBodyAndFollowGrafcet.step_num=0;
-
-
-                speedLinearGrafcet.go=false;
-                speedLinearGrafcet.step_num=0;
-
-
-                searchPersonGrafcet.go = false;
-                searchPersonGrafcet.step_num = 0;
-
-                alignBodyAndComeHereGrafcet.go = false;
-                alignBodyAndComeHereGrafcet.step_num = 0;
+//                alignBodyAndComeHereGrafcet.go = false;
+//                alignBodyAndComeHereGrafcet.step_num = 0;
 
 
             }
@@ -497,12 +496,12 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     @Override
     public void onPause() {
         super.onPause();
-        try{
-            alignGrafcet.stop();
-            faceGrafcet.stop();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        try{
+//            alignGrafcet.stop();
+//            faceGrafcet.stop();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
 
 
     }
@@ -526,7 +525,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     }
 
 
-        TfLiteMidas mytfliterecog;
+//        TfLiteMidas mytfliterecog;
     public void onCameraViewStarted(int width, int height) {
 
 
@@ -605,8 +604,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
 //        videoCapture.read(frame);
 
-        if (recording)
-            videoWriter.write(personTrackerVIT.displayMat);
+//        if (recording)
+//            videoWriter.write(personTrackerVIT.displayMat);
 
         synchronized (matList)
         {
@@ -639,7 +638,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                     new Scalar(0, 255, 0), 5);
 
             // hand detection
-            Log.d("coucou2", "Main " + gestureRecognition.left + " " + gestureRecognition.top + " " + gestureRecognition.right + " " + gestureRecognition.bottom);
+//            Log.d("coucou2", "Main " + gestureRecognition.left + " " + gestureRecognition.top + " " + gestureRecognition.right + " " + gestureRecognition.bottom);
             Imgproc.rectangle(display, new Point(gestureRecognition.left, gestureRecognition.top),
                     new Point(gestureRecognition.right, gestureRecognition.bottom),
                     new Scalar(0,0,255), 10);
