@@ -148,6 +148,7 @@ public class GestureRecognition {
                         // go to next step
 
                         step_num = 5;
+                        Log.i(name, "current step: " + step_num + "  ");
                     }
                     return;
                 }
@@ -155,7 +156,7 @@ public class GestureRecognition {
 
 
             /***/if(step_num==5) { // hands detection
-                Log.i(name, "current step: " + step_num + "  ");
+
 //                step_num = 5;
 //                if(true)
 //                    return;
@@ -164,21 +165,26 @@ public class GestureRecognition {
                 //if human detection
                 if (humanPose != null) {
 
-                    if (humanPose.landmarks.get(LEFT_WRIST).visibility().get() > 0.7
-                            || humanPose.landmarks.get(RIGHT_WRIST).visibility().get() > 0.7) {
+                    //display for debug only
+                    Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_WRIST).x()*1024, humanPose.landmarks.get(LEFT_WRIST).y()*768),
+                            5, new Scalar(0,255,0), 10);
+                    Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_ELBOW).x()*1024, humanPose.landmarks.get(LEFT_ELBOW).y()*768),
+                            5, new Scalar(0,255,250), 10);
+
+                    Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_WRIST).x()*1024, humanPose.landmarks.get(RIGHT_WRIST).y()*768),
+                            5, new Scalar(255,0,0), 10);
+                    Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_ELBOW).x()*1024, humanPose.landmarks.get(RIGHT_ELBOW).y()*768),
+                            5, new Scalar(255,255,0), 10);
+
+                    Log.i(name, "forearm position " + humanPose.landmarks.get(RIGHT_WRIST).y() + "  " + humanPose.landmarks.get(RIGHT_ELBOW).y());
+
+                    //if wrist visible and hand up (above elbow)
+                    if ( (humanPose.landmarks.get(LEFT_WRIST).visibility().get() > 0.7 && (humanPose.landmarks.get(LEFT_WRIST).y()<humanPose.landmarks.get(LEFT_ELBOW).y()) )
+                            ||  (humanPose.landmarks.get(RIGHT_WRIST).visibility().get() > 0.7 && (humanPose.landmarks.get(RIGHT_WRIST).y()<humanPose.landmarks.get(RIGHT_ELBOW).y()) ) ) {
                         //**** Crop hand image
 
-                        Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_WRIST).x()*1024, humanPose.landmarks.get(LEFT_WRIST).y()*768),
-                                5, new Scalar(0,255,0), 10);
-                        Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_ELBOW).x()*1024, humanPose.landmarks.get(LEFT_ELBOW).y()*768),
-                                5, new Scalar(0,255,250), 10);
-
-                        Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_WRIST).x()*1024, humanPose.landmarks.get(RIGHT_WRIST).y()*768),
-                                5, new Scalar(0,255,0), 10);
-                        Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_ELBOW).x()*1024, humanPose.landmarks.get(RIGHT_ELBOW).y()*768),
-                                5, new Scalar(0,255,250), 10);
                         //next step
-                        step_num = 5;
+                        step_num = 10;
 //                                step_num =6;
                         Log.i(name, "current step: " + step_num + "  ");
                     }
@@ -186,9 +192,6 @@ public class GestureRecognition {
                     Log.d(name, "No human found");
                     return;
                 }
-
-                if (true)
-                    return;
 
 //                //detecting hands only
 //                detections = multiDetector.recognizeImage(frame, 99.0f, 99.0f, 0.4f, 0.0f, false);
