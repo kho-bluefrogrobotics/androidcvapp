@@ -403,7 +403,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
         //
         ExecutorService executorService =
-                new ThreadPoolExecutor(1, 4, 0L, TimeUnit.MILLISECONDS,
+                new ThreadPoolExecutor(1, 8, 0L, TimeUnit.MILLISECONDS,
                         new LinkedBlockingQueue<Runnable>());
 
         executorService.submit(initMultiDetector);
@@ -639,9 +639,10 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                     new Scalar(0, 255, 0), 5);
 
             // hand detection
+            Log.d("coucou2", "Main " + gestureRecognition.left + " " + gestureRecognition.top + " " + gestureRecognition.right + " " + gestureRecognition.bottom);
             Imgproc.rectangle(display, new Point(gestureRecognition.left, gestureRecognition.top),
                     new Point(gestureRecognition.right, gestureRecognition.bottom),
-                    new Scalar(0,255,0), 3);
+                    new Scalar(0,0,255), 10);
 
             return display;
         }

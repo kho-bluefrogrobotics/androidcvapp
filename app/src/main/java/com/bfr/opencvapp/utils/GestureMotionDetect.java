@@ -19,11 +19,11 @@ public class GestureMotionDetect {
 
     public GestureMotionDetect(String mname, MotionDetector motionDetector) {
         this.name = mname;
-
+        Log.d(name, "GestureMotionDetector object creation");
         this.motionDetector = motionDetector;
     }
 
-    String name = "";
+    String name = "GestureMotionDetect";
 
     MotionDetector motionDetector;
     // index of img to reset
@@ -90,10 +90,14 @@ public class GestureMotionDetect {
         this.gestureRsp = gestureRsp;
     }
 
+    public void setHandROI(Rect handROI)
+    {
+        this.handROI = handROI;
+    }
 
     public void recognize(Mat input)
     {
-        Mat frame;
+        Mat frame = input.clone();
         rows = input.rows();
         cols = input.cols();
 
@@ -134,9 +138,9 @@ public class GestureMotionDetect {
                 handMat = input.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
 //                 copy hand crop to black background
                 handMat.copyTo(roiInBlack);
-
-
-                frame = black.clone();
+//
+//
+//                frame = black.clone();
 
                 //add at the end if needed
                 if (matArray.size() <= imNum) {
@@ -199,10 +203,7 @@ public class GestureMotionDetect {
                 }
 
                 optFlow = optFlow / NUMOFFRAMES;
-
-                if (optFlow > THRES_OPT_FLOW_COUCOU) {
-                    Log.d(name, "Motion detected");
-                }
+                Log.w(name, "Optical flow =" +optFlow);
 
                 go = false;
                 step_num = 0;

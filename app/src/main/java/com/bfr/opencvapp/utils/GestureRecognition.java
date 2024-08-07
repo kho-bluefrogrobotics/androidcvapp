@@ -14,6 +14,7 @@ import android.util.Log;
 
 import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.objdetect.Detection;
+import com.google.mediapipe.tasks.components.containers.NormalizedLandmark;
 
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
@@ -26,6 +27,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class GestureRecognition {
 
@@ -78,7 +80,7 @@ public class GestureRecognition {
     public int left, right, top, bottom;
     // margin to crop the hand in pixel
     final int MARGIN = 50;
-    Rect handROI;
+    public Rect handROI;
     // black background
     Mat black;
     Mat roiInBlack; // subimage at hand roi in black image
@@ -102,10 +104,10 @@ public class GestureRecognition {
     float optFlow = 0.0f;
     // thres for optical flow
 //    float THRES_OPT_FLOW_COUCOU = 15.f;
-    float THRES_OPT_FLOW_COUCOU = 35.0f;
+    float THRES_OPT_FLOW_COUCOU = 2.0f;
     float THRES_PROPORTIONAL_OPT_FLOW_COUCOU = 0.015f;
 //    float THRES_OPT_FLOW_COME_HERE = 10.0f;
-    float THRES_OPT_FLOW_COME_HERE = 4.0f;
+    float THRES_OPT_FLOW_COME_HERE = 2.0f;
     public String result = "";
 
     //
@@ -119,7 +121,6 @@ public class GestureRecognition {
     {
         this.gestureRsp = gestureRsp;
     }
-
 
     public void recognize(Mat input)
     {
@@ -285,14 +286,14 @@ public class GestureRecognition {
                     Log.d(name, "Hand pose Estimation");
 
 
-                    // black background
-                    black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
-                    roiInBlack = black.submat(handROI); // subimage at hand roi in black image
-                    handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
-                    // copy hand crop to black background
-                    handMat.copyTo(roiInBlack);
-
-                    frame = black.clone();
+//                    // black background
+//                    black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
+//                    roiInBlack = black.submat(handROI); // subimage at hand roi in black image
+//                    handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
+//                    // copy hand crop to black background
+//                    handMat.copyTo(roiInBlack);
+//
+//                    frame = black.clone();
 
 
                     // to keep to debug
@@ -303,22 +304,36 @@ public class GestureRecognition {
 
                     if (handPose == null)
                     {
-                        Log.d(name, "NO HAND for POSE ESTIMATION");
-                        debugSaveImg("NOHAND", frame);
-                        step_num = 5;
+//                        Log.d(name, "NO HAND for POSE ESTIMATION");
+//                        debugSaveImg("NOHAND", frame);
+//                        step_num = 5;
                         return;
                     }
-                    Imgproc.rectangle(frame, new Point(left, top), new Point(right, bottom),
-                            new Scalar(0, 255, 0), 3);
+
+                    // start motion detection
+                    Log.w(name, "Req for motion detection ");
+
+                    // set hand ROI
+
+                    int HAND_ROI_MARGIN = 50;
+                    left = Math.max(2, (int)(handPose.landmarks.get(leftLandmark(handPose.landmarks)).x()*1024) - HAND_ROI_MARGIN);
+                    top = Math.max(2,(int)(handPose.landmarks.get(topLandmark(handPose.landmarks)).y()*768)-HAND_ROI_MARGIN);
+                    right = Math.min(frame.cols()-2, (int)(handPose.landmarks.get(rightLandmark(handPose.landmarks)).x()*1024)+HAND_ROI_MARGIN);
+                    bottom = Math.min(frame.rows()-2,  (int)(handPose.landmarks.get(bottomLandmark(handPose.landmarks)).y()*768)+HAND_ROI_MARGIN);
 
 
-                        int x, y;
-                        for (int l=0; l<20; l++)
-                        {
-                            x = (int) (handPose.landmarks.get(l).x()* frame.cols());
-                            y = (int) (handPose.landmarks.get(l).y()* frame.rows());
-                            Imgproc.circle(frame, new Point(x,y), 5, new Scalar(0,255,0), 5);
-                        }
+                    handROI.x =  left;
+                    handROI.y = top;
+                    handROI.height = bottom - top;
+                    handROI.width = right -top;
+
+                    gestureMotionDetect.setHandROI(handROI);
+
+
+                    Log.d("coucou2", "GestureRecog " + left + " " + top + " " + right + " " + bottom);
+
+//                    gestureMotionDetect.go = true;
+
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -413,8 +428,8 @@ public class GestureRecognition {
                 Log.d(name, "Calculating is front or not" );
                 // if seeing palm
                 if (handPose.isFront()) {
-//                    if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COUCOU)
-                    if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU)
+                    if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COUCOU)
+//                    if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU)
                     {
                         Log.w(name, "COUCOU Measured opt flow="+ gestureMotionDetect.optFlow + "length=" + widthcrop+
                                 "\nproportionh=" + proportionh + " proportionv=" + proportionv);
@@ -443,8 +458,8 @@ public class GestureRecognition {
                 {
                     //fingers upward
                     if( handPose.fingerOrientation(INDEX) >0) {
-//                        if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COME_HERE) {
-                        if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU) {
+                        if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COME_HERE) {
+//                        if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU) {
 
                             Log.d(name, "COME HERE");
                             result = "COME HERE";
@@ -476,10 +491,10 @@ public class GestureRecognition {
                     }
                     else // fingers downward
                     {
-//                        if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COME_HERE) {
-                        if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU) {
+                        if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COME_HERE) {
+//                        if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU) {
 
-                            Log.d(name, "GO AWAY");
+                            Log.d(name, "GO AWAY" + gestureMotionDetect.optFlow);
                             result = "GO AWAY";
 
                             gesture.result = result;
@@ -503,6 +518,7 @@ public class GestureRecognition {
                         } //end if motion
                         else //back of hand and no motion
                         {
+                            Log.d(name, "Back hand and no motion = " + gestureMotionDetect.optFlow);
                             step_num = 5;
                             return;
                         }
@@ -630,15 +646,21 @@ public class GestureRecognition {
 
             /***/if(step_num==900) { //wait for no hands in region of analysis
 
-                // black background
-                black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
-                roiInBlack = black.submat(handROI); // subimage at hand roi in black image
-                handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
-                // copy hand crop to black background
-                handMat.copyTo(roiInBlack);
+                try{
+                    // black background
+                    black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
+                    roiInBlack = black.submat(handROI); // subimage at hand roi in black image
+                    handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
+                    // copy hand crop to black background
+                    handMat.copyTo(roiInBlack);
 
-                frame = black.clone();
-                handPose = handPoseEstimator.recognizeImage(frame);
+                    frame = black.clone();
+                    handPose = handPoseEstimator.recognizeImage(frame);
+                } catch (Exception e) {
+                    step_num = 10;
+                    return;
+                }
+
 
                 // No more detected hand
                 if (handPose == null) {
@@ -771,6 +793,66 @@ public class GestureRecognition {
 
     }
 
+    int topLandmark(List<NormalizedLandmark> landmarks)
+    {
+        int id = -1;
+        float tmpValue =9999.0f;
+
+        for (int i=0; i<landmarks.size();i++)
+        {
+            if(Float.compare(landmarks.get(i).y(), tmpValue)<0){
+                tmpValue = landmarks.get(i).y();
+                id = i;
+            }
+        }
+        return id;
+    }
+
+    int bottomLandmark(List<NormalizedLandmark> landmarks)
+    {
+        int id = -1;
+        float tmpValue =-1.0f;
+
+        for (int i=0; i<landmarks.size();i++)
+        {
+//            Log.d("coucou3", "Bottom:" + i +" "+ landmarks.get(i).y() + "("+tmpValue+")");
+            if(Float.compare(landmarks.get(i).y(), tmpValue)>0) {
+                tmpValue = landmarks.get(i).y();
+                id = i;
+            }
+        }
+        return id;
+    }
+
+    int leftLandmark(List<NormalizedLandmark> landmarks)
+    {
+        int id = -1;
+        float tmpValue =9999.0f;
+
+        for (int i=0; i<landmarks.size();i++)
+        {
+            if(Float.compare(landmarks.get(i).x(), tmpValue)<0){
+                tmpValue = landmarks.get(i).x();
+                id = i;
+            }
+        }
+        return id;
+    }
+
+    int rightLandmark(List<NormalizedLandmark> landmarks)
+    {
+        int id = -1;
+        float tmpValue =-1.0f;
+
+        for (int i=0; i<landmarks.size();i++)
+        {
+            if(Float.compare(landmarks.get(i).x(), tmpValue)>0){
+                tmpValue = landmarks.get(i).x();
+                id = i;
+            }
+        }
+        return id;
+    }
 
     void debugRecord(String folder)
     {
