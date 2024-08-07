@@ -155,6 +155,7 @@ public class GestureRecognition {
                 }
 
 
+            int signingHand = -1;
 
             /***/if(step_num==5) { // hands detection
 
@@ -180,10 +181,9 @@ public class GestureRecognition {
                     Log.i(name, "forearm position " + humanPose.landmarks.get(RIGHT_WRIST).y() + "  " + humanPose.landmarks.get(RIGHT_ELBOW).y());
 
                     //if wrist visible and hand up (above elbow)
-                    if ( (humanPose.landmarks.get(LEFT_WRIST).visibility().get() > 0.7 && (humanPose.landmarks.get(LEFT_WRIST).y()<humanPose.landmarks.get(LEFT_ELBOW).y()) )
-                            ||  (humanPose.landmarks.get(RIGHT_WRIST).visibility().get() > 0.7 && (humanPose.landmarks.get(RIGHT_WRIST).y()<humanPose.landmarks.get(RIGHT_ELBOW).y()) ) ) {
-                        //**** Crop hand image
+                    signingHand = humanPose.isSigning();
 
+                    if ( signingHand>-1 ) {
                         //next step
                         step_num = 10;
 //                                step_num =6;
@@ -306,7 +306,7 @@ public class GestureRecognition {
                     // displaymat = black.clone();
 
                     //hand pose estimation
-                    handPose = handPoseEstimator.recognizeImage(frame);
+                    handPose = handPoseEstimator.recognizeImage(frame, signingHand);
 
                     if (handPose == null)
                     {

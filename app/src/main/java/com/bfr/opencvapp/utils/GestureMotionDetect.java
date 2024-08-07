@@ -121,6 +121,7 @@ public class GestureMotionDetect {
                         imNum = 0;
                         // go to next step
                         step_num =100;
+                        Log.i(name, "Starting Motion detection -> " + step_num + "  ");
                     }
                     return;
                 }

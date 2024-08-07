@@ -1,6 +1,8 @@
 package com.bfr.opencvapp.utils;
 
 
+import static com.bfr.opencvapp.utils.HumanPoseLandmarks.*;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Build;
@@ -202,11 +204,21 @@ public class HandPoseEstimator {
      * @param frame original image in Mat format
      * @return array of detections
      */
-    public HandPose recognizeImage(Mat frame) {
+    public HandPose recognizeImage(Mat frame)
+    {
+        return recognizeImage(frame, -1);
+    }
+    /**
+     * get the detected objects in the image
+     * @param frame original image in Mat format
+     * @param targetHand only returns something if the detected hand corresponds to left or right target
+     * @return array of detections
+     */
+    public HandPose recognizeImage(Mat frame, int targetHand) {
 
         Log.i(TAG, "Starting Hand pose estimation" );
 
-        HandPose handPose = new HandPose();
+        HandPose handPose = null;
 
         //convert to bitmap
         Mat input = frame.clone();
@@ -232,82 +244,37 @@ public class HandPoseEstimator {
             return null;
         }
 
+        // if requested to check hand id
+        if(targetHand>-1)
+        {
+            // for each hand
+            for (int handId=0; handId<handLandmarkerResult.landmarks().size(); handId++)
+            {
+                if(targetHand==RIGHT_WRIST && handLandmarkerResult.handednesses().get(handId).get(0).categoryName().toUpperCase().contains("RIGHT") ){
+                    continue;
+                }
+                else if(targetHand==LEFT_WRIST && handLandmarkerResult.handednesses().get(handId).get(0).categoryName().toUpperCase().contains("LEFT") ){
+                    continue;
+                }
 
-        Log.i(TAG, "Result size ="+ handLandmarkerResult.landmarks().get(0).size());
+                if (handPose==null)
+                    handPose = new HandPose();
 
-        handPose.landmarks = handLandmarkerResult.landmarks().get(0);
-        handPose.handeness = handLandmarkerResult.handednesses().get(0);
+                handPose.landmarks = handLandmarkerResult.landmarks().get(handId);
+                handPose.handeness = handLandmarkerResult.handednesses().get(handId);
 
-//        for(int k=0; k<20; k++)
-//        {
-//            int x = (int) (handLandmarkerResult.landmarks().get(0).get(k).x() * frame.cols());
-//            int y = (int) (handLandmarkerResult.landmarks().get(0).get(k).y()* frame.rows());
-//            Imgproc.circle(frame, new Point(x,y), 5, new Scalar(0,255,0), 5);
-//        }
-
-
-
-//
-//        try
-//        {
-//            displayMat = frame.clone();
-//
-//            // check input size
-//            Mat resizedFrame = new Mat();
-//            if(frame.rows()!=INPUT_SIZE.height || frame.cols()!=INPUT_SIZE.width)
-//                Imgproc.resize(frame, resizedFrame, new Size(INPUT_SIZE.width,INPUT_SIZE.height));
-//            else
-//                resizedFrame = frame.clone();
-//
-//            //convert to bitmap
-//            Bitmap bitmapImg = Bitmap.createBitmap(resizedFrame.cols(), resizedFrame.rows(), Bitmap.Config.ARGB_8888);
-//            Utils.matToBitmap(resizedFrame, bitmapImg);
-//            // assigning memory of input
-//            ByteBuffer byteBuffer = convertBitmapToByteBuffer(bitmapImg);
-//            Object[] inputArray = {byteBuffer};
-//
-//            // assigning output
-//            Map<Integer, Object> outputMap = new HashMap<>();
-//
-//            //
-//            // 1) a fp32{1,63} map of the 21 landmarks * (x, y, z) coords in PIXEL , z takes the origin at the wrist
-////            outputMap.put(0, new float[1][63]);
-//            outputMap.put(0, new float[1][1]);
-//            // 2) a fp32{1,1} map representing the probability of presence of a hand
-////            outputMap.put(1, new float[1][1]);
-//            outputMap.put(1, new float[1][63]);
-//            // 3) a fp32{1,1} map representing the handedness  <0.5: Left hand , >0.5:Right hand
-////            outputMap.put(2, new float[1][1]);
-//            outputMap.put(2, new float[1][1]);
-//            // 4) a fp32{1,63} map of the 21 landmarks * (x, y, z) coords in world coordinates
-//            outputMap.put(3, new float[1][63]);
-//
-////            Log.d(TAG, "Inference NOW!");
-//            // Run inference
-//            tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
-//
-////            handPose.landmarks = ((float[][]) outputMap.get(0))[0];
-//            handPose.landmarks = ((float[][]) outputMap.get(3))[0];
-////            handPose.handPresence = ((float [][]) Objects.requireNonNull(outputMap.get(1)))[0][0];
-//            handPose.handPresence = ((float [][]) Objects.requireNonNull(outputMap.get(0)))[0][0];
-////            handPose.handeness = ((float [][]) Objects.requireNonNull(outputMap.get(2)))[0][0];
-//            handPose.handeness = ((float [][]) Objects.requireNonNull(outputMap.get(2)))[0][0];
-//
-////            Log.d(TAG, "Inference done; confidence = " +  handPose.handPresence + " LorR="+ handPose.handeness);
-//            Log.d(TAG, "tip index Point = " + handPose.landmarks[8*3] + ","+ handPose.landmarks[8*3 + 1]);
-//
-//            //init for display only
-//            objId = 0;
-//            // for each detection
-//            for (int i = 0; i < OUTPUT_MAPS_SIZE[0]; i++)
-//            {
-//
-//            } // next detection
+                //break at this hand
+                break;
+            }
+            Log.i(TAG, "Result size ="+ handLandmarkerResult.landmarks().get(0).size());
 
 
-//        } catch (Exception e) {
-//            Log.e("ERROR", Log.getStackTraceString(e));
-//        }
+        }
+        else //just take the first detected hand
+        {
+            handPose.landmarks = handLandmarkerResult.landmarks().get(0);
+            handPose.handeness = handLandmarkerResult.handednesses().get(0);
+        }
 
         return handPose;
     }

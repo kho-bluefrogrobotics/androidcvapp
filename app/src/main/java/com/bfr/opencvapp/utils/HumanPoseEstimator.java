@@ -360,212 +360,23 @@ public class HumanPoseEstimator {
             }
             return displayMat;
         }
-        // front: true = palm towards the camera, false= back of the hand towards the camera
-        public void front()
+
+
+        final float WRIST_VISIBILITY_THRES = 0.7f;
+
+        public int isSigning()
         {
-            // vector of the knucle line, from the base of the pinkie to the base of the index
-            int[] knucleLine = new int[]{ (int)( (landmarks.get(17).x() - landmarks.get(5).x())  * 1024), (int)((landmarks.get(17).y() - landmarks.get(5).y())*768 )};
-            // vector of the palm, from the wrist to the base of the index
-            int[] plamLine = new int[]{ (int)( (landmarks.get(0).x() - landmarks.get(5).x()) *1024), (int)( (landmarks.get(0).y() - landmarks.get(5).y())*768 )};
-
-            Log.w("vecto", "Result =" +  knucleLine[0]+"x"+plamLine[1] +"-"+ plamLine[0]+"x"+knucleLine[1] +"=" +(knucleLine[0]*plamLine[1]-plamLine[0]*knucleLine[1]));
-
-            //z component of the cross product, not normalized
-            int z=(knucleLine[0]*plamLine[1]-plamLine[0]*knucleLine[1]);
-
-            // if left hand
-            if (handeness.get(0).categoryName().toUpperCase().contains("LEFT")){
-                if(z<0)
-                    Log.w("sideH", "LEFT FRONT");
-                else
-                    Log.w("sideH", "LEFT BACK");
-            }
-            else{
-                if(z>0)
-                    Log.w("sideH", "RIGHT FRONT");
-                else
-                    Log.w("sideH", "RIGHT BACK");
-            }
-
-        }
-
-        // front: true = palm towards the camera, false= back of the hand towards the camera
-        public boolean isFront()
-        {
-            // vector of the knucle line, from the base of the pinkie to the base of the index
-            int[] knucleLine = new int[]{ (int)( (landmarks.get(17).x() - landmarks.get(5).x())  * 1024), (int)((landmarks.get(17).y() - landmarks.get(5).y())*768 )};
-            // vector of the palm, from the wrist to the base of the index
-            int[] plamLine = new int[]{ (int)( (landmarks.get(0).x() - landmarks.get(5).x()) *1024), (int)( (landmarks.get(0).y() - landmarks.get(5).y())*768 )};
-
-//            Log.w("vecto", "Result =" +  knucleLine[0]+"x"+plamLine[1] +"-"+ plamLine[0]+"x"+knucleLine[1] +"=" +(knucleLine[0]*plamLine[1]-plamLine[0]*knucleLine[1]));
-
-            //z component of the cross product, not normalized
-            //the crosproduct represent the orthogonal vector to the knucleline and the vector index-wrist
-            int z=(knucleLine[0]*plamLine[1]-plamLine[0]*knucleLine[1]);
-
-            Log.d(TAG, "IsFront: hand=" + handeness.get(0).categoryName() + " z=" + z );
-            // if left hand
-            if (handeness.get(0).categoryName().toUpperCase().contains("LEFT")){
-                if(z<-7000)
-//                    Log.w("sideH", "LEFT FRONT");
-                    this.front = true;
-                else
-//                    Log.w("sideH", "LEFT BACK");
-                    this.front = false;
-            }
-            else{
-                if(z>7000)
-//                    Log.w("sideH", "RIGHT FRONT");
-                    this.front = true;
-                else
-//                    Log.w("sideH", "RIGHT BACK");
-                    this.front = false;
-            }
-            return this.front;
-        }
-
-        /** How to know a finger is opened : compute the hypotenuse  of the tip and 2nd phalanx
-         * if the dist [tip of the finger to the wrist] < the dist [2nd phalanx to the wrist]  => the finger is open
-         * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L209
-         * for a point (x1, y1) the dist is simply  = sqrt(x1^2 + y1^2)
-         * for instance, the first finger tip has the id 8 , and the 2nd phalanx id 6
-         * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L205
-         */
-        public boolean isOpen(FINGER finger)
-        {
-
-            // For all fingers EXCEPT thumb
-            if (finger != FINGER.THUMB)
+            if( (landmarks.get(LEFT_WRIST).visibility().get() > WRIST_VISIBILITY_THRES && (landmarks.get(LEFT_WRIST).y()<landmarks.get(LEFT_ELBOW).y()) ))
             {
-                int TIP = PHALANX_ID[finger.ordinal()][0];
-                int SECOND_PHALANX = PHALANX_ID[finger.ordinal()][1];
-
-//            int[] vec1 = new int[]{(int)(landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]), (int)(landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) };
-//            Log.d("ccoucou", "vect=" + vec1[0] + "," + vec1[1] +"    " + landmarks[TIP *3] + "," + landmarks[TIP *3+1] );
-
-                double distTip = Math.sqrt( (landmarks.get(TIP).x() -  landmarks.get(0).x())*(landmarks.get(TIP).x() -  landmarks.get(0).x())
-                        + (landmarks.get(TIP).y() -  landmarks.get(0).y())*(landmarks.get(TIP).y() -  landmarks.get(0).y()) );
-
-                double distPhalanx = Math.sqrt( (landmarks.get(SECOND_PHALANX).x() -  landmarks.get(0).x())*(landmarks.get(SECOND_PHALANX).x() -  landmarks.get(0).x())
-                        + (landmarks.get(SECOND_PHALANX).y() -  landmarks.get(0).y())*(landmarks.get(SECOND_PHALANX).y() -  landmarks.get(0).y()) );
-
-//            Log.d("ccoucou", "distTip=" + distTip );
-//            Log.d("ccoucou", "distPhalanx=" + distPhalanx );
-//            Log.d("ccoucou", "Interm Calc=" + (landmarks[TIP *3] -  landmarks[0]) + " + " + (landmarks[TIP*3 + 1] -  landmarks[1]) );
-
-                if (distTip <= distPhalanx)
-                    return  false;
-                else
-                    return true;
+                return LEFT_WRIST;
             }
-            else // THUMB is an exception :
-            // the open state of the thumb is obtained by comparing the dist of the tip to the base of the index finger the dist of the first two knuckles
+            else if(landmarks.get(RIGHT_WRIST).visibility().get() > WRIST_VISIBILITY_THRES && (landmarks.get(RIGHT_WRIST).y()<landmarks.get(RIGHT_ELBOW).y()) )
             {
-                double THRES_DIST_TIP_PHALANX = 0.1;
-                int TIP = 4;
-                int INDEX_BASE = 5;
-                int MIDDLE_BASE = 9;
-
-//            int[] vec1 = new int[]{(int)(landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]), (int)(landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) };
-//            Log.d("ccoucou", "vect=" + vec1[0] + "," + vec1[1] +"    " + landmarks[TIP *3] + "," + landmarks[TIP *3+1] );
-
-                double distTip = Math.sqrt( (landmarks.get(TIP).x() -  landmarks.get(INDEX_BASE).x())*(landmarks.get(TIP).x() -  landmarks.get(INDEX_BASE).x())
-                        + (landmarks.get(TIP).y() -  landmarks.get(INDEX_BASE).y())*(landmarks.get(TIP).y() -  landmarks.get(INDEX_BASE).y()) );
-                double distKnuckle = Math.sqrt( (landmarks.get(MIDDLE_BASE).x() -  landmarks.get(INDEX_BASE).x())*(landmarks.get(MIDDLE_BASE).x() -  landmarks.get(INDEX_BASE).x())
-                        + (landmarks.get(MIDDLE_BASE).y() -  landmarks.get(INDEX_BASE).y())*(landmarks.get(MIDDLE_BASE).y() -  landmarks.get(INDEX_BASE).y()) );
-
-
-//            Log.d("ccoucou", "distPhalanx=" + distPhalanx );
-//            Log.d("ccoucou", "Interm Calc=" + (landmarks[TIP *3] -  landmarks[0]) + " + " + (landmarks[TIP*3 + 1] -  landmarks[1]) );
-
-                // if tip of the thumb is close to the base of the middle finger
-                if (distTip <= 2*distKnuckle)
-                {
-                    String.format("%1$,.2f", distTip);
-                    Log.d("ccoucou", "distTip=" + String.format("%1$,.4f", distTip) + "distPhalanx=" + String.format("%1$,.4f", distKnuckle)  + "=> CLOSE");
-                    return  false;
-                }
-
-                else
-                {
-                    Log.d("ccoucou", "distTip=" + String.format("%1$,.4f", distTip) + "distPhalanx=" + String.format("%1$,.4f", distKnuckle)  + "=> OPEN");
-                    return true;
-                }
-
+                return RIGHT_WRIST;
             }
-
-        } //end isOpen
-
-
-        /**
-         * returns the orientation of the finger as an angle in degrees [0-359]. 0 is horizontal, in anti-clockwise direction (so 90° si upward and -90° if downward)
-         * @param finger
-         * @return
-         */
-        public int fingerOrientation(FINGER finger)
-        {
-//            Log.d("ccoucou", "finger orientation");
-            int TIP = PHALANX_ID[finger.ordinal()][0];
-            int SECOND_PHALANX = PHALANX_ID[finger.ordinal()][1];
-
-//            int[] vec1 = new int[]{(int)(landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]), (int)(landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) };
-//            int[] vec2 = new int[]{1,0 };
-
-
-            // dot product = x1*x2 + y1*y2
-//            double dotProduct = (landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3])* (landmarks[SECOND_PHALANX *3] -  landmarks[0]);
-            double angleRad= Math.atan2( (landmarks.get(TIP).y() -  landmarks.get(SECOND_PHALANX).y()) ,  (landmarks.get(TIP).x() -  landmarks.get(SECOND_PHALANX).x()) );
-
-//            double norm = Math.sqrt(vec1[0]*vec1[0] + vec1[1]*vec1[1]);
-//            double dotProduct = ( vec1[0] * vec2[0]  + vec1[1]* vec2[1] )/ norm;
-
-
-//            double angleRad = Math.atan2(vec1[1], vec1[0]);
-
-            // image is oriented with y towards bottom -> invert sign
-            return -(int)Math.toDegrees(angleRad);
-
-//            Log.d("ccoucou", "TIP=" + (int)landmarks[TIP *3] + "," + (int)landmarks[TIP *3+1] + " PHALANX= " + (int)landmarks[SECOND_PHALANX *3] + "," + (int)landmarks[SECOND_PHALANX *3+1]);
-//            Log.d("ccoucou", "vect1=" + vec1[0] + "," + vec1[1] + " dotproduct= " + dotProduct + "norm=" + norm + " ==>angle in rad = " + angleRad + " in deg = " + this.angle);
-
-        } //end finger orientation
-
-
-        /**
-         * returns the orientation hand as an angle in degrees [0-359]. 0 is horizontal, in anti-clockwise direction (so 90° si upward and -90° if downward)
-         * @return the hand rotation
-         */
-        public int handOrientation()
-        {
-//            Log.d("ccoucou", "finger orientation");
-            int TIP = 17;
-            int SECOND_PHALANX = 5;
-
-//            int[] vec1 = new int[]{(int)(landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]), (int)(landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) };
-//            int[] vec2 = new int[]{1,0 };
-
-
-            // dot product = x1*x2 + y1*y2
-//            double dotProduct = (landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3])* (landmarks[SECOND_PHALANX *3] -  landmarks[0]);
-//            double angleRad= Math.atan2( landmarks.get(TIP).y() -  landmarks.get(SECOND_PHALANX).y() ,  landmarks.get(TIP).x() -  landmarks.get(SECOND_PHALANX).x() );
-            double angleRad= Math.atan2( Math.abs(landmarks.get(TIP).y() -  landmarks.get(SECOND_PHALANX).y() ) , Math.abs( landmarks.get(TIP).x() -  landmarks.get(SECOND_PHALANX).x() ) );
-
-//            double norm = Math.sqrt(vec1[0]*vec1[0] + vec1[1]*vec1[1]);
-//            double dotProduct = ( vec1[0] * vec2[0]  + vec1[1]* vec2[1] )/ norm;
-
-
-//            double angleRad = Math.atan2(vec1[1], vec1[0]);
-
-            // image is oriented with y towards bottom -> invert sign
-            Log.d("ccoucou", "HandOrientation=" + ( ((int)Math.toDegrees(angleRad) ) %360) );
-//
-
-            return (int)Math.toDegrees(angleRad);
-
-//            Log.d("ccoucou", "TIP=" + (int)landmarks[TIP *3] + "," + (int)landmarks[TIP *3+1] + " PHALANX= " + (int)landmarks[SECOND_PHALANX *3] + "," + (int)landmarks[SECOND_PHALANX *3+1]);
-//            Log.d("ccoucou", "vect1=" + vec1[0] + "," + vec1[1] + " dotproduct= " + dotProduct + "norm=" + norm + " ==>angle in rad = " + angleRad + " in deg = " + this.angle);
-
-        } //end finger orientation
+            else
+                return -1;
+        } //end isSigning
 
 
     } //end headpose class
