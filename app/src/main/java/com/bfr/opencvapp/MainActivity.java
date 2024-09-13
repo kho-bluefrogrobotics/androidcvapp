@@ -455,23 +455,23 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         }
     };
 
-    // Scheduler for visual tracking
-    private ScheduledExecutorService gestureScheduler ;
-    // Runnable for visual tracking
-    Runnable gestureRunnable = new Runnable() {
-        @Override
-        public void run() {
-//            try {
-                //process
-                gestureRecognition.recognize(getLastImg());
-                // notify as last cv method called to display result
-
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                finish();
-//            }
-        }
-    };
+//    // Scheduler for visual tracking
+//    private ScheduledExecutorService gestureScheduler ;
+//    // Runnable for visual tracking
+//    Runnable gestureRunnable = new Runnable() {
+//        @Override
+//        public void run() {
+////            try {
+//                //process
+//                gestureRecognition.recognize(getLastImg());
+//                // notify as last cv method called to display result
+//
+////            } catch (Exception e) {
+////                e.printStackTrace();
+////                finish();
+////            }
+//        }
+//    };
 
 
     // Scheduler for visual tracking
@@ -549,40 +549,38 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //        videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
 //                25.0D,  new Size( 800,600));
 
-
-
-
 //        started = true;
 
-        // start scheduled task
-        if(gestureScheduler==null || gestureScheduler.isShutdown())
-        {
-            try{
-                //init thread
-                gestureScheduler = Executors.newScheduledThreadPool(1);
-                // 40ms period to grab a frame at 25fps
-                gestureScheduler.scheduleWithFixedDelay(gestureRunnable, 0, 35, TimeUnit.MILLISECONDS);
-            }
-            catch (Exception e)
-            {
-                Log.e(TAG, "ERROR stopping gesture recognition: " + Log.getStackTraceString(e));
-            }
-        } //end if scheduler ready
+//        // start scheduled task
+//        if(gestureScheduler==null || gestureScheduler.isShutdown())
+//        {
+//            try{
+//                //init thread
+//                gestureScheduler = Executors.newScheduledThreadPool(1);
+//                // 40ms period to grab a frame at 25fps
+//                gestureScheduler.scheduleWithFixedDelay(gestureRunnable, 0, 35, TimeUnit.MILLISECONDS);
+//            }
+//            catch (Exception e)
+//            {
+//                Log.e(TAG, "ERROR stopping gesture recognition: " + Log.getStackTraceString(e));
+//            }
+//        } //end if scheduler ready
 
-        // start scheduled task
-        if(motionGestureScheduler==null || motionGestureScheduler.isShutdown())
-        {
-            try{
-                //init thread
-                motionGestureScheduler = Executors.newScheduledThreadPool(1);
-                // 40ms period to grab a frame at 25fps
-                motionGestureScheduler.scheduleWithFixedDelay(motionGestureRunnable, 0, 35, TimeUnit.MILLISECONDS);
-            }
-            catch (Exception e)
-            {
-                Log.e(TAG, "ERROR stopping gesture recognition: " + Log.getStackTraceString(e));
-            }
-        } //end if scheduler ready
+//        // start scheduled task
+//        if(motionGestureScheduler==null || motionGestureScheduler.isShutdown())
+//        {
+//            try{
+//                Log.w(TAG, "Starting GestureMotionDetector " );
+//                //init thread
+//                motionGestureScheduler = Executors.newScheduledThreadPool(1);
+//                // 40ms period to grab a frame at 25fps
+//                motionGestureScheduler.scheduleWithFixedDelay(motionGestureRunnable, 0, 35, TimeUnit.MILLISECONDS);
+//            }
+//            catch (Exception e)
+//            {
+//                Log.e(TAG, "ERROR starting GestureMotionDetector : " + Log.getStackTraceString(e));
+//            }
+//        } //end if scheduler ready
 
     }
 
@@ -595,6 +593,22 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
     }
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+
+        // start scheduled task
+        if(motionGestureScheduler==null || motionGestureScheduler.isShutdown())
+        {
+            try{
+                Log.w(TAG, "Starting GestureMotionDetector " );
+                //init thread
+                motionGestureScheduler = Executors.newScheduledThreadPool(1);
+                // 40ms period to grab a frame at 25fps
+                motionGestureScheduler.scheduleWithFixedDelay(motionGestureRunnable, 0, 35, TimeUnit.MILLISECONDS);
+            }
+            catch (Exception e)
+            {
+                Log.e(TAG, "ERROR starting GestureMotionDetector : " + Log.getStackTraceString(e));
+            }
+        } //end if scheduler ready
 
 //        Log.w("MainActivity", "Camera frame ready");
         // cature frame from camera

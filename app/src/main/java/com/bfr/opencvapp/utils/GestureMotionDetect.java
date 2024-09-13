@@ -101,7 +101,6 @@ public class GestureMotionDetect {
         rows = input.rows();
         cols = input.cols();
 
-        Log.i(name, "current step: " + step_num + "  ");
 
         try{
             // if step changed

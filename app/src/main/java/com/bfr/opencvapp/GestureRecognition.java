@@ -210,47 +210,49 @@ public class GestureRecognition {
                     //if wrist visible and hand up (above elbow)
                     signingHand = humanPose.isSigning();
 
+                    int handH, handW, handX, handX2, handY, handY2;
+                    handH = (int) (IMG_HEIGHT/1.2);
+                    handW = (int) (IMG_WIDTH/1.7);
+
                     if ( signingHand==LEFT_WRIST ) {
 
-                        int leftH = (int) Math.abs(humanPose.landmarks.get(LEFT_WRIST).y()*IMG_HEIGHT-humanPose.landmarks.get(LEFT_ELBOW).y()*IMG_HEIGHT);
-                        int leftW = (int) Math.abs(humanPose.landmarks.get(LEFT_INDEX).y()*IMG_HEIGHT-humanPose.landmarks.get(LEFT_WRIST).y()*IMG_HEIGHT);
-                        leftH = (int) (IMG_HEIGHT/1.2);
-                        leftW = (int) (IMG_WIDTH/1.7);
-                        int leftX = Math.max( (int) (humanPose.landmarks.get(LEFT_INDEX).x()*IMG_WIDTH - leftW/2), 2);
-                        int leftY = Math.max( (int) (humanPose.landmarks.get(LEFT_WRIST).y()*IMG_HEIGHT - leftH/2), 2);
-                        int leftX2 = Math.min( leftX + leftW, IMG_WIDTH-2);
-                        int leftY2 = Math.min(leftY+leftH, IMG_HEIGHT-2);
-                        Rect leftHandROI = new Rect(leftX,leftY,leftW,leftH);
+                        handX = Math.max( (int) (humanPose.landmarks.get(LEFT_INDEX).x()*IMG_WIDTH - handW/2), 2);
+                        handY = Math.max( (int) (humanPose.landmarks.get(LEFT_WRIST).y()*IMG_HEIGHT - handH/2), 2);
+                        handX2 = Math.min( handX + handW, IMG_WIDTH-2);
+                        handY2 = Math.min(handY+handH, IMG_HEIGHT-2);
+                        handROI.x = handX;
+                        handROI.y = handY;
+                        handROI.height = handY2-handY;
+                        handROI.width = handX2-handX;
 
-                        Imgproc.rectangle(input,new Point(leftX, leftY), new Point(leftX2, leftY2),
+                        Imgproc.rectangle(input,new Point(handX, handY), new Point(handX2, handY2),
                                 new Scalar(0,220, 0), 4);
 
-                        //define hand ROI to crop (to filter out other hands)
-                        handROI.x = 5;
-                        handROI.y = 5;
-                        handROI.height = 5;
-                        handROI.width = 5;
-
                         //next step
-//                        step_num = 10;
+                        step_num = 90;
 
 //                                step_num =6;
                         Log.i(name, "current step: " + step_num + "  ");
                     }
                     else if (signingHand == RIGHT_WRIST) {
 
-                        int rightH = (int) Math.abs(humanPose.landmarks.get(LEFT_WRIST).y()*IMG_HEIGHT-humanPose.landmarks.get(LEFT_ELBOW).y()*IMG_HEIGHT);
-                        int rightW = (int) Math.abs(humanPose.landmarks.get(LEFT_INDEX).y()*IMG_HEIGHT-humanPose.landmarks.get(LEFT_WRIST).y()*IMG_HEIGHT);
-                        rightH = (int) (IMG_HEIGHT/1.2);
-                        rightW = (int) (IMG_WIDTH/1.7);
-                        int rightX = Math.max( (int) (humanPose.landmarks.get(RIGHT_INDEX).x()*IMG_WIDTH - rightW/2), 2);
-                        int rightY = Math.max( (int) (humanPose.landmarks.get(RIGHT_WRIST).y()*IMG_HEIGHT - rightH/2), 2);
-                        int rightX2 = Math.min( rightX + rightW, IMG_WIDTH-2);
-                        int rightY2 = Math.min(rightY+rightH, IMG_HEIGHT-2);
-                        Rect leftHandROI = new Rect(rightX,rightY,rightW,rightH);
+                        handX = Math.max( (int) (humanPose.landmarks.get(RIGHT_INDEX).x()*IMG_WIDTH - handW/2), 2);
+                        handY = Math.max( (int) (humanPose.landmarks.get(RIGHT_WRIST).y()*IMG_HEIGHT - handH/2), 2);
+                        handX2 = Math.min( handX + handW, IMG_WIDTH-2);
+                        handY2 = Math.min(handY+handH, IMG_HEIGHT-2);
+                        handROI.x = handX;
+                        handROI.y = handY;
+                        handROI.height = handY2-handY;
+                        handROI.width = handX2-handX;
 
-                        Imgproc.rectangle(input,new Point(rightX, rightY), new Point(rightX2, rightY2),
+                        Imgproc.rectangle(input,new Point(handX, handY), new Point(handX2, handY2),
                                 new Scalar(0,220, 0), 4);
+
+                        //next step
+                        step_num = 90;
+
+//                                step_num =6;
+                        Log.i(name, "current step: " + step_num + "  ");
 
                     }
                 } else {
@@ -292,7 +294,7 @@ public class GestureRecognition {
 //                return;
 //            }
 
-            /***/if(step_num==10) { // Pose estimation
+            /***/if(step_num==90) { // Pose estimation
 
                 try {
                     Log.d(name, "Hand pose Estimation");
@@ -342,7 +344,7 @@ public class GestureRecognition {
                     gestureMotionDetect.setHandROI(handROI);
 
 
-                    Log.d("coucou2", "GestureRecog " + left + " " + top + " " + right + " " + bottom);
+//                    Log.d("coucou2", "GestureRecog " + left + " " + top + " " + right + " " + bottom);
 
                     gestureMotionDetect.go = true;
 
@@ -361,6 +363,7 @@ public class GestureRecognition {
                     // init frame index for buffer recording
                     imNum = 0;
                     step_num = 100;
+                    debugSaveImg("OPENHAND", frame);
                     Log.d(name, "Hand is open -> 100 : ");
                 }
                 // Thumbs open
