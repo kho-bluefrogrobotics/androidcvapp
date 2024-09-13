@@ -373,7 +373,8 @@ public class HumanPoseEstimator {
             {
                 return LEFT_WRIST;
             }
-            else if(landmarks.get(RIGHT_WRIST).visibility().get() > WRIST_VISIBILITY_THRES && (landmarks.get(RIGHT_WRIST).y()<landmarks.get(RIGHT_ELBOW).y()-0.05) )
+            else if(landmarks.get(RIGHT_WRIST).visibility().get() > WRIST_VISIBILITY_THRES && (
+                    landmarks.get(RIGHT_WRIST).y()<landmarks.get(RIGHT_ELBOW).y()-0.05)  || landmarks.get(RIGHT_ELBOW).y()*IMG_HEIGHT<landmarks.get(RIGHT_SHOULDER).y()*IMG_HEIGHT+15 )
             {
                 return RIGHT_WRIST;
             }
