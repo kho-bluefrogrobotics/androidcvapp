@@ -1,4 +1,4 @@
-package com.bfr.opencvapp;
+package com.bfr.opencvapp.utils;
 
 /**
  Get the centroid of a bbox (from upper left corner coordinates and height/width) in pixel

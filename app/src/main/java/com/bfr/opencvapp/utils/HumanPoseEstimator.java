@@ -1,6 +1,7 @@
 package com.bfr.opencvapp.utils;
 
 
+import static com.bfr.opencvapp.GestureRecognition.IMG_HEIGHT;
 import static com.bfr.opencvapp.utils.HumanPoseLandmarks.*;
 
 import android.content.Context;
@@ -137,7 +138,7 @@ public class HumanPoseEstimator {
             /** Mediapipe */
 
             BaseOptions.Builder baseOptionsBuilder = BaseOptions.builder()
-                    .setModelAssetPath("nnmodels/pose_landmarker_lite.task")
+                    .setModelAssetPath("nnmodels/pose_landmarker_full.task")
                     .setDelegate(Delegate.GPU);
             BaseOptions baseOptions  = baseOptionsBuilder.build();
 
@@ -205,7 +206,7 @@ public class HumanPoseEstimator {
      */
     public HumanPose recognizeImage(Mat frame) {
 
-        Log.i(TAG, "Starting Human pose estimation" );
+//        Log.i(TAG, "Starting Human pose estimation" );
 
         HumanPose humanPose = new HumanPose();
 
@@ -234,7 +235,7 @@ public class HumanPoseEstimator {
         }
 
 
-        Log.i(TAG, "Result size ="+ poseLandmarkerResult.landmarks().get(0).size());
+//        Log.i(TAG, "Result size ="+ poseLandmarkerResult.landmarks().get(0).size());
 
         humanPose.landmarks = poseLandmarkerResult.landmarks().get(0);
 
@@ -366,11 +367,13 @@ public class HumanPoseEstimator {
 
         public int isSigning()
         {
-            if( (landmarks.get(LEFT_WRIST).visibility().get() > WRIST_VISIBILITY_THRES && (landmarks.get(LEFT_WRIST).y()<landmarks.get(LEFT_ELBOW).y()) ))
+            if( landmarks.get(LEFT_WRIST).visibility().get() > WRIST_VISIBILITY_THRES && (
+                            landmarks.get(LEFT_WRIST).y()<landmarks.get(LEFT_ELBOW).y()-0.05  || landmarks.get(LEFT_ELBOW).y()*IMG_HEIGHT<landmarks.get(LEFT_SHOULDER).y()*IMG_HEIGHT+15
+            ))
             {
                 return LEFT_WRIST;
             }
-            else if(landmarks.get(RIGHT_WRIST).visibility().get() > WRIST_VISIBILITY_THRES && (landmarks.get(RIGHT_WRIST).y()<landmarks.get(RIGHT_ELBOW).y()) )
+            else if(landmarks.get(RIGHT_WRIST).visibility().get() > WRIST_VISIBILITY_THRES && (landmarks.get(RIGHT_WRIST).y()<landmarks.get(RIGHT_ELBOW).y()-0.05) )
             {
                 return RIGHT_WRIST;
             }

@@ -7,27 +7,27 @@ package com.bfr.opencvapp.utils;
 public class HumanPoseLandmarks {
 
     /*** Body landmarks*/
-    static int NOSE = 0;
-    static int LEFT_EYE = 2;
-    static int RIGHT_EYE = 5;
-    static int LEFT_EAR = 7;
-    static int RIGHT_EAR = 8;
-    static int MOUTH_LEFT = 9;
-    static int MOUTH_RIGHT = 10;
-    static int LEFT_SHOULDER = 11;
-    static int RIGHT_SHOULDER = 12;
-    static int LEFT_HIP = 11;
-    static int LEFT_ELBOW = 13;
+    public static int NOSE = 0;
+    public static int LEFT_EYE = 2;
+    public static int RIGHT_EYE = 5;
+    public static int LEFT_EAR = 7;
+    public static int RIGHT_EAR = 8;
+    public static int MOUTH_LEFT = 9;
+    public static int MOUTH_RIGHT = 10;
+    public static int LEFT_SHOULDER = 11;
+    public static int RIGHT_SHOULDER = 12;
+    public static int LEFT_HIP = 11;
+    public static int LEFT_ELBOW = 13;
     static int RIGHT_HIP = 24;
-    static int RIGHT_ELBOW = 14;
-    static int LEFT_WRIST = 15;
-    static int RIGHT_WRIST = 16;
-    static int LEFT_THUMB = 21;
-    static int RIGHT_THUMB = 22;
-    static int LEFT_INDEX = 19;
-    static int RIGHT_INDEX = 20;
-    static int LEFT_PINKY = 17;
-    static int RIGHT_PINKY = 18;
+    public static int RIGHT_ELBOW = 14;
+    public static int LEFT_WRIST = 15;
+    public static int RIGHT_WRIST = 16;
+    public static int LEFT_THUMB = 21;
+    public static int RIGHT_THUMB = 22;
+    public static int LEFT_INDEX = 19;
+    public static int RIGHT_INDEX = 20;
+    public static int LEFT_PINKY = 17;
+    public static int RIGHT_PINKY = 18;
 
 
 }

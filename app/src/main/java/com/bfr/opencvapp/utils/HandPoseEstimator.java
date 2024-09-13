@@ -85,7 +85,7 @@ public class HandPoseEstimator {
     Context context;
 
     /** finger open or not*/
-    enum FINGER{
+    public enum FINGER{
         THUMB,
         INDEX,
         MIDDLE,

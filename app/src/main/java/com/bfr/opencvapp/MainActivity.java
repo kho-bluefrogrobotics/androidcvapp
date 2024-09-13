@@ -1,7 +1,6 @@
 package com.bfr.opencvapp;
 
 
-import static com.google.mlkit.vision.pose.PoseLandmark.*;
 import static org.opencv.core.CvType.*;
 
 import android.Manifest;
@@ -61,7 +60,6 @@ import com.bfr.buddysdk.BuddySDK;
 
 import com.bfr.opencvapp.objdetect.Detection;
 import com.bfr.opencvapp.utils.Gesture;
-import com.bfr.opencvapp.utils.GestureRecognition;
 import com.bfr.opencvapp.utils.HandPoseEstimator;
 import com.bfr.opencvapp.utils.HumanPoseEstimator;
 import com.bfr.opencvapp.utils.IGestureRsp;

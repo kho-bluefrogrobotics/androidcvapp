@@ -1,4 +1,4 @@
-package com.bfr.opencvapp;
+package com.bfr.opencvapp.utils;
 
 public class DetectedFace {
 
