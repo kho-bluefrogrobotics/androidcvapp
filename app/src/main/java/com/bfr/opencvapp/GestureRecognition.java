@@ -304,7 +304,7 @@ public class GestureRecognition {
         /***/if(step_num==15) { // Pose estimation
 
             //wait to stabilize
-            if (stabilizationFrames<=5){
+            if (stabilizationFrames<10){
                 stabilizationFrames+=1;
                 return;
             }
@@ -349,7 +349,6 @@ public class GestureRecognition {
 
             stabilizationFrames =0;
             step_num = 17;
-            return;
         }
 
 
