@@ -396,8 +396,8 @@ public class GestureRecognition {
         if(step_num==80)
         {
             humanPose = humanPoseEstimator.recognizeImage(frame);
-
-            if (humanPose.isSigning()!=signedHand){
+            // if no more signing with hand
+            if (!humanPose.isSigning(signedHand)){
                 result = "";
                 gesture.result = result;
                 gesture.orientation = 0;

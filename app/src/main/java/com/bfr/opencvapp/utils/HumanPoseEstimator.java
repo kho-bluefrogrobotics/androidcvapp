@@ -382,7 +382,18 @@ public class HumanPoseEstimator {
                 return -1;
         } //end isSigning
 
-
+        public boolean isSigning(int whichHand)
+        {
+            if(whichHand==LEFT_WRIST){
+                return ( landmarks.get(LEFT_WRIST).visibility().get() > WRIST_VISIBILITY_THRES && (
+                        landmarks.get(LEFT_WRIST).y()<landmarks.get(LEFT_ELBOW).y()-0.05  || landmarks.get(LEFT_ELBOW).y()*IMG_HEIGHT<landmarks.get(LEFT_SHOULDER).y()*IMG_HEIGHT+15
+                ));
+            }
+            else{
+                return (landmarks.get(RIGHT_WRIST).visibility().get() > WRIST_VISIBILITY_THRES && (
+                        landmarks.get(RIGHT_WRIST).y()<landmarks.get(RIGHT_ELBOW).y()-0.05)  || landmarks.get(RIGHT_ELBOW).y()*IMG_HEIGHT<landmarks.get(RIGHT_SHOULDER).y()*IMG_HEIGHT+15 );
+            }
+        }
     } //end headpose class
 
 }
