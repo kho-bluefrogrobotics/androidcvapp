@@ -63,6 +63,7 @@ public class GestureRecognition {
 
     int stabilizationFrames =0;
 
+
     HumanPoseEstimator humanPoseEstimator;
     public HumanPoseEstimator.HumanPose humanPose = null;
 
@@ -129,6 +130,7 @@ public class GestureRecognition {
     private Gesture gesture = new Gesture();
 
     int signingHand = -1;
+    int signedHand = -1;
 
     public void registerGestureRecog(IGestureRsp gestureRsp)
     {
@@ -212,6 +214,7 @@ public class GestureRecognition {
 
                     //reset
                     signingHand = -1;
+                    signedHand = -1;
                     //if wrist visible and hand up (above elbow)
                     signingHand = humanPose.isSigning();
 
@@ -221,6 +224,9 @@ public class GestureRecognition {
 
                     if(signingHand>-1)
                     {
+                        //store
+                        signedHand = signingHand;
+
                         // Display only
                         if ( signingHand==LEFT_WRIST ) {
                             handX = Math.max( (int) (humanPose.landmarks.get(LEFT_INDEX).x()*IMG_WIDTH - handW/2), 2);
@@ -363,7 +369,10 @@ public class GestureRecognition {
             if(stabilizationFrames >-1) {
 
                 if (motionDetector.motionOptFlow >= 20)
+                {
+                    debugSaveImg(result, frame);
                     step_num = 30;
+                }
                 else
                     step_num = 90;
             }
@@ -380,7 +389,7 @@ public class GestureRecognition {
             gesture.orientation = 0;
             gestureRsp.onSuccess(gesture);
             BuddySDK.Speech.startSpeaking("Coucou");
-            debugRecord("coucou");
+            debugSaveImg(result, frame);
             step_num =80;
         }
 
@@ -388,7 +397,7 @@ public class GestureRecognition {
         {
             humanPose = humanPoseEstimator.recognizeImage(frame);
 
-            if (humanPose.isSigning()<0){
+            if (humanPose.isSigning()!=signedHand){
                 result = "";
                 gesture.result = result;
                 gesture.orientation = 0;
@@ -555,10 +564,10 @@ public class GestureRecognition {
                         gestureRsp.onSuccess(gesture);
                         Log.d(name, "STOP");
                         debugSaveImg(result, frame);
-                        step_num = 5; // wait for no hands in the image
+                        step_num = 80; // wait for no hands in the image
                     } else {
                         Log.d(name, "Else back -> 5 : ");
-                        step_num = 5;
+                        step_num = 80;
                         return;
                     }
 
@@ -597,7 +606,7 @@ public class GestureRecognition {
                         gesture.orientation = 0;
                         gestureRsp.onSuccess(gesture);
                         BuddySDK.Speech.startSpeaking("Coucou");
-                        debugRecord("coucou");
+                        debugSaveImg(result, frame);
                     }
                     else // palm and not moving
                     {
