@@ -43,6 +43,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -643,9 +644,16 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
                 // hand detection
 //            Log.d("coucou2", "Main " + gestureRecognition.left + " " + gestureRecognition.top + " " + gestureRecognition.right + " " + gestureRecognition.bottom);
-                Imgproc.rectangle(display, new Point(gestureRecognition.left, gestureRecognition.top),
+
+            Scalar color;
+            if (gestureRecognition.step_num==20)
+                color = new Scalar(0,255,0);
+            else
+                color = new Scalar(0,0,255);
+
+            Imgproc.rectangle(display, new Point(gestureRecognition.left, gestureRecognition.top),
                         new Point(gestureRecognition.right, gestureRecognition.bottom),
-                        new Scalar(0, 0, 255), 5);
+                        color, 5);
 
             return display;
         }

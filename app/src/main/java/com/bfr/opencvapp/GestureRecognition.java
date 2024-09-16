@@ -61,6 +61,7 @@ public class GestureRecognition {
     public HandPoseEstimator.HandPose handPose = null;
     MotionDetector motionDetector;
 
+    int stabilizationFrames =0;
 
     HumanPoseEstimator humanPoseEstimator;
     public HumanPoseEstimator.HumanPose humanPose = null;
@@ -240,6 +241,8 @@ public class GestureRecognition {
                         Imgproc.rectangle(input,new Point(handX, handY), new Point(handX2, handY2),
                                 new Scalar(0,220, 0), 4);
 
+                        //reset
+                        stabilizationFrames = 0;
                         //next step
                         step_num = 15;
 //                                step_num =6;
@@ -293,6 +296,12 @@ public class GestureRecognition {
 
         /***/if(step_num==15) { // Pose estimation
 
+            //wait to stabilize
+            if (stabilizationFrames<=3){
+                stabilizationFrames+=1;
+                return;
+            }
+
             // to keep to debug
             // displaymat = black.clone();
 
@@ -326,11 +335,13 @@ public class GestureRecognition {
             motionDetector.reset();
             motionDetector.detectMotion(handMat, false);
 
+            stabilizationFrames =0;
             step_num = 17;
             return;
         }
 
 
+        /***Optical flow*/
         if(step_num==17)
         {
 //            // black background
@@ -343,12 +354,28 @@ public class GestureRecognition {
             handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
 
             motionDetector.detectMotion(handMat, false);
+            if(stabilizationFrames >5) {
 
-            if (motionDetector.motionOptFlow >=20)
-                step_num = 5;
+                if (motionDetector.motionOptFlow >= 20)
+                    step_num = 20;
+            }
+            else // wait for stabilization
+            {
+                stabilizationFrames +=1;
+            }
             return;
         }
 
+        if(step_num==20)
+        {
+            humanPose = humanPoseEstimator.recognizeImage(frame);
+
+            if (humanPose.isSigning()<0)
+                step_num = 5;
+
+            return;
+
+        }
             /***/if(step_num==90) { // Pose estimation
 
                 try {
