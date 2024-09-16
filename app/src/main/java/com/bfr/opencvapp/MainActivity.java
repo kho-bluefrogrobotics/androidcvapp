@@ -645,7 +645,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //            Log.d("coucou2", "Main " + gestureRecognition.left + " " + gestureRecognition.top + " " + gestureRecognition.right + " " + gestureRecognition.bottom);
                 Imgproc.rectangle(display, new Point(gestureRecognition.left, gestureRecognition.top),
                         new Point(gestureRecognition.right, gestureRecognition.bottom),
-                        new Scalar(0, 0, 255), 10);
+                        new Scalar(0, 0, 255), 5);
 
             return display;
         }

@@ -24,12 +24,12 @@ public class MotionDetector {
     //current and previous frame
     Mat currFrame, prevFrame;
     private int frameHeight, frameWidth =0;
-    public int frameCount =0;
+    private int frameCount =0;
     // Optical flow
     Mat flow;
     Mat magnitude, angle , magnNorm;
     // resize for better performances
-    Size mSize = new Size(480, 320);
+    Size mSize = new Size(320, 240);
 
     // movement detection
     // camera is processing opticalFlow
@@ -177,5 +177,10 @@ public class MotionDetector {
     } // end mvt detection
 
 
+    public void reset(){
+        frameCount = 0;
+        detectedMotion = false;
+        motionOptFlow = 0.0f;
+    }
 
 }

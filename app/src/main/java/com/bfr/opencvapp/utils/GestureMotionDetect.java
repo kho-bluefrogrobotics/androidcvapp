@@ -188,7 +188,7 @@ public class GestureMotionDetect {
                 Log.d(name, "Optical flow estimation");
 
                 // init motion deteciton
-                motionDetector.frameCount = 0;
+                motionDetector.reset();
                 optFlow = 0.0f;
 
 

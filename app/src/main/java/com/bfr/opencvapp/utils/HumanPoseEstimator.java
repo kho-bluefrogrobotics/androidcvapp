@@ -230,7 +230,7 @@ public class HumanPoseEstimator {
 
         if (poseLandmarkerResult.landmarks().size()<=0)
         {
-            Log.w(TAG, "NO HAND DETECTED");
+//            Log.w(TAG, "NO Human Pose DETECTED");
             return null;
         }
 

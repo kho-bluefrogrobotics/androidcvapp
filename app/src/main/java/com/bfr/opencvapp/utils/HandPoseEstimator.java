@@ -216,7 +216,7 @@ public class HandPoseEstimator {
      */
     public HandPose recognizeImage(Mat frame, int targetHand) {
 
-        Log.i(TAG, "Starting Hand pose estimation" );
+//        Log.i(TAG, "Starting Hand pose estimation" );
 
         HandPose handPose = null;
 
@@ -240,7 +240,7 @@ public class HandPoseEstimator {
 
         if (handLandmarkerResult.landmarks().size()<=0)
         {
-            Log.w(TAG, "NO HAND DETECTED");
+//            Log.w(TAG, "NO HAND DETECTED");
             return null;
         }
 
@@ -266,7 +266,7 @@ public class HandPoseEstimator {
                 //break at this hand
                 break;
             }
-            Log.i(TAG, "Result size ="+ handLandmarkerResult.landmarks().get(0).size());
+//            Log.i(TAG, "Result size ="+ handLandmarkerResult.landmarks().get(0).size());
 
 
         }
