@@ -534,54 +534,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         frame = new Mat();
 
 
-//        detector = new MultiDetector(this);
-//        blazePose = new TfLiteBlazePose(context);
-//        humanHeadHandsDetector = new TfLiteYoloXHumanHeadHands(context);
-
-//        personTrackerVIT = new PersonTrackerVIT(detector, humanHeadHandsDetector);
-
-
-        //init face recognizer
-//        faceRecognizerObj = new FaceRecognizer();
-
-//        // Init write video file
-//        videoWriter = new VideoWriter("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
-//                25.0D, new Size(800, 600));
-//        videoWriter.open("/storage/emulated/0/saved_video.avi", VideoWriter.fourcc('M','J','P','G'),
-//                25.0D,  new Size( 800,600));
-
-//        started = true;
-
-//        // start scheduled task
-//        if(gestureScheduler==null || gestureScheduler.isShutdown())
-//        {
-//            try{
-//                //init thread
-//                gestureScheduler = Executors.newScheduledThreadPool(1);
-//                // 40ms period to grab a frame at 25fps
-//                gestureScheduler.scheduleWithFixedDelay(gestureRunnable, 0, 35, TimeUnit.MILLISECONDS);
-//            }
-//            catch (Exception e)
-//            {
-//                Log.e(TAG, "ERROR stopping gesture recognition: " + Log.getStackTraceString(e));
-//            }
-//        } //end if scheduler ready
-
-//        // start scheduled task
-//        if(motionGestureScheduler==null || motionGestureScheduler.isShutdown())
-//        {
-//            try{
-//                Log.w(TAG, "Starting GestureMotionDetector " );
-//                //init thread
-//                motionGestureScheduler = Executors.newScheduledThreadPool(1);
-//                // 40ms period to grab a frame at 25fps
-//                motionGestureScheduler.scheduleWithFixedDelay(motionGestureRunnable, 0, 35, TimeUnit.MILLISECONDS);
-//            }
-//            catch (Exception e)
-//            {
-//                Log.e(TAG, "ERROR starting GestureMotionDetector : " + Log.getStackTraceString(e));
-//            }
-//        } //end if scheduler ready
 
     }
 
@@ -618,6 +570,9 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 
 //        videoCapture.read(frame);
 
+
+        if(recording)
+            videoWriter.write(frame);
 
         synchronized (matList)
         {
