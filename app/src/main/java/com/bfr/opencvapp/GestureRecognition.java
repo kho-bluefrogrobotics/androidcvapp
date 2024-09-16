@@ -246,7 +246,8 @@ public class GestureRecognition {
                         //next step
                         step_num = 15;
 //                                step_num =6;
-                        Log.i(name, "current step: " + step_num + "  ");
+                        Log.i(name, "current step: " + step_num + "\n"
+                        + handROI.x + "," + handROI.y + ","+handROI.height + "," + handROI.width);
 
 
                     } //end if hand is signing
@@ -297,7 +298,7 @@ public class GestureRecognition {
         /***/if(step_num==15) { // Pose estimation
 
             //wait to stabilize
-            if (stabilizationFrames<=3){
+            if (stabilizationFrames<=5){
                 stabilizationFrames+=1;
                 return;
             }
@@ -306,33 +307,38 @@ public class GestureRecognition {
             // displaymat = black.clone();
 
             //hand pose estimation
-            handPose = handPoseEstimator.recognizeImage(frame, signingHand);
+            handPose = handPoseEstimator.recognizeImage(frame.submat(handROI), signingHand);
 
             if (handPose == null)
                 return;
 
             // start motion detection
-            Log.w(name, "Req for motion detection ");
+            Log.w(name, "01");
 
             // set hand ROI
 
             int HAND_ROI_MARGIN = 50;
-            left = Math.max(2, (int)(handPose.landmarks.get(leftLandmark(handPose.landmarks)).x()*1024) - HAND_ROI_MARGIN);
-            top = Math.max(2,(int)(handPose.landmarks.get(topLandmark(handPose.landmarks)).y()*768)-HAND_ROI_MARGIN);
-            right = Math.min(frame.cols()-2, (int)(handPose.landmarks.get(rightLandmark(handPose.landmarks)).x()*1024)+HAND_ROI_MARGIN);
-            bottom = Math.min(frame.rows()-2,  (int)(handPose.landmarks.get(bottomLandmark(handPose.landmarks)).y()*768)+HAND_ROI_MARGIN);
+            left = Math.max(2, (int)(handPose.landmarks.get(leftLandmark(handPose.landmarks)).x()*frame.submat(handROI).cols()) - HAND_ROI_MARGIN + handROI.x) ;
+            top = Math.max(2,(int)(handPose.landmarks.get(topLandmark(handPose.landmarks)).y()*frame.submat(handROI).rows())-HAND_ROI_MARGIN + handROI.y);
+            right = Math.min(frame.cols()-2, (int)(handPose.landmarks.get(rightLandmark(handPose.landmarks)).x()*frame.submat(handROI).cols())+HAND_ROI_MARGIN+ handROI.x);
+            bottom = Math.min(frame.rows()-2,  (int)(handPose.landmarks.get(bottomLandmark(handPose.landmarks)).y()*frame.submat(handROI).rows())+HAND_ROI_MARGIN+ handROI.y);
 
 
             handROI.x =  left;
             handROI.y = top;
             handROI.height = bottom - top;
-            handROI.width = right -top;
+            handROI.width = right -left;
 
 //            gestureMotionDetect.setHandROI(handROI);
 
+            Log.w(name, "02\n" +
+                    + left + "," + right + ","+top + "," + bottom);
+
             handMat = frame.submat(handROI);
 
+            Log.w(name, "03");
             motionDetector.reset();
+            Log.w(name, "04");
             motionDetector.detectMotion(handMat, false);
 
             stabilizationFrames =0;
@@ -354,10 +360,12 @@ public class GestureRecognition {
             handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
 
             motionDetector.detectMotion(handMat, false);
-            if(stabilizationFrames >5) {
+            if(stabilizationFrames >-1) {
 
                 if (motionDetector.motionOptFlow >= 20)
-                    step_num = 20;
+                    step_num = 30;
+                else
+                    step_num = 90;
             }
             else // wait for stabilization
             {
@@ -366,90 +374,143 @@ public class GestureRecognition {
             return;
         }
 
-        if(step_num==20)
+        if(step_num == 30){
+            result = "COUCOU";
+            gesture.result = result;
+            gesture.orientation = 0;
+            gestureRsp.onSuccess(gesture);
+            BuddySDK.Speech.startSpeaking("Coucou");
+            debugRecord("coucou");
+            step_num =80;
+        }
+
+        if(step_num==80)
         {
             humanPose = humanPoseEstimator.recognizeImage(frame);
 
-            if (humanPose.isSigning()<0)
+            if (humanPose.isSigning()<0){
+                result = "";
+                gesture.result = result;
+                gesture.orientation = 0;
+                gestureRsp.onSuccess(gesture);
                 step_num = 5;
+            }
+
 
             return;
 
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             /***/if(step_num==90) { // Pose estimation
 
-                try {
+//                try {
 //                    Log.d(name, "Hand pose Estimation");
 
 
-                    // black background
-                    black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
-                    roiInBlack = black.submat(handROI); // subimage at hand roi in black image
-                    handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
-                    // copy hand crop to black background
-                    handMat.copyTo(roiInBlack);
-
-                    frame = black.clone();
-
-
-                    // to keep to debug
-                    // displaymat = black.clone();
-
-                    //hand pose estimation
-                    handPose = handPoseEstimator.recognizeImage(frame, signingHand);
-
-                    if (handPose == null)
-                    {
-//                        Log.d(name, "NO HAND for POSE ESTIMATION");
-//                        debugSaveImg("NOHAND", frame);
+//                    // black background
+//                    black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
+//                    roiInBlack = black.submat(handROI); // subimage at hand roi in black image
+//                    handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
+//                    // copy hand crop to black background
+//                    handMat.copyTo(roiInBlack);
+//
+//                    frame = black.clone();
+//
+//
+//                    // to keep to debug
+//                    // displaymat = black.clone();
+//
+//                    //hand pose estimation
+//                    handPose = handPoseEstimator.recognizeImage(frame, signingHand);
+//
+//                    if (handPose == null)
+//                    {
+////                        Log.d(name, "NO HAND for POSE ESTIMATION");
+////                        debugSaveImg("NOHAND", frame);
 //                        step_num = 5;
-                        return;
-                    }
-
-                    // start motion detection
-                    Log.w(name, "Req for motion detection ");
-
-                    // set hand ROI
-
-                    int HAND_ROI_MARGIN = 50;
-                    left = Math.max(2, (int)(handPose.landmarks.get(leftLandmark(handPose.landmarks)).x()*1024) - HAND_ROI_MARGIN);
-                    top = Math.max(2,(int)(handPose.landmarks.get(topLandmark(handPose.landmarks)).y()*768)-HAND_ROI_MARGIN);
-                    right = Math.min(frame.cols()-2, (int)(handPose.landmarks.get(rightLandmark(handPose.landmarks)).x()*1024)+HAND_ROI_MARGIN);
-                    bottom = Math.min(frame.rows()-2,  (int)(handPose.landmarks.get(bottomLandmark(handPose.landmarks)).y()*768)+HAND_ROI_MARGIN);
-
-
-                    handROI.x =  left;
-                    handROI.y = top;
-                    handROI.height = bottom - top;
-                    handROI.width = right -top;
-
-                    gestureMotionDetect.setHandROI(handROI);
-
-
-//                    Log.d("coucou2", "GestureRecog " + left + " " + top + " " + right + " " + bottom);
-
-                    gestureMotionDetect.go = true;
-
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    step_num = 5;
-                    return;
-                }
+//                        return;
+//                    }
+//
+//                    // start motion detection
+//                    Log.w(name, "Req for motion detection ");
+//
+//                    // set hand ROI
+//
+//                    int HAND_ROI_MARGIN = 50;
+//                    left = Math.max(2, (int)(handPose.landmarks.get(leftLandmark(handPose.landmarks)).x()*1024) - HAND_ROI_MARGIN);
+//                    top = Math.max(2,(int)(handPose.landmarks.get(topLandmark(handPose.landmarks)).y()*768)-HAND_ROI_MARGIN);
+//                    right = Math.min(frame.cols()-2, (int)(handPose.landmarks.get(rightLandmark(handPose.landmarks)).x()*1024)+HAND_ROI_MARGIN);
+//                    bottom = Math.min(frame.rows()-2,  (int)(handPose.landmarks.get(bottomLandmark(handPose.landmarks)).y()*768)+HAND_ROI_MARGIN);
+//
+//
+//                    handROI.x =  left;
+//                    handROI.y = top;
+//                    handROI.height = bottom - top;
+//                    handROI.width = right -top;
+//
+//                    gestureMotionDetect.setHandROI(handROI);
+//
+//
+////                    Log.d("coucou2", "GestureRecog " + left + " " + top + " " + right + " " + bottom);
+//
+//                    gestureMotionDetect.go = true;
+//
+//
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                    step_num = 5;
+//                    return;
+//                }
 
 
                 Log.d(name, "Finger status : " + handPose.isOpen(THUMB) + " " + handPose.isOpen(INDEX) + " " + handPose.isOpen(MIDDLE) + " " + handPose.isOpen(RING) + " " + handPose.isOpen(PINKIE));
-                //
-                if (handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING) && handPose.isOpen(PINKIE)) // hand is open
-                {
-                    // init frame index for buffer recording
-                    imNum = 0;
-                    step_num = 100;
-                    debugSaveImg("OPENHAND", frame);
-                    Log.d(name, "Hand is open -> 100 : ");
-                }
+//                //
+//                if (handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING) && handPose.isOpen(PINKIE)) // hand is open
+//                {
+//                    // init frame index for buffer recording
+//                    imNum = 0;
+//                    step_num = 100;
+//                    debugSaveImg("OPENHAND", frame);
+//                    Log.d(name, "Hand is open -> 100 : ");
+//                }
                 // Thumbs open
-                else if (!handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && handPose.isOpen(THUMB) && !handPose.isOpen(PINKIE)) // all fingers closed beside thumb
+                if (!handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && handPose.isOpen(THUMB) && !handPose.isOpen(PINKIE)) // all fingers closed beside thumb
                 {
                     Log.d(name, "Thumbs open -> 200 : ");
                     step_num = 200;
@@ -647,7 +708,7 @@ public class GestureRecognition {
 
                     debugSaveImg(result, frame);
 
-                    step_num = 5;
+                    step_num = 80;
                 } else {
                     Log.d(name, "NEGATIVE");
                     result = "NEGATIVE";
@@ -658,7 +719,7 @@ public class GestureRecognition {
 
                     debugSaveImg(result, frame);
 
-                    step_num = 5;
+                    step_num = 80;
                 }
 
                 return;
@@ -675,7 +736,7 @@ public class GestureRecognition {
 
                 debugSaveImg(result, frame);
 
-                    step_num = 5;
+                    step_num = 80;
 
                 return;
             }
@@ -691,7 +752,7 @@ public class GestureRecognition {
 
                 debugSaveImg(result, frame);
 
-                step_num = 5;
+                step_num = 80;
 
                 return;
             }
@@ -706,7 +767,7 @@ public class GestureRecognition {
 
                 debugSaveImg(result, frame);
 
-                step_num = 5;
+                step_num = 80;
 
                 return;
             }
@@ -721,7 +782,7 @@ public class GestureRecognition {
 
                 debugSaveImg(result, frame);
 
-                step_num = 5;
+                step_num = 80;
 
                 return;
             }
@@ -737,7 +798,7 @@ public class GestureRecognition {
 
                 debugSaveImg(result, frame);
 
-                step_num = 5;
+                step_num = 80;
 
                 return;
             }
@@ -764,7 +825,7 @@ public class GestureRecognition {
                 if (handPose == null) {
                     Log.d(name, "No more hand");
 //                    Imgcodecs.imwrite("/sdcard/Download/nomorehand"+ System.currentTimeMillis()+".jpg", frame);
-                    step_num = 5;
+                    step_num = 80;
                     return;
                 }
 
