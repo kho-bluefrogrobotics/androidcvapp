@@ -355,6 +355,11 @@ public class GestureRecognition {
         /***Optical flow*/
         if(step_num==17)
         {
+
+            if(handPose.isFront())
+                Log.i("rearfront", "FRONT");
+            else
+                Log.i("rearfront", "BACK");
 //            // black background
 //            Log.i(name, "creating black bgnd");
 //            black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
@@ -368,7 +373,6 @@ public class GestureRecognition {
 
             if (motionDetector.motionOptFlow >= 20)
             {
-                debugSaveImg("Coucou", frame);
                 step_num = 30;
             }
             else // no motion detected
@@ -386,11 +390,24 @@ public class GestureRecognition {
         }
 
         if(step_num == 30){
-            result = "COUCOU";
-            gesture.result = result;
-            gesture.orientation = 0;
-            gestureRsp.onSuccess(gesture);
-            BuddySDK.Speech.startSpeaking("Coucou");
+            if(handPose.isFront()){
+
+                debugSaveImg("Coucou", frame);
+
+                result = "COUCOU";
+                gesture.result = result;
+                gesture.orientation = 0;
+                gestureRsp.onSuccess(gesture);
+                BuddySDK.Speech.startSpeaking("Coucou");
+            }
+            else {
+                result = "Come Here";
+                gesture.result = result;
+                gesture.orientation = 0;
+                gestureRsp.onSuccess(gesture);
+                BuddySDK.Speech.startSpeaking("J'arrive");
+            }
+
             step_num =80;
         }
 
