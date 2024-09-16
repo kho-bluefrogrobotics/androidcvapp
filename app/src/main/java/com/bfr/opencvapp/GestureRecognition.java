@@ -366,21 +366,24 @@ public class GestureRecognition {
             handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
 
             motionDetector.detectMotion(handMat, false);
-            if(stabilizationFrames >-1) {
 
-                if (motionDetector.motionOptFlow >= 20)
-                {
-                    debugSaveImg(result, frame);
-                    step_num = 30;
+            if (motionDetector.motionOptFlow >= 20)
+            {
+                debugSaveImg("Coucou", frame);
+                step_num = 30;
+            }
+            else // no motion detected
+            {
+                //give it another chance
+                if(stabilizationFrames<3){
+                    stabilizationFrames+=1;
+                    return;
                 }
                 else
                     step_num = 90;
             }
-            else // wait for stabilization
-            {
-                stabilizationFrames +=1;
-            }
-            return;
+
+
         }
 
         if(step_num == 30){
@@ -389,7 +392,6 @@ public class GestureRecognition {
             gesture.orientation = 0;
             gestureRsp.onSuccess(gesture);
             BuddySDK.Speech.startSpeaking("Coucou");
-            debugSaveImg(result, frame);
             step_num =80;
         }
 
@@ -606,7 +608,7 @@ public class GestureRecognition {
                         gesture.orientation = 0;
                         gestureRsp.onSuccess(gesture);
                         BuddySDK.Speech.startSpeaking("Coucou");
-                        debugSaveImg(result, frame);
+                        debugRecord("CoucouMotion");
                     }
                     else // palm and not moving
                     {
