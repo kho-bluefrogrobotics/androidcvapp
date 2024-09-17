@@ -148,7 +148,7 @@ public class GestureRecognition {
             // if step changed
             if( !(step_num == previous_step)) {
                 // display current step
-                Log.i(name, "current step: " + step_num + "  ");
+                Log.i(name, "current step: " + step_num + "  (previous step: " + previous_step + ")");
                 // update
                 previous_step = step_num;
             } // end if step = same
@@ -188,6 +188,8 @@ public class GestureRecognition {
                     Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_WRIST).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_WRIST).y()*IMG_HEIGHT),
                             5, new Scalar(0,255,0), 10);
                     Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_SHOULDER).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_SHOULDER).y()*IMG_HEIGHT),
+                            5, new Scalar(0,150,150), 10);
+                    Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_HIP).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_HIP).y()*IMG_HEIGHT),
                             5, new Scalar(0,150,150), 10);
                     Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_ELBOW).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_ELBOW).y()*IMG_HEIGHT),
                             5, new Scalar(0,255,250), 10);
@@ -373,6 +375,7 @@ public class GestureRecognition {
 
             if (motionDetector.motionOptFlow >= 20)
             {
+                Log.i(name, "Optical flow detected -> 30");
                 step_num = 30;
             }
             else // no motion detected
@@ -382,8 +385,10 @@ public class GestureRecognition {
                     stabilizationFrames+=1;
                     return;
                 }
-                else
+                else{
+                    Log.i(name, "No mvt -> 90");
                     step_num = 90;
+                }
             }
 
 
@@ -422,7 +427,6 @@ public class GestureRecognition {
                 gestureRsp.onSuccess(gesture);
                 step_num = 5;
             }
-
 
             return;
 
@@ -574,20 +578,21 @@ public class GestureRecognition {
                 }
                 else {
                     Log.d(name, "ELSE : Finger status OTHER ");
-                    if (handPose.isFront() && handPose.handOrientation()<=40 ) {
-                        Log.d(name, "FRONT -> 900 : ");
-                        result = "STOP";
-                        gesture.result = result;
-                        gesture.orientation = 0;
-                        gestureRsp.onSuccess(gesture);
-                        Log.d(name, "STOP");
-                        debugSaveImg(result, frame);
-                        step_num = 80; // wait for no hands in the image
-                    } else {
-                        Log.d(name, "Else back -> 5 : ");
-                        step_num = 80;
-                        return;
-                    }
+                    step_num = 300;
+//                    if (handPose.isFront() && handPose.handOrientation()<=40 ) {
+//                        Log.d(name, "FRONT -> 900 : ");
+//                        result = "STOP";
+//                        gesture.result = result;
+//                        gesture.orientation = 0;
+//                        gestureRsp.onSuccess(gesture);
+//                        Log.d(name, "STOP");
+//                        debugSaveImg(result, frame);
+//                        step_num = 80; // wait for no hands in the image
+//                    } else {
+//                        Log.d(name, "Else back -> 5 : ");
+//                        step_num = 80;
+//                        return;
+//                    }
 
                 } //endif hand is open
 
@@ -735,7 +740,7 @@ public class GestureRecognition {
 
                     debugSaveImg(result, frame);
 
-                    step_num = 80;
+                    step_num = 300;
                 } else {
                     Log.d(name, "NEGATIVE");
                     result = "NEGATIVE";
@@ -746,7 +751,7 @@ public class GestureRecognition {
 
                     debugSaveImg(result, frame);
 
-                    step_num = 80;
+                    step_num = 300;
                 }
 
                 return;
@@ -763,7 +768,7 @@ public class GestureRecognition {
 
                 debugSaveImg(result, frame);
 
-                    step_num = 80;
+                    step_num = 300;
 
                 return;
             }
@@ -779,7 +784,7 @@ public class GestureRecognition {
 
                 debugSaveImg(result, frame);
 
-                step_num = 80;
+                step_num = 300;
 
                 return;
             }
@@ -794,7 +799,7 @@ public class GestureRecognition {
 
                 debugSaveImg(result, frame);
 
-                step_num = 80;
+                step_num = 300;
 
                 return;
             }
@@ -809,7 +814,7 @@ public class GestureRecognition {
 
                 debugSaveImg(result, frame);
 
-                step_num = 80;
+                step_num = 300;
 
                 return;
             }
@@ -825,9 +830,24 @@ public class GestureRecognition {
 
                 debugSaveImg(result, frame);
 
-                step_num = 80;
+                step_num = 300;
 
                 return;
+            }
+
+            // estimate pose after a static recognition (hand changes sign)
+            if(step_num==300)
+            {
+                //hand pose estimation
+                handPose = handPoseEstimator.recognizeImage(frame.submat(handROI), signingHand);
+
+                if (handPose == null){
+                    step_num = 80;
+                    return;
+                }
+
+                step_num = 90;
+
             }
 
             /***/if(step_num==900) { //wait for no hands in region of analysis
