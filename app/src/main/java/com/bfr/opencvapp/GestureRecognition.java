@@ -350,7 +350,7 @@ public class GestureRecognition {
 
             // set hand ROI
 
-            int HAND_ROI_MARGIN = 50;
+            int HAND_ROI_MARGIN = 100;
             left = Math.max(2, (int)(handPose.landmarks.get(leftLandmark(handPose.landmarks)).x()*frame.submat(handROI).cols()) - HAND_ROI_MARGIN + handROI.x) ;
             top = Math.max(2,(int)(handPose.landmarks.get(topLandmark(handPose.landmarks)).y()*frame.submat(handROI).rows())-HAND_ROI_MARGIN + handROI.y);
             right = Math.min(frame.cols()-2, (int)(handPose.landmarks.get(rightLandmark(handPose.landmarks)).x()*frame.submat(handROI).cols())+HAND_ROI_MARGIN+ handROI.x);
