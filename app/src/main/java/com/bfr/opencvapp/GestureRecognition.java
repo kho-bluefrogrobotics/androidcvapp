@@ -204,6 +204,8 @@ public class GestureRecognition {
                             5, new Scalar(255,0,0), 10);
                     Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_ELBOW).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_ELBOW).y()*IMG_HEIGHT),
                             5, new Scalar(255,255,0), 10);
+                    Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_HIP).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_HIP).y()*IMG_HEIGHT),
+                            5, new Scalar(255,255,0), 10);
                     Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_INDEX).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_INDEX).y()*IMG_HEIGHT),
                             5, new Scalar(255,255,0), 10);
                     Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_THUMB).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_THUMB).y()*IMG_HEIGHT),
@@ -578,21 +580,20 @@ public class GestureRecognition {
                 }
                 else {
                     Log.d(name, "ELSE : Finger status OTHER ");
-                    step_num = 300;
-//                    if (handPose.isFront() && handPose.handOrientation()<=40 ) {
-//                        Log.d(name, "FRONT -> 900 : ");
-//                        result = "STOP";
-//                        gesture.result = result;
-//                        gesture.orientation = 0;
-//                        gestureRsp.onSuccess(gesture);
-//                        Log.d(name, "STOP");
-//                        debugSaveImg(result, frame);
-//                        step_num = 80; // wait for no hands in the image
-//                    } else {
-//                        Log.d(name, "Else back -> 5 : ");
-//                        step_num = 80;
-//                        return;
-//                    }
+                    if (handPose.isFront() && handPose.handOrientation()<=40 ) {
+                        Log.d(name, "FRONT -> 300 : ");
+                        result = "STOP";
+                        gesture.result = result;
+                        gesture.orientation = 0;
+                        gestureRsp.onSuccess(gesture);
+                        Log.d(name, "STOP");
+                        debugSaveImg(result, frame);
+                        step_num = 300; // wait for no hands in the image
+                    } else {
+                        Log.d(name, "Else back -> 5 : ");
+                        step_num = 80;
+                        return;
+                    }
 
                 } //endif hand is open
 
