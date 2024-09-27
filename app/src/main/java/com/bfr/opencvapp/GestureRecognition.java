@@ -122,6 +122,9 @@ public class GestureRecognition {
     float THRES_OPT_FLOW_COME_HERE = 2.0f;
     public String result = "";
 
+    int STABILIZATION = 3;
+    int TRIALS = 5;
+    int numofTry = 0;
     //
     public Mat displaymat;
 
@@ -168,9 +171,8 @@ public class GestureRecognition {
                 }
 
 
-
-
-            /***/if(step_num==5) { // hands detection
+            /** Detect Human and wait for a signing hand*/
+            if(step_num==5) {
 
             left = 1;
             top = 1;
@@ -185,8 +187,6 @@ public class GestureRecognition {
                 if (humanPose != null) {
 
                     //display for debug only
-                    Imgproc.circle(input, new Point(humanPose.landmarks.get(NOSE).x()*IMG_WIDTH, humanPose.landmarks.get(NOSE).y()*IMG_HEIGHT),
-                            5, new Scalar(255,0,0), 10);
 
                     Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_WRIST).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_WRIST).y()*IMG_HEIGHT),
                             5, new Scalar(0,255,0), 10);
@@ -307,7 +307,7 @@ public class GestureRecognition {
 
 
 
-
+        /** Human is signing : start motion detection*/
         /***/if(step_num==15) { // Pose estimation
 
             //wait to stabilize
@@ -322,11 +322,22 @@ public class GestureRecognition {
             //hand pose estimation
             handPose = handPoseEstimator.recognizeImage(frame.submat(handROI), signingHand);
 
-            if (handPose == null)
-                return;
+            //reset if needed
+            if (numofTry>TRIALS)
+                numofTry=0;
 
-            // start motion detection
-            Log.w(name, "01");
+            // if no more hand, exit after a timeout
+            if (handPose == null){
+                //
+                if(numofTry<TRIALS){
+                    numofTry+=1;
+                }
+                else { //cancel and start from the begining
+                    step_num = 5;
+                }
+                return;
+            }
+
 
             // set hand ROI
 
@@ -344,14 +355,10 @@ public class GestureRecognition {
 
 //            gestureMotionDetect.setHandROI(handROI);
 
-            Log.w(name, "02\n" +
-                    + left + "," + right + ","+top + "," + bottom);
-
             handMat = frame.submat(handROI);
 
-            Log.w(name, "03");
             motionDetector.reset();
-            Log.w(name, "04");
+
             motionDetector.detectMotion(handMat, false);
 
             stabilizationFrames =0;
@@ -359,7 +366,7 @@ public class GestureRecognition {
         }
 
 
-        /***Optical flow*/
+        /***Motion detected or not*/
         if(step_num==17)
         {
 
@@ -386,7 +393,8 @@ public class GestureRecognition {
             else // no motion detected
             {
                 //give it another chance
-                if(stabilizationFrames<3){
+                if(stabilizationFrames<STABILIZATION){
+                    Log.i(name, "Still looking for motion -> staying in 17 " + stabilizationFrames);
                     stabilizationFrames+=1;
                     return;
                 }
@@ -399,7 +407,9 @@ public class GestureRecognition {
 
         }
 
+        /***Motion detected : gesture identification according to Front or back hand*/
         if(step_num == 30){
+            Log.i(name, "step 30 : Motion detected ");
             if(handPose.isFront()){
 
                 debugSaveImg("Coucou", frame);
@@ -421,8 +431,10 @@ public class GestureRecognition {
             step_num =80;
         }
 
+        /***Human pose detection : check if is signing*/
         if(step_num==80)
         {
+            Log.i(name, "step 80 : Human is still signing? ");
             humanPose = humanPoseEstimator.recognizeImage(frame);
             // if no more signing with hand
             if (!humanPose.isSigning(signedHand)){
@@ -432,8 +444,25 @@ public class GestureRecognition {
                 gestureRsp.onSuccess(gesture);
                 step_num = 5;
             }
+            else{
+                stabilizationFrames = 0;
+                step_num = 85;
+            }
 
             return;
+
+        }
+
+        /***Human is still signing : waiting for stabilization for motion*/
+        if(step_num==85)
+        {
+            //give it another chance
+            if(stabilizationFrames<STABILIZATION){
+                Log.i(name, "Delay to stabilize " + stabilizationFrames);
+                stabilizationFrames+=1;
+                return;
+            }
+            step_num = 15;
 
         }
 
@@ -471,8 +500,7 @@ public class GestureRecognition {
 
 
 
-
-
+            /***No Motion detected: id static hand pose*/
             /***/if(step_num==90) { // Pose estimation
 
 //                try {
@@ -602,134 +630,138 @@ public class GestureRecognition {
 
             }
 
-            /***/if(step_num==100) { // wait for end of motion detection
-            //Log.i(name, "current step: " + step_num + "Waiting for end of motion detection");
-                if(!gestureMotionDetect.go) {
-                    step_num = 120;
-                    Log.i(name, "current step: " + step_num + "  ");
-                }
-            }
+
+//            /***/if(step_num==100) { // wait for end of motion detection
+//            //Log.i(name, "current step: " + step_num + "Waiting for end of motion detection");
+//                if(!gestureMotionDetect.go) {
+//                    step_num = 120;
+//                    Log.i(name, "current step: " + step_num + "  ");
+//                }
+//            }
 
 
 
-            /***/if(step_num==120) { // motion result
-
-                int widthcrop = right-left;
-                int heightcrop = bottom - top;
-                int area = widthcrop*heightcrop;
-                float proportionh = gestureMotionDetect.optFlow/(float)widthcrop;
-                float proportionv = gestureMotionDetect.optFlow/(float)heightcrop;
-
-                Log.d(name, "Calculating is front or not" );
-                // if seeing palm
-                if (handPose.isFront()) {
-                    if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COUCOU)
-//                    if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU)
-                    {
-                        Log.w(name, "COUCOU Measured opt flow="+ gestureMotionDetect.optFlow + "length=" + widthcrop+
-                                "\nproportionh=" + proportionh + " proportionv=" + proportionv);
-                        result = "COUCOU";
-                        gesture.result = result;
-                        gesture.orientation = 0;
-                        gestureRsp.onSuccess(gesture);
-                        BuddySDK.Speech.startSpeaking("Coucou");
-                        debugRecord("CoucouMotion");
-                    }
-                    else // palm and not moving
-                    {
-                        result = "STOP";
-
-                        Log.w(name, "STOP Measured opt flow="+ gestureMotionDetect.optFlow + "length=" + widthcrop+
-                                "\nproportionh=" + proportionh + " proportionv=" + proportionv);gesture.result = result;
-                        gesture.orientation = 0;
-                        gestureRsp.onSuccess(gesture);
-                        BuddySDK.Speech.startSpeaking("STOP");
-                        debugRecord("stop");
-
-                    }
-
-                }
-                else // back of the hand
-                {
-                    //fingers upward
-                    if( handPose.fingerOrientation(INDEX) >0) {
-                        if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COME_HERE) {
-//                        if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU) {
-
-                            Log.d(name, "COME HERE");
-                            result = "COME HERE";
-
-                            gesture.result = result;
-                            gesture.orientation = 0;
-                            gestureRsp.onSuccess(gesture);
-
-//                        BuddySDK.Vision.stopCamera(new IVisionRsp.Stub() {
-//                            @Override
-//                            public void onSuccess(String s) throws RemoteException {
+//            /***/
+//            if(step_num==120) { // motion result
 //
-//                            }
+//                int widthcrop = right-left;
+//                int heightcrop = bottom - top;
+//                int area = widthcrop*heightcrop;
+//                float proportionh = gestureMotionDetect.optFlow/(float)widthcrop;
+//                float proportionv = gestureMotionDetect.optFlow/(float)heightcrop;
 //
-//                            @Override
-//                            public void onFailed(String s) throws RemoteException {
+//                Log.d(name, "Calculating is front or not" );
+//                // if seeing palm
+//                if (handPose.isFront()) {
+//                    if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COUCOU)
+////                    if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU)
+//                    {
+//                        Log.w(name, "COUCOU Measured opt flow="+ gestureMotionDetect.optFlow + "length=" + widthcrop+
+//                                "\nproportionh=" + proportionh + " proportionv=" + proportionv);
+//                        result = "COUCOU";
+//                        gesture.result = result;
+//                        gesture.orientation = 0;
+//                        gestureRsp.onSuccess(gesture);
+//                        BuddySDK.Speech.startSpeaking("Coucou");
+//                        debugRecord("CoucouMotion");
+//                    }
+//                    else // palm and not moving
+//                    {
+//                        result = "STOP";
 //
-//                            }
-//                        });
-                            BuddySDK.Speech.startSpeaking("J'arrive");
-//                        BuddySDK.Companion.raiseEvent("startFollow");
-                            debugRecord("comehere");
-                        } //end if motion
-                        else //back of hand and no motion
-                        {
-                            step_num = 5;
-                            return;
-                        }
-                    }
-                    else // fingers downward
-                    {
-                        if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COME_HERE) {
-//                        if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU) {
-
-                            Log.d(name, "GO AWAY" + gestureMotionDetect.optFlow);
-                            result = "GO AWAY";
-
-                            gesture.result = result;
-                            gesture.orientation = 0;
-                            gestureRsp.onSuccess(gesture);
-
-//                        BuddySDK.Vision.stopCamera(new IVisionRsp.Stub() {
-//                            @Override
-//                            public void onSuccess(String s) throws RemoteException {
+//                        Log.w(name, "STOP Measured opt flow="+ gestureMotionDetect.optFlow + "length=" + widthcrop+
+//                                "\nproportionh=" + proportionh + " proportionv=" + proportionv);gesture.result = result;
+//                        gesture.orientation = 0;
+//                        gestureRsp.onSuccess(gesture);
+//                        BuddySDK.Speech.startSpeaking("STOP");
+//                        debugRecord("stop");
 //
-//                            }
+//                    }
 //
-//                            @Override
-//                            public void onFailed(String s) throws RemoteException {
+//                }
+//                else // back of the hand
+//                {
+//                    //fingers upward
+//                    if( handPose.fingerOrientation(INDEX) >0) {
+//                        if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COME_HERE) {
+////                        if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU) {
 //
-//                            }
-//                        });
-                            BuddySDK.Speech.startSpeaking("Je m'en vais");
-//                        BuddySDK.Companion.raiseEvent("startFollow");
-                            debugRecord("goaway");
-                        } //end if motion
-                        else //back of hand and no motion
-                        {
-                            Log.d(name, "Back hand and no motion = " + gestureMotionDetect.optFlow);
-                            step_num = 5;
-                            return;
-                        }
-                    }
+//                            Log.d(name, "COME HERE");
+//                            result = "COME HERE";
+//
+//                            gesture.result = result;
+//                            gesture.orientation = 0;
+//                            gestureRsp.onSuccess(gesture);
+//
+////                        BuddySDK.Vision.stopCamera(new IVisionRsp.Stub() {
+////                            @Override
+////                            public void onSuccess(String s) throws RemoteException {
+////
+////                            }
+////
+////                            @Override
+////                            public void onFailed(String s) throws RemoteException {
+////
+////                            }
+////                        });
+//                            BuddySDK.Speech.startSpeaking("J'arrive");
+////                        BuddySDK.Companion.raiseEvent("startFollow");
+//                            debugRecord("comehere");
+//                        } //end if motion
+//                        else //back of hand and no motion
+//                        {
+//                            step_num = 5;
+//                            return;
+//                        }
+//                    }
+//                    else // fingers downward
+//                    {
+//                        if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COME_HERE) {
+////                        if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU) {
+//
+//                            Log.d(name, "GO AWAY" + gestureMotionDetect.optFlow);
+//                            result = "GO AWAY";
+//
+//                            gesture.result = result;
+//                            gesture.orientation = 0;
+//                            gestureRsp.onSuccess(gesture);
+//
+////                        BuddySDK.Vision.stopCamera(new IVisionRsp.Stub() {
+////                            @Override
+////                            public void onSuccess(String s) throws RemoteException {
+////
+////                            }
+////
+////                            @Override
+////                            public void onFailed(String s) throws RemoteException {
+////
+////                            }
+////                        });
+//                            BuddySDK.Speech.startSpeaking("Je m'en vais");
+////                        BuddySDK.Companion.raiseEvent("startFollow");
+//                            debugRecord("goaway");
+//                        } //end if motion
+//                        else //back of hand and no motion
+//                        {
+//                            Log.d(name, "Back hand and no motion = " + gestureMotionDetect.optFlow);
+//                            step_num = 5;
+//                            return;
+//                        }
+//                    }
+//
+//
+//                } //end if front or back of hand
+//
+//                //reset
+//                resetImNb = 0;
+//
+//                step_num = 900;
+//
+//                return;
+//
+//            }
 
 
-                } //end if front or back of hand
-
-                //reset
-                resetImNb = 0;
-
-                step_num = 900;
-
-                return;
-
-            }
 
             /***/if(step_num==200) { // Thumb up down
 
@@ -842,15 +874,16 @@ public class GestureRecognition {
             // estimate pose after a static recognition (hand changes sign)
             if(step_num==300)
             {
-                //hand pose estimation
-                handPose = handPoseEstimator.recognizeImage(frame.submat(handROI), signingHand);
+//                //hand pose estimation
+//                handPose = handPoseEstimator.recognizeImage(frame.submat(handROI), signingHand);
+//
+//                if (handPose == null){
+//                    step_num = 80;
+//                    return;
+//                }
 
-                if (handPose == null){
-                    step_num = 80;
-                    return;
-                }
-
-                step_num = 90;
+                step_num = 80;
+                return;
 
             }
 

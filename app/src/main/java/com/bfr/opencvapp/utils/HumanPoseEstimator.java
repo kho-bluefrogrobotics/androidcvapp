@@ -367,8 +367,8 @@ public class HumanPoseEstimator {
 
         public int isSigning()
         {
-            Log.d("issigning", landmarks.get(LEFT_SHOULDER).y()+ " " + landmarks.get(LEFT_WRIST).y() + "  " + landmarks.get(LEFT_HIP).y() + "  " + Math.abs(landmarks.get(LEFT_SHOULDER).y()-landmarks.get(LEFT_WRIST).y() ) + " "
-            + Math.abs(landmarks.get(LEFT_HIP).y()-landmarks.get(LEFT_WRIST).y()));
+//            Log.d("issigning", landmarks.get(LEFT_SHOULDER).y()+ " " + landmarks.get(LEFT_WRIST).y() + "  " + landmarks.get(LEFT_HIP).y() + "  " + Math.abs(landmarks.get(LEFT_SHOULDER).y()-landmarks.get(LEFT_WRIST).y() ) + " "
+//            + Math.abs(landmarks.get(LEFT_HIP).y()-landmarks.get(LEFT_WRIST).y()));
 
             if( landmarks.get(LEFT_WRIST).visibility().get() > WRIST_VISIBILITY_THRES && (
 //                            landmarks.get(LEFT_WRIST).y()<landmarks.get(LEFT_ELBOW).y()-0.05  || landmarks.get(LEFT_ELBOW).y()*IMG_HEIGHT<landmarks.get(LEFT_SHOULDER).y()*IMG_HEIGHT+15
