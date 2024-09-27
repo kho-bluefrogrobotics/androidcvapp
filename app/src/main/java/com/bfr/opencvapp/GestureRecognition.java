@@ -185,6 +185,9 @@ public class GestureRecognition {
                 if (humanPose != null) {
 
                     //display for debug only
+                    Imgproc.circle(input, new Point(humanPose.landmarks.get(NOSE).x()*IMG_WIDTH, humanPose.landmarks.get(NOSE).y()*IMG_HEIGHT),
+                            5, new Scalar(255,0,0), 10);
+
                     Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_WRIST).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_WRIST).y()*IMG_HEIGHT),
                             5, new Scalar(0,255,0), 10);
                     Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_SHOULDER).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_SHOULDER).y()*IMG_HEIGHT),
