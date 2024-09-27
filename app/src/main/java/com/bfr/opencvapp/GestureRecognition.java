@@ -151,7 +151,8 @@ public class GestureRecognition {
             // if step changed
             if( !(step_num == previous_step)) {
                 // display current step
-                Log.i(name, "current step: " + step_num + "  (previous step: " + previous_step + ")");
+//                Log.i(name, "current step: " + step_num + "  (previous step: " + previous_step + ")");
+                Log.i("step", "current step: " + step_num + "  (previous step: " + previous_step + ")");
                 // update
                 previous_step = step_num;
             } // end if step = same
@@ -174,10 +175,15 @@ public class GestureRecognition {
             /** Detect Human and wait for a signing hand*/
             if(step_num==5) {
 
+                //reset
             left = 1;
             top = 1;
             right = 1;
             bottom = 1;
+            result = "";
+                gesture.result = result;
+                gesture.orientation = 0;
+                gestureRsp.onSuccess(gesture);
 //                step_num = 5;
 //                if(true)
 //                    return;
@@ -330,9 +336,12 @@ public class GestureRecognition {
             if (handPose == null){
                 //
                 if(numofTry<TRIALS){
+                    Log.i(name, "Lost detected hand -> retry");
                     numofTry+=1;
                 }
                 else { //cancel and start from the begining
+                    Log.i(name, "no more hand -> restart");
+
                     step_num = 5;
                 }
                 return;
@@ -411,20 +420,23 @@ public class GestureRecognition {
         if(step_num == 30){
             Log.i(name, "step 30 : Motion detected ");
             if(handPose.isFront()){
-
+                Log.i(name, "Front hand  ");
                 debugSaveImg("Coucou", frame);
 
                 result = "COUCOU";
                 gesture.result = result;
                 gesture.orientation = 0;
                 gestureRsp.onSuccess(gesture);
+                debugSaveImg(result, handMat);
                 BuddySDK.Speech.startSpeaking("Coucou");
             }
             else {
+                Log.i(name, "Not the front hand  ");
                 result = "Come Here";
                 gesture.result = result;
                 gesture.orientation = 0;
                 gestureRsp.onSuccess(gesture);
+                debugSaveImg(result, handMat);
                 BuddySDK.Speech.startSpeaking("J'arrive");
             }
 
@@ -457,11 +469,12 @@ public class GestureRecognition {
         if(step_num==85)
         {
             //give it another chance
-            if(stabilizationFrames<STABILIZATION){
+            if(stabilizationFrames<10){
                 Log.i(name, "Delay to stabilize " + stabilizationFrames);
                 stabilizationFrames+=1;
                 return;
             }
+            Log.i(name, "-> step 15");
             step_num = 15;
 
         }
@@ -611,20 +624,30 @@ public class GestureRecognition {
                 }
                 else {
                     Log.d(name, "ELSE : Finger status OTHER ");
-                    if (handPose.isFront() && handPose.handOrientation()<=40 ) {
-                        Log.d(name, "FRONT -> 300 : ");
-                        result = "STOP";
-                        gesture.result = result;
-                        gesture.orientation = 0;
-                        gestureRsp.onSuccess(gesture);
-                        Log.d(name, "STOP");
-                        debugSaveImg(result, frame);
-                        step_num = 300; // wait for no hands in the image
-                    } else {
-                        Log.d(name, "Else back -> 5 : ");
-                        step_num = 80;
-                        return;
-                    }
+                    Log.d(name, "OTHER");
+                    result = "????";
+
+                    gesture.result = result;
+                    gesture.orientation = 0;
+                    gestureRsp.onSuccess(gesture);
+
+                    debugSaveImg(result, frame);
+
+                    step_num = 300;
+//                    if (handPose.isFront() && handPose.handOrientation()<=40 ) {
+//                        Log.d(name, "FRONT -> 300 : ");
+//                        result = "STOP";
+//                        gesture.result = result;
+//                        gesture.orientation = 0;
+//                        gestureRsp.onSuccess(gesture);
+//                        Log.d(name, "STOP");
+//                        debugSaveImg(result, frame);
+//                        step_num = 300; // wait for no hands in the image
+//                    } else {
+//                        Log.d(name, "Else back -> 5 : ");
+//                        step_num = 80;
+//                        return;
+//                    }
 
                 } //endif hand is open
 

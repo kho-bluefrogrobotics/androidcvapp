@@ -367,8 +367,6 @@ public class HumanPoseEstimator {
 
         public int isSigning()
         {
-//            Log.d("issigning", landmarks.get(LEFT_SHOULDER).y()+ " " + landmarks.get(LEFT_WRIST).y() + "  " + landmarks.get(LEFT_HIP).y() + "  " + Math.abs(landmarks.get(LEFT_SHOULDER).y()-landmarks.get(LEFT_WRIST).y() ) + " "
-//            + Math.abs(landmarks.get(LEFT_HIP).y()-landmarks.get(LEFT_WRIST).y()));
 
             if( landmarks.get(LEFT_WRIST).visibility().get() > WRIST_VISIBILITY_THRES && (
 //                            landmarks.get(LEFT_WRIST).y()<landmarks.get(LEFT_ELBOW).y()-0.05  || landmarks.get(LEFT_ELBOW).y()*IMG_HEIGHT<landmarks.get(LEFT_SHOULDER).y()*IMG_HEIGHT+15
@@ -395,12 +393,17 @@ public class HumanPoseEstimator {
         {
             if(whichHand==LEFT_WRIST){
                 return ( landmarks.get(LEFT_WRIST).visibility().get() > WRIST_VISIBILITY_THRES && (
-                        landmarks.get(LEFT_WRIST).y()<landmarks.get(LEFT_ELBOW).y()-0.05  || landmarks.get(LEFT_ELBOW).y()*IMG_HEIGHT<landmarks.get(LEFT_SHOULDER).y()*IMG_HEIGHT+15
+//                            landmarks.get(LEFT_WRIST).y()<landmarks.get(LEFT_ELBOW).y()-0.05  || landmarks.get(LEFT_ELBOW).y()*IMG_HEIGHT<landmarks.get(LEFT_SHOULDER).y()*IMG_HEIGHT+15
+                        // if wrist is closer to the shoulder thant the hip
+                        Math.abs(landmarks.get(LEFT_SHOULDER).y()-landmarks.get(LEFT_WRIST).y() ) <= Math.abs(landmarks.get(LEFT_HIP).y()-landmarks.get(LEFT_WRIST).y())
                 ));
             }
             else{
-                return (landmarks.get(RIGHT_WRIST).visibility().get() > WRIST_VISIBILITY_THRES && (
-                        landmarks.get(RIGHT_WRIST).y()<landmarks.get(RIGHT_ELBOW).y()-0.05)  || landmarks.get(RIGHT_ELBOW).y()*IMG_HEIGHT<landmarks.get(RIGHT_SHOULDER).y()*IMG_HEIGHT+15 );
+                return landmarks.get(RIGHT_WRIST).visibility().get() > WRIST_VISIBILITY_THRES && (
+//                    landmarks.get(RIGHT_WRIST).y()<landmarks.get(RIGHT_ELBOW).y()-0.05)  || landmarks.get(RIGHT_ELBOW).y()*IMG_HEIGHT<landmarks.get(RIGHT_SHOULDER).y()*IMG_HEIGHT+15 )
+                        // if wrist is closer to the shoulder thant the hip
+                        Math.abs(landmarks.get(RIGHT_SHOULDER).y()-landmarks.get(RIGHT_WRIST).y() ) <= Math.abs(landmarks.get(RIGHT_HIP).y()-landmarks.get(RIGHT_WRIST).y())
+                );
             }
         }
     } //end headpose class
