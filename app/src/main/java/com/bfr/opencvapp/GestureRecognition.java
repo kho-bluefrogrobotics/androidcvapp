@@ -578,16 +578,20 @@ public class GestureRecognition {
 
                 Log.d(name, "Finger status : " + handPose.isOpen(THUMB) + " " + handPose.isOpen(INDEX) + " " + handPose.isOpen(MIDDLE) + " " + handPose.isOpen(RING) + " " + handPose.isOpen(PINKIE));
 //                //
-//                if (handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING) && handPose.isOpen(PINKIE)) // hand is open
-//                {
-//                    // init frame index for buffer recording
-//                    imNum = 0;
-//                    step_num = 100;
-//                    debugSaveImg("OPENHAND", frame);
-//                    Log.d(name, "Hand is open -> 100 : ");
-//                }
+                if (handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING) && handPose.isOpen(PINKIE)) // hand is open
+                {
+                    result = "STOP";
+
+                    gesture.result = result;
+                    gesture.orientation = 0;
+                    gestureRsp.onSuccess(gesture);
+
+                    debugSaveImg(result, frame);
+
+                    step_num = 300;
+                }
                 // Thumbs open
-                if (!handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && handPose.isOpen(THUMB) && !handPose.isOpen(PINKIE)) // all fingers closed beside thumb
+                else if (!handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && handPose.isOpen(THUMB) && !handPose.isOpen(PINKIE)) // all fingers closed beside thumb
                 {
                     Log.d(name, "Thumbs open -> 200 : ");
                     step_num = 200;

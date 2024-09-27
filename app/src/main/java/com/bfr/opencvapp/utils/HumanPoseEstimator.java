@@ -112,12 +112,12 @@ public class HumanPoseEstimator {
                 delegateOptions.setQuantizedModelsAllowed(false);
                 GpuDelegate gpuDelegate = new GpuDelegate(delegateOptions);
                 options.addDelegate(gpuDelegate);
-                Log.i(TAG, "Handpose Interpreter on GPU");
+                Log.i(TAG, "Human pose Estimator on GPU");
             }
             else{
                 options.setUseXNNPACK(true);
                 WITH_NNAPI = false;
-                Log.i(TAG, "Handpose Interpreter on CPU");
+                Log.i(TAG, "Human pose Estimator on CPU");
             }
 
             if (WITH_NNAPI) {
