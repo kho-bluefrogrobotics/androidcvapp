@@ -357,14 +357,14 @@ public class GestureRecognition {
             double height = Math.abs( (handPose.landmarks.get(topLandmark(handPose.landmarks)).y() - handPose.landmarks.get(bottomLandmark(handPose.landmarks)).y() )
                     *frame.submat(armROI).rows()) ;
 
-            Mat debug = input.clone();
+
             int x1 = (int)(handPose.landmarks.get(leftLandmark(handPose.landmarks)).x()*frame.submat(armROI).cols()) + armROI.x;
             int y1 = (int)(handPose.landmarks.get(topLandmark(handPose.landmarks)).y()*frame.submat(armROI).rows()) + armROI.y;
             int x2 = x1 + (int)width;
             int y2 = y1 + (int)height;
-
-            Imgproc.rectangle(debug, new Point(x1, y1) , new Point(x2, y2) , new Scalar(0,255,255), 3);
-            Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"_debugROI.jpg", debug );
+//            Mat debug = input.clone();
+//            Imgproc.rectangle(debug, new Point(x1, y1) , new Point(x2, y2) , new Scalar(0,255,255), 3);
+//            Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"_debugROI.jpg", debug );
 
             left = Math.max(2, x1 - HAND_ROI_MARGIN - (int)(width/3) ) ;
             top = Math.max(2,y1 -HAND_ROI_MARGIN - (int)(height/4) );
@@ -394,7 +394,7 @@ public class GestureRecognition {
 
             handMat = frame.submat(handROI);
 
-            Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"_handROI.jpg", handMat );
+//            Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"_handROI.jpg", handMat );
 
             motionDetector.reset();
 
