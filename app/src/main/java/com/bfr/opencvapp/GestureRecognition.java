@@ -49,6 +49,7 @@ public class GestureRecognition {
 
         this.humanPoseEstimator = humanPoseEstimator;
         this.handROI = new Rect(0,0,0,0);
+        this.armROI = new Rect(0,0,0,0);
     }
 
     String name = "";
@@ -92,7 +93,7 @@ public class GestureRecognition {
     public int left, right, top, bottom;
     // margin to crop the hand in pixel
     final int MARGIN = 50;
-    public Rect handROI;
+    public Rect armROI, handROI;
     // black background
     Mat black;
     Mat roiInBlack; // subimage at hand roi in black image
@@ -252,21 +253,21 @@ public class GestureRecognition {
 
                         handX2 = Math.min( handX + handW, IMG_WIDTH-2);
                         handY2 = Math.min(handY+handH, IMG_HEIGHT-2);
-                        handROI.x = handX;
-                        handROI.y = handY;
-                        handROI.height = Math.abs(handY2-handY);
-                        handROI.width = Math.abs(handX2-handX);
+                        armROI.x = handX;
+                        armROI.y = handY;
+                        armROI.height = Math.abs(handY2-handY);
+                        armROI.width = Math.abs(handX2-handX);
 
                         Imgproc.rectangle(input,new Point(handX, handY), new Point(handX2, handY2),
                                 new Scalar(0,220, 0), 4);
+                        Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"_armROI.jpg", input);
 
                         //reset
                         stabilizationFrames = 0;
                         //next step
                         step_num = 15;
 //                                step_num =6;
-                        Log.i(name, "current step: " + step_num + "\n"
-                        + handROI.x + "," + handROI.y + ","+handROI.height + "," + handROI.width);
+
 
 
                     } //end if hand is signing
@@ -326,7 +327,7 @@ public class GestureRecognition {
             // displaymat = black.clone();
 
             //hand pose estimation
-            handPose = handPoseEstimator.recognizeImage(frame.submat(handROI), signingHand);
+            handPose = handPoseEstimator.recognizeImage(frame.submat(armROI), signingHand);
 
             //reset if needed
             if (numofTry>TRIALS)
@@ -350,21 +351,50 @@ public class GestureRecognition {
 
             // set hand ROI
 
-            int HAND_ROI_MARGIN = 100;
-            left = Math.max(2, (int)(handPose.landmarks.get(leftLandmark(handPose.landmarks)).x()*frame.submat(handROI).cols()) - HAND_ROI_MARGIN + handROI.x) ;
-            top = Math.max(2,(int)(handPose.landmarks.get(topLandmark(handPose.landmarks)).y()*frame.submat(handROI).rows())-HAND_ROI_MARGIN + handROI.y);
-            right = Math.min(frame.cols()-2, (int)(handPose.landmarks.get(rightLandmark(handPose.landmarks)).x()*frame.submat(handROI).cols())+HAND_ROI_MARGIN+ handROI.x);
-            bottom = Math.min(frame.rows()-2,  (int)(handPose.landmarks.get(bottomLandmark(handPose.landmarks)).y()*frame.submat(handROI).rows())+HAND_ROI_MARGIN+ handROI.y);
+            int HAND_ROI_MARGIN = 50;
+            double width = Math.abs( (handPose.landmarks.get(rightLandmark(handPose.landmarks)).x() - handPose.landmarks.get(leftLandmark(handPose.landmarks)).x() )
+                    *frame.submat(armROI).cols());
+            double height = Math.abs( (handPose.landmarks.get(topLandmark(handPose.landmarks)).y() - handPose.landmarks.get(bottomLandmark(handPose.landmarks)).y() )
+                    *frame.submat(armROI).rows()) ;
 
+            Mat debug = input.clone();
+            int x1 = (int)(handPose.landmarks.get(leftLandmark(handPose.landmarks)).x()*frame.submat(armROI).cols()) + armROI.x;
+            int y1 = (int)(handPose.landmarks.get(topLandmark(handPose.landmarks)).y()*frame.submat(armROI).rows()) + armROI.y;
+            int x2 = x1 + (int)width;
+            int y2 = y1 + (int)height;
+
+            Imgproc.rectangle(debug, new Point(x1, y1) , new Point(x2, y2) , new Scalar(0,255,255), 3);
+            Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"_debugROI.jpg", debug );
+
+            left = Math.max(2, x1 - HAND_ROI_MARGIN - (int)(width/3) ) ;
+            top = Math.max(2,y1 -HAND_ROI_MARGIN - (int)(height/4) );
+
+            right = Math.min(frame.cols()-2, x2 + HAND_ROI_MARGIN + (int)(0.3*width) );
+            bottom = Math.min(frame.rows()-2, y2 + HAND_ROI_MARGIN + (int)(0.25*height) );
 
             handROI.x =  left;
             handROI.y = top;
             handROI.height = bottom - top;
             handROI.width = right -left;
 
-//            gestureMotionDetect.setHandROI(handROI);
+//            left = Math.max(2, handROI.x -handROI.width/3) ;
+//            top =  Math.max(2, handROI.y - (int)(handROI.height/4));
+//            right = handROI.x + (int)(1.5*handROI.width);
+//            bottom = handROI.y + (int)(1.3*handROI.height);
+
+//            handROI.x =  left;
+//            handROI.y = top;
+//            handROI.height = bottom - top;
+//            handROI.width = right -left;
+
+
+
+            Log.i(name, "current step: " + step_num + "\n"
+                    + handROI.x + "," + handROI.y + ","+handROI.height + "," + handROI.width);
 
             handMat = frame.submat(handROI);
+
+            Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"_handROI.jpg", handMat );
 
             motionDetector.reset();
 

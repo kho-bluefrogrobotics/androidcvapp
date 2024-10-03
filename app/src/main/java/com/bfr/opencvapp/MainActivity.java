@@ -550,17 +550,11 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         // start scheduled task
         if(motionGestureScheduler==null || motionGestureScheduler.isShutdown())
         {
-            try{
-                Log.w(TAG, "Starting GestureMotionDetector " );
-                //init thread
-                motionGestureScheduler = Executors.newScheduledThreadPool(1);
-                // 40ms period to grab a frame at 25fps
-                motionGestureScheduler.scheduleWithFixedDelay(motionGestureRunnable, 0, 35, TimeUnit.MILLISECONDS);
-            }
-            catch (Exception e)
-            {
-                Log.e(TAG, "ERROR starting GestureMotionDetector : " + Log.getStackTraceString(e));
-            }
+            Log.w(TAG, "Starting GestureMotionDetector " );
+            //init thread
+            motionGestureScheduler = Executors.newScheduledThreadPool(1);
+            // 40ms period to grab a frame at 25fps
+            motionGestureScheduler.scheduleWithFixedDelay(motionGestureRunnable, 0, 35, TimeUnit.MILLISECONDS);
         } //end if scheduler ready
 
 //        Log.w("MainActivity", "Camera frame ready");
@@ -584,8 +578,6 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 matList.remove(0);
         }
 
-        try
-        {
 
             gestureRecognition.recognize(frame);
 
@@ -611,12 +603,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                         color, 5);
 
             return display;
-        }
-        catch (Exception e)
-        {
-            return new Mat(768,1024, CV_8UC3, new Scalar(0, 0, 0));
 
-        }
 
 //        try{
 //            gestureRecognition.recognize(frame);
