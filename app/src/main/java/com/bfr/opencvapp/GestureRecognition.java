@@ -123,7 +123,7 @@ public class GestureRecognition {
     float THRES_OPT_FLOW_COME_HERE = 2.0f;
     public String result = "";
 
-    int STABILIZATION = 3;
+    int STABILIZATION = 5;
     int TRIALS = 5;
     int numofTry = 0;
     //
@@ -258,9 +258,9 @@ public class GestureRecognition {
                         armROI.height = Math.abs(handY2-handY);
                         armROI.width = Math.abs(handX2-handX);
 
-                        Imgproc.rectangle(input,new Point(handX, handY), new Point(handX2, handY2),
-                                new Scalar(0,220, 0), 4);
-                        Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"_armROI.jpg", input);
+//                        Imgproc.rectangle(input,new Point(handX, handY), new Point(handX2, handY2),
+//                                new Scalar(0,220, 0), 4);
+//                        Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"_armROI.jpg", input);
 
                         //reset
                         stabilizationFrames = 0;
@@ -424,21 +424,25 @@ public class GestureRecognition {
 
             motionDetector.detectMotion(handMat, false);
 
-            if (motionDetector.motionOptFlow >= 20)
+            boolean criteriaOfMotion = (handROI.height>=300 && motionDetector.motionOptFlow >= 30) || (handROI.height<300 && motionDetector.motionOptFlow >= 20);
+            if (criteriaOfMotion)
             {
                 Log.i(name, "Optical flow detected -> 30");
+                Log.w("coucmotion", "COUCOU: a=" + motionDetector.motionOptFlow + "  b=" + handROI.height+" c="+handROI.width );
                 step_num = 30;
             }
             else // no motion detected
             {
                 //give it another chance
                 if(stabilizationFrames<STABILIZATION){
-                    Log.i(name, "Still looking for motion -> staying in 17 " + stabilizationFrames);
+                    Log.i("coucmotion", "Still looking for motion -> staying in 17 " + stabilizationFrames
+                    + "\na=" + motionDetector.motionOptFlow + "  b=" + handROI.height+" c="+handROI.width );
                     stabilizationFrames+=1;
                     return;
                 }
                 else{
                     Log.i(name, "No mvt -> 90");
+                    Log.w("coucmotion", "STOP: a=" + motionDetector.motionOptFlow + "  b=" + handROI.height+" c="+handROI.width );
                     step_num = 90;
                 }
             }
@@ -457,7 +461,7 @@ public class GestureRecognition {
                 gesture.result = result;
                 gesture.orientation = 0;
                 gestureRsp.onSuccess(gesture);
-                debugSaveImg(result, handMat);
+                debugSaveImgMotion(result, handMat);
                 BuddySDK.Speech.startSpeaking("Coucou");
             }
             else {
@@ -466,7 +470,7 @@ public class GestureRecognition {
                 gesture.result = result;
                 gesture.orientation = 0;
                 gestureRsp.onSuccess(gesture);
-                debugSaveImg(result, handMat);
+                debugSaveImgMotion(result, handMat);
                 BuddySDK.Speech.startSpeaking("J'arrive");
             }
 
@@ -616,7 +620,7 @@ public class GestureRecognition {
                     gesture.orientation = 0;
                     gestureRsp.onSuccess(gesture);
 
-                    debugSaveImg(result, frame);
+                    debugSaveImgMotion(result, frame);
 
                     step_num = 300;
                 }
@@ -1195,6 +1199,24 @@ public class GestureRecognition {
             saveDir.mkdirs();
         }
             Imgcodecs.imwrite("/sdcard/Download/"+ folder + "/" + strDate+"/_gestRecog.jpg", img);
+
+
+    } // end record debug
+
+
+    void debugSaveImgMotion(String folder, Mat img)
+    {
+
+        Date date = new Date();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyMMddHHmmssSSS");
+        String strDate= formatter.format(date);
+        // create folder if doesn't exist
+        File saveDir = new File("", "/sdcard/Download/"+ folder + "/" + strDate);
+        if(!saveDir.exists()) {
+            // create folder
+            saveDir.mkdirs();
+        }
+        Imgcodecs.imwrite("/sdcard/Download/"+ folder + "/" + strDate+"/_gestRecog_"+ motionDetector.motionOptFlow+".jpg", img);
 
 
     } // end record debug
