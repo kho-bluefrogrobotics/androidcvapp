@@ -185,7 +185,6 @@ public class GestureRecognition {
             result = "";
             gesture.result = result;
             gesture.orientation = 0;
-            gestureRsp.onSuccess(gesture);
 //                step_num = 5;
 //                if(true)
 //                    return;
@@ -315,7 +314,6 @@ public class GestureRecognition {
 
 
             // set hand ROI
-
             int HAND_ROI_MARGIN = 50;
             double width = Math.abs( (handPose.landmarks.get(rightLandmark(handPose.landmarks)).x() - handPose.landmarks.get(leftLandmark(handPose.landmarks)).x() )
                     *frame.submat(armROI).cols());
@@ -327,9 +325,6 @@ public class GestureRecognition {
             int y1 = (int)(handPose.landmarks.get(topLandmark(handPose.landmarks)).y()*frame.submat(armROI).rows()) + armROI.y;
             int x2 = x1 + (int)width;
             int y2 = y1 + (int)height;
-//            Mat debug = input.clone();
-//            Imgproc.rectangle(debug, new Point(x1, y1) , new Point(x2, y2) , new Scalar(0,255,255), 3);
-//            Imgcodecs.imwrite("/sdcard/Download/"+System.currentTimeMillis()+"_debugROI.jpg", debug );
 
             left = Math.max(2, x1 - HAND_ROI_MARGIN - (int)(width/3) ) ;
             top = Math.max(2,y1 -HAND_ROI_MARGIN - (int)(height/4) );
