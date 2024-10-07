@@ -124,7 +124,7 @@ public class GestureRecognition {
     float THRES_OPT_FLOW_COME_HERE = 2.0f;
     public String result = "";
 
-    int STABILIZATION = 5;
+    int STABILIZATION = 3;
     int TRIALS = 5;
     int numofTry = 0;
     //
@@ -449,194 +449,75 @@ public class GestureRecognition {
             /***/if(step_num==90) { // Pose estimation
 
                 Log.d(name, "Finger status : " + handPose.isOpen(THUMB) + " " + handPose.isOpen(INDEX) + " " + handPose.isOpen(MIDDLE) + " " + handPose.isOpen(RING) + " " + handPose.isOpen(PINKIE));
-//                //
-                if (handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING) && handPose.isOpen(PINKIE)) // hand is open
+                // Only checking index and thumb for more robustness
+                //Thumbs up or down
+                if (!handPose.isOpen(INDEX) && handPose.isOpen(THUMB) )
                 {
-                    step_num = 190;
+                    Log.d(name, "Thumbs open -> 200 : ");
+                    step_num = 200;
                 }
-                // Thumbs open
+                else{
+                    // double checking index and thumb for more robustness
+                    if (handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING) && handPose.isOpen(PINKIE)) // hand is open
+                    {
+                        step_num = 190;
+                    }
+//                // Thumbs open
                 else if (!handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && handPose.isOpen(THUMB) && !handPose.isOpen(PINKIE)) // all fingers closed beside thumb
                 {
                     Log.d(name, "Thumbs open -> 200 : ");
                     step_num = 200;
                 }
-                // index, thumb and pinkie open
-                else if(handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && handPose.isOpen(PINKIE))
-                {
-                    Log.d(name, "Rock'n roll ->250 : ");
-                    step_num = 250;
-                }
-                // just thumb and pinkie open
-                else if(handPose.isOpen(THUMB) && !handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && handPose.isOpen(PINKIE))
-                {
-                    Log.d(name, "Allo -> 260 : ");
-                    step_num = 260;
-                }
-                // allfingers closed except middle finger
-                else if(!handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && !handPose.isOpen(PINKIE))
-                {
-                    Log.d(name, "F*** -> 270 : ");
-                    step_num = 270;
-                }
-                // index and middle finger open
-                else if(handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && !handPose.isOpen(PINKIE))
-                {
-                    Log.d(name, "Peace -> 270 : ");
-                    step_num = 280;
-                }
-                // only Index open
-                else if(handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && !handPose.isOpen(PINKIE))
-                {
-                    Log.d(name, "Pointing -> 280 : ");
-                    step_num = 290;
-                }
-                else {
-                    Log.d(name, "ELSE : Finger status OTHER ");
-                    Log.d(name, "OTHER");
-                    result = "????";
+                    // index, thumb and pinkie open
+                    else if(handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && handPose.isOpen(PINKIE))
+                    {
+                        Log.d(name, "Rock'n roll ->250 : ");
+                        step_num = 250;
+                    }
+                    // just thumb and pinkie open
+                    else if(handPose.isOpen(THUMB) && !handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && handPose.isOpen(PINKIE))
+                    {
+                        Log.d(name, "Allo -> 260 : ");
+                        step_num = 260;
+                    }
+                    // allfingers closed except middle finger
+                    else if(!handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && !handPose.isOpen(PINKIE))
+                    {
+                        Log.d(name, "F*** -> 270 : ");
+                        step_num = 270;
+                    }
+                    // index and middle finger open
+                    else if(handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && !handPose.isOpen(PINKIE))
+                    {
+                        Log.d(name, "Peace -> 270 : ");
+                        step_num = 280;
+                    }
+                    // only Index open
+                    else if(handPose.isOpen(INDEX) && !handPose.isOpen(MIDDLE) && !handPose.isOpen(RING) && !handPose.isOpen(PINKIE))
+                    {
+                        Log.d(name, "Pointing -> 280 : ");
+                        step_num = 290;
+                    }
+                    else {
+                        Log.d(name, "ELSE : Finger status OTHER ");
+                        Log.d(name, "OTHER");
+                        result = "????";
 
-                    gesture.result = result;
-                    gesture.orientation = 0;
-                    gestureRsp.onSuccess(gesture);
+                        gesture.result = result;
+                        gesture.orientation = 0;
+                        gestureRsp.onSuccess(gesture);
 
-                    debugSaveImg(result, frame.submat(armROI));
+                        debugSaveImg(result, frame.submat(armROI));
 
-                    step_num = 300;
+                        step_num = 300;
 
-                } //endif hand is open
+                    } //endif hand is open
+                } //end if thumbs up or down
+                
+
+
 
             }
-
-
-//            /***/if(step_num==100) { // wait for end of motion detection
-//            //Log.i(name, "current step: " + step_num + "Waiting for end of motion detection");
-//                if(!gestureMotionDetect.go) {
-//                    step_num = 120;
-//                    Log.i(name, "current step: " + step_num + "  ");
-//                }
-//            }
-
-
-
-//            /***/
-//            if(step_num==120) { // motion result
-//
-//                int widthcrop = right-left;
-//                int heightcrop = bottom - top;
-//                int area = widthcrop*heightcrop;
-//                float proportionh = gestureMotionDetect.optFlow/(float)widthcrop;
-//                float proportionv = gestureMotionDetect.optFlow/(float)heightcrop;
-//
-//                Log.d(name, "Calculating is front or not" );
-//                // if seeing palm
-//                if (handPose.isFront()) {
-//                    if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COUCOU)
-////                    if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU)
-//                    {
-//                        Log.w(name, "COUCOU Measured opt flow="+ gestureMotionDetect.optFlow + "length=" + widthcrop+
-//                                "\nproportionh=" + proportionh + " proportionv=" + proportionv);
-//                        result = "COUCOU";
-//                        gesture.result = result;
-//                        gesture.orientation = 0;
-//                        gestureRsp.onSuccess(gesture);
-//                        BuddySDK.Speech.startSpeaking("Coucou");
-//                        debugRecord("CoucouMotion");
-//                    }
-//                    else // palm and not moving
-//                    {
-//                        result = "STOP";
-//
-//                        Log.w(name, "STOP Measured opt flow="+ gestureMotionDetect.optFlow + "length=" + widthcrop+
-//                                "\nproportionh=" + proportionh + " proportionv=" + proportionv);gesture.result = result;
-//                        gesture.orientation = 0;
-//                        gestureRsp.onSuccess(gesture);
-//                        BuddySDK.Speech.startSpeaking("STOP");
-//                        debugRecord("stop");
-//
-//                    }
-//
-//                }
-//                else // back of the hand
-//                {
-//                    //fingers upward
-//                    if( handPose.fingerOrientation(INDEX) >0) {
-//                        if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COME_HERE) {
-////                        if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU) {
-//
-//                            Log.d(name, "COME HERE");
-//                            result = "COME HERE";
-//
-//                            gesture.result = result;
-//                            gesture.orientation = 0;
-//                            gestureRsp.onSuccess(gesture);
-//
-////                        BuddySDK.Vision.stopCamera(new IVisionRsp.Stub() {
-////                            @Override
-////                            public void onSuccess(String s) throws RemoteException {
-////
-////                            }
-////
-////                            @Override
-////                            public void onFailed(String s) throws RemoteException {
-////
-////                            }
-////                        });
-//                            BuddySDK.Speech.startSpeaking("J'arrive");
-////                        BuddySDK.Companion.raiseEvent("startFollow");
-//                            debugRecord("comehere");
-//                        } //end if motion
-//                        else //back of hand and no motion
-//                        {
-//                            step_num = 5;
-//                            return;
-//                        }
-//                    }
-//                    else // fingers downward
-//                    {
-//                        if (gestureMotionDetect.optFlow > THRES_OPT_FLOW_COME_HERE) {
-////                        if (proportionv > THRES_PROPORTIONAL_OPT_FLOW_COUCOU) {
-//
-//                            Log.d(name, "GO AWAY" + gestureMotionDetect.optFlow);
-//                            result = "GO AWAY";
-//
-//                            gesture.result = result;
-//                            gesture.orientation = 0;
-//                            gestureRsp.onSuccess(gesture);
-//
-////                        BuddySDK.Vision.stopCamera(new IVisionRsp.Stub() {
-////                            @Override
-////                            public void onSuccess(String s) throws RemoteException {
-////
-////                            }
-////
-////                            @Override
-////                            public void onFailed(String s) throws RemoteException {
-////
-////                            }
-////                        });
-//                            BuddySDK.Speech.startSpeaking("Je m'en vais");
-////                        BuddySDK.Companion.raiseEvent("startFollow");
-//                            debugRecord("goaway");
-//                        } //end if motion
-//                        else //back of hand and no motion
-//                        {
-//                            Log.d(name, "Back hand and no motion = " + gestureMotionDetect.optFlow);
-//                            step_num = 5;
-//                            return;
-//                        }
-//                    }
-//
-//
-//                } //end if front or back of hand
-//
-//                //reset
-//                resetImNb = 0;
-//
-//                step_num = 900;
-//
-//                return;
-//
-//            }
 
 
         /***/if(step_num==190) { // hand open
@@ -673,12 +554,12 @@ public class GestureRecognition {
 
             /***/if(step_num==200) { // Thumb up down
 
-
-                if (handPose.fingerOrientation(THUMB) >= 0) {
+                int thumbAngle = handPose.fingerOrientation(THUMB);
+                if (thumbAngle >= 0) {
                     Log.d(name, "POSITIVE");
                     result = "POSITIVE";
 
-                    gesture.result = result;
+                    gesture.result = result + " " + thumbAngle;
                     gesture.orientation = 0;
                     gestureRsp.onSuccess(gesture);
 
@@ -690,7 +571,7 @@ public class GestureRecognition {
                     Log.d(name, "NEGATIVE");
                     result = "NEGATIVE";
 
-                    gesture.result = result;
+                    gesture.result = result+ " " + thumbAngle;
                     gesture.orientation = 0;
                     gestureRsp.onSuccess(gesture);
 
