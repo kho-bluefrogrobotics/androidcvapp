@@ -64,6 +64,8 @@ public class GestureRecognition {
     MotionDetector motionDetector;
 
     int stabilizationFrames =0;
+    int numofLowLevelMotion =0;
+    int accumulatedMotion =0;
 
 
     HumanPoseEstimator humanPoseEstimator;
@@ -124,7 +126,8 @@ public class GestureRecognition {
     float THRES_OPT_FLOW_COME_HERE = 2.0f;
     public String result = "";
 
-    int STABILIZATION = 3;
+    int TRIALS_TO_FIND_MOTION = 5;
+    int NUM_OF_LOW_MOTION_LEVEL = 2;
     int TRIALS = 5;
     int numofTry = 0;
     //
@@ -264,6 +267,7 @@ public class GestureRecognition {
 
                     //reset
                     stabilizationFrames = 0;
+                    numofLowLevelMotion = 0;
                     //next step
                     step_num = 15;
 //                                step_num =6;
@@ -361,6 +365,8 @@ public class GestureRecognition {
 //            motionDetector.detectMotion(handMat, false);
 
             stabilizationFrames =0;
+            numofLowLevelMotion = 0;
+            accumulatedMotion = 0;
             step_num = 17;
         }
 
@@ -380,7 +386,9 @@ public class GestureRecognition {
 
             motionDetector.detectMotion(handMat, false);
 
-            boolean criteriaOfMotion = (handROI.height>=300 && motionDetector.motionOptFlow >= 30) || (handROI.height<300 && motionDetector.motionOptFlow >= 20);
+            accumulatedMotion += motionDetector.motionOptFlow;
+//            boolean criteriaOfMotion = (handROI.height>=300 && motionDetector.motionOptFlow >= 30) || (handROI.height<300 && motionDetector.motionOptFlow >= 20);
+            boolean criteriaOfMotion = (accumulatedMotion>30);
             if (criteriaOfMotion)
             {
                 Log.i(name, "Optical flow detected -> 30");
@@ -389,12 +397,28 @@ public class GestureRecognition {
             }
             else // no motion detected
             {
+
                 //give it another chance
-                if(stabilizationFrames<STABILIZATION){
+                if(stabilizationFrames<TRIALS_TO_FIND_MOTION){
                     Log.i("coucmotion", "Still looking for motion -> staying in 17 " + stabilizationFrames
-                    + "\na=" + motionDetector.motionOptFlow + "  b=" + handROI.height+" c="+handROI.width );
-                    stabilizationFrames+=1;
-                    return;
+                            + "\na=" + motionDetector.motionOptFlow + "  b=" + handROI.height+" c="+handROI.width );
+                    // if low level of motion everal times in a row
+                    if(motionDetector.motionOptFlow<5) {
+                        if(numofLowLevelMotion>NUM_OF_LOW_MOTION_LEVEL) {
+                            Log.i(name, "Low level of motion-> 90");
+                            step_num = 90;
+                        }
+                        numofLowLevelMotion += 1;
+                        stabilizationFrames+=1;
+                        return;
+                    }
+                    else{ // motion level not low but not enough either
+
+                        stabilizationFrames+=1;
+                        return;
+                    }
+
+
                 }
                 else{
                     Log.i(name, "No mvt -> 90");
@@ -531,6 +555,7 @@ public class GestureRecognition {
                 gestureRsp.onSuccess(gesture);
 
                 debugSaveImg(result, frame.submat(armROI));
+                debugSaveImgMotion(result, frame.submat(armROI));
                 step_num = 300;
             }
             else // we assume we see the back hand for a slow come here movement
