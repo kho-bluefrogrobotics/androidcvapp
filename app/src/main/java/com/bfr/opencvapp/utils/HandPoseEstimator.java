@@ -309,19 +309,19 @@ public class HandPoseEstimator {
             //z component of the cross product, not normalized
             int z=(knucleLine[0]*plamLine[1]-plamLine[0]*knucleLine[1]);
 
-            // if left hand
-            if (handeness.get(0).categoryName().toUpperCase().contains("LEFT")){
-                if(z<0)
-                    Log.w("sideH", "LEFT FRONT");
-                else
-                    Log.w("sideH", "LEFT BACK");
-            }
-            else{
-                if(z>0)
-                    Log.w("sideH", "RIGHT FRONT");
-                else
-                    Log.w("sideH", "RIGHT BACK");
-            }
+//            // if left hand
+//            if (handeness.get(0).categoryName().toUpperCase().contains("LEFT")){
+//                if(z<0)
+//                    Log.w("sideH", "LEFT FRONT");
+//                else
+//                    Log.w("sideH", "LEFT BACK");
+//            }
+//            else{
+//                if(z>0)
+//                    Log.w("sideH", "RIGHT FRONT");
+//                else
+//                    Log.w("sideH", "RIGHT BACK");
+//            }
 
         }
 
@@ -362,11 +362,11 @@ public class HandPoseEstimator {
             if (handeness.get(0).categoryName().toUpperCase().contains("LEFT")){
 //                if(z<-7000){
                 if(rho>=3.1){
-                    Log.w("sideH", "FRONT left z="+z);
+//                    Log.w("sideH", "FRONT left z="+z);
                     this.front = true;
                 }
                 else{
-                    Log.w("sideH", "BACK left z="+z);
+//                    Log.w("sideH", "BACK left z="+z);
                     this.front = false;
                 }
             }
@@ -374,12 +374,12 @@ public class HandPoseEstimator {
             else{
 //                if(z>7000){
                 if(rho<0.04){
-                    Log.w("sideH", "FRONT right z="+z);
+//                    Log.w("sideH", "FRONT right z="+z);
                     this.front = true;
                 }
                 else
                 {
-                    Log.w("sideH", "BACK right z="+z);
+//                    Log.w("sideH", "BACK right z="+z);
                     this.front = false;
                 }
             }

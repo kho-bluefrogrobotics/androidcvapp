@@ -598,9 +598,9 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             else
                 color = new Scalar(0,0,255);
 
-            Imgproc.rectangle(display, new Point(gestureRecognition.left, gestureRecognition.top),
-                        new Point(gestureRecognition.right, gestureRecognition.bottom),
-                        color, 5);
+//            Imgproc.rectangle(display, new Point(gestureRecognition.left, gestureRecognition.top),
+//                        new Point(gestureRecognition.right, gestureRecognition.bottom),
+//                        color, 5);
 
             return display;
 
