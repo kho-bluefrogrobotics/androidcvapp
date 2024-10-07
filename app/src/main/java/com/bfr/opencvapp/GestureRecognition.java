@@ -297,6 +297,7 @@ public class GestureRecognition {
             //hand pose estimation
             handPose = handPoseEstimator.recognizeImage(frame.submat(armROI), signingHand);
 
+
             //reset if needed
             if (numofTry>TRIALS)
                 numofTry=0;
@@ -316,6 +317,10 @@ public class GestureRecognition {
                 return;
             }
 
+            /*** debug*/
+//            handPose.isFront();
+//            if(true)
+//                return;
 
             // set hand ROI
             int HAND_ROI_MARGIN = 50;

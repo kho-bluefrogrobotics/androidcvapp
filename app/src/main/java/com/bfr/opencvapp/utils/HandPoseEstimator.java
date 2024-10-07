@@ -361,7 +361,8 @@ public class HandPoseEstimator {
             // if left hand
             if (handeness.get(0).categoryName().toUpperCase().contains("LEFT")){
 //                if(z<-7000){
-                if(rho>=3.1){
+//                if(rho>=3.1){
+                if(phi>=0){
 //                    Log.w("sideH", "FRONT left z="+z);
                     this.front = true;
                 }
@@ -373,7 +374,8 @@ public class HandPoseEstimator {
             //else Right hand
             else{
 //                if(z>7000){
-                if(rho<0.04){
+//                if(rho<0.04){
+                if(phi<0){
 //                    Log.w("sideH", "FRONT right z="+z);
                     this.front = true;
                 }
