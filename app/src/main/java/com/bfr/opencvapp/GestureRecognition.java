@@ -451,7 +451,7 @@ public class GestureRecognition {
                 Log.d(name, "Finger status : " + handPose.isOpen(THUMB) + " " + handPose.isOpen(INDEX) + " " + handPose.isOpen(MIDDLE) + " " + handPose.isOpen(RING) + " " + handPose.isOpen(PINKIE));
                 // Only checking index and thumb for more robustness
                 //Thumbs up or down
-                if (!handPose.isOpen(INDEX) && handPose.isOpen(THUMB) )
+                if (!handPose.isOpen(INDEX) && handPose.isOpen(THUMB) && !handPose.isOpen(PINKIE))
                 {
                     Log.d(name, "Thumbs open -> 200 : ");
                     step_num = 200;
