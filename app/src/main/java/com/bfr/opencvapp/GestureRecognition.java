@@ -430,66 +430,8 @@ public class GestureRecognition {
                 BuddySDK.Speech.startSpeaking("J'arrive");
             }
 
-            step_num =80;
+            step_num =300;
         }
-
-        /***Human pose detection : check if is signing*/
-        if(step_num==80)
-        {
-            Log.i(name, "step 80 : Human is still signing? ");
-            humanPose = humanPoseEstimator.recognizeImage(frame);
-            // if no more signing with hand
-            if (!humanPose.isSigning(signedHand)){
-                result = "";
-                gesture.result = result;
-                gesture.orientation = 0;
-                gestureRsp.onSuccess(gesture);
-                step_num = 5;
-            }
-            else{
-                stabilizationFrames = 0;
-                step_num = 85;
-            }
-
-            return;
-
-        }
-
-        /***Human is still signing : waiting for stabilization for motion*/
-        if(step_num==85)
-        {
-            //give it another chance
-            if(stabilizationFrames<10){
-                Log.i(name, "Delay to stabilize " + stabilizationFrames);
-                stabilizationFrames+=1;
-                return;
-            }
-            Log.i(name, "-> step 15");
-            step_num = 15;
-
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -510,7 +452,6 @@ public class GestureRecognition {
 //                //
                 if (handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING) && handPose.isOpen(PINKIE)) // hand is open
                 {
-
                     step_num = 190;
                 }
                 // Thumbs open
@@ -561,20 +502,6 @@ public class GestureRecognition {
                     debugSaveImg(result, frame.submat(armROI));
 
                     step_num = 300;
-//                    if (handPose.isFront() && handPose.handOrientation()<=40 ) {
-//                        Log.d(name, "FRONT -> 300 : ");
-//                        result = "STOP";
-//                        gesture.result = result;
-//                        gesture.orientation = 0;
-//                        gestureRsp.onSuccess(gesture);
-//                        Log.d(name, "STOP");
-//                        debugSaveImg(result, frame);
-//                        step_num = 300; // wait for no hands in the image
-//                    } else {
-//                        Log.d(name, "Else back -> 5 : ");
-//                        step_num = 80;
-//                        return;
-//                    }
 
                 } //endif hand is open
 
@@ -856,21 +783,70 @@ public class GestureRecognition {
                 return;
             }
 
-            // estimate pose after a static recognition (hand changes sign)
-            if(step_num==300)
-            {
-//                //hand pose estimation
-//                handPose = handPoseEstimator.recognizeImage(frame.submat(handROI), signingHand);
-//
-//                if (handPose == null){
-//                    step_num = 80;
-//                    return;
-//                }
+        if (step_num==300) {
+            //reset
+            motionDetector.reset();
+            step_num = 305;
+            return;
+        }
 
-                step_num = 80;
-                return;
+        if(step_num==305){ // wait for change (motion)
 
+            // handROI hasbeen found the step before
+            handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
+            motionDetector.detectMotion(handMat, false);
+            if (motionDetector.motionOptFlow>20){
+                //go to stabilization step
+                step_num = 310;
             }
+            else //double check  if huma is signing
+            {
+                humanPose = humanPoseEstimator.recognizeImage(frame);
+                // if no more signing with hand
+                if (!humanPose.isSigning(signedHand)){
+                    result = "";
+                    gesture.result = result;
+                    gesture.orientation = 0;
+                    gestureRsp.onSuccess(gesture);
+                    step_num = 5;
+                }
+            }
+            return;
+
+        }
+//        /***Human pose detection : check if is signing*/
+//        if(step_num==300)
+//        {
+//            Log.i(name, "step 80 : Human is still signing? ");
+//            humanPose = humanPoseEstimator.recognizeImage(frame);
+//            // if no more signing with hand
+//            if (!humanPose.isSigning(signedHand)){
+//                result = "";
+//                gesture.result = result;
+//                gesture.orientation = 0;
+//                gestureRsp.onSuccess(gesture);
+//                step_num = 5;
+//            }
+//            else{
+//                stabilizationFrames = 0;
+//                step_num = 305;
+//            }
+//            return;
+//        }
+
+        /***Human is still signing : waiting for stabilization for motion*/
+        if(step_num==310)
+        {
+            //give it another chance
+            if(stabilizationFrames<15){
+                Log.i(name, "HUman still signing? " + stabilizationFrames);
+                stabilizationFrames+=1;
+                return;
+            }
+            Log.i(name, "-> step 15");
+            step_num = 15;
+
+        }
 
             /***/if(step_num==900) { //wait for no hands in region of analysis
 
