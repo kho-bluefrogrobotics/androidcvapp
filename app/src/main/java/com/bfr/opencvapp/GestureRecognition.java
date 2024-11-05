@@ -319,6 +319,7 @@ public class GestureRecognition {
 
             /*** debug*/
 //            handPose.isFront();
+//            Log.d(name, "Finger status : thumb:" + handPose.isOpen(THUMB) + " index:" + handPose.isOpen(INDEX) + " mid:" + handPose.isOpen(MIDDLE) + " ring:" + handPose.isOpen(RING) + " pinkie:" + handPose.isOpen(PINKIE));
 //            if(true)
 //                return;
 
@@ -372,7 +373,8 @@ public class GestureRecognition {
             stabilizationFrames =0;
             numofLowLevelMotion = 0;
             accumulatedMotion = 0;
-            step_num = 17;
+//            step_num = 17;
+            step_num = 90;
         }
 
 
@@ -477,10 +479,15 @@ public class GestureRecognition {
             /***No Motion detected: id static hand pose*/
             /***/if(step_num==90) { // Pose estimation
 
-                Log.d(name, "Finger status : " + handPose.isOpen(THUMB) + " " + handPose.isOpen(INDEX) + " " + handPose.isOpen(MIDDLE) + " " + handPose.isOpen(RING) + " " + handPose.isOpen(PINKIE));
+                if(handPose==null){
+                    Log.d(name, "Handpose null");
+                    step_num =5;
+                    return;
+                }
+                Log.d(name, "Finger status : thumb:" + handPose.isOpen(THUMB) + " index:" + handPose.isOpen(INDEX) + " mid:" + handPose.isOpen(MIDDLE) + " ring:" + handPose.isOpen(RING) + " pinkie:" + handPose.isOpen(PINKIE));
                 // Only checking index and thumb for more robustness
                 //Thumbs up or down
-                if (!handPose.isOpen(INDEX) && handPose.isOpen(THUMB) && !handPose.isOpen(PINKIE))
+                if (!handPose.isOpen(INDEX) && handPose.isOpen(THUMB) && !handPose.isOpen(MIDDLE)  && !handPose.isOpen(PINKIE))
                 {
                     Log.d(name, "Thumbs open -> 200 : ");
                     step_num = 200;
@@ -589,7 +596,7 @@ public class GestureRecognition {
                     Log.d(name, "POSITIVE");
                     result = "POSITIVE";
 
-                    gesture.result = result + " " + thumbAngle;
+                    gesture.result = result ;
                     gesture.orientation = 0;
                     gestureRsp.onSuccess(gesture);
 
@@ -601,7 +608,7 @@ public class GestureRecognition {
                     Log.d(name, "NEGATIVE");
                     result = "NEGATIVE";
 
-                    gesture.result = result+ " " + thumbAngle;
+                    gesture.result = result;
                     gesture.orientation = 0;
                     gestureRsp.onSuccess(gesture);
 
@@ -695,6 +702,7 @@ public class GestureRecognition {
             }
 
         if (step_num==300) {
+            Log.i(name, "step 300 :reset motion detector ");
             //reset
             motionDetector.reset();
             step_num = 305;
@@ -702,7 +710,7 @@ public class GestureRecognition {
         }
 
         if(step_num==305){ // wait for change (motion)
-
+            Log.i(name, "step 305 : wait for motion change ");
             // handROI hasbeen found the step before
             handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
             motionDetector.detectMotion(handMat, false);
@@ -749,13 +757,16 @@ public class GestureRecognition {
         if(step_num==310)
         {
             //give it another chance
-            if(stabilizationFrames<15){
+            if(stabilizationFrames<5){
                 Log.i(name, "HUman still signing? " + stabilizationFrames);
                 stabilizationFrames+=1;
                 return;
             }
-            Log.i(name, "-> step 15");
-            step_num = 15;
+            Log.i(name, "-> step ");
+//            step_num = 15;
+            //hand pose estimation
+            handPose = handPoseEstimator.recognizeImage(frame.submat(armROI), signingHand);
+            step_num = 90;
 
         }
 

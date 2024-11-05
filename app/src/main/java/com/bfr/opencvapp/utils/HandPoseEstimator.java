@@ -399,7 +399,7 @@ public class HandPoseEstimator {
         {
 
             // For all fingers EXCEPT thumb
-            if (finger != FINGER.THUMB)
+            if (finger == FINGER.INDEX)
             {
                 int TIP = PHALANX_ID[finger.ordinal()][0];
                 int SECOND_PHALANX = PHALANX_ID[finger.ordinal()][1];
@@ -431,7 +431,7 @@ public class HandPoseEstimator {
                 else
                     return true;
             }
-            else // THUMB is an exception :
+            else if(finger==FINGER.THUMB)// THUMB is an exception :
             // the open state of the thumb is obtained by comparing the dist of the tip to the base of the index finger the dist of the first two knuckles
             {
                 double THRES_DIST_TIP_PHALANX = 0.1;
@@ -465,6 +465,38 @@ public class HandPoseEstimator {
                     return true;
                 }
 
+            }
+            else // for the other fingers
+            {
+                int TIP = PHALANX_ID[finger.ordinal()][0];
+                int SECOND_PHALANX = PHALANX_ID[finger.ordinal()][1];
+                int KNUCKLE = PHALANX_ID[finger.ordinal()][2];
+
+//            int[] vec1 = new int[]{(int)(landmarks[TIP *3] -  landmarks[SECOND_PHALANX *3]), (int)(landmarks[TIP *3 +1] -  landmarks[SECOND_PHALANX *3+1]) };
+//            Log.d("ccoucou", "vect=" + vec1[0] + "," + vec1[1] +"    " + landmarks[TIP *3] + "," + landmarks[TIP *3+1] );
+
+                double distTip = Math.sqrt( (landmarks.get(TIP).x() -  landmarks.get(0).x())*(landmarks.get(TIP).x() -  landmarks.get(0).x())
+                        + (landmarks.get(TIP).y() -  landmarks.get(0).y())*(landmarks.get(TIP).y() -  landmarks.get(0).y()) );
+
+                double distPhalanx = Math.sqrt( (landmarks.get(SECOND_PHALANX).x() -  landmarks.get(0).x())*(landmarks.get(SECOND_PHALANX).x() -  landmarks.get(0).x())
+                        + (landmarks.get(SECOND_PHALANX).y() -  landmarks.get(0).y())*(landmarks.get(SECOND_PHALANX).y() -  landmarks.get(0).y()) );
+
+                double distPhalanxBase = Math.sqrt( (landmarks.get(SECOND_PHALANX).x() -  landmarks.get(KNUCKLE).x())*(landmarks.get(SECOND_PHALANX).x() -  landmarks.get(KNUCKLE).x())
+                        + (landmarks.get(SECOND_PHALANX).y() -  landmarks.get(KNUCKLE).y())*(landmarks.get(SECOND_PHALANX).y() -  landmarks.get(KNUCKLE).y()) );
+
+                double distPhalanxes = Math.sqrt( (landmarks.get(TIP).x() -  landmarks.get(SECOND_PHALANX).x())*(landmarks.get(TIP).x() -  landmarks.get(SECOND_PHALANX).x())
+                        + (landmarks.get(TIP).y() -  landmarks.get(SECOND_PHALANX).y())*(landmarks.get(TIP).y() -  landmarks.get(SECOND_PHALANX).y()) );
+
+//            Log.d("ccoucou", "distTip=" + distTip );
+//            Log.d("ccoucou", "distPhalanx=" + distPhalanx );
+//            Log.d("ccoucou", "Interm Calc=" + (landmarks[TIP *3] -  landmarks[0]) + " + " + (landmarks[TIP*3 + 1] -  landmarks[1]) );
+
+                if (distTip <= distPhalanx //tip of the finger closer to the wriste
+//                        || distPhalanxes<distPhalanxBase // idem when the knucle is in front of the camera
+                )
+                    return  false;
+                else
+                    return true;
             }
 
         } //end isOpen
