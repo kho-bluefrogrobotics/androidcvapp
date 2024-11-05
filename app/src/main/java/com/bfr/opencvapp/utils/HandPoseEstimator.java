@@ -42,7 +42,7 @@ import java.util.List;
 /** Hand Face Human object detector based on a Mobilenetv2-SSD network*/
 public class HandPoseEstimator {
 
-    private final String TAG = "Gesture HandPose";
+    private final String TAG = "HandPoseEstimator";
 
     //Params for TFlite interpreter
     private final boolean IS_QUANTIZED = false;
@@ -331,38 +331,15 @@ public class HandPoseEstimator {
             // vector of the knucle line, from the base of the index to the base of the pinkie
             int[] knucleLine = new int[]{ (int)( (landmarks.get(17).x() - landmarks.get(5).x())  * 1024), (int)((landmarks.get(17).y() - landmarks.get(5).y())*768 ), (int)((landmarks.get(17).z() - landmarks.get(5).z())*100 ) };
             // vector of the palm, from the wrist to the base of the index
-            int[] plamLine = new int[]{ (int)( (landmarks.get(0).x() - landmarks.get(5).x()) *1024), (int)( (landmarks.get(0).y() - landmarks.get(5).y())*768 ), (int)( (landmarks.get(0).z() - landmarks.get(5).z())*100 )};
+            int[] palmLine = new int[]{ (int)( (landmarks.get(0).x() - landmarks.get(5).x()) *1024), (int)( (landmarks.get(0).y() - landmarks.get(5).y())*768 ), (int)( (landmarks.get(0).z() - landmarks.get(5).z())*100 )};
 
-//            Log.w("vecto", "Result =" +  knucleLine[0]+"x"+plamLine[1] +"-"+ plamLine[0]+"x"+knucleLine[1] +"=" +(knucleLine[0]*plamLine[1]-plamLine[0]*knucleLine[1]));
+//            Log.d(TAG, "knucleLine:" +handeness.get(0).categoryName()+ " x=" + knucleLine[0] + " y=" + palmLine[1]);
 
-
-            //the crosproduct represent the orthogonal vector to the knucleline and the vector index-wrist
-            //https://en.wikipedia.org/wiki/Cross_product
-            int x = (knucleLine[1]*plamLine[2]-knucleLine[2]*plamLine[1]);
-            int y = (knucleLine[2]*plamLine[0]-knucleLine[0]*plamLine[2]);
-            int z = (knucleLine[0]*plamLine[1]-knucleLine[1]*plamLine[0]);
-
-            double norm = Math.sqrt(x*x+y*y+z*z);
-            double normalizedZ = (double)z/norm;
-
-            // angle from spherical coords
-            //https://en.wikipedia.org/wiki/Spherical_coordinate_system#Modified_spherical_coordinates
-
-            int signY =1;
-            if(y>0)
-                signY =1;
-            else
-                signY =-1;
-            double rho = Math.acos(z/Math.sqrt(x*x+y*y+z*z));
-            double phi = signY *Math.acos(x/Math.sqrt(x*x+y*y));
-            Log.d(TAG, "IsFront: hand=" + handeness.get(0).categoryName() + " z=" + z
-            +"\n"+ phi + "   " + rho);
 
             // if left hand
             if (handeness.get(0).categoryName().toUpperCase().contains("LEFT")){
-//                if(z<-7000){
-//                if(rho>=3.1){
-                if(phi>=0){
+
+                if(knucleLine[0]*palmLine[1]<0){
 //                    Log.w("sideH", "FRONT left z="+z);
                     this.front = true;
                 }
@@ -373,9 +350,7 @@ public class HandPoseEstimator {
             }
             //else Right hand
             else{
-//                if(z>7000){
-//                if(rho<0.04){
-                if(phi<0){
+                if(knucleLine[0]*palmLine[1]>0){
 //                    Log.w("sideH", "FRONT right z="+z);
                     this.front = true;
                 }
@@ -455,13 +430,13 @@ public class HandPoseEstimator {
                 if (distTip <= 2*distKnuckle)
                 {
                     String.format("%1$,.2f", distTip);
-                    Log.d("ccoucou", "distTip=" + String.format("%1$,.4f", distTip) + "distPhalanx=" + String.format("%1$,.4f", distKnuckle)  + "=> CLOSE");
+//                    Log.d("ccoucou", "distTip=" + String.format("%1$,.4f", distTip) + "distPhalanx=" + String.format("%1$,.4f", distKnuckle)  + "=> CLOSE");
                     return  false;
                 }
 
                 else
                 {
-                    Log.d("ccoucou", "distTip=" + String.format("%1$,.4f", distTip) + "distPhalanx=" + String.format("%1$,.4f", distKnuckle)  + "=> OPEN");
+//                    Log.d("ccoucou", "distTip=" + String.format("%1$,.4f", distTip) + "distPhalanx=" + String.format("%1$,.4f", distKnuckle)  + "=> OPEN");
                     return true;
                 }
 

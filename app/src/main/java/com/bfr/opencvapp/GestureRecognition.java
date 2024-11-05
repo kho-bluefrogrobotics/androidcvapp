@@ -157,7 +157,7 @@ public class GestureRecognition {
             if( !(step_num == previous_step)) {
                 // display current step
 //                Log.i(name, "current step: " + step_num + "  (previous step: " + previous_step + ")");
-                Log.i("step", "current step: " + step_num + "  (previous step: " + previous_step + ")");
+                Log.i(name, "current step: " + step_num + "  (previous step: " + previous_step + ")");
                 // update
                 previous_step = step_num;
             } // end if step = same
@@ -188,9 +188,7 @@ public class GestureRecognition {
             result = "";
             gesture.result = result;
             gesture.orientation = 0;
-//                step_num = 5;
-//                if(true)
-//                    return;
+
             humanPose = humanPoseEstimator.recognizeImage(frame);
 
             //if human detection
@@ -373,8 +371,7 @@ public class GestureRecognition {
             stabilizationFrames =0;
             numofLowLevelMotion = 0;
             accumulatedMotion = 0;
-//            step_num = 17;
-            step_num = 90;
+            step_num = 17;
         }
 
 
@@ -763,10 +760,9 @@ public class GestureRecognition {
                 return;
             }
             Log.i(name, "-> step ");
-//            step_num = 15;
             //hand pose estimation
             handPose = handPoseEstimator.recognizeImage(frame.submat(armROI), signingHand);
-            step_num = 90;
+            step_num = 15;
 
         }
 
