@@ -423,7 +423,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         gestureRecognition.registerGestureRecog(new IGestureRsp() {
             @Override
             public void onSuccess(Gesture gesture) {
-                Log.d(TAG, "Recognised gesture : " + gesture.result);
+                Log.d(TAG, " *****************  RECOGNISED GESTURE : " + gesture.result);
                 resultGesture = gesture.result;
                 if (resultGesture.toUpperCase().contains("POINTING")){
                     resultGesture += " " + gesture.orientation;
@@ -483,8 +483,9 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         public void run() {
             try {
                 //process
-                gestureMotionDetect.recognize(getLastImg());
+//                gestureMotionDetect.recognize(getLastImg());
                 // notify as last cv method called to display result
+                gestureRecognition.recognize(frame);
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -579,7 +580,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
         }
 
 
-            gestureRecognition.recognize(frame);
+//            gestureRecognition.recognize(frame);
 
             Mat display = frame.clone();
                 Imgproc.putText(display, resultGesture,

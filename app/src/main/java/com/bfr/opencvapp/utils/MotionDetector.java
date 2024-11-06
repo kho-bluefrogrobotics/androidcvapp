@@ -123,6 +123,11 @@ public class MotionDetector {
             Log.d(TAG, "Farneback optical flow Max = " + Core.minMaxLoc(magnitude).maxVal
                     + " at " + Core.minMaxLoc(magnitude).maxLoc
             + "\n angle =" + Core.minMaxLoc(angle).maxVal);
+
+            if(Core.minMaxLoc(magnitude).maxVal>20) {
+                Imgcodecs.imwrite("/sdcard/Download/" + System.currentTimeMillis() + "_motion_" + Core.minMaxLoc(magnitude).maxVal + "curr.jpg", currFrame);
+                Imgcodecs.imwrite("/sdcard/Download/" + System.currentTimeMillis() + "_motion_" + Core.minMaxLoc(magnitude).maxVal + "prev.jpg", prevFrame);
+            }
             // assign values
             motionOptFlow = (float) Core.minMaxLoc(magnitude).maxVal;
             // relative position in the image

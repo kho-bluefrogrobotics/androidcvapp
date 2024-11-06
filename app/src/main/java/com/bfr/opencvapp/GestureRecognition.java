@@ -7,6 +7,7 @@ import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.PINKIE;
 import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.RING;
 import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.THUMB;
 import static com.bfr.opencvapp.utils.HandPoseLandmarks.INDEX_TIP;
+import static com.bfr.opencvapp.utils.HandPoseLandmarks.WRIST;
 import static com.bfr.opencvapp.utils.HumanPoseLandmarks.*;
 
 import static org.opencv.core.CvType.CV_8UC3;
@@ -126,7 +127,7 @@ public class GestureRecognition {
     float THRES_OPT_FLOW_COME_HERE = 2.0f;
     public String result = "";
 
-    int TRIALS_TO_FIND_MOTION = 5;
+    int TRIALS_TO_FIND_MOTION = 3;
     int NUM_OF_LOW_MOTION_LEVEL = 2;
     int TRIALS = 5;
     int numofTry = 0;
@@ -139,6 +140,23 @@ public class GestureRecognition {
 
     int signingHand = -1;
     int signedHand = -1;
+
+    float prevWristPos = 999.0f;
+    float currWristPos = 0.0f;
+    /** Recognised gestures*/
+    public enum GESTURE{
+        COUCOU,
+        COME_HERE,
+        STOP,
+        POSITIVE,
+        NEGATIVE,
+        POINTING,
+        ROCKNROLL,
+        FYOU,
+        ALLO
+    }
+
+    double tLasDisplay = 0;
 
     public void registerGestureRecog(IGestureRsp gestureRsp)
     {
@@ -224,8 +242,7 @@ public class GestureRecognition {
                 Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_PINKY).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_PINKY).y()*IMG_HEIGHT),
                         5, new Scalar(255,255,0), 10);
 
-//                    Log.i(name, "forearm position " + humanPose.landmarks.get(RIGHT_WRIST).y() + "  " + humanPose.landmarks.get(RIGHT_ELBOW).y());
-
+//                Log.i(name, "forearm position " + humanPose.landmarks.get(RIGHT_WRIST).y() + "  " + humanPose.landmarks.get(RIGHT_ELBOW).y());
 
                 //reset
                 signingHand = -1;
@@ -266,31 +283,54 @@ public class GestureRecognition {
                     //reset
                     stabilizationFrames = 0;
                     numofLowLevelMotion = 0;
+                    prevWristPos = 999.0f;
+                    currWristPos = 0.0f;
                     //next step
-                    step_num = 15;
-//                                step_num =6;
+                    step_num = 10;
 
                 } //end if hand is signing
 
             } else {
-                Log.d(name, "No human found");
+                // periodic display
+                if(System.currentTimeMillis()-tLasDisplay>2000) {
+                    Log.d(name, "No human found");
+                    tLasDisplay = System.currentTimeMillis();
+                }
                 return;
             } //end if human pose found
 
         } //end if step_num
 
 
-        /** Human is signing : start motion detection*/
-        /***/if(step_num==15) { // Pose estimation
+        /** Human is signing : stabilization of the Wrist*/
+        /***/if(step_num==10) {
 
-            //wait to stabilize
-            if (stabilizationFrames<10){
-                stabilizationFrames+=1;
+            // human pose estimation
+            humanPose = humanPoseEstimator.recognizeImage(frame);
+
+            // wrist position
+            if ( signingHand==LEFT_WRIST )
+                currWristPos = humanPose.landmarks.get(LEFT_WRIST).y();
+            else
+                currWristPos = humanPose.landmarks.get(RIGHT_WRIST).y();
+
+            // if small variation of position
+            if(Math.abs(currWristPos-prevWristPos)<=0.1){
+                motionDetector.reset();
+                step_num = 15;
+            }
+            else{
+                //
+                Log.i(name, "current step: " + step_num + "  " + Math.abs(currWristPos-prevWristPos ) );
+                prevWristPos = currWristPos;
                 return;
             }
 
-            // to keep to debug
-            // displaymat = black.clone();
+        }
+
+        /** Human is signing : start motion detection*/
+        /***/if(step_num==15) { // Pose estimation
+
 
             //hand pose estimation
             handPose = handPoseEstimator.recognizeImage(frame.submat(armROI), signingHand);
@@ -356,7 +396,6 @@ public class GestureRecognition {
 //            handROI.width = right -left;
 
 
-
             Log.i(name, "current step: " + step_num + "\n"
                     + handROI.x + "," + handROI.y + ","+handROI.height + "," + handROI.width);
 
@@ -379,11 +418,11 @@ public class GestureRecognition {
         if(step_num==17)
         {
 
-            if(handPose.isFront())
-                Log.i("rearfront", "FRONT");
-            else {
-                Log.i("rearfront", "BACK");
-            }
+//            if(handPose.isFront())
+//                Log.i("rearfront", "FRONT");
+//            else {
+//                Log.i("rearfront", "BACK");
+//            }
 
             // handROI hasbeen found the step before
             handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
@@ -392,11 +431,10 @@ public class GestureRecognition {
 
             accumulatedMotion += motionDetector.motionOptFlow;
 //            boolean criteriaOfMotion = (handROI.height>=300 && motionDetector.motionOptFlow >= 30) || (handROI.height<300 && motionDetector.motionOptFlow >= 20);
-            boolean criteriaOfMotion = (accumulatedMotion>30);
+            boolean criteriaOfMotion = (accumulatedMotion>50);
             if (criteriaOfMotion)
             {
                 Log.i(name, "Optical flow detected -> 30");
-                Log.w("coucmotion", "COUCOU: a=" + motionDetector.motionOptFlow + "  b=" + handROI.height+" c="+handROI.width );
                 step_num = 30;
             }
             else // no motion detected
@@ -565,28 +603,29 @@ public class GestureRecognition {
 
                 debugSaveImg(result, frame.submat(armROI));
                 debugSaveImgMotion(result, frame.submat(armROI));
-                step_num = 300;
+
             }
             else // we assume we see the back hand for a slow come here movement
             {
-                step_num = 195;
+                Log.i(name, "Not the front hand  -> abort");
             }
-        }
-
-        /***/if(step_num==195) { // hand open back -> slow come here
-            Log.i(name, "Not the front hand  ");
-            result = "Come Here";
-            gesture.result = result;
-            gesture.orientation = 0;
-            gestureRsp.onSuccess(gesture);
-            debugSaveImg(result, frame.submat(armROI));
-            BuddySDK.Speech.startSpeaking("J'arrive");
-
             step_num = 300;
-
         }
 
-            /***/if(step_num==200) { // Thumb up down
+//        /***/if(step_num==195) { // hand open back -> slow come here
+//            Log.i(name, "Not the front hand  ");
+//            result = "Come Here";
+//            gesture.result = result;
+//            gesture.orientation = 0;
+//            gestureRsp.onSuccess(gesture);
+//            debugSaveImg(result, frame.submat(armROI));
+//            BuddySDK.Speech.startSpeaking("J'arrive");
+//
+//            step_num = 300;
+//
+//        }
+
+        /***/if(step_num==200) { // Thumb up down
 
                 int thumbAngle = handPose.fingerOrientation(THUMB);
                 if (thumbAngle >= 0) {
@@ -730,193 +769,24 @@ public class GestureRecognition {
             return;
 
         }
-//        /***Human pose detection : check if is signing*/
-//        if(step_num==300)
-//        {
-//            Log.i(name, "step 80 : Human is still signing? ");
-//            humanPose = humanPoseEstimator.recognizeImage(frame);
-//            // if no more signing with hand
-//            if (!humanPose.isSigning(signedHand)){
-//                result = "";
-//                gesture.result = result;
-//                gesture.orientation = 0;
-//                gestureRsp.onSuccess(gesture);
-//                step_num = 5;
-//            }
-//            else{
-//                stabilizationFrames = 0;
-//                step_num = 305;
-//            }
-//            return;
-//        }
 
         /***Human is still signing : waiting for stabilization for motion*/
         if(step_num==310)
         {
+            Log.i(name, "User is changing sign : stabilizing... ");
             //give it another chance
-            if(stabilizationFrames<5){
-                Log.i(name, "HUman still signing? " + stabilizationFrames);
-                stabilizationFrames+=1;
-                return;
+            try {
+                Thread.sleep(600);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-            Log.i(name, "-> step ");
-            //hand pose estimation
-            handPose = handPoseEstimator.recognizeImage(frame.submat(armROI), signingHand);
+            result = ""  ;
+            gesture.result = result;
+            gestureRsp.onSuccess(gesture);
             step_num = 15;
-
         }
 
-            /***/if(step_num==900) { //wait for no hands in region of analysis
 
-                try{
-                    // black background
-                    black = new Mat(rows,cols, CV_8UC3, new Scalar(0, 0, 0));
-                    roiInBlack = black.submat(handROI); // subimage at hand roi in black image
-                    handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
-                    // copy hand crop to black background
-                    handMat.copyTo(roiInBlack);
-
-                    frame = black.clone();
-                    handPose = handPoseEstimator.recognizeImage(frame);
-                } catch (Exception e) {
-                    step_num = 90;
-                    return;
-                }
-
-
-                // No more detected hand
-                if (handPose == null) {
-                    Log.d(name, "No more hand");
-//                    Imgcodecs.imwrite("/sdcard/Download/nomorehand"+ System.currentTimeMillis()+".jpg", frame);
-                    step_num = 80;
-                    return;
-                }
-
-                //if previously detected a COME HERE
-                if(gesture.result.toUpperCase().contains("COME"))
-                {
-                    //reset if hand not open
-                    if ( !handPose.isOpen(INDEX)
-                            || !handPose.isOpen(MIDDLE)
-                            || !handPose.isOpen(RING)
-                            || !handPose.isOpen(PINKIE)
-                            || handPose.fingerOrientation(INDEX) <=0 //or hand not upwards (= GO AWAY)
-                            || handPose.isFront()) // or hand front(COUCOU or STOP)
-                    {
-                        Log.d(name, "Hand pose changed : "
-                               + handPose.isOpen(INDEX) + " "
-                                + handPose.isOpen(MIDDLE) + " "
-                                + handPose.isOpen(RING) + " "
-                                + handPose.isOpen(PINKIE) + " "
-                                + handPose.isFront() + " -> 10 ") ;
-
-                        step_num = 901;
-                    } //end if hand changed
-
-                }
-                else if(gesture.result.toUpperCase().contains("AWAY")) {
-
-                    //reset if hand not open
-                    if ( !handPose.isOpen(INDEX)
-                            || !handPose.isOpen(MIDDLE)
-                            || !handPose.isOpen(RING)
-                            || !handPose.isOpen(PINKIE)
-                            || handPose.fingerOrientation(INDEX) >0 //or hand upwards (= COME Here)
-                            || handPose.isFront()) // or hand front(COUCOU or STOP)
-                    {
-                        step_num = 901;
-                    } //end if hand changed
-
-                }
-                else if(gesture.result.toUpperCase().contains("COUCOU")) {
-                    //reset if hand not open
-                    if (!handPose.isOpen(INDEX)
-                            || !handPose.isOpen(MIDDLE)
-                            || !handPose.isOpen(RING)
-                            || !handPose.isOpen(PINKIE)
-                            || !handPose.isFront()) // or hand Back(COME HERE or GO AWAY)
-                    {
-                        Log.d(name, "Hand pose changed : "
-                                + handPose.isOpen(INDEX) + " "
-                                + handPose.isOpen(MIDDLE) + " "
-                                + handPose.isOpen(RING) + " "
-                                + handPose.isOpen(PINKIE) + " "
-                                + handPose.isFront() + " -> 10 ") ;
-
-                        step_num = 901;
-
-                    } //end if hand changed
-                }
-                else if(gesture.result.toUpperCase().contains("STOP")) {
-                    //reset if hand not open
-                    if (!handPose.isOpen(INDEX)
-                            || !handPose.isOpen(MIDDLE)
-                            || !handPose.isOpen(RING)
-                            || !handPose.isOpen(PINKIE)
-                            || !handPose.isFront()) // or hand Back(COME HERE or GO AWAY)
-                    {
-                        Log.d(name, "Hand pose changed : "
-                                + handPose.isOpen(INDEX) + " "
-                                + handPose.isOpen(MIDDLE) + " "
-                                + handPose.isOpen(RING) + " "
-                                + handPose.isOpen(PINKIE) + " "
-                                + handPose.isFront() + " -> 10 ") ;
-
-                        step_num = 901;
-
-                    } //end if hand changed
-
-                    // detect motion
-                    motionDetector.detectMotion(frame, false);
-
-                    resetImNb += 1;
-                    // take a few images for optical flow
-                    if(resetImNb<=2){
-                        Log.d(name, "Optical flow on im: " + resetImNb);
-                        return;
-                    }
-                    else //reset and loop if enough images
-                        resetImNb =0;
-
-                    if(motionDetector.motionOptFlow > THRES_OPT_FLOW_COUCOU)  // Presence of mvt => COUCOU?
-                    {
-                        Log.d(name, "Previously detected STOP and motion detected ("+motionDetector.motionOptFlow+") -> reset to 90");
-                        step_num = 90;
-                        return;
-                    }
-
-                }
-                else{
-                    Log.d(name, "Nothing recognized ? -> reset to 5");
-                    // reset
-                    step_num = 5;
-                    return;
-                } //end if result = COME or else
-
-                //
-                if (detections.size() == 0)
-                {
-                    Log.d(name, "No more hand -> reset to step 5");
-                    step_num = 5;
-                }
-                return;
-            }
-
-            /***/if (step_num==901) // stabilization
-            {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-                step_num = 90;
-                return;
-            }
-
-//        } catch (Exception e) {
-//            Log.e(name, "ERROR :" + Log.getStackTraceString(e));
-//            throw new Exception();
-//        }
 
     }
 
