@@ -80,6 +80,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
 //    private String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString();
     private String dir = "/sdcard/Android/data/com.bfr.opencvapp/files/";
 
+    public static int IMG_WIDTH = 1024;
+    public static int IMG_HEIGHT = 768;
 
 //    TrackingNoGrafcet trackingNoGrafcet = new TrackingNoGrafcet("TrackingNoGrafcet");
 //    TrackingYesGrafcet trackingYesGrafcet = new TrackingYesGrafcet("TrackingYes");

@@ -64,6 +64,8 @@ public class Utils {
     public static String yoloQRCodeCFG = MODELS_DIR + "yolov4-tiny-custom-640.cfg";
     public static String yoloQRCodeWeights = MODELS_DIR + "yolov4-tiny-custom-640_last.weights";
 
+
+
     /*** Camera calibrations ***/
     //wideangle 640x480
 //    public static final double[][] cameraCalibrationMatrixCoeff = {{347.1784748095083 , 0       , 326.6795720628966},

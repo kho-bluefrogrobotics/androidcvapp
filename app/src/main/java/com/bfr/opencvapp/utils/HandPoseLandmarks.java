@@ -1,12 +1,12 @@
 package com.bfr.opencvapp.utils;
 
 /***
- * Landmarks index of human pose return by the GHUM model
- * https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker
+ * Landmarks index of hand pose return by the GHUM model
+ * https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker
  */
 public class HandPoseLandmarks {
 
-    /*** Body landmarks*/
+    /*** hand landmarks*/
     public static int WRIST = 0;
     public static int THUMB_CMC = 1;
     public static int THUMB_MCP = 2;

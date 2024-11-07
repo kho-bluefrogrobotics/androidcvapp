@@ -29,5 +29,4 @@ public class HumanPoseLandmarks {
     public static int LEFT_PINKY = 17;
     public static int RIGHT_PINKY = 18;
 
-
 }

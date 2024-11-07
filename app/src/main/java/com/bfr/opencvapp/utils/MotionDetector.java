@@ -53,7 +53,12 @@ public class MotionDetector {
     public MotionDetector(){
     }
 
-   public void detectMotion(Mat frame, boolean constructVisualizationImage)
+    public void detectMotion(Mat frame, boolean constructVisualizationImage)
+    {
+        detectMotion(frame, 480, 320, constructVisualizationImage);
+    }
+
+    public void detectMotion(Mat frame, int resizeW, int resizeH, boolean constructVisualizationImage)
     {
         if (magnitude==null)
             magnitude = new Mat();
@@ -88,7 +93,7 @@ public class MotionDetector {
             // convert to gray
             Imgproc.cvtColor(currFrame, currFrame, Imgproc.COLOR_BGR2GRAY);
             // resize for better performances
-            Imgproc.resize(currFrame, currFrame, mSize);
+            Imgproc.resize(currFrame, currFrame, new Size(resizeW, resizeH));
 
 //            Imgcodecs.imwrite("/sdcard/Download/" + System.currentTimeMillis()+"_prev.jpg", prevFrame);
 //            Imgcodecs.imwrite("/sdcard/Download/" + System.currentTimeMillis()+"_curr.jpg", currFrame);
@@ -124,10 +129,6 @@ public class MotionDetector {
                     + " at " + Core.minMaxLoc(magnitude).maxLoc
             + "\n angle =" + Core.minMaxLoc(angle).maxVal);
 
-            if(Core.minMaxLoc(magnitude).maxVal>20) {
-                Imgcodecs.imwrite("/sdcard/Download/" + System.currentTimeMillis() + "_motion_" + Core.minMaxLoc(magnitude).maxVal + "curr.jpg", currFrame);
-                Imgcodecs.imwrite("/sdcard/Download/" + System.currentTimeMillis() + "_motion_" + Core.minMaxLoc(magnitude).maxVal + "prev.jpg", prevFrame);
-            }
             // assign values
             motionOptFlow = (float) Core.minMaxLoc(magnitude).maxVal;
             // relative position in the image
@@ -174,7 +175,7 @@ public class MotionDetector {
             // convert to gray
             Imgproc.cvtColor(currFrame, currFrame, Imgproc.COLOR_BGR2GRAY);
             // resize for better performances
-            Imgproc.resize(currFrame, currFrame, mSize);
+            Imgproc.resize(currFrame, currFrame, new Size(resizeW, resizeH));
 
         }
         if(wDebug)

@@ -1,16 +1,13 @@
 package com.bfr.opencvapp;
 
-
+import static com.bfr.opencvapp.MainActivity.IMG_HEIGHT;
+import static com.bfr.opencvapp.MainActivity.IMG_WIDTH;
 import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.INDEX;
 import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.MIDDLE;
 import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.PINKIE;
 import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.RING;
 import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.THUMB;
-import static com.bfr.opencvapp.utils.HandPoseLandmarks.INDEX_TIP;
-import static com.bfr.opencvapp.utils.HandPoseLandmarks.WRIST;
 import static com.bfr.opencvapp.utils.HumanPoseLandmarks.*;
-
-import static org.opencv.core.CvType.CV_8UC3;
 
 import android.util.Log;
 
@@ -18,7 +15,9 @@ import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.objdetect.Detection;
 import com.bfr.opencvapp.utils.Gesture;
 import com.bfr.opencvapp.utils.GestureMotionDetect;
+import com.bfr.opencvapp.utils.HandPose;
 import com.bfr.opencvapp.utils.HandPoseEstimator;
+import com.bfr.opencvapp.utils.HumanPose;
 import com.bfr.opencvapp.utils.HumanPoseEstimator;
 import com.bfr.opencvapp.utils.IGestureRsp;
 import com.bfr.opencvapp.utils.MotionDetector;
@@ -58,10 +57,9 @@ public class GestureRecognition {
 
     // detectors
     MultiDetector multiDetector;
-    ArrayList<Detection> detections = new ArrayList<Detection>();
 
     HandPoseEstimator handPoseEstimator;
-    public HandPoseEstimator.HandPose handPose = null;
+    public HandPose handPose = null;
     MotionDetector motionDetector;
 
     int stabilizationFrames =0;
@@ -70,22 +68,9 @@ public class GestureRecognition {
 
 
     HumanPoseEstimator humanPoseEstimator;
-    public HumanPoseEstimator.HumanPose humanPose = null;
-
-    public static int IMG_WIDTH = 1024;
-    public static int IMG_HEIGHT = 768;
-
-    // index of img to reset
-    int resetImNb = 0;
-
-    // number of frames for optical flow
-    final int NUMOFFRAMES= 10;
-    // buffer to store the sequence of frame for optical flow analysis
-    ArrayList<Mat> matArray = new ArrayList<Mat>();
+    public HumanPose humanPose = null;
 
     GestureMotionDetect gestureMotionDetect;
-
-    public boolean isStarted = false;
 
     // recognition sequence vars (steps,...)
     public int step_num =0;
@@ -98,9 +83,6 @@ public class GestureRecognition {
     // margin to crop the hand in pixel
     final int MARGIN = 50;
     public Rect armROI, handROI;
-    // black background
-    Mat black;
-    Mat roiInBlack; // subimage at hand roi in black image
     Mat handMat; // subimage at hand roi in original image containing the crop of the hand
 
 
@@ -139,7 +121,6 @@ public class GestureRecognition {
     private Gesture gesture = new Gesture();
 
     int signingHand = -1;
-    int signedHand = -1;
 
     float prevWristPos = 999.0f;
     float currWristPos = 0.0f;
@@ -170,11 +151,10 @@ public class GestureRecognition {
         rows = frame.rows();
         cols = frame.cols();
 
-//        try{
+
             // if step changed
             if( !(step_num == previous_step)) {
                 // display current step
-//                Log.i(name, "current step: " + step_num + "  (previous step: " + previous_step + ")");
                 Log.i(name, "current step: " + step_num + "  (previous step: " + previous_step + ")");
                 // update
                 previous_step = step_num;
@@ -187,9 +167,7 @@ public class GestureRecognition {
                     //wait until check box
                     if (go) {
                         // go to next step
-
                         step_num = 5;
-                        Log.i(name, "current step: " + step_num + "  ");
                     }
                     return;
                 }
@@ -213,40 +191,39 @@ public class GestureRecognition {
             if (humanPose != null) {
 
                 //display for debug only
-
-                Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_WRIST).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_WRIST).y()*IMG_HEIGHT),
-                        5, new Scalar(0,255,0), 10);
-                Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_SHOULDER).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_SHOULDER).y()*IMG_HEIGHT),
-                        5, new Scalar(0,150,150), 10);
-                Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_HIP).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_HIP).y()*IMG_HEIGHT),
-                        5, new Scalar(0,150,150), 10);
-                Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_ELBOW).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_ELBOW).y()*IMG_HEIGHT),
-                        5, new Scalar(0,255,250), 10);
-                Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_INDEX).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_INDEX).y()*IMG_HEIGHT),
-                        5, new Scalar(0,255,250), 10);
-                Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_THUMB).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_THUMB).y()*IMG_HEIGHT),
-                        5, new Scalar(0,255,250), 10);
-                Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_PINKY).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_PINKY).y()*IMG_HEIGHT),
-                        5, new Scalar(0,255,250), 10);
-
-                Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_WRIST).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_WRIST).y()*IMG_HEIGHT),
-                        5, new Scalar(255,0,0), 10);
-                Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_ELBOW).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_ELBOW).y()*IMG_HEIGHT),
-                        5, new Scalar(255,255,0), 10);
-                Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_HIP).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_HIP).y()*IMG_HEIGHT),
-                        5, new Scalar(255,255,0), 10);
-                Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_INDEX).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_INDEX).y()*IMG_HEIGHT),
-                        5, new Scalar(255,255,0), 10);
-                Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_THUMB).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_THUMB).y()*IMG_HEIGHT),
-                        5, new Scalar(255,255,0), 10);
-                Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_PINKY).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_PINKY).y()*IMG_HEIGHT),
-                        5, new Scalar(255,255,0), 10);
+//
+//                Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_WRIST).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_WRIST).y()*IMG_HEIGHT),
+//                        5, new Scalar(0,255,0), 10);
+//                Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_SHOULDER).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_SHOULDER).y()*IMG_HEIGHT),
+//                        5, new Scalar(0,150,150), 10);
+//                Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_HIP).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_HIP).y()*IMG_HEIGHT),
+//                        5, new Scalar(0,150,150), 10);
+//                Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_ELBOW).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_ELBOW).y()*IMG_HEIGHT),
+//                        5, new Scalar(0,255,250), 10);
+//                Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_INDEX).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_INDEX).y()*IMG_HEIGHT),
+//                        5, new Scalar(0,255,250), 10);
+//                Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_THUMB).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_THUMB).y()*IMG_HEIGHT),
+//                        5, new Scalar(0,255,250), 10);
+//                Imgproc.circle(input, new Point(humanPose.landmarks.get(LEFT_PINKY).x()*IMG_WIDTH, humanPose.landmarks.get(LEFT_PINKY).y()*IMG_HEIGHT),
+//                        5, new Scalar(0,255,250), 10);
+//
+//                Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_WRIST).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_WRIST).y()*IMG_HEIGHT),
+//                        5, new Scalar(255,0,0), 10);
+//                Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_ELBOW).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_ELBOW).y()*IMG_HEIGHT),
+//                        5, new Scalar(255,255,0), 10);
+//                Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_HIP).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_HIP).y()*IMG_HEIGHT),
+//                        5, new Scalar(255,255,0), 10);
+//                Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_INDEX).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_INDEX).y()*IMG_HEIGHT),
+//                        5, new Scalar(255,255,0), 10);
+//                Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_THUMB).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_THUMB).y()*IMG_HEIGHT),
+//                        5, new Scalar(255,255,0), 10);
+//                Imgproc.circle(input, new Point(humanPose.landmarks.get(RIGHT_PINKY).x()*IMG_WIDTH, humanPose.landmarks.get(RIGHT_PINKY).y()*IMG_HEIGHT),
+//                        5, new Scalar(255,255,0), 10);
 
 //                Log.i(name, "forearm position " + humanPose.landmarks.get(RIGHT_WRIST).y() + "  " + humanPose.landmarks.get(RIGHT_ELBOW).y());
 
                 //reset
                 signingHand = -1;
-                signedHand = -1;
                 //if wrist visible and hand up (above elbow)
                 signingHand = humanPose.isSigning();
 
@@ -256,9 +233,6 @@ public class GestureRecognition {
 
                 if(signingHand>-1)
                 {
-                    //store
-                    signedHand = signingHand;
-
                     // Display only
                     if ( signingHand==LEFT_WRIST ) {
                         handX = Math.max( (int) (humanPose.landmarks.get(LEFT_INDEX).x()*IMG_WIDTH - handW/2), 2);
@@ -385,16 +359,6 @@ public class GestureRecognition {
             handROI.height = bottom - top;
             handROI.width = right -left;
 
-//            left = Math.max(2, handROI.x -handROI.width/3) ;
-//            top =  Math.max(2, handROI.y - (int)(handROI.height/4));
-//            right = handROI.x + (int)(1.5*handROI.width);
-//            bottom = handROI.y + (int)(1.3*handROI.height);
-
-//            handROI.x =  left;
-//            handROI.y = top;
-//            handROI.height = bottom - top;
-//            handROI.width = right -left;
-
 
             Log.i(name, "current step: " + step_num + "\n"
                     + handROI.x + "," + handROI.y + ","+handROI.height + "," + handROI.width);
@@ -405,12 +369,15 @@ public class GestureRecognition {
 
             motionDetector.reset();
 
-//            motionDetector.detectMotion(handMat, false);
 
             stabilizationFrames =0;
             numofLowLevelMotion = 0;
             accumulatedMotion = 0;
-            step_num = 17;
+
+            if (true)
+                step_num = 17;
+            else
+                step_num = 90;
         }
 
 
@@ -427,7 +394,7 @@ public class GestureRecognition {
             // handROI hasbeen found the step before
             handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
 
-            motionDetector.detectMotion(handMat, false);
+            motionDetector.detectMotion(handMat, 320,240, false);
 
             accumulatedMotion += motionDetector.motionOptFlow;
 //            boolean criteriaOfMotion = (handROI.height>=300 && motionDetector.motionOptFlow >= 30) || (handROI.height<300 && motionDetector.motionOptFlow >= 20);
@@ -475,26 +442,28 @@ public class GestureRecognition {
         /***Motion detected : gesture identification according to Front or back hand*/
         if(step_num == 30){
             Log.i(name, "step 30 : Motion detected ");
-            if(handPose.isFront()){
-                Log.i(name, "Front hand  ");
-                debugSaveImg("Coucou", frame.submat(armROI));
 
-                result = "COUCOU";
-                gesture.result = result;
-                gesture.orientation = 0;
-                gestureRsp.onSuccess(gesture);
-                debugSaveImgMotion(result, handMat);
-                BuddySDK.Speech.startSpeaking("Coucou");
-            }
-            else {
-                Log.i(name, "Not the front hand  ");
-                result = "Come Here";
-                gesture.result = result;
-                gesture.orientation = 0;
-                gestureRsp.onSuccess(gesture);
-                debugSaveImgMotion(result, frame.submat(armROI));
-                BuddySDK.Speech.startSpeaking("J'arrive");
-            }
+                if(handPose.isFront()){
+                    Log.i(name, "Front hand  ");
+                    debugSaveImg("Coucou", frame.submat(armROI));
+
+                    result = "COUCOU";
+                    gesture.result = result;
+                    gesture.orientation = 0;
+                    gestureRsp.onSuccess(gesture);
+                    debugSaveImgMotion(result, handMat);
+                    BuddySDK.Speech.startSpeaking("Coucou");
+                }
+                else {
+                    Log.i(name, "Not the front hand  ");
+                    result = "Come Here";
+                    gesture.result = result;
+                    gesture.orientation = 0;
+                    gestureRsp.onSuccess(gesture);
+                    debugSaveImgMotion(result, frame.submat(armROI));
+                    BuddySDK.Speech.startSpeaking("J'arrive");
+                }
+
 
             step_num =300;
         }
@@ -612,18 +581,6 @@ public class GestureRecognition {
             step_num = 300;
         }
 
-//        /***/if(step_num==195) { // hand open back -> slow come here
-//            Log.i(name, "Not the front hand  ");
-//            result = "Come Here";
-//            gesture.result = result;
-//            gesture.orientation = 0;
-//            gestureRsp.onSuccess(gesture);
-//            debugSaveImg(result, frame.submat(armROI));
-//            BuddySDK.Speech.startSpeaking("J'arrive");
-//
-//            step_num = 300;
-//
-//        }
 
         /***/if(step_num==200) { // Thumb up down
 
@@ -749,7 +706,7 @@ public class GestureRecognition {
             Log.i(name, "step 305 : wait for motion change ");
             // handROI hasbeen found the step before
             handMat = frame.submat(handROI); // subimage at hand roi in original image containing the crop of the hand
-            motionDetector.detectMotion(handMat, false);
+            motionDetector.detectMotion(handMat, 320, 240, false);
             if (motionDetector.motionOptFlow>20){
                 //go to stabilization step
                 step_num = 310;
@@ -758,7 +715,7 @@ public class GestureRecognition {
             {
                 humanPose = humanPoseEstimator.recognizeImage(frame);
                 // if no more signing with hand
-                if (!humanPose.isSigning(signedHand)){
+                if (!humanPose.isSigning(signingHand)){
                     result = "";
                     gesture.result = result;
                     gesture.orientation = 0;
