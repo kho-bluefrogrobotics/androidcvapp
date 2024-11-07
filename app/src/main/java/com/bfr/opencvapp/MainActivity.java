@@ -485,7 +485,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 //process
 //                gestureMotionDetect.recognize(getLastImg());
                 // notify as last cv method called to display result
-                gestureRecognition.recognize(frame);
+                gestureRecognition.recognize(getLastImg());
 
             } catch (Exception e) {
                 e.printStackTrace();
