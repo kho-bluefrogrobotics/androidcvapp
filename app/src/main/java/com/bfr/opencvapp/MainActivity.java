@@ -426,7 +426,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 Log.d(TAG, " *****************  RECOGNISED GESTURE : " + gesture.result);
                 resultGesture = gesture.result;
                 if (resultGesture.toUpperCase().contains("POINTING")){
-                    resultGesture += " " + gesture.orientation;
+                    resultGesture += " " + gesture.orientation ;
                 }
             }
         });
@@ -589,6 +589,16 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 Imgproc.putText(display, resultGesture,
                         new Point(150, 150), 2, 3,
                         new Scalar(0, 255, 0), 5);
+
+                if(resultGesture.toUpperCase().contains("POINTING")){
+                    Imgproc.putText(display, "o",
+                            new Point(resultGesture.length()*69, 100), 2, 2,
+                            new Scalar(0, 0, 0), 7);
+                    Imgproc.putText(display, "o",
+                            new Point(resultGesture.length()*69, 100), 2, 2,
+                            new Scalar(0, 255, 0), 3);
+                }
+
 
                 // hand detection
 //            Log.d("coucou2", "Main " + gestureRecognition.left + " " + gestureRecognition.top + " " + gestureRecognition.right + " " + gestureRecognition.bottom);
