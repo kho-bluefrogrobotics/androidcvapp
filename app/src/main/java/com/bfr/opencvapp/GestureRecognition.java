@@ -9,12 +9,14 @@ import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.RING;
 import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.THUMB;
 import static com.bfr.opencvapp.utils.HumanPoseLandmarks.*;
 
+import android.os.Handler;
 import android.util.Log;
 
 import com.bfr.buddysdk.BuddySDK;
 import com.bfr.opencvapp.objdetect.Detection;
 import com.bfr.opencvapp.utils.Gesture;
 import com.bfr.opencvapp.utils.GestureMotionDetect;
+import com.bfr.opencvapp.utils.HandImgRecorder;
 import com.bfr.opencvapp.utils.HandPose;
 import com.bfr.opencvapp.utils.HandPoseEstimator;
 import com.bfr.opencvapp.utils.HumanPose;
@@ -63,6 +65,9 @@ public class GestureRecognition {
             folder.mkdirs();
         }
 
+
+
+        handImgRecorder = new HandImgRecorder(this.handPoseEstimator);
     }
 
     String name = "";
@@ -151,21 +156,33 @@ public class GestureRecognition {
 
     double tLasDisplay = 0;
 
-    LocalDateTime myDateObj = LocalDateTime.now();
-    DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyMMddHHmmss");
-    VideoWriter videoWriter;
-    String formattedDate = myDateObj.format(myFormatObj);
-    String debugFileName = "/storage/emulated/0/Download/" + formattedDate + "_trackingDebug.avi" ;
-    int fourcc =-1;
-    List<Mat> listOfMat = new ArrayList<>();
+//    List<Mat> listOfMat = new ArrayList<>();
     int imgIdx = 0;
-    int NUM_OF_IMG = 25;
+    int NUM_OF_IMG = 15;
 
+    HandImgRecorder handImgRecorder;
 
     public void registerGestureRecog(IGestureRsp gestureRsp)
     {
         this.gestureRsp = gestureRsp;
     }
+
+//    Handler recordHandler = new Handler();
+//    //Element to display frame from Camera
+//    Mat imgToAdd;
+//    private  Runnable addToListOfMat = new Runnable() {
+//        @Override
+//        public void run() {
+//            try {
+//                synchronized (listOfMat){
+//                    listOfMat.add(imgToAdd);
+//                }
+//
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        }
+//    };
 
     public void recognize(Mat input)  {
         Mat frame = input.clone();
@@ -378,57 +395,62 @@ public class GestureRecognition {
 //                    13, new Size(1024, 768));
 
             //reset
-            listOfMat.clear();
+//            listOfMat.clear();
             imgIdx = 0;
+
+            handImgRecorder.saveVideo();
             step_num = 12;
         }
 
         // record frames
         if(step_num == 12){
 
+            if(imgIdx==0)
+                handImgRecorder.init(frame.submat(handROI).width(), frame.submat(handROI).height());
+
             if(imgIdx<NUM_OF_IMG){
-                listOfMat.add(frame.submat(handROI));
-                Log.i(name, "                     recording " + imgIdx);
+               handImgRecorder.recImg(frame.submat(handROI));
+
+//                listOfMat.add(frame.submat(handROI));
+//                Log.i(name, "                     recording " + imgIdx);
                 imgIdx+=1;
                 return;
             }
             else{
-                myDateObj = LocalDateTime.now();
-                formattedDate = myDateObj.format(myFormatObj);
-                debugFileName = "/storage/emulated/0/Download/trackingdebug/" + formattedDate + "_trackingDebug.avi" ;
-                fourcc = VideoWriter.fourcc('M','J','P','G');
-                Log.i(name, "videowriter creation " + debugFileName);
-                videoWriter = new VideoWriter(debugFileName, fourcc,
-                        10, new Size(handROI.width, handROI.height));
-                Log.i(name, "Ready to save video " + handROI.width+"x"+handROI.height);
 
-                step_num =13;
+
+                step_num =15;
             }
         }
 
         // add frames to video
         if(step_num==13){
             Log.i(name, "current step: " + step_num + "  (previous step: 12)");
-            try{
-                for (int u=0; u<NUM_OF_IMG; u++){
-                    Log.i(name, "   --- handpose " + u);
-                    handPose = handPoseEstimator.recognizeImage(listOfMat.get(u));
-                    Imgproc.circle(listOfMat.get(u),
-                            new Point(handPose.landmarks.get(12).x() * listOfMat.get(u).cols(), handPose.landmarks.get(12).y() * listOfMat.get(u).rows()),
-                            2, new Scalar(255, 255, 0), 3);
 
-                    videoWriter.write(listOfMat.get(u));
-                }//next u
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-            finally {
-                //save
-                videoWriter.release();
 
-                //next step
-                step_num = 15;
-            }
+
+
+
+//            try{
+//                for (int u=0; u<NUM_OF_IMG; u++){
+//                    Log.i(name, "   --- handpose " + u);
+//                    handPose = handPoseEstimator.recognizeImage(listOfMat.get(u));
+//                    Imgproc.circle(listOfMat.get(u),
+//                            new Point(handPose.landmarks.get(12).x() * listOfMat.get(u).cols(), handPose.landmarks.get(12).y() * listOfMat.get(u).rows()),
+//                            2, new Scalar(255, 255, 0), 3);
+//
+//                    videoWriter.write(listOfMat.get(u));
+//                }//next u
+//            } catch (Exception e) {
+//                throw new RuntimeException(e);
+//            }
+//            finally {
+//                //save
+//                videoWriter.release();
+//
+//                //next step
+//                step_num = 15;
+//            }
 
 
         }
