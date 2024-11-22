@@ -28,11 +28,15 @@ import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.videoio.VideoWriter;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -138,6 +142,17 @@ public class GestureRecognition {
     }
 
     double tLasDisplay = 0;
+
+    LocalDateTime myDateObj = LocalDateTime.now();
+    DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyMMddHHmmss");
+    VideoWriter videoWriter;
+    String formattedDate = myDateObj.format(myFormatObj);
+    String debugFileName = "/storage/emulated/0/Download/" + formattedDate + "_trackingDebug.avi" ;
+    int fourcc =-1;
+    List<Mat> listOfMat = new ArrayList<>();
+    int imgIdx = 0;
+    int NUM_OF_IMG = 15;
+
 
     public void registerGestureRecog(IGestureRsp gestureRsp)
     {
@@ -275,7 +290,6 @@ public class GestureRecognition {
 
         } //end if step_num
 
-
         /** Human is signing : stabilization of the Wrist*/
         /***/if(step_num==10) {
 
@@ -291,7 +305,7 @@ public class GestureRecognition {
             // if small variation of position
             if(Math.abs(currWristPos-prevWristPos)<=0.1){
                 motionDetector.reset();
-                step_num = 15;
+                step_num = 11;
             }
             else{
                 //
@@ -302,13 +316,11 @@ public class GestureRecognition {
 
         }
 
-        /** Human is signing : start motion detection*/
-        /***/if(step_num==15) { // Pose estimation
 
-
+        // creation of videoWriter
+        if(step_num==11){
             //hand pose estimation
             handPose = handPoseEstimator.recognizeImage(frame.submat(armROI), signingHand);
-
 
             //reset if needed
             if (numofTry>TRIALS)
@@ -329,11 +341,111 @@ public class GestureRecognition {
                 return;
             }
 
+            // set hand ROI
+            int HAND_ROI_MARGIN = 60;
+            double width = Math.abs( (handPose.landmarks.get(rightLandmark(handPose.landmarks)).x() - handPose.landmarks.get(leftLandmark(handPose.landmarks)).x() )
+                    *frame.submat(armROI).cols());
+            double height = Math.abs( (handPose.landmarks.get(topLandmark(handPose.landmarks)).y() - handPose.landmarks.get(bottomLandmark(handPose.landmarks)).y() )
+                    *frame.submat(armROI).rows()) ;
+
+            int x1 = (int)(handPose.landmarks.get(leftLandmark(handPose.landmarks)).x()*frame.submat(armROI).cols()) + armROI.x;
+            int y1 = (int)(handPose.landmarks.get(topLandmark(handPose.landmarks)).y()*frame.submat(armROI).rows()) + armROI.y;
+            int x2 = x1 + (int)width;
+            int y2 = y1 + (int)height;
+
+            left = Math.max(2, x1 - HAND_ROI_MARGIN - (int)(width/3) ) ;
+            top = Math.max(2,y1 -HAND_ROI_MARGIN - (int)(height/4) );
+            right = Math.min(frame.cols()-2, x2 + HAND_ROI_MARGIN + (int)(0.3*width) );
+            bottom = Math.min(frame.rows()-2, y2 + HAND_ROI_MARGIN + (int)(0.25*height) );
+
+            handROI.x =  left;
+            handROI.y = top;
+            handROI.height = bottom - top;
+            handROI.width = right -left;
+
+//
+//            videoWriter = new VideoWriter(debugFileName, fourcc,
+//                    13, new Size(1024, 768));
+//            videoWriter.open(debugFileName, fourcc,
+//                    13, new Size(1024, 768));
+
+            //reset
+            listOfMat.clear();
+            imgIdx = 0;
+            step_num = 12;
+        }
+
+        // record frames
+        if(step_num == 12){
+
+            if(imgIdx<NUM_OF_IMG){
+                listOfMat.add(frame.submat(handROI));
+                Log.i(name, "                     recording " + imgIdx);
+                imgIdx+=1;
+                return;
+            }
+            else{
+                myDateObj = LocalDateTime.now();
+                formattedDate = myDateObj.format(myFormatObj);
+                debugFileName = "/storage/emulated/0/Download/" + formattedDate + "_trackingDebug.avi" ;
+                fourcc = VideoWriter.fourcc('M','J','P','G');
+                Log.i(name, "Ready to save video " + handROI.width+"x"+handROI.height);
+                videoWriter = new VideoWriter(debugFileName, fourcc,
+                        13, new Size(handROI.width, handROI.height));
+
+                step_num =13;
+            }
+        }
+
+        // add frames to video
+        if(step_num==13){
+
+            for (int u=0; u<NUM_OF_IMG; u++){
+                videoWriter.write(listOfMat.get(u));
+            }
+            //save
+            videoWriter.release();
+
+            //next step
+            step_num = 15;
+        }
+
+        /** Human is signing : start motion detection*/
+        /***/if(step_num==15) { // Pose estimation
+
+            Log.i(name, "Human is signing");
+
+            //hand pose estimation
+            handPose = handPoseEstimator.recognizeImage(frame.submat(armROI), signingHand);
+
+            //reset if needed
+            if (numofTry>TRIALS)
+                numofTry=0;
+
+            // if no more hand, exit after a timeout
+            if (handPose == null){
+                //
+                if(numofTry<TRIALS){
+                    Log.i(name, "Lost detected hand -> retry");
+                    numofTry+=1;
+                }
+                else { //cancel and start from the begining
+                    Log.i(name, "no more hand -> restart");
+
+                    step_num = 5;
+                }
+                return;
+            }
+
+
+
             /*** debug*/
 //            handPose.isFront();
 //            Log.d(name, "Finger status : thumb:" + handPose.isOpen(THUMB) + " index:" + handPose.isOpen(INDEX) + " mid:" + handPose.isOpen(MIDDLE) + " ring:" + handPose.isOpen(RING) + " pinkie:" + handPose.isOpen(PINKIE));
-//            if(true)
-//                return;
+
+
+            if(true)
+                return;
 
             // set hand ROI
             int HAND_ROI_MARGIN = 50;
@@ -374,9 +486,9 @@ public class GestureRecognition {
             numofLowLevelMotion = 0;
             accumulatedMotion = 0;
 
-            if (true)
-                step_num = 17;
-            else
+//            if (false)
+//                step_num = 17;
+//            else
                 step_num = 90;
         }
 
@@ -500,6 +612,7 @@ public class GestureRecognition {
                     // double checking index and thumb for more robustness
                     if (handPose.isOpen(INDEX) && handPose.isOpen(MIDDLE) && handPose.isOpen(RING) && handPose.isOpen(PINKIE)) // hand is open
                     {
+                        // openhand
                         step_num = 190;
                     }
 //                // Thumbs open
