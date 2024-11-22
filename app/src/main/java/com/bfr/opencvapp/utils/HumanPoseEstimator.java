@@ -65,7 +65,7 @@ public class HumanPoseEstimator {
         //convert to bitmap
         Mat input = frame.clone();
         //TODO: check if necessary to convert color
-        //Imgproc.cvtColor(input, input, Imgproc.COLOR_RGB2BGR);
+        Imgproc.cvtColor(input, input, Imgproc.COLOR_RGB2BGR);
         Bitmap bitmapImagefull = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(input, bitmapImagefull);
 

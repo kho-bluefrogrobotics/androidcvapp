@@ -55,6 +55,14 @@ public class GestureRecognition {
         this.humanPoseEstimator = humanPoseEstimator;
         this.handROI = new Rect(0,0,0,0);
         this.armROI = new Rect(0,0,0,0);
+
+        // create folder if doesn't exist
+        File folder = new File("/storage/emulated/0/Download/trackingdebug/", "");
+        if(!folder.exists()) {
+            // create folder
+            folder.mkdirs();
+        }
+
     }
 
     String name = "";
@@ -151,7 +159,7 @@ public class GestureRecognition {
     int fourcc =-1;
     List<Mat> listOfMat = new ArrayList<>();
     int imgIdx = 0;
-    int NUM_OF_IMG = 15;
+    int NUM_OF_IMG = 25;
 
 
     public void registerGestureRecog(IGestureRsp gestureRsp)
@@ -387,11 +395,12 @@ public class GestureRecognition {
             else{
                 myDateObj = LocalDateTime.now();
                 formattedDate = myDateObj.format(myFormatObj);
-                debugFileName = "/storage/emulated/0/Download/" + formattedDate + "_trackingDebug.avi" ;
+                debugFileName = "/storage/emulated/0/Download/trackingdebug/" + formattedDate + "_trackingDebug.avi" ;
                 fourcc = VideoWriter.fourcc('M','J','P','G');
-                Log.i(name, "Ready to save video " + handROI.width+"x"+handROI.height);
+                Log.i(name, "videowriter creation " + debugFileName);
                 videoWriter = new VideoWriter(debugFileName, fourcc,
-                        13, new Size(handROI.width, handROI.height));
+                        10, new Size(handROI.width, handROI.height));
+                Log.i(name, "Ready to save video " + handROI.width+"x"+handROI.height);
 
                 step_num =13;
             }
@@ -399,20 +408,35 @@ public class GestureRecognition {
 
         // add frames to video
         if(step_num==13){
+            Log.i(name, "current step: " + step_num + "  (previous step: 12)");
+            try{
+                for (int u=0; u<NUM_OF_IMG; u++){
+                    Log.i(name, "   --- handpose " + u);
+                    handPose = handPoseEstimator.recognizeImage(listOfMat.get(u));
+                    Imgproc.circle(listOfMat.get(u),
+                            new Point(handPose.landmarks.get(12).x() * listOfMat.get(u).cols(), handPose.landmarks.get(12).y() * listOfMat.get(u).rows()),
+                            2, new Scalar(255, 255, 0), 3);
 
-            for (int u=0; u<NUM_OF_IMG; u++){
-                videoWriter.write(listOfMat.get(u));
+                    videoWriter.write(listOfMat.get(u));
+                }//next u
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
-            //save
-            videoWriter.release();
+            finally {
+                //save
+                videoWriter.release();
 
-            //next step
-            step_num = 15;
+                //next step
+                step_num = 15;
+            }
+
+
         }
+
 
         /** Human is signing : start motion detection*/
         /***/if(step_num==15) { // Pose estimation
-
+            Log.i(name, "current step: " + step_num + "  (previous step: ?)");
             Log.i(name, "Human is signing");
 
             //hand pose estimation
