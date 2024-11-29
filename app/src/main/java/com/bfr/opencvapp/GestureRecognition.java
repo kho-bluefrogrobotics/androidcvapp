@@ -430,7 +430,7 @@ public class GestureRecognition {
         if(step_num==13){
             Log.i(name, "current step: " + step_num + "  (previous step: 12)");
 
-
+            Log.i("gestanalyze", "Start Analysis");
             handImgRecorder.analyzeSeq();
             step_num = 14;
 

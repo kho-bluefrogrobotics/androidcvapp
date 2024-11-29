@@ -138,7 +138,9 @@ public class HandImgRecorder extends HandlerThread {
         // start analyzing from this pose
         int STARTING_IDX = 1;
         float minX=999f, minY=999f, maxX=-1f, maxY=-1f;
-        int isFront = -1;
+        int isFront = 0;
+        float knuck = 0, palm = 0;
+        String hand ="";
 
         for (int i=STARTING_IDX; i<listOfHandpose.size(); i++){
 
@@ -156,19 +158,24 @@ public class HandImgRecorder extends HandlerThread {
             }
 
             if(listOfHandpose.get(i).isFront())
-                isFront = 1;
+                isFront += 1;
+            else
+                isFront-=1;
 
+            knuck = listOfHandpose.get(i).debugknucle;
+            palm = listOfHandpose.get(i).debugpalm;
+            hand = listOfHandpose.get(i).debughandesness;
         }
 
-        Log.i("gestanalyze", "min max " + minX + ";"+ maxX + ";"+ minY + ";"+ maxY + ";  front?=" + isFront);
+        Log.i("gestanalyze", "min max " + minX + ";"+ maxX + ";"+ minY + ";"+ maxY + "; " + ((isFront<=0)? "BACK" : "FRONT") + " knucle=" + knuck + " palm=" + palm +  "  " + hand);
 
-        if (isFront==1){
+        if (isFront>0){
             if(maxX-minX>=0.40){
                 Log.i("gestanalyze", "     =======> COUCOU");
             }
         }else
         {
-            if(maxY-minY>=0.45){
+            if(maxY-minY>=0.35){
                 Log.i("gestanalyze", "     =======> Come Here");
             }
         }

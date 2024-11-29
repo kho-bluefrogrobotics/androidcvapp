@@ -29,6 +29,9 @@ public class HandPose{
 
     private boolean front = false;
 
+    public float debugknucle, debugpalm;
+    public String debughandesness="";
+
     /**
      * Checks whether the palm of the hand is facing the camera or not
      * @return true if the palm mis facing the camera, false otherwise
@@ -41,25 +44,34 @@ public class HandPose{
         // vector of the palm, from the wrist to the base of the index
         float[] palmLine = new float[]{ ( (landmarks.get(0).x() - landmarks.get(5).x())), ( (landmarks.get(0).y() - landmarks.get(5).y()) )};
 
-        //Log.d(TAG, "Knuckle =" + knucleLine[0] +","+ knucleLine[1] + "\nPalm = " + palmLine[0] +","+ palmLine[1] );
+        Log.d(TAG, "Knuckle =" + knucleLine[0] +","+ knucleLine[1] + "\nPalm = " + palmLine[0] +","+ palmLine[1] );
         // Now check the direction of the edge of the plam and the edge of the knucle, depending on the hand
+        debugknucle = knucleLine[0];
+        debugpalm = palmLine[1];
+        debughandesness = handeness.get(0).categoryName();
         // if left hand
         if (handeness.get(0).categoryName().toUpperCase().contains("LEFT")){
 
             if(knucleLine[0]*palmLine[1]<0){
+                Log.i("gestanalyze", "LEFT FRONT");
                 this.front = true;
             }
             else{
+                Log.i("gestanalyze", "LEFT BACK");
                 this.front = false;
             }
         }
         //else Right hand
         else{
             if(knucleLine[0]*palmLine[1]>0){
+
+                Log.i("gestanalyze", "RIGHT FRONT");
                 this.front = true;
             }
             else
             {
+
+                Log.i("gestanalyze", "RIGHT BACK");
                 this.front = false;
             }
         }
