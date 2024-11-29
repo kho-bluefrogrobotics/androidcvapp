@@ -7,8 +7,6 @@ import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
 
-import com.google.mediapipe.tasks.components.containers.NormalizedLandmark;
-
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
@@ -21,7 +19,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HandImgRecorder extends HandlerThread {
+public class HandGestSeqRecognizer extends HandlerThread {
 
     String TAG = "HandIMGRecorder";
 
@@ -38,7 +36,7 @@ public class HandImgRecorder extends HandlerThread {
         };
     }
 
-    public HandImgRecorder(HandPoseEstimator handPoseEstimator){
+    public HandGestSeqRecognizer(HandPoseEstimator handPoseEstimator){
         super("HandImageREcorder");
         this.handPoseEstimator = handPoseEstimator;
         handPose = new HandPose();
@@ -138,45 +136,54 @@ public class HandImgRecorder extends HandlerThread {
         // start analyzing from this pose
         int STARTING_IDX = 1;
         float minX=999f, minY=999f, maxX=-1f, maxY=-1f;
-        int isFront = 0;
+        float frontValue = 0;
         float knuck = 0, palm = 0;
         String hand ="";
 
         for (int i=STARTING_IDX; i<listOfHandpose.size(); i++){
 
-            if(listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).x()<minX){
-                minX = listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).x();
+            if(listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).x() + listOfHandpose.get(i).landmarks.get(RING_TIP).x() <minX){
+                minX = listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).x() + listOfHandpose.get(i).landmarks.get(RING_TIP).x();
             }
-            if(listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).x()>maxX){
-                maxX = listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).x();
+            if(listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).x() + listOfHandpose.get(i).landmarks.get(RING_TIP).x()>maxX){
+                maxX = listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).x() + listOfHandpose.get(i).landmarks.get(RING_TIP).x();
             }
-            if(listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).y()<minY){
-                minY = listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).y();
+            if(listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).y() + listOfHandpose.get(i).landmarks.get(RING_TIP).y()<minY){
+                minY = listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).y() + listOfHandpose.get(i).landmarks.get(RING_TIP).y();
             }
-            if(listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).y()>maxY){
-                maxY = listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).y();
+            if(listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).y() + listOfHandpose.get(i).landmarks.get(RING_TIP).y()>maxY){
+                maxY =listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).y() + listOfHandpose.get(i).landmarks.get(RING_TIP).y();
             }
 
-            if(listOfHandpose.get(i).isFront())
-                isFront += 1;
-            else
-                isFront-=1;
+//            if(listOfHandpose.get(i).isFront())
+//                isFront += 1;
+//            else
+//                isFront-=1;
 
+            Log.i("gestanalyze", "frontvalue="+listOfHandpose.get(i).getFrontValue()
+                    + "minX="+minX
+                    + "maxX="+maxX
+                    + "minY="+minY
+                    + "maxY="+maxY);
+            frontValue += listOfHandpose.get(i).getFrontValue();
             knuck = listOfHandpose.get(i).debugknucle;
             palm = listOfHandpose.get(i).debugpalm;
             hand = listOfHandpose.get(i).debughandesness;
         }
 
-        Log.i("gestanalyze", "min max " + minX + ";"+ maxX + ";"+ minY + ";"+ maxY + "; " + ((isFront<=0)? "BACK" : "FRONT") + " knucle=" + knuck + " palm=" + palm +  "  " + hand);
+//        Log.i("gestanalyze", "min max " + minX + ";"+ maxX + ";"+ minY + ";"+ maxY + "; " + ((frontValue<=0)? "BACK" : "FRONT")  + "("+frontValue+")" + " knucle=" + knuck + " palm=" + palm +  "  " + hand);
 
-        if (isFront>0){
+        if (frontValue>0.1){
             if(maxX-minX>=0.40){
+//                if(maxY-minY<=1.0)
                 Log.i("gestanalyze", "     =======> COUCOU");
+                return "COUCOU";
             }
-        }else
+        }else if (frontValue<=-0.1)
         {
-            if(maxY-minY>=0.35){
+            if(maxY-minY>=0.7){
                 Log.i("gestanalyze", "     =======> Come Here");
+                return "COME HERE";
             }
         }
         // if hand is open front and landmarks are moving a lot horizontally

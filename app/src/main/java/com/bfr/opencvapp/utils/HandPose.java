@@ -78,6 +78,57 @@ public class HandPose{
         return this.front;
     }
 
+    /**
+     * return scalar product of palmline x knuckle line
+     * @return [-1;1] value where -1 means back hand, and 1 means palm
+     */
+    //TODO: need to normalize values for scalar product (to be robust to close or far hand)
+    public float getFrontValue()
+    {
+        // vector of the knucle line, from the base of the index to the base of the pinkie
+        //int[] knucleLine = new int[]{ (int)( (landmarks.get(17).x() - landmarks.get(5).x())  * 1024), (int)((landmarks.get(17).y() - landmarks.get(5).y())*768 ), (int)((landmarks.get(17).z() - landmarks.get(5).z())*100 ) };
+        float[] knucleLine = new float[]{ ( (landmarks.get(17).x() - landmarks.get(5).x()) ), ((landmarks.get(17).y() - landmarks.get(5).y()) ) };
+        // vector of the palm, from the wrist to the base of the index
+        float[] palmLine = new float[]{ ( (landmarks.get(0).x() - landmarks.get(5).x())), ( (landmarks.get(0).y() - landmarks.get(5).y()) )};
+
+        Log.d(TAG, "Knuckle =" + knucleLine[0] +","+ knucleLine[1] + "\nPalm = " + palmLine[0] +","+ palmLine[1] );
+        // Now check the direction of the edge of the plam and the edge of the knucle, depending on the hand
+        debugknucle = knucleLine[0];
+        debugpalm = palmLine[1];
+        debughandesness = handeness.get(0).categoryName();
+        float value=0.0f;
+        // if left hand
+        if (handeness.get(0).categoryName().toUpperCase().contains("LEFT")){
+
+            value =  -knucleLine[0]*palmLine[1];
+//            if(knucleLine[0]*palmLine[1]<0){
+//                Log.i("gestanalyze", "LEFT FRONT");
+//                this.front = true;
+//            }
+//            else{
+//                Log.i("gestanalyze", "LEFT BACK");
+//                this.front = false;
+//            }
+        }
+        //else Right hand
+        else{
+            value =  knucleLine[0]*palmLine[1];
+//            if(knucleLine[0]*palmLine[1]>0){
+//
+//                Log.i("gestanalyze", "RIGHT FRONT");
+//                this.front = true;
+//            }
+//            else
+//            {
+//
+//                Log.i("gestanalyze", "RIGHT BACK");
+//                this.front = false;
+//            }
+        }
+//        Log.i("gestanalyze", "frontvalue="+value);
+        return value;
+    }
+
     /** How to know a finger is opened : compute the hypotenuse  of the tip and 2nd phalanx
      * if the dist [tip of the finger to the wrist] < the dist [2nd phalanx to the wrist]  => the finger is open
      * https://github.com/opencv/opencv_zoo/blob/main/models/handpose_estimation_mediapipe/demo.py#L209

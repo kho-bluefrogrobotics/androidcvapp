@@ -9,14 +9,12 @@ import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.RING;
 import static com.bfr.opencvapp.utils.HandPoseEstimator.FINGER.THUMB;
 import static com.bfr.opencvapp.utils.HumanPoseLandmarks.*;
 
-import android.os.Handler;
 import android.util.Log;
 
 import com.bfr.buddysdk.BuddySDK;
-import com.bfr.opencvapp.objdetect.Detection;
 import com.bfr.opencvapp.utils.Gesture;
 import com.bfr.opencvapp.utils.GestureMotionDetect;
-import com.bfr.opencvapp.utils.HandImgRecorder;
+import com.bfr.opencvapp.utils.HandGestSeqRecognizer;
 import com.bfr.opencvapp.utils.HandPose;
 import com.bfr.opencvapp.utils.HandPoseEstimator;
 import com.bfr.opencvapp.utils.HumanPose;
@@ -30,15 +28,11 @@ import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
-import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.videoio.VideoWriter;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -67,7 +61,7 @@ public class GestureRecognition {
 
 
 
-        handImgRecorder = new HandImgRecorder(this.handPoseEstimator);
+        handImgRecorder = new HandGestSeqRecognizer(this.handPoseEstimator);
     }
 
     String name = "";
@@ -158,9 +152,9 @@ public class GestureRecognition {
 
 //    List<Mat> listOfMat = new ArrayList<>();
     int imgIdx = 0;
-    int NUM_OF_IMG = 15;
+    int NUM_OF_IMG = 10;
 
-    HandImgRecorder handImgRecorder;
+    HandGestSeqRecognizer handImgRecorder;
 
     public void registerGestureRecog(IGestureRsp gestureRsp)
     {
@@ -184,6 +178,8 @@ public class GestureRecognition {
 //        }
 //    };
 
+
+
     public void recognize(Mat input)  {
         Mat frame = input.clone();
 
@@ -191,7 +187,26 @@ public class GestureRecognition {
         rows = frame.rows();
         cols = frame.cols();
 
+        if( step_num!=12 && step_num!=13) {
+            Thread humanSigning = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    humanPose = humanPoseEstimator.recognizeImage(frame);
+                    //reset
+                    signingHand = -1;
+                    //if wrist visible and hand up (above elbow)
+                    if (humanPose != null) {
+                        signingHand = humanPose.isSigning();
+                        if (signingHand == -1) {
+                            step_num = 5;
+                        } //end signing
+                    } else //no human detected
+                        step_num = 5;
+                }//end run
+            });
 
+            humanSigning.start();
+        }
             // if step changed
             if( !(step_num == previous_step)) {
                 // display current step
@@ -431,8 +446,31 @@ public class GestureRecognition {
             Log.i(name, "current step: " + step_num + "  (previous step: 12)");
 
             Log.i("gestanalyze", "Start Analysis");
-            handImgRecorder.analyzeSeq();
-            step_num = 14;
+            String gestresult = handImgRecorder.analyzeSeq();
+
+            if (gestresult =="") {
+                previous_step = 13;
+                step_num = 90;
+            }
+            else{
+
+                if(gestresult.toUpperCase().contains("COUCOU")){
+                    gesture.result = gestresult;
+                    gesture.orientation = 0;
+                    gestureRsp.onSuccess(gesture);
+//                    debugSaveImgMotion(gestresult, handMat);
+                    BuddySDK.Speech.startSpeaking("Coucou");
+                } else if (gestresult.toUpperCase().contains("COME")) {
+                    gesture.result = gestresult;
+                    gesture.orientation = 0;
+                    gestureRsp.onSuccess(gesture);
+//                    debugSaveImgMotion(gestresult, handMat);
+                    BuddySDK.Speech.startSpeaking("J'arrive");
+                }
+                previous_step = 13;
+                step_num = 14;
+            } //end if result not empty from seq recog
+
 
 
 //            try{
