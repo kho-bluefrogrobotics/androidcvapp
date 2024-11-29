@@ -1,7 +1,13 @@
 package com.bfr.opencvapp.utils;
 
+import static com.bfr.opencvapp.utils.HandPoseLandmarks.*;
+
 import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Message;
 import android.util.Log;
+
+import com.google.mediapipe.tasks.components.containers.NormalizedLandmark;
 
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
@@ -15,11 +21,25 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HandImgRecorder {
+public class HandImgRecorder extends HandlerThread {
 
     String TAG = "HandIMGRecorder";
 
+    @Override
+    protected void onLooperPrepared()
+    {
+        initHandler();
+    }
+    void initHandler() {
+        poseEstHandler = new Handler(getLooper()) {
+            @Override
+            public void handleMessage(Message msg)
+            {}
+        };
+    }
+
     public HandImgRecorder(HandPoseEstimator handPoseEstimator){
+        super("HandImageREcorder");
         this.handPoseEstimator = handPoseEstimator;
         handPose = new HandPose();
     }
@@ -30,7 +50,9 @@ public class HandImgRecorder {
     int imgIdx = 0;
     int NUM_OF_IMG = 15;
 
+    List<HandPose> listOfHandpose = new ArrayList<>();
 
+    double elapsed_time=0;
     /** record for debog*/
 
     LocalDateTime myDateObj = LocalDateTime.now();
@@ -49,12 +71,26 @@ public class HandImgRecorder {
         public void run() {
             try {
                 synchronized (listOfMat){
+                    elapsed_time = System.currentTimeMillis();
+                    Log.i(TAG, "handpose before " + (listOfMat.size()-1));
                     handPose = handPoseEstimator.recognizeImage(listOfMat.get(listOfMat.size()-1));
-                    Log.i(TAG, "handpose " + (listOfMat.size()-1));
-                    Imgproc.circle(listOfMat.get(listOfMat.size()-1),
-                            new Point(handPose.landmarks.get(12).x() * listOfMat.get(listOfMat.size()-1).cols(), handPose.landmarks.get(12).y() * listOfMat.get(listOfMat.size()-1).rows()),
-                            2, new Scalar(255, 255, 0), 3);
 
+                    if(handPose!=null)
+                        listOfHandpose.add(handPose);
+
+                    Log.i(TAG, "handpose after " + (listOfMat.size()-1)  + " (" + (System.currentTimeMillis()-elapsed_time) + "ms)");
+                    int[] landmarks2draw = new int[]{WRIST, THUMB_TIP, THUMB_IP,THUMB_CMC, INDEX_TIP, INDEX_PIP,INDEX_MCP, MIDDLE_MCP, MIDDLE_PIP,MIDDLE_TIP, RING_MCP, RING_PIP, RING_TIP, PINKY_MCP, PINKY_PIP,PINKY_TIP};
+                    Scalar[] colors = new Scalar[]{new Scalar(255,255,255), new Scalar(150,150,0), new Scalar(150,150,0), new Scalar(150,150,0), new Scalar(255,0,0), new Scalar(255,0,0), new Scalar(255,0,0), new Scalar(0,255,0), new Scalar(0,255,0),  new Scalar(0,255,0), new Scalar(0,0,255), new Scalar(0,0,255), new Scalar(0,0,255), new Scalar(150,0,150), new Scalar(150,0,150), new Scalar(150,0,150)};
+                    for(int f=0; f<landmarks2draw.length;f++) {
+
+                        Imgproc.circle(listOfMat.get(listOfMat.size() - 1),
+                                new Point(handPose.landmarks.get(landmarks2draw[f]).x() * listOfMat.get(listOfMat.size() - 1).cols(), handPose.landmarks.get(landmarks2draw[f]).y() * listOfMat.get(listOfMat.size() - 1).rows()),
+                                2, colors[f], 3);
+                        Imgproc.putText(listOfMat.get(listOfMat.size() - 1), String.valueOf(handPose.handeness.get(0).categoryName()),
+                                new Point(70, 70),
+                                2, 1, colors[0]);
+
+                    }
                     videoWriter.write(listOfMat.get(listOfMat.size()-1));
                 }
 
@@ -71,10 +107,11 @@ public class HandImgRecorder {
         fourcc = VideoWriter.fourcc('M','J','P','G');
         Log.i(TAG, "videowriter creation " + debugFileName);
         videoWriter = new VideoWriter(debugFileName, fourcc,
-                2, new Size(width, height));
+                20, new Size(width, height));
         Log.i(TAG, "Ready to save video " +width+"x"+height);
 
         listOfMat.clear();
+        listOfHandpose.clear();
 
     }
     public void recImg(Mat img){
@@ -84,10 +121,60 @@ public class HandImgRecorder {
             listOfMat.add(img);
             Log.i(TAG, "addedimg " + (listOfMat.size()-1));
             // queue handpose
-            poseEstHandler.post(poseEstimation);
+
+//            poseEstHandler.post(poseEstimation);
+            Thread t = new Thread(poseEstimation);
+            t.start();
+
+
         }
         //Pose estimation
 
+    }
+
+
+    public String analyzeSeq(){
+
+        // start analyzing from this pose
+        int STARTING_IDX = 1;
+        float minX=999f, minY=999f, maxX=-1f, maxY=-1f;
+        int isFront = -1;
+
+        for (int i=STARTING_IDX; i<listOfHandpose.size(); i++){
+
+            if(listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).x()<minX){
+                minX = listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).x();
+            }
+            if(listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).x()>maxX){
+                maxX = listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).x();
+            }
+            if(listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).y()<minY){
+                minY = listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).y();
+            }
+            if(listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).y()>maxY){
+                maxY = listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).y();
+            }
+
+            if(listOfHandpose.get(i).isFront())
+                isFront = 1;
+
+        }
+
+        Log.i("gestanalyze", "min max " + minX + ";"+ maxX + ";"+ minY + ";"+ maxY + ";  front?=" + isFront);
+
+        if (isFront==1){
+            if(maxX-minX>=0.40){
+                Log.i("gestanalyze", "     =======> COUCOU");
+            }
+        }else
+        {
+            if(maxY-minY>=0.45){
+                Log.i("gestanalyze", "     =======> Come Here");
+            }
+        }
+        // if hand is open front and landmarks are moving a lot horizontally
+
+        return "";
     }
 
     public void saveVideo(){

@@ -344,6 +344,8 @@ public class GestureRecognition {
 
         // creation of videoWriter
         if(step_num==11){
+            //TODO : safety check armROI OK (not going out of image)
+
             //hand pose estimation
             handPose = handPoseEstimator.recognizeImage(frame.submat(armROI), signingHand);
 
@@ -399,12 +401,13 @@ public class GestureRecognition {
             imgIdx = 0;
 
             handImgRecorder.saveVideo();
+            Log.i("gestanalyze", "Start recording");
             step_num = 12;
         }
 
         // record frames
         if(step_num == 12){
-
+//            Log.i(name, "step 12");
             if(imgIdx==0)
                 handImgRecorder.init(frame.submat(handROI).width(), frame.submat(handROI).height());
 
@@ -419,7 +422,7 @@ public class GestureRecognition {
             else{
 
 
-                step_num =15;
+                step_num =13;
             }
         }
 
@@ -428,7 +431,8 @@ public class GestureRecognition {
             Log.i(name, "current step: " + step_num + "  (previous step: 12)");
 
 
-
+            handImgRecorder.analyzeSeq();
+            step_num = 14;
 
 
 //            try{
@@ -455,6 +459,39 @@ public class GestureRecognition {
 
         }
 
+        if(step_num==14){
+            //reset
+            left = 1;
+            top = 1;
+            right = 1;
+            bottom = 1;
+            result = "";
+            gesture.result = result;
+            gesture.orientation = 0;
+
+            humanPose = humanPoseEstimator.recognizeImage(frame);
+
+            //if human detection
+            if (humanPose != null) {
+
+                //display for debug only
+                //reset
+                signingHand = -1;
+                //if wrist visible and hand up (above elbow)
+                signingHand = humanPose.isSigning();
+
+                if (signingHand==-1){
+                    Log.i("gestanalyze", "Not signing anymore");
+                    step_num =5;
+                    return;
+                }
+            }
+            else{
+                Log.i("gestanalyze", "No more human");
+                step_num =5;
+                return;
+            }
+        }
 
         /** Human is signing : start motion detection*/
         /***/if(step_num==15) { // Pose estimation

@@ -41,7 +41,7 @@ public class HandPose{
         // vector of the palm, from the wrist to the base of the index
         float[] palmLine = new float[]{ ( (landmarks.get(0).x() - landmarks.get(5).x())), ( (landmarks.get(0).y() - landmarks.get(5).y()) )};
 
-        Log.d(TAG, "Knuckle =" + knucleLine[0] +","+ knucleLine[1] + "\nPalm = " + palmLine[0] +","+ palmLine[1] );
+        //Log.d(TAG, "Knuckle =" + knucleLine[0] +","+ knucleLine[1] + "\nPalm = " + palmLine[0] +","+ palmLine[1] );
         // Now check the direction of the edge of the plam and the edge of the knucle, depending on the hand
         // if left hand
         if (handeness.get(0).categoryName().toUpperCase().contains("LEFT")){

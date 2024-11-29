@@ -111,7 +111,7 @@ public class HandPoseEstimator {
 
 //        Log.i(TAG, "Starting Hand pose estimation" );
 
-        HandPose handPose = null;
+        HandPose handPose = new HandPose();
 
         //convert to bitmap
         Mat input = frame.clone();
@@ -133,7 +133,7 @@ public class HandPoseEstimator {
 
         if (handLandmarkerResult.landmarks().size()<=0)
         {
-//            Log.w(TAG, "NO HAND DETECTED");
+            Log.w(TAG, "NO HAND DETECTED");
             return null;
         }
 
@@ -150,9 +150,6 @@ public class HandPoseEstimator {
                     continue;
                 }
 
-                if (handPose==null)
-                    handPose = new HandPose();
-
                 handPose.landmarks = handLandmarkerResult.landmarks().get(handId);
                 handPose.handeness = handLandmarkerResult.handednesses().get(handId);
 
@@ -165,8 +162,6 @@ public class HandPoseEstimator {
         }
         else //just take the first detected hand
         {
-            if (handPose==null)
-                handPose = new HandPose();
             handPose.landmarks = handLandmarkerResult.landmarks().get(0);
             handPose.handeness = handLandmarkerResult.handednesses().get(0);
         }

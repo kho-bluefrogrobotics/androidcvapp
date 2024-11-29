@@ -487,6 +487,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 //process
 //                gestureMotionDetect.recognize(getLastImg());
                 // notify as last cv method called to display result
+//                Log.i(TAG, "Runnable: recognize");
                 gestureRecognition.recognize(getLastImg());
 
             } catch (Exception e) {
@@ -557,7 +558,7 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             //init thread
             motionGestureScheduler = Executors.newScheduledThreadPool(1);
             // 40ms period to grab a frame at 25fps
-            motionGestureScheduler.scheduleWithFixedDelay(motionGestureRunnable, 0, 35, TimeUnit.MILLISECONDS);
+            motionGestureScheduler.scheduleWithFixedDelay(motionGestureRunnable, 0, 10, TimeUnit.MILLISECONDS);
         } //end if scheduler ready
 
 //        Log.w("MainActivity", "Camera frame ready");
