@@ -152,7 +152,7 @@ public class GestureRecognition {
 
 //    List<Mat> listOfMat = new ArrayList<>();
     int imgIdx = 0;
-    int NUM_OF_IMG = 10;
+    int NUM_OF_IMG = 15;
 
     HandGestSeqRecognizer handImgRecorder;
 
@@ -369,7 +369,7 @@ public class GestureRecognition {
                 numofTry=0;
 
             // if no more hand, exit after a timeout
-            if (handPose == null){
+            if (handPose == null || handPose.landmarks ==null){
                 //
                 if(numofTry<TRIALS){
                     Log.i(name, "Lost detected hand -> retry");
@@ -381,6 +381,9 @@ public class GestureRecognition {
                     step_num = 5;
                 }
                 return;
+            }
+            else{
+                Log.i(name, "Got a handpose!");
             }
 
             // set hand ROI
@@ -395,8 +398,8 @@ public class GestureRecognition {
             int x2 = x1 + (int)width;
             int y2 = y1 + (int)height;
 
-            left = Math.max(2, x1 - HAND_ROI_MARGIN - (int)(width/3) ) ;
-            top = Math.max(2,y1 -HAND_ROI_MARGIN - (int)(height/4) );
+            left = Math.max(2, x1 - (int)width - (int)(width/3) ) ;
+            top = Math.max(2,y1 -(int)height - (int)(height/4) );
             right = Math.min(frame.cols()-2, x2 + HAND_ROI_MARGIN + (int)(0.3*width) );
             bottom = Math.min(frame.rows()-2, y2 + HAND_ROI_MARGIN + (int)(0.25*height) );
 
@@ -1031,6 +1034,7 @@ public class GestureRecognition {
         int id = -1;
         float tmpValue =-1.0f;
 
+        Log.i(name, "Right landmark " + landmarks);
         for (int i=0; i<landmarks.size();i++)
         {
             if(Float.compare(landmarks.get(i).x(), tmpValue)>0){

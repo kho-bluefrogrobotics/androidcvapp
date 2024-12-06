@@ -73,22 +73,28 @@ public class HandGestSeqRecognizer extends HandlerThread {
                     Log.i(TAG, "handpose before " + (listOfMat.size()-1));
                     handPose = handPoseEstimator.recognizeImage(listOfMat.get(listOfMat.size()-1));
 
-                    if(handPose!=null)
-                        listOfHandpose.add(handPose);
+                    listOfHandpose.add(handPose);
 
-                    Log.i(TAG, "handpose after " + (listOfMat.size()-1)  + " (" + (System.currentTimeMillis()-elapsed_time) + "ms)");
-                    int[] landmarks2draw = new int[]{WRIST, THUMB_TIP, THUMB_IP,THUMB_CMC, INDEX_TIP, INDEX_PIP,INDEX_MCP, MIDDLE_MCP, MIDDLE_PIP,MIDDLE_TIP, RING_MCP, RING_PIP, RING_TIP, PINKY_MCP, PINKY_PIP,PINKY_TIP};
-                    Scalar[] colors = new Scalar[]{new Scalar(255,255,255), new Scalar(150,150,0), new Scalar(150,150,0), new Scalar(150,150,0), new Scalar(255,0,0), new Scalar(255,0,0), new Scalar(255,0,0), new Scalar(0,255,0), new Scalar(0,255,0),  new Scalar(0,255,0), new Scalar(0,0,255), new Scalar(0,0,255), new Scalar(0,0,255), new Scalar(150,0,150), new Scalar(150,0,150), new Scalar(150,0,150)};
-                    for(int f=0; f<landmarks2draw.length;f++) {
+                    if(handPose!=null) {
+                        Log.i(TAG, "handpose after " + (listOfMat.size() - 1) + " (" + (System.currentTimeMillis() - elapsed_time) + "ms)");
+                        int[] landmarks2draw = new int[]{WRIST, THUMB_TIP, THUMB_IP,THUMB_CMC, INDEX_TIP, INDEX_PIP,INDEX_MCP, MIDDLE_MCP, MIDDLE_PIP,MIDDLE_TIP, RING_MCP, RING_PIP, RING_TIP, PINKY_MCP, PINKY_PIP,PINKY_TIP};
+                        Scalar[] colors = new Scalar[]{new Scalar(255,255,255), new Scalar(150,150,0), new Scalar(150,150,0), new Scalar(150,150,0), new Scalar(255,0,0), new Scalar(255,0,0), new Scalar(255,0,0), new Scalar(0,255,0), new Scalar(0,255,0),  new Scalar(0,255,0), new Scalar(0,0,255), new Scalar(0,0,255), new Scalar(0,0,255), new Scalar(150,0,150), new Scalar(150,0,150), new Scalar(150,0,150)};
+                        for(int f=0; f<landmarks2draw.length;f++) {
 
-                        Imgproc.circle(listOfMat.get(listOfMat.size() - 1),
-                                new Point(handPose.landmarks.get(landmarks2draw[f]).x() * listOfMat.get(listOfMat.size() - 1).cols(), handPose.landmarks.get(landmarks2draw[f]).y() * listOfMat.get(listOfMat.size() - 1).rows()),
-                                2, colors[f], 3);
+                            Imgproc.circle(listOfMat.get(listOfMat.size() - 1),
+                                    new Point(handPose.landmarks.get(landmarks2draw[f]).x() * listOfMat.get(listOfMat.size() - 1).cols(), handPose.landmarks.get(landmarks2draw[f]).y() * listOfMat.get(listOfMat.size() - 1).rows()),
+                                    2, colors[f], 3);
+
+                        } //next landmark
                         Imgproc.putText(listOfMat.get(listOfMat.size() - 1), String.valueOf(handPose.handeness.get(0).categoryName()),
                                 new Point(70, 70),
-                                2, 1, colors[0]);
+                                2, 1, new Scalar(255,255,255));
+                    } //end if handpose null
 
-                    }
+                    Imgproc.putText(listOfMat.get(listOfMat.size() - 1), String.valueOf(listOfMat.size()-1) ,
+                                new Point(30, 30),
+                                2, 1, new Scalar(255,0,0));
+
                     videoWriter.write(listOfMat.get(listOfMat.size()-1));
                 }
 
@@ -105,7 +111,7 @@ public class HandGestSeqRecognizer extends HandlerThread {
         fourcc = VideoWriter.fourcc('M','J','P','G');
         Log.i(TAG, "videowriter creation " + debugFileName);
         videoWriter = new VideoWriter(debugFileName, fourcc,
-                20, new Size(width, height));
+                3, new Size(width, height));
         Log.i(TAG, "Ready to save video " +width+"x"+height);
 
         listOfMat.clear();
@@ -139,8 +145,20 @@ public class HandGestSeqRecognizer extends HandlerThread {
         float frontValue = 0;
         float knuck = 0, palm = 0;
         String hand ="";
+        List<HandPose> previousHandposes = new ArrayList<>(listOfHandpose);
+
+        boolean changedHorizDirection, openAndClosedFingers;
+        float previousPos=0, currentPos=0, previousDirection=0, currentDirection=0;
 
         for (int i=STARTING_IDX; i<listOfHandpose.size(); i++){
+
+            //sanity check
+            if(listOfHandpose.get(i)==null)
+                continue;
+
+            previousDirection = currentDirection;
+            currentDirection = listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).x() + listOfHandpose.get(i).landmarks.get(RING_TIP).x() -previousDirection;
+
 
             if(listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).x() + listOfHandpose.get(i).landmarks.get(RING_TIP).x() <minX){
                 minX = listOfHandpose.get(i).landmarks.get(MIDDLE_TIP).x() + listOfHandpose.get(i).landmarks.get(RING_TIP).x();
@@ -171,7 +189,7 @@ public class HandGestSeqRecognizer extends HandlerThread {
             hand = listOfHandpose.get(i).debughandesness;
         }
 
-//        Log.i("gestanalyze", "min max " + minX + ";"+ maxX + ";"+ minY + ";"+ maxY + "; " + ((frontValue<=0)? "BACK" : "FRONT")  + "("+frontValue+")" + " knucle=" + knuck + " palm=" + palm +  "  " + hand);
+        Log.i("gestanalyze", "min max " + minX + ";"+ maxX + ";"+ minY + ";"+ maxY + "; " + ((frontValue<=0)? "BACK" : "FRONT")  + "("+frontValue+")" + " knucle=" + knuck + " palm=" + palm +  "  " + hand);
 
         if (frontValue>0.1){
             if(maxX-minX>=0.40){
@@ -179,7 +197,7 @@ public class HandGestSeqRecognizer extends HandlerThread {
                 Log.i("gestanalyze", "     =======> COUCOU");
                 return "COUCOU";
             }
-        }else if (frontValue<=-0.1)
+        }else if (frontValue<=-0.2)
         {
             if(maxY-minY>=0.7){
                 Log.i("gestanalyze", "     =======> Come Here");
@@ -187,7 +205,7 @@ public class HandGestSeqRecognizer extends HandlerThread {
             }
         }
         // if hand is open front and landmarks are moving a lot horizontally
-
+        Log.i("gestanalyze", "   :( nothing recognized");
         return "";
     }
 

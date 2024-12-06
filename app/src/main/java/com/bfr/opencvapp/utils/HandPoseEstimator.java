@@ -143,21 +143,23 @@ public class HandPoseEstimator {
             // for each hand
             for (int handId=0; handId<handLandmarkerResult.landmarks().size(); handId++)
             {
+                //!!! human pose and hand pose are inversed for left and right hand
                 if(targetHand==RIGHT_WRIST && handLandmarkerResult.handednesses().get(handId).get(0).categoryName().toUpperCase().contains("RIGHT") ){
+                    Log.i(TAG, handId + "/"+handLandmarkerResult.landmarks().size()+": looking for RIGHT but found left");
                     continue;
                 }
                 else if(targetHand==LEFT_WRIST && handLandmarkerResult.handednesses().get(handId).get(0).categoryName().toUpperCase().contains("LEFT") ){
+                    Log.i(TAG, handId + "/"+handLandmarkerResult.landmarks().size()+": looking for LEFT but found right");
                     continue;
                 }
 
+                Log.i(TAG, handId+": correct hand (looking for " + targetHand + " and found " + handLandmarkerResult.handednesses().get(handId).get(0).categoryName().toUpperCase());
                 handPose.landmarks = handLandmarkerResult.landmarks().get(handId);
                 handPose.handeness = handLandmarkerResult.handednesses().get(handId);
 
                 //break at this hand
                 break;
             }
-//            Log.i(TAG, "Result size ="+ handLandmarkerResult.landmarks().get(0).size());
-
 
         }
         else //just take the first detected hand

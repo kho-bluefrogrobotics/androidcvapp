@@ -19,7 +19,7 @@
         android:orientation="vertical"
         android:visibility="visible">
 
-        <org.opencv.android.JavaCameraView
+        <org.opencv.android.JavaCamera2View
             android:id="@+id/CameraView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

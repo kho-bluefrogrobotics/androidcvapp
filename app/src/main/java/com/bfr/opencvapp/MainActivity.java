@@ -1,8 +1,6 @@
 package com.bfr.opencvapp;
 
 
-import static org.opencv.core.CvType.*;
-
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -10,6 +8,9 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
 import android.view.View;
@@ -43,7 +44,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -448,6 +448,8 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
                 case LoaderCallbackInterface.SUCCESS: {
                     Log.i(TAG, "OpenCV loaded successfully!");
                     mOpenCvCameraView.enableView();
+
+//                    gestRecogHandlerThread= new GestRecogHandlerThread("gest", 10);
                 }
                 break;
                 default: {
@@ -548,20 +550,47 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             return matList.get(matList.size()-1);
         }
     }
+
+
+    class GestRecogHandlerThread extends HandlerThread{
+
+        public GestRecogHandlerThread(String name, int priority) {
+            super(name, priority);
+            Log.w("recognitionHandler", "Obj creation "+ Log.getStackTraceString(new Exception()));
+        }
+
+        //handler for camera
+        public Handler recognitionHandler;
+        @Override
+        protected void onLooperPrepared()
+        {
+            initHandler();
+            Log.w("recognitionHandler", "Handler initialized");
+        }
+        void initHandler() {
+            recognitionHandler = new Handler(getLooper()) {
+                @Override
+                public void handleMessage(Message msg)
+                {}
+            };
+        }
+    }
+    GestRecogHandlerThread gestRecogHandlerThread= new GestRecogHandlerThread("gest", 10);
+
     @SuppressLint("SuspiciousIndentation")
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
-        // start scheduled task
-        if(motionGestureScheduler==null || motionGestureScheduler.isShutdown())
-        {
-            Log.w(TAG, "Starting GestureMotionDetector " );
-            //init thread
-            motionGestureScheduler = Executors.newScheduledThreadPool(1);
-            // 40ms period to grab a frame at 25fps
-            motionGestureScheduler.scheduleWithFixedDelay(motionGestureRunnable, 0, 10, TimeUnit.MILLISECONDS);
-        } //end if scheduler ready
+//        // start scheduled task
+//        if(motionGestureScheduler==null || motionGestureScheduler.isShutdown())
+//        {
+//            Log.w(TAG, "Starting GestureMotionDetector " );
+//            //init thread
+//            motionGestureScheduler = Executors.newScheduledThreadPool(1);
+//            // 40ms period to grab a frame at 25fps
+//            motionGestureScheduler.scheduleWithFixedDelay(motionGestureRunnable, 0, 33, TimeUnit.MILLISECONDS);
+//        } //end if scheduler ready
 
-//        Log.w("MainActivity", "Camera frame ready");
+        Log.w("MainActivity", "Camera frame ready");
         // cature frame from camera
         frame = inputFrame.rgba();
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
@@ -578,9 +607,13 @@ public class MainActivity extends BuddyActivity implements CameraBridgeViewBase.
             // add image in buffer list
             matList.add(frame);
             //remove oldest entry
-            if(matList.size()>1)
+            if(matList.size()>5)
                 matList.remove(0);
+
+//            gestRecogHandlerThread.recognitionHandler.post(motionGestureRunnable);
+            gestureRecognition.recognize(frame);
         }
+
 
 
 //            gestureRecognition.recognize(frame);
